@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String     @unique
+  password      String
+  isAdmin       Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  storageUsed   Int        @default(0)
+  storageLimit  Int        @default(10485760) // 10GB in MB
+  files         File[]     @relation("UserFiles")
+  sharedFiles   Share[]    @relation("SharedBy")
+  receivedFiles Share[]    @relation("SharedTo")
+  folders       Folder[]
+}
+
+model File {
+  id          String    @id @default(cuid())
+  name        String
+  filename    String
+  path        String
+  type        String?
+  size        Int?
+  data        Bytes?
+  isFolder    Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  parentId    String?
+  parent      File?     @relation("FileHierarchy", fields: [parentId], references: [id])
+  children    File[]    @relation("FileHierarchy")
+  uploaderId  String
+  uploader    User      @relation("UserFiles", fields: [uploaderId], references: [id])
+  shares      Share[]
+  tags        String[]
+
+  @@index([parentId])
+  @@index([uploaderId])
+}
+
+model Share {
+  id           String    @id @default(cuid())
+  fileId       String
+  sharedById   String
+  sharedToId   String?
+  shareToken   String    @unique
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+  updatedAt    DateTime  @updatedAt
+  file         File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  sharedBy     User      @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  sharedTo     User?     @relation("SharedTo", fields: [sharedToId], references: [id], onDelete: SetNull)
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderToFolder")
+  owner     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MaintenanceLog {
+  id        String   @id @default(cuid())
+  type      String   // cleanup, backup, etc.
+  details   Json
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+}
