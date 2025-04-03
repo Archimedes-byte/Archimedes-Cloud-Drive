@@ -1,0 +1,296 @@
+.heroSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem 2.5rem;
+  margin: 1rem 0 1rem;
+  gap: 2rem;
+  position: relative;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heroContent {
+  max-width: 550px;
+  animation: fadeIn 0.8s ease-out;
+  margin-left: 5rem;
+  margin-top: -3.5rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.heroDescription {
+  font-size: 1.25rem;
+  color: #4a5568;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.heroActions {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.heroButton {
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.primaryButton {
+  background-color: #1e40af;
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.3);
+}
+
+.primaryButton:hover {
+  background-color: #1e3a8a;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.4);
+}
+
+.secondaryButton {
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #1e40af;
+  border: 1px solid #1e40af;
+  box-shadow: 0 4px 10px rgba(30, 64, 175, 0.1);
+}
+
+.secondaryButton:hover {
+  background-color: rgba(30, 64, 175, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.15);
+}
+
+.heroImage {
+  position: relative;
+  flex: 1;
+  min-height: 430px;
+  max-width: 580px;
+  margin-top: -2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.floatingElements {
+  position: relative;
+  width: 560px;
+  height: 560px;
+  perspective: 800px;
+  transform-style: preserve-3d;
+}
+
+/* 文件图标基本样式 */
+.fileIcon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 1rem;
+  background-color: white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.fileIcon:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+}
+
+/* 中心云图标 */
+.centerIcon {
+  position: absolute;
+  top: 49%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  animation: gentlePulse 4s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+/* 只保留几个关键位置的图标 - 简洁布局 */
+/* 蓝色图标组 */
+.circleOne {
+  background-color: white;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  animation: simpleFloat 5s ease-in-out infinite;
+}
+
+.circleOne.item1 { top: 27%; left: 50%; animation-delay: 0s; }
+.circleOne.item2 { top: 31%; left: 72%; animation-delay: 0.7s; }
+.circleOne.item3 { top: 21%; left: 33%; animation-delay: 1.4s; }
+
+/* 绿色图标组 */
+.circleTwo {
+  background-color: white;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  animation: simpleFloat 5s ease-in-out infinite;
+}
+
+.circleTwo.item1 { top: 40%; left: 26%; animation-delay: 0.3s; }
+.circleTwo.item3 { top: 56%; left: 73%; animation-delay: 1.6s; }
+
+/* 黄色图标组 */
+.circleThree {
+  background-color: white;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  animation: simpleFloat 5s ease-in-out infinite;
+}
+
+.circleThree.item1 { top: 70%; left: 48%; animation-delay: 0.9s; }
+.circleThree.item3 { top: 37%; left: 62%; animation-delay: 1.9s; }
+
+/* 紫色图标组 */
+.circleFour {
+  background-color: white;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  animation: simpleFloat 5s ease-in-out infinite;
+}
+
+.circleFour.item1 { top: 50%; left: 78%; animation-delay: 0.5s; }
+.circleFour.item2 { top: 60%; left: 32%; animation-delay: 1.2s; }
+
+/* 简化的漂浮动画 */
+@keyframes simpleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* 云朵周围的柔和发光效果 */
+.floatingElements::before {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  background: radial-gradient(circle at center, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(255, 255, 255, 0.4) 40%,
+    rgba(59, 130, 246, 0.03) 70%,
+    rgba(255, 255, 255, 0) 100%);
+  filter: blur(15px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.scrollIndicator {
+  position: absolute;
+  bottom: -2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.bounce {
+  animation: bounce 2s infinite;
+  color: #1e40af;
+  filter: drop-shadow(0 2px 5px rgba(30, 64, 175, 0.3));
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (max-width: 992px) {
+  .heroSection {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.5rem 1.5rem;
+    margin-top: 0;
+  }
+  
+  .heroContent {
+    max-width: 100%;
+    margin-left: 0;
+    margin-top: -1.5rem;
+  }
+  
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .heroActions {
+    justify-content: center;
+  }
+  
+  .heroImage {
+    margin-top: 0.5rem;
+    min-height: 330px;
+  }
+
+  .floatingElements {
+    width: 100%;
+    height: 460px;
+  }
+
+  .scrollIndicator {
+    bottom: -1.5rem;
+  }
+} 

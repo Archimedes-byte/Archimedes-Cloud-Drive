@@ -1,0 +1,126 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.loadingMessage {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #eff6ff;
+  color: #1e40af;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.loadingSpinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #3b82f6;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  animation: spin 1s linear infinite;
+}
+
+.section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+  height: fit-content;
+  border: 1px solid rgba(59, 130, 246, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.12);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  position: relative;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6 0%, #3b98f5 100%);
+}
+
+.field {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(59, 130, 246, 0.05);
+}
+
+.field:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.fieldLabel {
+  font-size: 0.875rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.fieldValue {
+  font-size: 1.125rem;
+  color: #1a202c;
+  line-height: 1.5;
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.link:hover {
+  text-decoration: underline;
+  color: #2563eb;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 1.5rem;
+  }
+  
+  .field {
+    padding: 1rem;
+  }
+  
+  .fieldValue {
+    font-size: 1rem;
+  }
+} 

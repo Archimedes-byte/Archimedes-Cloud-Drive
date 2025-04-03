@@ -1,43 +1,31 @@
-import React from 'react';
-import Link from 'next/link';
+'use client';
 
-export default function Home() {
+import React, { useRef } from 'react';
+import Header from './home/components/Header';
+import Hero from './home/components/Hero';
+import Features from './home/components/Features';
+import CTA from './home/components/CTA';
+import Footer from './home/components/Footer';
+import styles from './home/Home.module.css';
+
+export default function HomePage() {
+  const featuresRef = useRef<HTMLDivElement>(null);
+
+  const scrollToFeatures = () => {
+    featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <div className="home-page" style={{
-      backgroundImage: 'url("/background.jpg")'
-    }}>
-      <header className="home-header">
-        <h1>Archimedes' Cloud Drive</h1>
-        <nav>
-          <Link href="/">Home</Link>
-          <Link href="/auth/login">Login</Link>
-          <Link href="/auth/register">Register</Link>
-        </nav>
-      </header>
-
-      <main className="home-content">
-        <div className="text-center">
-          <h2 className="text-4xl mb-8" style={{ fontFamily: 'KaiTi, serif' }}>
-            记录每1份热爱 让美好永远陪伴
-          </h2>
-          <Link
-            href="/auth/login"
-            className="btn-primary"
-          >
-            Go to Login
-          </Link>
-          <div className="mt-4 text-gray-600">
-            Don't have an account? {' '}
-            <Link href="/auth/register" className="text-[#5a9bd3] hover:underline">
-              Register here
-            </Link>
-          </div>
+    <div className={styles.homePage}>
+      <Header />
+      <main className={styles.main}>
+        <Hero onExploreClick={scrollToFeatures} />
+        <div ref={featuresRef}>
+          <Features id="features" />
         </div>
+        <CTA />
       </main>
-
-      <footer className="home-footer">
-        <p>© 2025 Archimedes' Cloud Drive. All rights reserved.</p>
-      </footer>
+      <Footer />
     </div>
   );
 } 

@@ -1,0 +1,280 @@
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+import threading
+import queue
+import sys
+import os
+import io
+import numpy as np
+from PIL import Image, ImageTk
+import subprocess
+
+rcParams['font.family'] = 'SimHei'  # 使用 SimHei 字体
+rcParams['axes.unicode_minus'] = False  # 防止负号显示问题
+
+# ================== 配置部分 ==================
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(PROJECT_ROOT)
+
+EXP_TYPES = {
+    'Number-constrained': 'numbers_exp.py',
+    'Class-constrained': 'classes_exp.py',
+    'Domain-constrained': 'domains_exp.py'
+}
+
+# 新的路径
+DOMAINS_32_PATH = r'E:\Efficient-backdoor-attacks-for-deep-neural-networks-in-real-world-scenarios-main\domains_data\domains_32.npy'
+
+# ================== GUI主类 ==================
+class BackdoorApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("后门攻击分析系统 v4.0")
+        self.geometry("1000x800")
+        self._create_widgets()
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        # 线程通信队列
+        self.log_queue = queue.Queue()
+        self.process = None
+        self.after(100, self._process_queue)
+
+    def _create_widgets(self):
+        """创建界面组件"""
+        # 顶部标题
+        self.header = ttk.Label(
+            self,
+            text="高效后门攻击分析系统",
+            font=('微软雅黑', 18),
+            padding=10
+        )
+        self.header.pack(fill=tk.X)
+
+        # 实验配置面板
+        config_frame = ttk.LabelFrame(self, text="实验配置", padding=10)
+        config_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        # 参数控件
+        self.exp_type = ttk.Combobox(config_frame, values=list(EXP_TYPES))
+        self.dataset = ttk.Combobox(config_frame, values=['cifar10', 'cifar100'])
+        self.model = ttk.Combobox(config_frame, values=['resnet18', 'vgg16'])
+        self.poison_source = ttk.Combobox(config_frame, values=['origin', 'clip'])
+        self.trigger_type = ttk.Combobox(config_frame, values=['none', 'clip-uap', 'clip-cfa'])
+
+        # 布局参数控件
+        labels = ['实验类型', '数据集', '模型', '毒源', '触发器']
+        widgets = [self.exp_type, self.dataset, self.model, self.poison_source, self.trigger_type]
+        for i, (label, widget) in enumerate(zip(labels, widgets)):
+            ttk.Label(config_frame, text=label).grid(row=i, column=0, sticky=tk.W)
+            widget.grid(row=i, column=1, padx=5, pady=2)
+            widget.current(0)
+
+        # 操作按钮（修复此处）
+        btn_frame = ttk.Frame(config_frame)
+        btn_frame.grid(row=0, column=2, rowspan=5, padx=10)
+        ttk.Button(btn_frame, text="生成数据", command=self._gen_data).pack(pady=2)
+        ttk.Button(btn_frame, text="生成触发器", command=self._gen_trigger).pack(pady=2)
+        ttk.Button(btn_frame, text="毒化索引", command=self._show_idx).pack(pady=2)  # 需要对应方法
+
+        # 控制面板
+        control_frame = ttk.Frame(self)
+        control_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        self.progress = ttk.Progressbar(control_frame, length=400, mode='determinate')
+        self.progress.pack(side=tk.LEFT, padx=5)
+        self.start_btn = ttk.Button(control_frame, text="开始训练", command=self._start_train)
+        self.start_btn.pack(side=tk.LEFT, padx=5)
+        self.stop_btn = ttk.Button(control_frame, text="停止", state=tk.DISABLED, command=self._stop_train)
+        self.stop_btn.pack(side=tk.LEFT)
+
+        # 可视化面板
+        vis_frame = ttk.Frame(self)
+        vis_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        # 图表区域
+        self.figure = plt.figure(figsize=(8, 4))
+        self.canvas = FigureCanvasTkAgg(self.figure, master=vis_frame)
+        self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # 触发器预览
+        trigger_frame = ttk.Frame(vis_frame)
+        trigger_frame.pack(side=tk.RIGHT, padx=10)
+        self.trigger_img = ttk.Label(trigger_frame)
+        self.trigger_img.pack()
+        ttk.Label(trigger_frame, text="触发器预览").pack()
+
+        # 状态栏
+        self.status = ttk.Label(self, text="就绪", relief=tk.SUNKEN)
+        self.status.pack(side=tk.BOTTOM, fill=tk.X)
+
+    # ================== 事件处理 ==================
+    def _show_idx(self):
+        """毒化索引功能（待实现）"""
+        messagebox.showinfo("提示", "该功能暂未实现")
+
+    def _gen_data(self):
+        dataset = self.dataset.get()
+        cmd = f'python clip_data_cfe.py --dataset {dataset}'
+        subprocess.Popen(cmd, shell=True)
+        self.status.config(text="正在生成CLIP-CFE数据...")
+
+    def _gen_trigger(self):
+        dataset = self.dataset.get()
+        trigger_type = self.trigger_type.get()
+
+        # Ensure the trigger directory exists
+        trigger_dir = './triggers/c100'
+        if not os.path.exists(trigger_dir):
+            os.makedirs(trigger_dir)
+
+        cmd = f'python clip_uap_cfa.py --dataset {dataset}'
+        print(f"Running command: {cmd}")
+
+        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if stderr:
+            print(f"Error: {stderr.decode()}")
+            messagebox.showerror("错误", f"生成触发器失败: {stderr.decode()}")
+        else:
+            print(f"Trigger generated: {stdout.decode()}")
+            self.status.config(text="触发器生成成功！")
+
+    def _start_train(self):
+        params = {
+            'exp_type': self.exp_type.get(),
+            'dataset': self.dataset.get(),
+            'model': self.model.get(),
+            'poison_source': self.poison_source.get(),
+            'trigger_type': self.trigger_type.get()
+        }
+        self.start_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.NORMAL)
+        self.status.config(text="训练进行中...")
+
+        # 启动训练线程
+        self.train_thread = threading.Thread(target=self._run_train, args=(params,))
+        self.train_thread.daemon = True
+        self.train_thread.start()
+
+    def _run_train(self, params):
+        try:
+            cmd = [
+                'python',
+                EXP_TYPES[params['exp_type']],
+                '--poison_source', params['poison_source'],
+                '--dataset', params['dataset'],
+                '--model', params['model']
+            ]
+            if params['trigger_type'] != 'none':
+                cmd += ['--trigger_type', params['trigger_type']]
+
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+
+            while True:
+                line = self.process.stdout.readline()
+                if not line and self.process.poll() is not None:
+                    break
+
+            self.log_queue.put("TRAIN_DONE")
+        except Exception as e:
+            self.log_queue.put(f"ERROR: {str(e)}")
+
+    def _process_queue(self):
+        """处理线程队列消息"""
+        try:
+            while True:
+                msg = self.log_queue.get_nowait()
+                if msg == "TRAIN_DONE":
+                    self._on_train_done()
+                elif msg.startswith("ERROR:"):
+                    messagebox.showerror("错误", msg[6:])
+                    self._reset_buttons()
+        except queue.Empty:
+            pass
+        self.after(100, self._process_queue)
+
+    def _on_train_done(self):
+        self._reset_buttons()
+        self.status.config(text="训练完成")
+        self._update_visualization()
+        self._update_trigger_preview()
+
+    def _stop_train(self):
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            self.status.config(text="训练已终止")
+        self._reset_buttons()
+
+    def _reset_buttons(self):
+        self.start_btn.config(state=tk.NORMAL)
+        self.stop_btn.config(state=tk.DISABLED)
+
+    def _update_visualization(self):
+        """更新可视化图表"""
+        self.figure.clf()
+
+        # 生成示例数据
+        results = {
+            'origin_acc': np.random.uniform(0.8, 0.9),
+            'clip_acc': np.random.uniform(0.85, 0.95),
+            'origin_asr': np.random.uniform(0.9, 1.0),
+            'clip_asr': np.random.uniform(0.95, 1.0),
+            'origin_feat': np.random.randn(100, 2),
+            'clip_feat': np.random.randn(100, 2) * 0.5
+        }
+
+        # 绘制新图表
+        ax1 = self.figure.add_subplot(131)
+        ax1.bar(['Baseline', 'CLIP-CFE'], [results['origin_acc'], results['clip_acc']])
+        ax1.set_ylim(0, 1)
+        ax1.set_title('模型准确率')
+
+        ax2 = self.figure.add_subplot(132)
+        ax2.bar(['Baseline', 'CLIP-CFE'], [results['origin_asr'], results['clip_asr']])
+        ax2.set_ylim(0, 1)
+        ax2.set_title('攻击成功率')
+
+        ax3 = self.figure.add_subplot(133)
+        ax3.scatter(results['origin_feat'][:, 0], results['origin_feat'][:, 1], alpha=0.5, label='原始')
+        ax3.scatter(results['clip_feat'][:, 0], results['clip_feat'][:, 1], alpha=0.5, label='CLIP')
+        ax3.legend()
+        ax3.set_title('特征空间分布')
+
+        self.figure.tight_layout()
+        self.canvas.draw()
+
+    def _update_trigger_preview(self):
+        """更新触发器预览"""
+        trigger_path = os.path.join('triggers', f"{self.trigger_type.get()}.png")
+        if os.path.exists(trigger_path):
+            try:
+                image = Image.open(trigger_path)
+                image.thumbnail((200, 200))
+                photo = ImageTk.PhotoImage(image)
+                self.trigger_img.config(image=photo)
+                self.trigger_img.image = photo  # 保持引用
+            except Exception as e:
+                messagebox.showerror("错误", f"加载触发器失败: {str(e)}")
+
+    def _on_close(self):
+        """关闭窗口时的清理操作"""
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+        self.destroy()
+
+
+# ================== 启动应用 ==================
+if __name__ == "__main__":
+    app = BackdoorApp()
+    app.mainloop()
