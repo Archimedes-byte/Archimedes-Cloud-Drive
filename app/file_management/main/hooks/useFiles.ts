@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { message } from 'antd';
 import { File, FileType, SortOrder } from '../../types/index';
+import { filterFiles } from '../../utils/fileHelpers';
 
 // 扩展File类型，确保包含size属性
 interface FileWithSize extends File {
@@ -8,6 +10,7 @@ interface FileWithSize extends File {
 }
 
 export const useFiles = () => {
+  const router = useRouter();
   const [files, setFiles] = useState<FileWithSize[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +18,7 @@ export const useFiles = () => {
   const [folderPath, setFolderPath] = useState<Array<{ id: string, name: string }>>([]);
   const [selectedFileType, setSelectedFileType] = useState<FileType | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>({
-    field: 'uploadTime',
+    field: 'createdAt',
     direction: 'desc'
   });
   const [lastSortApplied, setLastSortApplied] = useState<string>('');
@@ -43,8 +46,8 @@ export const useFiles = () => {
           return sortOrder.direction === 'asc'
             ? (a.size || 0) - (b.size || 0)
             : (b.size || 0) - (a.size || 0);
-        case 'uploadTime':
-          // 安全处理日期
+        case 'createdAt':
+          // 处理日期排序
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return sortOrder.direction === 'asc'
@@ -95,23 +98,44 @@ export const useFiles = () => {
       const data = await response.json();
       console.log('接收到的数据:', data);
 
-      if (data.success) {
-        // 打印文件夹结构信息以便调试
-        const folders = data.data.filter((f: any) => f.isFolder);
-        const files = data.data.filter((f: any) => !f.isFolder);
-        console.log(`当前查询结果: ${folders.length}个文件夹, ${files.length}个文件`);
+      if (data && data.success) {
+        // 获取API返回的文件列表
+        const files = data.data || [];
         
-        if (folders.length > 0) {
-          console.log('文件夹列表:', folders.map((f: any) => ({ id: f.id, name: f.name })));
+        // 调试文件类型信息
+        if (effectiveFileType === 'document') {
+          console.log('文档类型文件信息:', files.map((f: any) => ({
+            id: f.id,
+            name: f.name,
+            type: f.type,
+            extension: f.name.split('.').pop()
+          })));
         }
         
-        // 应用排序逻辑
-        const sortedFiles = handleSort(data.data || []);
-        console.log('排序后的文件列表:', sortedFiles);
+        // 在前端执行额外过滤（确保筛选结果的准确性）
+        let filteredFiles = files;
+        if (effectiveFileType) {
+          // 使用辅助函数过滤文件
+          filteredFiles = filterFiles(files, effectiveFileType);
+          console.log(`前端过滤 - 类型 "${effectiveFileType}": 过滤前 ${files.length} 项, 过滤后 ${filteredFiles.length} 项`);
+        }
+        
+        // 统计分类结果
+        const folders = filteredFiles.filter((f: any) => f.isFolder);
+        const nonFolders = filteredFiles.filter((f: any) => !f.isFolder);
+        console.log(`过滤结果: ${folders.length}个文件夹, ${nonFolders.length}个文件`);
+        
+        // 调试文件夹信息
+        if (folders.length > 0) {
+          console.log('文件夹:', folders.map((f: any) => ({ id: f.id, name: f.name })));
+        }
+        
+        // 应用排序逻辑到过滤后的文件
+        const sortedFiles = handleSort(filteredFiles);
         setFiles(sortedFiles);
         setLastSortApplied(`${sortOrder.field}-${sortOrder.direction}`);
       } else {
-        throw new Error(data.error || '加载文件列表失败');
+        throw new Error((data && data.error) || '加载文件列表失败');
       }
     } catch (error) {
       console.error('加载文件列表失败:', error);
@@ -134,8 +158,9 @@ export const useFiles = () => {
       // 更新面包屑
       setFolderPath(prev => [...prev, { id: file.id, name: file.name }]);
     } else {
-      // 如果是普通文件，可以执行其他操作，如预览
-      console.log(`文件点击: ${file.name}`);
+      // 如果是普通文件，返回文件对象而不是导航到预览页面
+      console.log(`文件点击: ${file.name}，返回文件对象供下载`);
+      return file;
     }
   }, [loadFiles, selectedFileType]);
 

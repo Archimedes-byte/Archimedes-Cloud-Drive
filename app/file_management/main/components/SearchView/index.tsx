@@ -1,5 +1,5 @@
 import React from 'react';
-import { File as FileType } from '../../../types/index';
+import { ExtendedFile } from '../../../types/index';
 import { getFileIcon } from '../../../utils/fileHelpers';
 import { Home, Folder, Image as ImageIcon, FileText, Video, Music, File } from 'lucide-react';
 import styles from './styles.module.css';
@@ -9,11 +9,11 @@ interface SearchViewProps {
   setSearchType: (type: 'name' | 'tag') => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  searchResults: FileType[];
+  searchResults: ExtendedFile[];
   isLoading: boolean;
   error: string | null;
   handleSearch: (query: string, type: 'name' | 'tag') => void;
-  handleFileClick: (file: FileType) => void;
+  handleFileClick: (file: ExtendedFile) => void;
 }
 
 export const SearchView: React.FC<SearchViewProps> = ({
@@ -117,9 +117,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   <td>
                     {file.createdAt 
                       ? new Date(file.createdAt).toLocaleString() 
-                      : (file.uploadTime 
-                          ? new Date(file.uploadTime).toLocaleString() 
-                          : '-')
+                      : '-'
                     }
                   </td>
                   <td>

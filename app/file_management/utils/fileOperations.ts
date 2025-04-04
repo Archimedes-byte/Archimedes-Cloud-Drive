@@ -84,10 +84,10 @@ export function sortFiles(files: ExtendedFile[], field: string, direction: 'asc'
       case 'type':
         comparison = (a.type || '').localeCompare(b.type || '');
         break;
-      case 'uploadTime':
-        // 安全处理日期
-        const dateA = a.uploadTime ? new Date(a.uploadTime).getTime() : 0;
-        const dateB = b.uploadTime ? new Date(b.uploadTime).getTime() : 0;
+      case 'createdAt':
+        // 处理日期排序
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         comparison = dateA - dateB;
         break;
       default:

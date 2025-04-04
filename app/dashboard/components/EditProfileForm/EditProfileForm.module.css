@@ -2,25 +2,24 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .input {
   width: 100%;
-  padding: 0.875rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
   transition: all 0.2s;
   background-color: #fff;
-  box-sizing: border-box;
-  max-width: 100%;
+  color: #2d3748;
 }
 
 .input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  border-color: var(--theme-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .input:hover {
@@ -28,9 +27,30 @@
 }
 
 .textarea {
+  min-height: 120px;
   resize: vertical;
-  min-height: 80px;
-  max-height: 120px;
+}
+
+.inputError {
+  border-color: #e53e3e;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2);
+}
+
+.errorText {
+  color: #e53e3e;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.charCount {
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #718096;
 }
 
 @media (max-width: 768px) {

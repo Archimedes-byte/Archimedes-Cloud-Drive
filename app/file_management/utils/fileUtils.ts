@@ -1,4 +1,4 @@
-import { File, FileType } from '../types/index';
+import { ExtendedFile } from '../types/index';
 
 export function getFileNameAndExtension(filename: string): { name: string; extension: string } {
   const lastDotIndex = filename.lastIndexOf('.');
@@ -65,7 +65,7 @@ export function getFileType(type?: string): string {
   return type ? typeMap[type] || '未知' : '未知';
 }
 
-export function sortFiles(files: File[], field: string, direction: 'asc' | 'desc'): File[] {
+export function sortFiles(files: ExtendedFile[], field: string, direction: 'asc' | 'desc'): ExtendedFile[] {
   return [...files].sort((a, b) => {
     let comparison = 0;
     
@@ -84,11 +84,9 @@ export function sortFiles(files: File[], field: string, direction: 'asc' | 'desc
       case 'type':
         comparison = (a.type || '').localeCompare(b.type || '');
         break;
-      case 'uploadTime':
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 
-                     (a.uploadTime ? new Date(a.uploadTime).getTime() : 0);
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 
-                     (b.uploadTime ? new Date(b.uploadTime).getTime() : 0);
+      case 'createdAt':
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         comparison = dateA - dateB;
         break;
       default:

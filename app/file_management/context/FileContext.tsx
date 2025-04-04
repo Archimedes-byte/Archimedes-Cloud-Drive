@@ -30,20 +30,8 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   // 使用文件操作钩子
   const { 
-    loading: operationsLoading,
-    handleDelete
+    loading: operationsLoading
   } = useFileOperations(() => loadFiles(currentFolderId));
-
-  // 删除文件
-  const deleteFiles = async (fileIds: string[]) => {
-    try {
-      await handleDelete(fileIds);
-      // 删除成功后重新加载当前文件夹
-      loadFiles(currentFolderId);
-    } catch (error) {
-      console.error('删除文件失败:', error);
-    }
-  };
 
   // 提供给上下文的值
   const contextValue: FileContextType = {
@@ -61,7 +49,6 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     loadFiles,
     selectFiles,
     clearSelection,
-    deleteFiles,
     updateFileSort,
     setFileType,
     navigateToFolder

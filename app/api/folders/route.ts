@@ -1,16 +1,26 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/prisma';
 import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { 
+  ApiResponse, 
+  FileInfo, 
+  CreateFolderRequest, 
+  mapFileEntityToFileInfo 
+} from '@/app/shared/types';
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse<ApiResponse<FileInfo>>> {
   try {
     // 验证用户是否登录
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json(
-        { error: '请先登录' },
+        { 
+          success: false,
+          error: '请先登录' 
+        },
         { status: 401 }
       );
     }
@@ -22,17 +32,23 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: '用户不存在' },
+        { 
+          success: false,
+          error: '用户不存在' 
+        },
         { status: 401 }
       );
     }
 
     // 获取请求体数据
-    const { name, parentId, tags } = await request.json();
+    const { name, parentId, tags = [] } = await request.json() as CreateFolderRequest;
 
     if (!name?.trim()) {
       return NextResponse.json(
-        { error: '文件夹名称不能为空' },
+        { 
+          success: false,
+          error: '文件夹名称不能为空' 
+        },
         { status: 400 }
       );
     }
@@ -51,7 +67,10 @@ export async function POST(request: Request) {
 
       if (!parentFolder) {
         return NextResponse.json(
-          { error: '父文件夹不存在或无权限访问' },
+          { 
+            success: false,
+            error: '父文件夹不存在或无权限访问' 
+          },
           { status: 404 }
         );
       }
@@ -75,14 +94,10 @@ export async function POST(request: Request) {
       folderPath = '/' + folderPath;
     }
 
-    // 处理标签
-    const processedTags = tags?.trim() 
-      ? tags.split(',').map((tag: string) => tag.trim())
-      : [];
-
     // 创建文件夹
     const folder = await prisma.file.create({
       data: {
+        id: uuidv4(),
         name,
         filename: name,
         type: 'folder',
@@ -91,15 +106,23 @@ export async function POST(request: Request) {
         uploaderId: user.id,
         parentId: parentId || null,
         path: folderPath,
-        tags: processedTags,
+        tags: Array.isArray(tags) ? tags : [],
+        url: null,
+        updatedAt: new Date()
       },
     });
 
-    return NextResponse.json({ folder });
+    return NextResponse.json({ 
+      success: true,
+      data: mapFileEntityToFileInfo(folder)
+    });
   } catch (error) {
     console.error('创建文件夹失败:', error);
     return NextResponse.json(
-      { error: '创建文件夹失败' },
+      { 
+        success: false,
+        error: '创建文件夹失败' 
+      },
       { status: 500 }
     );
   }

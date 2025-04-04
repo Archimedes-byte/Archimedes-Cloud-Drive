@@ -1,21 +1,47 @@
-import React, { useEffect, useRef } from 'react';
+'use client';
 
-interface AudioVisualizerProps {
-  audioElement: HTMLAudioElement;
+import React, { useEffect, useRef } from 'react';
+import { AudioVisualizerProps, AudioSpectrumConfig } from '@/app/shared/types';
+
+// 扩展AudioVisualizerProps接口，支持更灵活的属性传递
+interface ExtendedAudioVisualizerProps extends Partial<AudioVisualizerProps> {
+  // 支持原始的audioElement属性
+  audioElement?: HTMLAudioElement;
+  // 同时支持audio属性
+  audio?: HTMLAudioElement;
+  // 类名保持不变
+  className?: string;
 }
 
-const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioElement }) => {
+const defaultConfig: AudioSpectrumConfig = {
+  fftSize: 8192,
+  smoothingTimeConstant: 0.75,
+  barCount: 180,
+  barWidth: 2,
+  barSpacing: 1.6,
+  colors: ['rgba(0, 255, 255, 0.9)', 'rgba(0, 200, 255, 0.7)', 'rgba(0, 150, 255, 0.5)']
+};
+
+// 更新组件定义，支持两种属性名称
+const AudioVisualizer: React.FC<ExtendedAudioVisualizerProps> = ({ 
+  audioElement, 
+  audio,
+  className = 'audio-visualizer' 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // 使用audioElement或audio，以保持向后兼容性
+  const audioEl = audioElement || audio;
 
   useEffect(() => {
-    if (!audioElement) return;
+    if (!audioEl) return;
     
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 8192;
-    analyser.smoothingTimeConstant = 0.75;
+    analyser.fftSize = defaultConfig.fftSize || 8192;
+    analyser.smoothingTimeConstant = defaultConfig.smoothingTimeConstant || 0.75;
     
-    const source = audioContext.createMediaElementSource(audioElement);
+    const source = audioContext.createMediaElementSource(audioEl);
     source.connect(analyser);
     analyser.connect(audioContext.destination);
     
@@ -47,17 +73,17 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioElement }) => {
       
       // 计算中心点和最大条形数（减少数量以增加间距）
       const centerX = width / 2;
-      const maxBars = Math.min(bufferLength / 4, 180); // 减少条形数量
+      const maxBars = Math.min(bufferLength / 4, defaultConfig.barCount || 180); // 减少条形数量
       const barWidth = Math.max(2, (width / 2 / maxBars) * 0.5); // 减小条形宽度
       const barGap = barWidth * 0.8; // 添加间距
       
       // 创建渐变对象
       const gradient = ctx.createLinearGradient(0, height / 2 - 150, 0, height / 2 + 150);
-      gradient.addColorStop(0, 'rgba(0, 255, 255, 0.9)');   // 亮青色
-      gradient.addColorStop(0.3, 'rgba(0, 200, 255, 0.7)'); // 天蓝色
-      gradient.addColorStop(0.5, 'rgba(0, 150, 255, 0.5)'); // 蓝色
-      gradient.addColorStop(0.7, 'rgba(0, 200, 255, 0.7)'); // 天蓝色
-      gradient.addColorStop(1, 'rgba(0, 255, 255, 0.9)');   // 亮青色
+      gradient.addColorStop(0, defaultConfig.colors?.[0] || 'rgba(0, 255, 255, 0.9)');   // 亮青色
+      gradient.addColorStop(0.3, defaultConfig.colors?.[1] || 'rgba(0, 200, 255, 0.7)'); // 天蓝色
+      gradient.addColorStop(0.5, defaultConfig.colors?.[2] || 'rgba(0, 150, 255, 0.5)'); // 蓝色
+      gradient.addColorStop(0.7, defaultConfig.colors?.[1] || 'rgba(0, 200, 255, 0.7)'); // 天蓝色
+      gradient.addColorStop(1, defaultConfig.colors?.[0] || 'rgba(0, 255, 255, 0.9)');   // 亮青色
       
       // 平滑处理数组
       const smoothedData = new Float32Array(maxBars);
@@ -153,12 +179,12 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioElement }) => {
     return () => {
       audioContext.close();
     };
-  }, [audioElement]);
+  }, [audioEl]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="audio-visualizer"
+      className={className}
       width={window.innerWidth}
       height={window.innerHeight}
     />

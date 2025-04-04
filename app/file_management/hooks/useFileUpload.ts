@@ -1,17 +1,17 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
-import { FileUploadHook } from '../types/index';
+import { FileInfo, FileWithProgress } from '@/app/shared/types/file';
 
 type RefreshCallback = () => void;
 
 /**
- * 创建自定义上传Hook接口，解决DOM File和自定义File之间的冲突
+ * 创建自定义上传Hook接口
  */
 export interface CustomFileUploadHook {
   isUploading: boolean;
   uploadProgress: number;
   handleUpload: (files: File[], folderId?: string | null) => Promise<void>;
-  handleFolderUpload: (folderItems: FileSystemEntry[], parentFolderId?: string | null) => Promise<void>;
+  handleFolderUpload: (folderItems: FileSystemEntry[], folderId?: string | null) => Promise<void>;
 }
 
 /**
@@ -45,13 +45,16 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
       
       // 添加所有文件到表单
       files.forEach(file => {
-        formData.append('files', file);
+        formData.append('file', file);
       });
       
       // 添加目标文件夹ID（如果有）
       if (folderId) {
         formData.append('folderId', folderId);
       }
+      
+      // 添加标签（可选）
+      formData.append('tags', JSON.stringify([]));
       
       // 创建请求
       const xhr = new XMLHttpRequest();
@@ -76,7 +79,7 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
               message.success(`成功上传 ${files.length} 个文件`);
               resolve();
             } else {
-              reject(new Error(response.message || '上传失败'));
+              reject(new Error(response.error || '上传失败'));
             }
           } else {
             reject(new Error('上传失败，服务器返回错误'));
@@ -102,7 +105,7 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
     }
   }, [onRefresh]);
 
-  const handleFolderUpload = useCallback(async (folderItems: FileSystemEntry[], parentFolderId: string | null = null) => {
+  const handleFolderUpload = useCallback(async (folderItems: FileSystemEntry[], folderId: string | null = null) => {
     if (!folderItems.length) {
       message.warning('请选择要上传的文件夹');
       return;
@@ -136,6 +139,8 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
           const dirReader = dirEntry.createReader();
           
           return new Promise<Array<{file: File, path: string}>>((resolve, reject) => {
+            const allEntries: Array<{file: File, path: string}> = [];
+            
             const readEntries = () => {
               dirReader.readEntries(async (entries) => {
                 if (entries.length) {
@@ -146,8 +151,9 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
                       )
                     );
                     
-                    // 扁平化结果数组
+                    // 扁平化结果数组并添加到总列表
                     const flattenedResults = subEntries.flat();
+                    allEntries.push(...flattenedResults);
                     
                     // 继续读取更多条目
                     readEntries();
@@ -156,7 +162,7 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
                   }
                 } else {
                   // 没有更多条目
-                  resolve([]);
+                  resolve(allEntries);
                 }
               }, reject);
             };
@@ -179,16 +185,28 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
         }
       }
       
+      if (allFiles.length === 0) {
+        message.warning('选择的文件夹中没有文件');
+        setIsUploading(false);
+        return;
+      }
+
+      console.log(`准备上传文件夹中的 ${allFiles.length} 个文件，包含路径信息`);
+      
       // 上传所有文件及其路径信息
       const formData = new FormData();
       
-      allFiles.forEach(({ file, path }) => {
-        formData.append('files', file);
-        formData.append('paths', path);
+      allFiles.forEach(({ file, path }, index) => {
+        formData.append('file', file);
+        // 以索引为键存储路径信息
+        formData.append(`paths_${index}`, path);
       });
       
-      if (parentFolderId) {
-        formData.append('parentFolderId', parentFolderId);
+      // 添加文件夹上传标志
+      formData.append('isFolderUpload', 'true');
+      
+      if (folderId) {
+        formData.append('folderId', folderId);
       }
       
       // 创建请求
@@ -204,7 +222,8 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
       
       // 返回一个Promise以便能够在上传完成后执行后续操作
       await new Promise<void>((resolve, reject) => {
-        xhr.open('POST', '/api/files/upload-folder');
+        // 统一使用同一个API路径处理文件夹上传
+        xhr.open('POST', '/api/files/upload');
         
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -214,7 +233,7 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
               message.success(`成功上传文件夹，包含 ${allFiles.length} 个文件`);
               resolve();
             } else {
-              reject(new Error(response.message || '上传失败'));
+              reject(new Error(response.error || '上传失败'));
             }
           } else {
             reject(new Error('上传失败，服务器返回错误'));

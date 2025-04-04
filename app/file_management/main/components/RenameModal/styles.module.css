@@ -67,7 +67,19 @@
 }
 
 .rename-form {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 6px;
 }
 
 .rename-input {
@@ -84,6 +96,92 @@
   outline: none;
   border-color: #4299e1;
   box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
+}
+
+/* 标签样式 */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 32px;
+  padding: 4px;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: #edf2f7;
+  border-radius: 16px;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: #718096;
+  font-size: 16px;
+  margin-left: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.tag-remove:hover {
+  color: #e53e3e;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tag-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background-color: white;
+}
+
+.tag-icon {
+  color: #a0aec0;
+  margin-right: 8px;
+}
+
+.tag-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.tag-add-button {
+  background: none;
+  border: none;
+  color: #4299e1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tag-add-button:hover:not(:disabled) {
+  background-color: rgba(66, 153, 225, 0.1);
+  color: #3182ce;
+}
+
+.tag-add-button:disabled {
+  color: #cbd5e0;
+  cursor: not-allowed;
 }
 
 .modal-footer {

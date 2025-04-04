@@ -88,6 +88,7 @@
   align-items: center;
   justify-content: center;
   background: var(--theme-background, linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%));
+  animation: fadeIn 0.4s ease;
 }
 
 .errorCard {
@@ -99,50 +100,71 @@
   max-width: 90%;
   width: 400px;
   animation: fadeIn 0.3s ease;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.errorCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, #ef4444, #f87171);
 }
 
 .errorIcon {
   font-size: 3rem;
   color: #ef4444;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  animation: pulse 2s infinite;
 }
 
 .errorTitle {
   font-size: 1.5rem;
   font-weight: 600;
   color: #1a202c;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(to right, var(--theme-primary, #3b82f6), var(--theme-secondary, #3b98f5));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  margin-bottom: 0.8rem;
 }
 
 .errorText {
   color: #64748b;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
+  line-height: 1.5;
 }
 
 .retryButton {
-  background: linear-gradient(135deg, var(--theme-primary, #3b82f6) 0%, var(--theme-secondary, #3b98f5) 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1.8rem;
   border-radius: 0.5rem;
   font-weight: 500;
   border: none;
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .retryButton:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.retryButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
 }
 
 /* 迷你侧边栏样式 */
 .miniSidebar {
-  width: 64px;
+  width: 72px;
   height: 100%;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
@@ -201,7 +223,7 @@
 }
 
 .avatarContainer {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   position: relative;
   width: 100%;
   display: flex;
@@ -227,11 +249,10 @@
 }
 
 .miniSidebarButton {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
@@ -256,9 +277,9 @@
 }
 
 .miniSidebarButton:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .miniSidebarButton:hover::before {
@@ -266,16 +287,7 @@
 }
 
 .miniSidebarText {
-  font-size: 10px;
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  transition: all 0.3s ease;
-}
-
-.miniSidebarButton:hover .miniSidebarText {
-  color: white;
+  display: none;
 }
 
 /* 顶部栏样式 */
@@ -285,11 +297,12 @@
   align-items: center;
   padding: 16px 20px;
   background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%);
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
-  margin-bottom: 16px;
   position: relative;
   flex-shrink: 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .topBar::before {
@@ -305,16 +318,28 @@
 
 .buttonGroup {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* 添加操作按钮组 */
+.actionsGroup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto;
 }
 
 .topButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 16px;
+  padding: 8px 16px;
+  min-width: 100px;
+  height: 38px;
   background: #fff;
   border: 1px solid #e8e8e8;
   border-radius: 10px;
@@ -349,7 +374,7 @@
   top: 100%;
   right: 0;
   z-index: 10;
-  min-width: 200px;
+  min-width: 180px;
   background: white;
   border-radius: 12px;
   border: 1px solid #eaeaea;
@@ -437,9 +462,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 18px;
-  height: 40px; /* 显式指定高度 */
-  box-sizing: border-box; /* 确保padding不影响总高度 */
+  padding: 8px 16px;
+  height: 38px;
+  box-sizing: border-box;
   background: linear-gradient(to right, var(--theme-primary, #4299e1), var(--theme-secondary, #3182ce));
   border: none;
   border-radius: 10px;
@@ -449,7 +474,8 @@
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 4px 10px rgba(49, 130, 206, 0.2);
-  gap: 4px;
+  gap: 8px;
+  min-width: 120px;
 }
 
 .uploadButton svg {
@@ -462,29 +488,28 @@
 }
 
 .folderButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 18px;
-  height: 40px; /* 显式指定高度 */
-  box-sizing: border-box; /* 确保padding不影响总高度 */
-  background-color: white;
-  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  min-width: 120px;
+  height: 38px;
+  background: #fff;
+  border: 1px solid #e8e8f8;
   border-radius: 10px;
-  color: #4a5568;
+  color: #333;
+  cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  gap: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .folderButton:hover {
-  background-color: #f7fafc;
-  border-color: #a0aec0;
-  color: var(--theme-primary, #3182ce);
+  background: #f5f5f5;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .confirmButton {
@@ -528,45 +553,230 @@
   box-shadow: 0 6px 15px rgba(239, 68, 68, 0.25);
 }
 
+.newFolderRow {
+  display: flex;
+  align-items: center;
+  padding: 18px 24px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+  border-radius: 14px;
+  animation: fadeIn 0.3s ease;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.newFolderRow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--theme-primary, #3182ce), var(--theme-secondary, #2c5282));
+}
+
+.newFolderRow svg {
+  margin-right: 18px;
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.2));
+  transition: all 0.3s ease;
+}
+
+.newFolderForm {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  gap: 18px;
+}
+
+.newFolderNameContainer {
+  flex: 1;
+  min-width: 220px;
+}
+
 .newFolderInput {
-  padding: 10px 16px;
+  width: 100%;
+  padding: 12px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-size: 14px;
-  width: 100%;
-  background: white;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  outline: none;
+  transition: all 0.3s ease;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .newFolderInput:focus {
   border-color: var(--theme-primary, #3182ce);
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
-  outline: none;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+  transform: translateY(-1px);
 }
 
-.newFolderRow {
-  display: grid;
-  grid-template-columns: 2fr 1fr auto;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
+.newFolderTagsContainer {
+  flex: 2;
+}
+
+.tagsWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
-  background: #f8fafc;
-  border-radius: 10px 10px 0 0;
-  animation: fadeIn 0.3s ease;
-  flex-shrink: 0;
-  position: sticky;
+  width: 100%;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.tagsWrapper:focus-within {
+  border-color: var(--theme-primary, #3182ce);
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+  transform: translateY(-1px);
+}
+
+.tagItem {
+  display: flex;
+  align-items: center;
+  padding: 5px 12px;
+  background: linear-gradient(to right, #edf2f7, #e6f0ff);
+  border-radius: 20px;
+  font-size: 13px;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tagItem:hover {
+  background: linear-gradient(to right, #e6f0ff, #dbeafe);
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(49, 130, 206, 0.1);
+}
+
+.removeTagButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  border: none;
+  background: none;
+  color: #a0aec0;
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.removeTagButton:hover {
+  color: #e53e3e;
+  background-color: rgba(229, 62, 62, 0.1);
+  transform: scale(1.2);
+}
+
+.tagInput {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  min-width: 100px;
+  padding: 6px;
+  transition: all 0.2s ease;
+}
+
+.newFolderActions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.confirmButton {
+  padding: 10px 24px;
+  height: 44px;
+  min-width: 100px;
+  background: linear-gradient(135deg, var(--theme-primary, #3182ce) 0%, var(--theme-secondary, #2c5282) 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.confirmButton::before {
+  content: '';
+  position: absolute;
   top: 0;
-  z-index: 5;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: all 0.6s ease;
+}
+
+.confirmButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(49, 130, 206, 0.3);
+}
+
+.confirmButton:hover::before {
+  left: 100%;
+}
+
+.confirmButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(49, 130, 206, 0.2);
+}
+
+.cancelButton {
+  padding: 10px 24px;
+  height: 44px;
+  min-width: 100px;
+  background-color: #ffffff;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.cancelButton:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  color: var(--theme-primary, #3182ce);
+}
+
+.cancelButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* ===== 侧边栏样式 ===== */
 .sidebarContainer {
-  position: relative;
+  width: 240px;
   height: 100%;
-  transition: all 0.3s ease;
-  animation: slideIn 0.4s ease-in-out;
+  background: rgba(255, 255, 255, 0.9);
+  border-right: 1px solid rgba(226, 232, 240, 0.6);
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sidebarContainer::before {
@@ -590,17 +800,15 @@
 }
 
 .sidebar {
-  width: 180px;
-  background: linear-gradient(135deg, rgba(236, 246, 255, 0.95) 0%, rgba(224, 242, 254, 0.95) 100%);
-  border-right: 1px solid rgba(226, 232, 240, 0.5);
-  overflow-y: auto;
-  padding: 16px 10px;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  position: relative;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  width: 100%;
   height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overscroll-behavior: contain;
 }
 
 .sidebar::-webkit-scrollbar {
@@ -623,69 +831,70 @@
 
 .sidebarSection {
   margin-bottom: 20px;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .sidebarHeader {
+  padding: 12px 16px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  padding: 12px 10px;
-  border-radius: 8px 8px 0 0;
+  gap: 14px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(245, 250, 255, 0.8));
   cursor: pointer;
   font-weight: 600;
-  color: #2d3748;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-size: 15px;
+  color: var(--theme-primary, #3182ce);
   position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid var(--theme-primary, #3182ce);
+  opacity: 0.95;
+  margin-bottom: 3px;
 }
 
-.sidebarHeader::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 3px;
-  background: linear-gradient(to bottom, var(--theme-primary, #3182ce), var(--theme-secondary, #2c5282));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.sidebarHeader .icon {
+  color: var(--theme-primary, #3182ce);
+  transition: all 0.3s ease;
 }
 
 .sidebarHeader:hover {
-  background-color: white;
+  background: white;
   color: var(--theme-primary, #3182ce);
+  transform: translateX(2px) translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
-.sidebarHeader:hover::before {
-  opacity: 1;
+.sidebarHeader:hover .icon {
+  transform: scale(1.15);
 }
 
 .sidebarSubmenu {
   margin: 0;
-  padding: 5px;
-  background: rgba(255, 255, 255, 0.4);
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.5);
   transition: all 0.3s ease;
+  border-radius: 0 0 8px 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .sidebarItem {
   display: flex;
   align-items: center;
-  padding: 8px 10px;
+  padding: 10px 14px;
   border-radius: 8px;
   cursor: pointer;
   color: #4a5568;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   transition: all 0.3s ease;
-  font-size: 13px;
+  font-size: 14px;
   position: relative;
   overflow: hidden;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .sidebarItem::before {
@@ -695,13 +904,13 @@
   top: 0;
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, rgba(49, 130, 206, 0.1), transparent);
+  background: linear-gradient(90deg, rgba(49, 130, 206, 0.15), transparent);
   transition: width 0.3s ease;
   z-index: -1;
 }
 
 .sidebarItem:hover {
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.9);
   transform: translateX(3px);
   color: var(--theme-primary, #3182ce);
 }
@@ -731,6 +940,7 @@
 
 .sidebarItem .icon {
   transition: all 0.3s ease;
+  color: #4a5568;
 }
 
 .sidebarItem:hover .icon {
@@ -738,18 +948,57 @@
   color: var(--theme-primary, #3182ce);
 }
 
+/* ===== 面包屑容器样式 ===== */
+.breadcrumbBar {
+  display: flex;
+  padding: 12px 20px;
+  background-color: white;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
 /* ===== 面包屑样式 ===== */
 .breadcrumb {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  background-color: white;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 6px 0;
+  background-color: transparent;
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
   overflow-x: auto;
   white-space: nowrap;
   flex-shrink: 0;
+  width: 100%;
+}
+
+.breadcrumbBackButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border: none;
+  background-color: #f7fafc;
+  color: #4a5568;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.breadcrumbBackButton:hover {
+  background-color: #edf2f7;
+  color: var(--theme-primary, #3182ce);
+  transform: translateX(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.breadcrumbBackButton:active {
+  transform: scale(0.95);
 }
 
 .breadcrumbItem {
@@ -806,11 +1055,21 @@
   transition: all 0.3s ease;
   animation: fadeIn 0.3s ease;
   flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   min-height: 100px;
   max-height: calc(100vh - 220px);
+}
+
+.fileListContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
+  max-height: calc(100vh - 240px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .fileTable {
@@ -1198,22 +1457,18 @@
 
 /* 头像占位符 */
 .avatarPlaceholder {
-  width: 32px;
-  height: 32px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  align-items: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
   color: white;
-  font-weight: 500;
-  font-size: 14px;
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  z-index: 1;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .avatarPlaceholder::before {
@@ -1274,51 +1529,64 @@
 /* ===== 响应式设计 ===== */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 160px;
+    width: 100%;
+  }
+  
+  .sidebarContainer {
+    width: 220px; /* 在中等屏幕上进一步缩小宽度 */
   }
 }
 
 @media (max-width: 768px) {
   .fileManagementContainer {
     flex-direction: column;
-    overflow: hidden;
+    padding: 0;
   }
   
   .miniSidebar {
     width: 100%;
-    height: auto;
+    height: 60px; /* 减小高度 */
     flex-direction: row;
-    padding: 10px;
+    padding: 0 16px;
     justify-content: space-around;
+    align-items: center;
   }
   
   .miniSidebarButton {
-    margin-bottom: 0;
-    margin-right: 10px;
+    width: 45px; /* 减小按钮尺寸 */
+    height: 45px;
+    margin: 0 5px;
+    border-radius: 12px; /* 减小圆角 */
   }
-
+  
   .avatarContainer {
-    margin-bottom: 0;
-    padding: 0;
+    margin: 0;
   }
-
+  
   .avatarContainer::after,
-  .miniSidebarDivider,
-  .miniSidebar::after {
+  .miniSidebarDivider {
     display: none;
   }
   
-  .sidebar {
+  .sidebarContainer {
     width: 100%;
-    max-height: 180px;
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    max-height: 220px; /* 减小高度 */
+  }
+  
+  .sidebarHeader {
+    padding: 10px 14px; /* 减小内边距 */
+    font-size: 14px; /* 减小字体大小 */
+  }
+  
+  .sidebarItem {
+    padding: 8px 12px; /* 减小内边距 */
+    font-size: 13px; /* 减小字体大小 */
   }
   
   .mainContent {
-    padding: 1rem;
-    margin: 0.5rem;
-    height: calc(100vh - 60px);
+    border-radius: 0;
+    margin: 0;
+    padding: 10px;
     max-height: calc(100vh - 60px);
   }
   
@@ -1326,26 +1594,37 @@
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+    padding: 10px;
+  }
+  
+  .breadcrumbBar {
+    padding: 8px 10px;
   }
   
   .buttonGroup {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 8px;
+  }
+  
+  .actionsGroup {
+    margin-left: 0;
+    margin-top: 8px;
+    justify-content: center;
+    width: 100%;
   }
   
   .actionButtons {
-    width: 100%;
-    justify-content: space-between;
+    justify-content: center;
   }
   
   .newFolderRow {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    flex-direction: column;
   }
   
   .fileListWrapper,
   .searchViewContainer {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 280px);
   }
 }
 
@@ -1476,18 +1755,23 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 40px; /* 确保与文件夹按钮高度一致 */
+  height: 38px; /* 与其他按钮保持一致的高度 */
 }
 
 /* 下拉图标样式 */
 .dropdownIcon {
-  margin-left: 4px;
+  margin-left: 6px;
   transition: transform 0.3s ease;
 }
 
 /* 下拉图标旋转效果 */
 .activeButton .dropdownIcon {
   transform: rotate(180deg);
+}
+
+/* 按钮图标统一样式 */
+.buttonIcon {
+  transition: transform 0.2s ease;
 }
 
 /* 搜索视图样式 - 与文件列表保持一致的滚动行为 */
@@ -1503,4 +1787,50 @@
   max-height: calc(100vh - 240px);
   display: flex;
   flex-direction: column;
+}
+
+/* 刷新覆盖层 */
+.refreshingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 100px;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.3s ease;
+  border-radius: 16px; /* 匹配父容器圆角 */
+  pointer-events: none; /* 允许下层内容的点击交互 */
+}
+
+/* 添加滚动条样式 */
+.fileListContainer::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.fileListContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.fileListContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.fileListContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 对Firefox的特殊处理 */
+.fileListContainer {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 } 

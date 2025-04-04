@@ -145,17 +145,17 @@ export const fileService = {
   /**
    * 上传文件
    */
-  async uploadFiles(files: FileList | File[], parentId: string | null = null, tags: string[] = []): Promise<ExtendedFile[]> {
+  async uploadFiles(files: FileList | File[], folderId: string | null = null, tags: string[] = []): Promise<ExtendedFile[]> {
     const formData = new FormData();
     
     // 添加文件
     for (let i = 0; i < files.length; i++) {
-      formData.append('files', files[i]);
+      formData.append('file', files[i]);
     }
     
     // 添加其他参数
-    if (parentId) {
-      formData.append('parentId', parentId);
+    if (folderId) {
+      formData.append('folderId', folderId);
     }
     
     if (tags.length > 0) {

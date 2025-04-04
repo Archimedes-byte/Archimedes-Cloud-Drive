@@ -2,27 +2,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Modal, message } from 'antd';
-
-interface UploadModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onUploadSuccess: () => void;
-  currentFolderId?: string | null;
-  withTags?: boolean;
-  isFolderUpload?: boolean;
-}
+import { UploadModalProps, FileTreeNode as IFileTreeNode, FileInfo, mapFileResponseToFileInfo } from '@/app/shared/types';
 
 interface ExtendedFile extends Omit<File, 'webkitRelativePath'> {
   webkitRelativePath: string;
   folderName?: string;
-}
-
-interface FileTreeNode {
-  name: string;
-  type: 'file' | 'folder';
-  size: number;
-  children?: FileTreeNode[];
-  file?: ExtendedFile;
 }
 
 interface HTMLInputElementWithDirectory extends HTMLInputElement {
@@ -31,29 +15,29 @@ interface HTMLInputElementWithDirectory extends HTMLInputElement {
 }
 
 // 构建文件树节点
-function createFileTreeNode(name: string, type: 'file' | 'folder', size: number = 0, file?: ExtendedFile): FileTreeNode {
+function createFileTreeNode(name: string, type: 'file' | 'folder', size: number = 0, file?: ExtendedFile): IFileTreeNode {
   return {
     name,
     type,
     size,
     children: type === 'folder' ? [] : undefined,
-    file
+    file: file as any
   };
 }
 
 // 更新文件夹大小
-function updateFolderSize(node: FileTreeNode, fileSize: number) {
+function updateFolderSize(node: IFileTreeNode, fileSize: number) {
   let currentNode = node;
   while (currentNode) {
     currentNode.size += fileSize;
     currentNode = currentNode.children?.find(child => 
       child.type === 'folder'
-    ) as FileTreeNode;
+    ) as IFileTreeNode;
   }
 }
 
 // 构建文件树结构
-function buildFileTree(files: ExtendedFile[], rootName: string): FileTreeNode {
+function buildFileTree(files: ExtendedFile[], rootName: string): IFileTreeNode {
   const root = createFileTreeNode(rootName, 'folder');
   
   files.forEach(file => {
@@ -107,10 +91,8 @@ function processSelectedFiles(files: File[], isFolderUpload: boolean): ExtendedF
 const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
   onClose,
-  onUploadSuccess,
-  currentFolderId = null,
-  withTags = true,
-  isFolderUpload = false,
+  folderId = null,
+  onUploadComplete
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<ExtendedFile[]>([]);
@@ -118,7 +100,8 @@ const UploadModal: React.FC<UploadModalProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [folderName, setFolderName] = useState<string | null>(null);
-  const [fileTree, setFileTree] = useState<FileTreeNode | null>(null);
+  const [fileTree, setFileTree] = useState<IFileTreeNode | null>(null);
+  const [isFolderUpload, setIsFolderUpload] = useState(false);
   const fileInputRef = useRef<HTMLInputElementWithDirectory>(null);
 
   useEffect(() => {
@@ -208,7 +191,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   // 递归渲染文件树组件
-  const renderFileTree = (node: FileTreeNode, level: number = 0) => {
+  const renderFileTree = (node: IFileTreeNode, level: number = 0) => {
     return (
       <div key={node.name} style={{ marginLeft: `${level * 20}px` }}>
         <div className="file-item">
@@ -238,44 +221,88 @@ const UploadModal: React.FC<UploadModalProps> = ({
     );
   };
 
+  // 上传处理函数
   const handleUpload = async () => {
-    if (!files.length) return;
-
+    if (files.length === 0) return;
+    
+    setIsUploading(true);
+    
     try {
-      setIsUploading(true);
-
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('isFolderUpload', String(isFolderUpload));
-        formData.append('relativePath', file.webkitRelativePath);
-        if (folderName) {
-          formData.append('folderName', folderName);
-        }
-        if (currentFolderId) {
-          formData.append('parentId', currentFolderId);
-        }
-        if (tags.length > 0) {
-          formData.append('tags', tags.join(','));
-        }
-
-        const response = await fetch('/api/upload', {
+      // 处理文件夹上传
+      if (isFolderUpload && folderName) {
+        // 创建根文件夹
+        const createFolderResponse = await fetch('/api/files/folder', {
           method: 'POST',
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: folderName,
+            parentId: folderId,
+          }),
         });
-
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || '上传失败');
+        
+        if (!createFolderResponse.ok) {
+          throw new Error('创建文件夹失败');
+        }
+        
+        const folderData = await createFolderResponse.json();
+        const newFolderId = folderData.id as string;
+        
+        // 依次上传文件
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('folderId', newFolderId);
+          
+          // 添加标签
+          if (tags.length > 0) {
+            tags.forEach(tag => formData.append('tags[]', tag));
+          }
+          
+          await fetch('/api/files', {
+            method: 'POST',
+            body: formData,
+          });
+        }
+      } else {
+        // 单个文件上传
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          if (folderId) {
+            formData.append('folderId', folderId);
+          }
+          
+          // 添加标签
+          if (tags.length > 0) {
+            tags.forEach(tag => formData.append('tags[]', tag));
+          }
+          
+          const response = await fetch('/api/files', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            throw new Error(`文件 ${file.name} 上传失败`);
+          }
+          
+          const responseData = await response.json();
+          if (onUploadComplete) {
+            // 使用类型映射函数
+            const fileInfo = mapFileResponseToFileInfo(responseData);
+            onUploadComplete(fileInfo);
+          }
         }
       }
-
+      
       message.success('上传成功');
-      onUploadSuccess();
       handleClose();
     } catch (error) {
-      console.error('上传错误:', error);
-      message.error(error instanceof Error ? error.message : '上传失败，请重试');
+      console.error('上传失败:', error);
+      message.error('上传失败，请重试');
     } finally {
       setIsUploading(false);
     }
@@ -285,224 +312,15 @@ const UploadModal: React.FC<UploadModalProps> = ({
 
   return (
     <Modal
-      title={isFolderUpload ? '上传文件夹' : '上传文件'}
+      title={isFolderUpload ? "上传文件夹" : "上传文件"}
       open={isOpen}
       onCancel={handleClose}
-      footer={null}
-      destroyOnClose
+      onOk={handleUpload}
+      okText="上传"
+      cancelText="取消"
+      confirmLoading={isUploading}
     >
-      {withTags && (
-        <div className="tags-input-container">
-          <div className="tags-list">
-            {tags.map(tag => (
-              <span key={tag} className="tag">
-                {tag}
-                <button onClick={() => removeTag(tag)} className="remove-tag">×</button>
-              </span>
-            ))}
-          </div>
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagInputKeyDown}
-            placeholder="输入标签后按回车添加..."
-            className="tag-input"
-          />
-        </div>
-      )}
-
-      <div
-        className={`upload-area ${isDragging ? 'dragging' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          multiple={!isFolderUpload}
-          style={{ display: 'none' }}
-          {...(isFolderUpload ? { webkitdirectory: '', directory: '' } : {})}
-        />
-        <div className="upload-icon">
-          <span>{isFolderUpload ? '📁' : '📄'}</span>
-        </div>
-        <p className="upload-text">
-          拖拽{isFolderUpload ? '文件夹' : '文件'}到此处，或者
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="upload-button"
-          >
-            点击选择{isFolderUpload ? '文件夹' : '文件'}
-          </button>
-        </p>
-        <p className="upload-hint">
-          {isFolderUpload ? '支持选择整个文件夹上传' : '支持任意类型文件'}
-        </p>
-      </div>
-
-      {files.length > 0 && (
-        <div className="file-list">
-          <h3 className="file-list-title">待上传{isFolderUpload ? '文件夹' : '文件'}</h3>
-          <div className="file-items">
-            {isFolderUpload && fileTree ? (
-              renderFileTree(fileTree)
-            ) : (
-              files.map((file) => (
-                <div key={file.name} className="file-item">
-                  <div className="file-info">
-                    <span className="file-type-icon">
-                      {file.type.startsWith('image/') ? '🖼️' :
-                       file.type.includes('pdf') ? '📄' :
-                       file.type.includes('word') ? '📝' :
-                       '📄'}
-                    </span>
-                    <div>
-                      <p className="file-name">{file.name}</p>
-                      <p className="file-size">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <div className="file-status">
-                    <button
-                      onClick={() => removeFile(file.name)}
-                      className="remove-button"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="modal-footer">
-        <button
-          onClick={handleClose}
-          className="modal-button cancel"
-        >
-          取消
-        </button>
-        <button
-          onClick={handleUpload}
-          disabled={files.length === 0 || isUploading}
-          className={`modal-button upload ${files.length === 0 || isUploading ? 'disabled' : ''}`}
-        >
-          {isUploading ? '上传中...' : '上传'}
-        </button>
-      </div>
-
-      <style jsx>{`
-        .tags-input-container {
-          margin-bottom: 16px;
-          padding: 8px;
-          border: 1px solid #e8e8e8;
-          border-radius: 4px;
-          background: #fff;
-        }
-
-        .tags-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-
-        .tag {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 8px;
-          background: #f0f0f0;
-          border-radius: 16px;
-          font-size: 14px;
-          color: #333;
-          gap: 4px;
-        }
-
-        .remove-tag {
-          background: none;
-          border: none;
-          color: #999;
-          cursor: pointer;
-          padding: 0;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          font-size: 14px;
-        }
-
-        .remove-tag:hover {
-          background: #e0e0e0;
-          color: #ff4d4f;
-        }
-
-        .tag-input {
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #d9d9d9;
-          border-radius: 4px;
-          font-size: 14px;
-          outline: none;
-          transition: all 0.3s;
-        }
-
-        .tag-input:focus {
-          border-color: #1890ff;
-          box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-        }
-
-        .tag-input::placeholder {
-          color: #bfbfbf;
-        }
-
-        .file-children {
-          margin-left: 20px;
-        }
-
-        .file-item {
-          display: flex;
-          align-items: center;
-          padding: 8px;
-          border-bottom: 1px solid #eee;
-          background: #fff;
-        }
-
-        .file-item:hover {
-          background: #f5f5f5;
-        }
-
-        .file-type-icon {
-          margin-right: 8px;
-          font-size: 20px;
-        }
-
-        .file-info {
-          display: flex;
-          align-items: center;
-          flex: 1;
-        }
-
-        .file-name {
-          margin: 0;
-          font-size: 14px;
-          color: #333;
-        }
-
-        .file-size {
-          margin: 0;
-          font-size: 12px;
-          color: #999;
-        }
-      `}</style>
+      {/* 渲染上传UI */}
     </Modal>
   );
 };

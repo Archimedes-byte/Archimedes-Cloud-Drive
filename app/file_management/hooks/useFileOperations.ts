@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
-import { fileApi } from '../api/fileApi';
-import { FileOperationsHook, File } from '../types/index';
+import { File } from '@/app/shared/types';
 import { getFileNameAndExtension } from '../utils/fileHelpers';
 
 type RefreshCallback = () => void;
@@ -9,7 +8,6 @@ type RefreshCallback = () => void;
 // 修改接口定义，创建适配现有实现的接口
 export interface CustomFileOperationsHook {
   loading: boolean;
-  handleDelete: (fileIds: string[]) => Promise<void>;
   handleMove: (fileIds: string[], targetFolderId: string) => Promise<void>;
   handleDownload: (fileIds: string[]) => Promise<void>;
   handleCreateFolder: (currentFolderId: string | null) => Promise<void>;
@@ -48,41 +46,6 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderTags, setNewFolderTags] = useState('');
-
-  /**
-   * 删除文件
-   */
-  const handleDelete = useCallback(async (fileIds: string[]) => {
-    if (!fileIds.length) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch('/api/files', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileIds }),
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        message.success('文件删除成功');
-        // 从选中列表中移除已删除的文件
-        setSelectedFiles(prev => prev.filter(id => !fileIds.includes(id)));
-        // 刷新文件列表
-        onRefresh();
-      } else {
-        message.error(data.message || '删除文件失败');
-      }
-    } catch (error) {
-      console.error('删除文件错误:', error);
-      message.error('删除文件失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  }, [onRefresh]);
 
   /**
    * 移动文件
@@ -294,7 +257,6 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
 
   return {
     loading,
-    handleDelete,
     handleMove,
     handleDownload,
     selectedFiles,

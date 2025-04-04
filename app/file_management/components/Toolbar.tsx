@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useFileContext } from '../context/FileContext';
-import { X, Download, Edit, Move, Trash2 } from 'lucide-react';
+import { X, Download, Edit, Move } from 'lucide-react';
 import { message } from 'antd';
 import styles from './Toolbar.module.css';
 import commonStyles from '../styles/common.module.css';
@@ -15,7 +15,6 @@ export function Toolbar({ onUploadClick, onFolderUploadClick, onCreateFolderClic
   const {
     selectedFiles,
     clearSelection,
-    deleteFiles,
     files
   } = useFileContext();
 
@@ -59,10 +58,6 @@ export function Toolbar({ onUploadClick, onFolderUploadClick, onCreateFolderClic
             <button className={styles.topButton}>
               <Move className={commonStyles.icon} />
               移动
-            </button>
-            <button className={styles.topButton} onClick={() => deleteFiles(selectedFiles)}>
-              <Trash2 className={commonStyles.icon} />
-              删除
             </button>
           </>
         ) : (

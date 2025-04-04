@@ -13,7 +13,7 @@ const { Dragger } = Upload;
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadSuccess: (files?: FileItemType[]) => void;
+  onSuccess: (files?: FileItemType[]) => void;
   isFolderUpload?: boolean;
   currentFolderId?: string | null;
 }
@@ -26,7 +26,7 @@ interface ExtendedUploadFile extends UploadFile<any> {
 export function UploadModal({
   isOpen,
   onClose,
-  onUploadSuccess,
+  onSuccess,
   isFolderUpload = false,
   currentFolderId
 }: UploadModalProps) {
@@ -126,12 +126,13 @@ export function UploadModal({
       fileList.forEach((file, index) => {
         const rawFile = file.originFileObj;
         if (rawFile instanceof File) {
+          // 使用'file'字段名，与后端对应
           formData.append('file', rawFile);
           
           // 如果是文件夹上传，添加相对路径信息
           if (isFolderUpload && file.webkitRelativePath) {
             // 使用数字索引作为键，确保后端可以正确解析
-            formData.append(`path_${index}`, file.webkitRelativePath);
+            formData.append(`paths_${index}`, file.webkitRelativePath);
             console.log(`文件 ${index}: ${file.name} - 路径: ${file.webkitRelativePath}`);
           }
           
@@ -154,11 +155,8 @@ export function UploadModal({
       
       // 将标签数组转换为逗号分隔的字符串
       if (tagList.length > 0) {
-        formData.append('withTags', 'true');
         formData.append('tags', tagList.join(','));
         console.log('添加标签:', tagList.join(','));
-      } else {
-        formData.append('withTags', 'false');
       }
 
       if (currentFolderId) {
@@ -193,12 +191,7 @@ export function UploadModal({
       
       // 检查响应状态
       if (!response.ok) {
-        console.error('上传响应错误:', {
-          状态码: response.status,
-          状态文本: response.statusText,
-          错误信息: data.error,
-          详细信息: data.details
-        });
+        console.error('上传响应错误:', data);
         
         // 显示错误消息
         message.error({ 
@@ -216,7 +209,11 @@ export function UploadModal({
       
       // 关闭模态框并通知父组件
       handleClose();
-      onUploadSuccess(data.files || (data.file ? [data.file] : undefined));
+      if (typeof onSuccess === 'function') {
+        onSuccess(data.files || (data.file ? [data.file] : undefined));
+      } else {
+        console.warn('onSuccess不是一个函数，无法通知上传成功');
+      }
     } catch (error) {
       console.error('上传过程中出错:', error);
       message.error(`上传失败: ${error instanceof Error ? error.message : '未知错误'}`);

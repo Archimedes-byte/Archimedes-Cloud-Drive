@@ -15,6 +15,7 @@ import {
   Plus
 } from 'lucide-react';
 import styles from '../../styles/shared.module.css';
+import { getFileType as getFileTypeDisplay, getFileNameAndExtension } from '../../utils/fileHelpers';
 
 export interface FileItemType {
   id: string;
@@ -24,7 +25,6 @@ export interface FileItemType {
   size?: number;
   isFolder?: boolean;
   createdAt?: string;
-  uploadTime?: string;
   tags?: string[];
 }
 
@@ -34,15 +34,30 @@ interface FileListProps {
   onFileClick: (file: FileItemType) => void;
   onFileDoubleClick?: (file: FileItemType) => void;
   onFileContextMenu?: (event: React.MouseEvent, file: FileItemType) => void;
-  onSelectFiles: (fileIds: string[]) => void;
+  onSelectFiles?: (fileIds: string[]) => void;
+  onFileSelect?: (file: FileItemType, checked: boolean) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
   onSelectAllFiles?: () => void;
   onDeselectAllFiles?: () => void;
   fileTypeFilter?: string | null;
-  // 行内编辑相关props
+  isLoading?: boolean;
+  error?: string | null;
+  onBackClick?: () => void;
   editingFileId?: string | null;
+  editingFile?: string | null;
+  editingName?: string;
+  editingTags?: string[];
+  newTag?: string;
+  onNewTagChange?: (value: string) => void;
+  onEditNameChange?: (value: string) => void;
   onStartEdit?: (file: FileItemType) => void;
   onConfirmEdit?: (fileId: string, newName: string, newTags: string[]) => void;
   onCancelEdit?: () => void;
+  onAddTag?: (tag: string) => void;
+  onRemoveTag?: (tag: string) => void;
+  showCheckboxes?: boolean;
+  areAllSelected?: boolean;
 }
 
 export function FileList({
@@ -52,31 +67,73 @@ export function FileList({
   onFileDoubleClick,
   onFileContextMenu,
   onSelectFiles,
+  onFileSelect,
+  onSelectAll,
+  onDeselectAll,
   onSelectAllFiles,
   onDeselectAllFiles,
   fileTypeFilter,
-  // 行内编辑相关props
+  isLoading,
+  error,
+  onBackClick,
   editingFileId,
+  editingFile,
+  editingName: providedEditingName,
+  editingTags: providedEditingTags,
+  newTag: providedNewTag,
+  onNewTagChange,
+  onEditNameChange,
   onStartEdit,
   onConfirmEdit,
-  onCancelEdit
+  onCancelEdit,
+  onAddTag,
+  onRemoveTag,
+  showCheckboxes = true,
+  areAllSelected
 }: FileListProps) {
-  // 行内编辑状态
-  const [editName, setEditName] = useState<string>('');
-  const [editTags, setEditTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState<string>('');
+  const actualEditingFileId = editingFileId || editingFile;
+
+  const [localEditName, setLocalEditName] = useState<string>('');
+  const [localEditTags, setLocalEditTags] = useState<string[]>([]);
+  const [localNewTag, setLocalNewTag] = useState<string>('');
+  
+  const editName = providedEditingName !== undefined ? providedEditingName : localEditName;
+  const editTags = providedEditingTags !== undefined ? providedEditingTags : localEditTags;
+  const newTagValue = providedNewTag !== undefined ? providedNewTag : localNewTag;
+  
+  const setEditName = (value: string) => {
+    if (onEditNameChange) {
+      onEditNameChange(value);
+    } else {
+      setLocalEditName(value);
+    }
+  };
+  
+  const setEditTags = (tags: string[]) => {
+    setLocalEditTags(tags);
+  };
+  
+  const setNewTag = (value: string) => {
+    if (onNewTagChange) {
+      onNewTagChange(value);
+    } else {
+      setLocalNewTag(value);
+    }
+  };
+
   const editNameInputRef = useRef<HTMLInputElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
-  // 当编辑的文件ID变化时，更新编辑状态
   useEffect(() => {
-    if (editingFileId) {
-      const file = files.find(f => f.id === editingFileId);
+    if (actualEditingFileId && providedEditingName === undefined) {
+      const file = files.find(f => f.id === actualEditingFileId);
       if (file) {
-        setEditName(file.name);
-        setEditTags(file.tags || []);
+        setLocalEditName(file.name);
+        setLocalEditTags(file.tags || []);
       }
-      // 聚焦到文件名输入框
+    }
+    
+    if (actualEditingFileId) {
       setTimeout(() => {
         if (editNameInputRef.current) {
           editNameInputRef.current.focus();
@@ -84,7 +141,7 @@ export function FileList({
         }
       }, 0);
     }
-  }, [editingFileId, files]);
+  }, [actualEditingFileId, files, providedEditingName]);
 
   const handleEditKeyDown = (e: React.KeyboardEvent, fileId: string) => {
     if (e.key === 'Enter') {
@@ -97,11 +154,17 @@ export function FileList({
   };
 
   const handleAddTag = () => {
-    if (!newTag.trim()) return;
-    if (!editTags.includes(newTag.trim())) {
-      setEditTags([...editTags, newTag.trim()]);
+    const trimmedTag = newTagValue.trim();
+    if (!trimmedTag) return;
+    
+    if (!editTags.includes(trimmedTag)) {
+      if (onAddTag) {
+        onAddTag(trimmedTag);
+      } else {
+        setEditTags([...editTags, trimmedTag]);
+      }
       setNewTag('');
-      // 添加完新标签后聚焦回输入框
+      
       setTimeout(() => {
         if (newTagInputRef.current) {
           newTagInputRef.current.focus();
@@ -111,7 +174,11 @@ export function FileList({
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setEditTags(editTags.filter(tag => tag !== tagToRemove));
+    if (onRemoveTag) {
+      onRemoveTag(tagToRemove);
+    } else {
+      setEditTags(editTags.filter(tag => tag !== tagToRemove));
+    }
   };
 
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
@@ -120,6 +187,26 @@ export function FileList({
       handleAddTag();
     }
   };
+
+  const handleFileCheckboxChange = (file: FileItemType, checked: boolean) => {
+    if (onFileSelect) {
+      onFileSelect(file, checked);
+      return;
+    }
+    
+    if (onSelectFiles) {
+      if (checked) {
+        onSelectFiles([...selectedFiles, file.id]);
+      } else {
+        onSelectFiles(selectedFiles.filter(id => id !== file.id));
+      }
+    } else {
+      console.error('FileList: 缺少必要的onSelectFiles或onFileSelect回调函数');
+    }
+  };
+
+  const handleSelectAll = onSelectAll || onSelectAllFiles;
+  const handleDeselectAll = onDeselectAll || onDeselectAllFiles;
 
   const renderFileIcon = (type?: string, extension?: string, isFolder?: boolean) => {
     if (isFolder) return <Folder className={styles.fileIcon} />;
@@ -152,12 +239,10 @@ export function FileList({
     return <IconComponent className={styles.fileIcon} />;
   };
 
-  // 渲染标签列表
   const renderTags = (file: FileItemType) => {
     const tags = file.tags || [];
     
-    // 如果当前是编辑状态且是编辑的文件，显示编辑标签界面
-    if (editingFileId === file.id) {
+    if (actualEditingFileId === file.id) {
       return (
         <div className={styles.tagEditContainer}>
           <div className={styles.editTagsList}>
@@ -178,7 +263,7 @@ export function FileList({
               ref={newTagInputRef}
               type="text"
               placeholder="添加标签..."
-              value={newTag}
+              value={localNewTag}
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={handleTagKeyDown}
               className={styles.tagInput}
@@ -194,10 +279,8 @@ export function FileList({
       );
     }
     
-    // 非编辑状态下显示标签
     if (!tags || tags.length === 0) return <span className={styles.emptyText}>-</span>;
     
-    // 限制显示的标签数量，避免占用太多空间
     const maxTagsToShow = 3;
     const visibleTags = tags.slice(0, maxTagsToShow);
     const extraTagsCount = tags.length - maxTagsToShow;
@@ -216,15 +299,9 @@ export function FileList({
     );
   };
 
-  const isAllSelected = files.length > 0 && selectedFiles.length === files.length;
-
-  const handleFileCheckboxChange = (file: FileItemType, checked: boolean) => {
-    if (checked) {
-      onSelectFiles([...selectedFiles, file.id]);
-    } else {
-      onSelectFiles(selectedFiles.filter(id => id !== file.id));
-    }
-  };
+  const isAllSelected = areAllSelected !== undefined 
+    ? areAllSelected 
+    : (files.length > 0 && selectedFiles.length === files.length);
 
   if (!Array.isArray(files) || files.length === 0) {
     const getEmptyStateMessage = () => {
@@ -279,130 +356,135 @@ export function FileList({
 
   return (
     <div className={styles.fileListWrapper}>
-      <table className={styles.fileTable}>
-        <thead>
-          <tr>
-            <th>
-              <input
-                type="checkbox"
-                checked={isAllSelected}
-                onChange={isAllSelected ? 
-                  () => onDeselectAllFiles && onDeselectAllFiles() : 
-                  () => onSelectAllFiles && onSelectAllFiles()}
-              />
-            </th>
-            <th>名称</th>
-            <th>类型</th>
-            <th>大小</th>
-            <th>标签</th>
-            <th>修改日期</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {files.map((file) => {
-            const isSelected = selectedFiles.includes(file.id);
-            const isEditing = editingFileId === file.id;
-            
-            return (
-              <tr
-                key={file.id}
-                className={`${styles.fileRow} ${isSelected ? styles.selectedRow : ''} ${isEditing ? styles.editingRow : ''}`}
-                onClick={() => !isEditing && onFileClick(file)}
-                onDoubleClick={() => {
-                  if (!isEditing && onStartEdit && !file.isFolder) {
-                    onStartEdit(file);
-                  } else if (!isEditing && onFileDoubleClick) {
-                    onFileDoubleClick(file);
-                  }
-                }}
-                onContextMenu={(e) => !isEditing && onFileContextMenu && onFileContextMenu(e, file)}
-              >
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => handleFileCheckboxChange(file, e.target.checked)}
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={isEditing}
-                  />
-                </td>
-                <td className={styles.fileNameCell}>
-                  <span className={styles.fileIcon}>
-                    {renderFileIcon(file.type, file.extension, file.isFolder)}
-                  </span>
-                  {isEditing ? (
-                    <input
-                      ref={editNameInputRef}
-                      type="text"
-                      className={styles.fileNameInput}
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => handleEditKeyDown(e, file.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      autoComplete="off"
-                    />
-                  ) : (
-                    <span className={styles.fileName}>{file.name}</span>
-                  )}
-                  {isEditing && (
-                    <div className={styles.editActions}>
+      <div className={styles.fileListContainer}>
+        <table className={styles.fileTable}>
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={isAllSelected ? 
+                    () => handleDeselectAll && handleDeselectAll() : 
+                    () => handleSelectAll && handleSelectAll()}
+                  disabled={!showCheckboxes}
+                />
+              </th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>大小</th>
+              <th>标签</th>
+              <th>修改日期</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {files.map((file) => {
+              const isSelected = selectedFiles.includes(file.id);
+              const isEditing = actualEditingFileId === file.id;
+              
+              return (
+                <tr
+                  key={file.id}
+                  className={`${styles.fileRow} ${isSelected ? styles.selectedRow : ''} ${isEditing ? styles.editingRow : ''}`}
+                  onClick={() => !isEditing && onFileClick(file)}
+                  onDoubleClick={() => {
+                    if (!isEditing && onStartEdit && !file.isFolder) {
+                      onStartEdit(file);
+                    } else if (!isEditing && onFileDoubleClick) {
+                      onFileDoubleClick(file);
+                    }
+                  }}
+                  onContextMenu={(e) => !isEditing && onFileContextMenu && onFileContextMenu(e, file)}
+                >
+                  <td>
+                    {showCheckboxes && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => handleFileCheckboxChange(file, e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
+                        disabled={isEditing}
+                      />
+                    )}
+                  </td>
+                  <td className={styles.fileNameCell}>
+                    <span className={styles.fileIcon}>
+                      {renderFileIcon(file.type, file.extension, file.isFolder)}
+                    </span>
+                    {isEditing ? (
+                      <input
+                        ref={editNameInputRef}
+                        type="text"
+                        className={styles.fileNameInput}
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => handleEditKeyDown(e, file.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        autoComplete="off"
+                      />
+                    ) : (
+                      <span className={styles.fileName}>{file.name}</span>
+                    )}
+                    {isEditing && (
+                      <div className={styles.editActions}>
+                        <button 
+                          className={styles.editActionButton}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onConfirmEdit && onConfirmEdit(file.id, editName, editTags);
+                          }}
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button 
+                          className={styles.editActionButton}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCancelEdit && onCancelEdit();
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td>{file.isFolder ? '文件夹' : 
+                     file.type === 'document' ? '文档' : 
+                     getFileTypeDisplay(file.type || null, file.extension)}</td>
+                  <td>{file.size ? `${Math.round(file.size / 1024)} KB` : '-'}</td>
+                  <td className={styles.tagsCell}>{renderTags(file)}</td>
+                  <td>
+                    {file.createdAt 
+                      ? new Date(file.createdAt).toLocaleString() 
+                      : '-'
+                    }
+                  </td>
+                  <td>
+                    {!isEditing ? (
                       <button 
-                        className={styles.editActionButton}
+                        className={styles.actionButton}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onConfirmEdit && onConfirmEdit(file.id, editName, editTags);
+                          if (onStartEdit) {
+                            onStartEdit(file);
+                          } else if (onFileContextMenu) {
+                            onFileContextMenu(e, file);
+                          }
                         }}
                       >
-                        <Check size={16} />
+                        <MoreVertical size={16} />
                       </button>
-                      <button 
-                        className={styles.editActionButton}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCancelEdit && onCancelEdit();
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  )}
-                </td>
-                <td>{file.isFolder ? '文件夹' : file.extension?.toUpperCase() || '文件'}</td>
-                <td>{file.size ? `${Math.round(file.size / 1024)} KB` : '-'}</td>
-                <td className={styles.tagsCell}>{renderTags(file)}</td>
-                <td>
-                  {file.createdAt 
-                    ? new Date(file.createdAt).toLocaleString() 
-                    : (file.uploadTime 
-                        ? new Date(file.uploadTime).toLocaleString() 
-                        : '-')
-                  }
-                </td>
-                <td>
-                  {!isEditing ? (
-                    <button 
-                      className={styles.actionButton}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onStartEdit) {
-                          onStartEdit(file);
-                        } else if (onFileContextMenu) {
-                          onFileContextMenu(e, file);
-                        }
-                      }}
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                  ) : (
-                    <span className={styles.editingMessage}>编辑中</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    ) : (
+                      <span className={styles.editingMessage}>编辑中</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

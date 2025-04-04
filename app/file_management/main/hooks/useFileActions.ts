@@ -11,7 +11,6 @@ interface FileType {
   size?: number;
   isFolder?: boolean;
   createdAt?: string | Date;
-  uploadTime?: string | Date;
   tags?: string[];
   parentId?: string | null;
 }
@@ -23,7 +22,8 @@ export const useFileActions = (onSuccessCallback: () => void) => {
   const [editingTags, setEditingTags] = useState<string[]>([]);
   const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
   const [newFolderName, setNewFolderName] = useState<string>('');
-  const [newFolderTags, setNewFolderTags] = useState<string>('');
+  const [newFolderTags, setNewFolderTags] = useState<string[]>([]);
+  const [newFolderTagInput, setNewFolderTagInput] = useState<string>('');
 
   // 处理下载
   const handleDownload = useCallback(async () => {
@@ -139,16 +139,11 @@ export const useFileActions = (onSuccessCallback: () => void) => {
         message.warning('请输入文件夹名称');
         return;
       }
-
-      // 处理标签 - 如果标签是逗号分隔的字符串，则转换为数组
-      const tags = newFolderTags.trim() 
-        ? newFolderTags.split(',').map(tag => tag.trim()).filter(Boolean)
-        : [];
         
       console.log('准备创建文件夹:', {
         name: newFolderName,
         parentId: currentFolderId,
-        tags
+        tags: newFolderTags
       });
 
       const response = await fetch('/api/folders', {
@@ -159,7 +154,7 @@ export const useFileActions = (onSuccessCallback: () => void) => {
         body: JSON.stringify({
           name: newFolderName,
           parentId: currentFolderId,
-          tags
+          tags: newFolderTags
         }),
       });
 
@@ -179,13 +174,14 @@ export const useFileActions = (onSuccessCallback: () => void) => {
       // 重置状态
       setIsCreatingFolder(false);
       setNewFolderName('');
-      setNewFolderTags('');
+      setNewFolderTags([]);
+      setNewFolderTagInput('');
       onSuccessCallback();
     } catch (error) {
       console.error('创建文件夹错误:', error);
       message.error(`创建文件夹失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
-  }, [newFolderName, newFolderTags, onSuccessCallback, setIsCreatingFolder, setNewFolderName, setNewFolderTags]);
+  }, [newFolderName, newFolderTags, onSuccessCallback, setIsCreatingFolder, setNewFolderName, setNewFolderTags, setNewFolderTagInput]);
 
   // 文件选择
   const handleSelectFile = useCallback((fileId: string, checked: boolean) => {
@@ -223,6 +219,8 @@ export const useFileActions = (onSuccessCallback: () => void) => {
     setNewFolderName,
     newFolderTags,
     setNewFolderTags,
+    newFolderTagInput,
+    setNewFolderTagInput,
     handleDownload,
     handleDelete,
     handleStartEdit,

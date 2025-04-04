@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ExtendedFile, FileType, FileSortOrder, FolderPath } from '../types/index';
+import { FileInfo, FolderPath, FileType, SortOrder } from '@/app/shared/types/file';
 
 /**
  * 文件管理钩子
@@ -7,15 +7,15 @@ import { ExtendedFile, FileType, FileSortOrder, FolderPath } from '../types/inde
  */
 export const useFiles = () => {
   // 基础状态
-  const [files, setFiles] = useState<ExtendedFile[]>([]);
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folderPath, setFolderPath] = useState<FolderPath[]>([]);
   const [selectedFileType, setSelectedFileType] = useState<FileType | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState<FileSortOrder>({
-    field: 'uploadTime',
+  const [sortOrder, setSortOrder] = useState<SortOrder>({
+    field: 'createdAt',
     direction: 'desc'
   });
 
@@ -167,14 +167,14 @@ export const useFiles = () => {
   /**
    * 更新排序顺序
    */
-  const updateFileSort = useCallback((newSortOrder: FileSortOrder) => {
+  const updateFileSort = useCallback((newSortOrder: SortOrder) => {
     setSortOrder(newSortOrder);
   }, []);
 
   /**
    * 处理文件点击事件
    */
-  const handleFileClick = useCallback((file: ExtendedFile) => {
+  const handleFileClick = useCallback((file: FileInfo) => {
     if (file.isFolder) {
       navigateToFolder(file.id, file.name);
     }
@@ -190,7 +190,7 @@ export const useFiles = () => {
   /**
    * 处理文件排序
    */
-  const handleSort = useCallback((fileList: ExtendedFile[]) => {
+  const handleSort = useCallback((fileList: FileInfo[]) => {
     return [...fileList].sort((a, b) => {
       // 文件夹始终排在前面
       if (a.isFolder !== b.isFolder) {
@@ -206,7 +206,7 @@ export const useFiles = () => {
         case 'size':
           comparison = (a.size || 0) - (b.size || 0);
           break;
-        case 'uploadTime':
+        case 'createdAt':
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           comparison = timeA - timeB;

@@ -1,12 +1,8 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Progress } from '@/components/ui/progress';
-
-interface FileUploadProps {
-  onUploadComplete?: (file: any) => void;
-  folderId?: string;
-}
+import { Progress } from '@/app/components/ui/progress';
+import { FileUploadProps, FileInfo, mapFileResponseToFileInfo } from '@/app/shared/types';
 
 export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -39,8 +35,10 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
         throw new Error(data.error || '上传失败');
       }
 
-      const data = await response.json();
-      onUploadComplete?.(data);
+      const responseData = await response.json();
+      // 使用类型映射函数转换API响应为FileInfo
+      const fileInfo = mapFileResponseToFileInfo(responseData);
+      onUploadComplete?.(fileInfo);
       setProgress(100);
     } catch (err) {
       setError(err instanceof Error ? err.message : '上传失败');

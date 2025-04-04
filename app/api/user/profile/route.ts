@@ -1,9 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 
 // 获取当前认证配置
-import { authOptions } from '@/lib/auth'
+import { authOptions } from '@/app/lib/auth'
+
+// 从前端获取的用户资料接口
+interface UserProfileInput {
+  displayName?: string
+  bio?: string
+  location?: string
+  website?: string
+  company?: string
+  avatarUrl?: string
+  theme?: string
+}
+
+// 返回给前端的用户资料接口
+interface UserProfileResponse {
+  id: string
+  email: string
+  name: string | null
+  avatarUrl?: string | null
+  theme?: string | null
+  bio?: string | null
+  location?: string | null
+  website?: string | null
+  company?: string | null
+  storageUsed: number
+  storageLimit: number
+  createdAt: string
+  updatedAt: string
+}
 
 // 获取用户资料
 export async function GET() {
@@ -21,7 +49,7 @@ export async function GET() {
     }
 
     console.log('查询用户信息，邮箱:', session.user.email)
-    // 查询用户及其个人资料
+    // 查询用户，并包含用户资料
     const user = await prisma.user.findUnique({
       where: {
         email: session.user.email
@@ -39,24 +67,24 @@ export async function GET() {
       )
     }
 
-    // 构建完整的用户信息响应
-    const userProfile = {
+    // 构建用户资料响应
+    const userProfile: UserProfileResponse = {
       id: user.id,
       email: user.email,
       name: user.name,
-      image: user.image,
-      displayName: user.profile?.displayName || user.name || '',
-      bio: user.profile?.bio || '',
-      location: user.profile?.location || '',
-      website: user.profile?.website || '',
-      company: user.profile?.company || '',
-      avatarUrl: user.profile?.avatarUrl || user.image || null,
+      avatarUrl: user.profile?.avatarUrl || null, 
       theme: user.profile?.theme || null,
-      createdAt: user.createdAt.toISOString()
+      bio: user.profile?.bio || null,
+      location: user.profile?.location || null,
+      website: user.profile?.website || null,
+      company: user.profile?.company || null,
+      storageUsed: user.storageUsed,
+      storageLimit: user.storageLimit,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString()
     }
 
     console.log('成功获取用户信息:', user.id)
-    console.log('用户创建时间:', user.createdAt, ' -> 格式化后:', userProfile.createdAt)
     return NextResponse.json({
       success: true,
       profile: userProfile
@@ -85,16 +113,16 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const data = await request.json()
+    const data = await request.json() as UserProfileInput
     console.log('接收到的数据:', data)
 
-    // 先获取用户ID
+    // 获取用户
     const user = await prisma.user.findUnique({
       where: {
         email: session.user.email
       },
-      select: {
-        id: true
+      include: {
+        profile: true
       }
     })
 
@@ -105,77 +133,65 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // 使用upsert确保不管资料是否存在都能正常创建或更新
-    const updatedProfile = await prisma.userProfile.upsert({
-      where: {
-        userId: user.id
-      },
-      create: {
-        userId: user.id,
-        displayName: data.displayName || session.user.name || '',
-        bio: data.bio || '',
-        location: data.location || '',
-        website: data.website || '',
-        company: data.company || '',
-        avatarUrl: data.avatarUrl || null,
-        theme: data.theme || null
-      },
-      update: {
-        displayName: data.displayName,
-        bio: data.bio,
-        location: data.location,
-        website: data.website,
-        company: data.company,
-        avatarUrl: data.avatarUrl,
-        theme: data.theme
-      }
-    })
-
-    // 同时更新用户名称
-    await prisma.user.update({
+    // 更新用户名称
+    const updatedUser = await prisma.user.update({
       where: {
         id: user.id
       },
       data: {
-        name: data.displayName || null
+        name: data.displayName || user.name
       }
     })
 
-    // 获取更新后的完整用户信息
-    const updatedUser = await prisma.user.findUnique({
+    // 更新或创建用户资料
+    console.log('开始更新用户资料，用户ID:', user.id);
+    console.log('当前用户Profile数据:', user.profile || '无');
+    
+    const profile = await prisma.userProfile.upsert({
       where: {
-        id: user.id
+        userId: user.id
       },
-      include: {
-        profile: true
+      update: {
+        avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : user.profile?.avatarUrl,
+        theme: data.theme !== undefined ? data.theme : user.profile?.theme,
+        displayName: data.displayName || user.profile?.displayName || user.name,
+        bio: data.bio !== undefined ? data.bio : user.profile?.bio,
+        location: data.location !== undefined ? data.location : user.profile?.location,
+        website: data.website !== undefined ? data.website : user.profile?.website,
+        company: data.company !== undefined ? data.company : user.profile?.company
+      },
+      create: {
+        userId: user.id,
+        displayName: data.displayName || user.name || '',
+        avatarUrl: data.avatarUrl,
+        theme: data.theme,
+        bio: data.bio || '',
+        location: data.location || '',
+        website: data.website || '',
+        company: data.company || ''
       }
-    })
+    });
+    
+    console.log('用户资料更新/创建成功:', profile);
 
-    if (!updatedUser) {
-      return NextResponse.json(
-        { success: false, error: '获取更新后的用户信息失败' },
-        { status: 500 }
-      )
-    }
-
-    // 构建完整的用户信息响应
-    const userProfile = {
+    // 构建用户资料响应
+    const userProfile: UserProfileResponse = {
       id: updatedUser.id,
       email: updatedUser.email,
       name: updatedUser.name,
-      image: updatedUser.image,
-      displayName: updatedUser.profile?.displayName || updatedUser.name || '',
-      bio: updatedUser.profile?.bio || '',
-      location: updatedUser.profile?.location || '',
-      website: updatedUser.profile?.website || '',
-      company: updatedUser.profile?.company || '',
-      avatarUrl: updatedUser.profile?.avatarUrl || updatedUser.image || null,
-      theme: updatedUser.profile?.theme || null,
-      createdAt: updatedUser.createdAt.toISOString()
+      avatarUrl: profile.avatarUrl,
+      theme: profile.theme,
+      bio: profile.bio,
+      location: profile.location,
+      website: profile.website,
+      company: profile.company,
+      storageUsed: updatedUser.storageUsed,
+      storageLimit: updatedUser.storageLimit,
+      createdAt: updatedUser.createdAt.toISOString(),
+      updatedAt: updatedUser.updatedAt.toISOString()
     }
 
     console.log('成功更新用户信息:', user.id)
-    console.log('用户创建时间:', updatedUser.createdAt, ' -> 格式化后:', userProfile.createdAt)
     return NextResponse.json({
       success: true,
       profile: userProfile

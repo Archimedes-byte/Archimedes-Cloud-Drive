@@ -50,7 +50,7 @@ export const useProfile = () => {
         if (data.success && data.profile) {
           console.log('成功获取到用户资料:', data.profile);
           setUserInfo({
-            displayName: data.profile.displayName || session.user.name || '',
+            displayName: data.profile.name || session.user.name || '',
             bio: data.profile.bio || '',
             location: data.profile.location || '',
             website: data.profile.website || '',
@@ -94,6 +94,8 @@ export const useProfile = () => {
       setIsLoading(true);
       setError(null);
       
+      console.log('准备更新的用户资料:', updatedInfo);
+      
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
@@ -103,6 +105,7 @@ export const useProfile = () => {
       });
       
       const data = await response.json();
+      console.log('API返回的响应数据:', data);
       
       if (!response.ok) {
         throw new Error(data.error || '更新用户资料失败');
@@ -110,8 +113,10 @@ export const useProfile = () => {
       
       if (data.success && data.profile) {
         console.log('成功更新用户资料:', data.profile);
-        setUserInfo({
-          displayName: data.profile.displayName || '',
+        
+        // 根据API返回的数据结构正确映射到前端UserInfo结构
+        const updatedUserInfo: UserInfo = {
+          displayName: data.profile.name || '',
           bio: data.profile.bio || '',
           location: data.profile.location || '',
           website: data.profile.website || '',
@@ -119,7 +124,10 @@ export const useProfile = () => {
           avatarUrl: data.profile.avatarUrl || null,
           theme: data.profile.theme || null,
           createdAt: data.profile.createdAt
-        });
+        };
+        
+        console.log('映射后的用户资料:', updatedUserInfo);
+        setUserInfo(updatedUserInfo);
         return true;
       } else {
         throw new Error('更新资料失败');

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]/route';
+import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -17,11 +17,23 @@ export async function GET(
       );
     }
 
+    // 获取用户信息
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '用户不存在' },
+        { status: 401 }
+      );
+    }
+
     // 获取文件夹信息
     const folder = await prisma.file.findFirst({
       where: {
         id: params.id,
-        user: { email: session.user.email },
+        uploaderId: user.id,
         isFolder: true,
       },
     });
@@ -37,7 +49,7 @@ export async function GET(
     const files = await prisma.file.findMany({
       where: {
         parentId: folder.id,
-        userId: session.user.id,
+        uploaderId: user.id,
         isDeleted: false,
       },
       orderBy: [
@@ -64,7 +76,7 @@ export async function GET(
         name: file.name,
         type: file.type,
         size: file.size,
-        uploadTime: file.createdAt.toISOString(),
+        createdAt: file.createdAt.toISOString(),
         isFolder: file.isFolder,
         parentId: file.parentId,
         path: file.path,

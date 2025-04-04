@@ -8,58 +8,36 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String?
-  email         String     @unique
+  email         String   @unique
   password      String
-  isAdmin       Boolean    @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  storageUsed   Int        @default(0)
-  storageLimit  Int        @default(10485760) // 10GB in MB
-  files         File[]     @relation("UserFiles")
-  sharedFiles   Share[]    @relation("SharedBy")
-  receivedFiles Share[]    @relation("SharedTo")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  storageUsed   Int      @default(0)
+  storageLimit  Int      @default(10485760)
+  isAdmin       Boolean  @default(false)
+  File          File[]
   folders       Folder[]
-}
-
-model File {
-  id          String    @id @default(cuid())
-  name        String
-  filename    String
-  path        String
-  type        String?
-  size        Int?
-  data        Bytes?
-  isFolder    Boolean   @default(false)
-  isDeleted   Boolean   @default(false)
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  parentId    String?
-  parent      File?     @relation("FileHierarchy", fields: [parentId], references: [id])
-  children    File[]    @relation("FileHierarchy")
-  uploaderId  String
-  uploader    User      @relation("UserFiles", fields: [uploaderId], references: [id])
-  shares      Share[]
-  tags        String[]
-
-  @@index([parentId])
-  @@index([uploaderId])
+  sharedFiles   Share[]  @relation("SharedBy")
+  receivedFiles Share[]  @relation("SharedTo")
+  profile       UserProfile?
+  accounts      Account[]
+  sessions      Session[]
 }
 
 model Share {
-  id           String    @id @default(cuid())
-  fileId       String
-  sharedById   String
-  sharedToId   String?
-  shareToken   String    @unique
-  createdAt    DateTime  @default(now())
-  expiresAt    DateTime?
-  updatedAt    DateTime  @updatedAt
-  file         File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  sharedBy     User      @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
-  sharedTo     User?     @relation("SharedTo", fields: [sharedToId], references: [id], onDelete: SetNull)
+  id         String    @id @default(cuid())
+  fileId     String
+  sharedById String
+  sharedToId String?
+  shareToken String    @unique
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  updatedAt  DateTime  @updatedAt
+  file       File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  sharedBy   User      @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  sharedTo   User?     @relation("SharedTo", fields: [sharedToId], references: [id])
 }
 
 model Folder {
@@ -74,12 +52,88 @@ model Folder {
   owner     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model File {
+  id         String    @id
+  name       String
+  filename   String
+  path       String
+  type       String?
+  size       Int?
+  data       Bytes?
+  isFolder   Boolean   @default(false)
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  parentId   String?
+  uploaderId String
+  tags       String[]
+  url        String?
+  File       File?     @relation("FileToFile", fields: [parentId], references: [id])
+  other_File File[]    @relation("FileToFile")
+  User       User      @relation(fields: [uploaderId], references: [id])
+  shares     Share[]
+
+  @@index([parentId])
+  @@index([uploaderId])
+}
+
 model MaintenanceLog {
-  id        String   @id @default(cuid())
-  type      String   // cleanup, backup, etc.
+  id        String   @id
+  type      String
   details   Json
   createdAt DateTime @default(now())
 
-  @@index([type])
   @@index([createdAt])
+  @@index([type])
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String?
+  bio         String?
+  location    String?
+  website     String?
+  company     String?
+  avatarUrl   String?
+  theme       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -33,7 +33,7 @@ export async function GET(
     const folder = await prisma.file.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        uploaderId: user.id,
         isFolder: true,
         isDeleted: false,
       },

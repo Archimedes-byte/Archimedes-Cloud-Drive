@@ -23,7 +23,7 @@ export interface FileBase {
   path: string;
   isFolder: boolean;
   parentId?: string | null;
-  createdAt: string;
+  createdAt: string | Date;
   updatedAt: string;
 }
 
@@ -34,8 +34,6 @@ export interface File extends FileBase {
   type: 'file' | string;
   extension?: string;
   mimeType?: string;
-  isFolder?: boolean;
-  createdAt?: string | Date;
 }
 
 /**
@@ -55,7 +53,6 @@ export interface ExtendedFile extends Omit<FileBase, 'isFolder'> {
   type?: string;
   extension?: string;
   tags?: string[];
-  preview?: string;
   metadata?: Record<string, any>;
   isFolder?: boolean;
   mimeType?: string;
@@ -87,7 +84,7 @@ export interface UserProfile {
 /**
  * 文件类型枚举
  */
-export type FileType = 'image' | 'document' | 'video' | 'audio' | 'other';
+export type FileType = 'image' | 'document' | 'video' | 'audio' | 'archive' | 'folder' | 'other';
 
 /**
  * MIME类型与文件类型的映射
@@ -107,19 +104,19 @@ export const TYPE_MAP: Record<FileType, string> = {
  */
 export const FILE_TYPE_MAP: Record<FileType, { mimeTypes: string[]; extensions: string[] }> = {
   image: {
-    mimeTypes: ['image/'],
+    mimeTypes: ['image'],
     extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
   },
   document: {
-    mimeTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/'],
+    mimeTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml', 'text'],
     extensions: ['doc', 'docx', 'txt', 'pdf', 'xls', 'xlsx', 'ppt', 'pptx']
   },
   video: {
-    mimeTypes: ['video/'],
+    mimeTypes: ['video'],
     extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
   },
   audio: {
-    mimeTypes: ['audio/'],
+    mimeTypes: ['audio'],
     extensions: ['mp3', 'wav', 'ogg', 'flac', 'm4a']
   },
   archive: {
@@ -241,7 +238,6 @@ export interface FileContextType {
   loadFiles: (folderId?: string | null) => Promise<void>;
   selectFiles: (fileIds: string[]) => void;
   clearSelection: () => void;
-  deleteFiles: (fileIds: string[]) => Promise<void>;
   updateFileSort: (sortOrder: SortOrder) => void;
   setFileType: (type: FileType | null) => void;
   navigateToFolder: (folderId: string | null, folderName?: string) => void;
@@ -256,7 +252,6 @@ export interface FileContextType {
  */
 export interface FileOperationsHook {
   loading: boolean;
-  handleDelete: (fileIds: string[]) => Promise<void>;
   handleMove: (fileIds: string[], targetFolderId: string) => Promise<void>;
   handleDownload: (fileIds: string[]) => Promise<void>;
   startEditing: (file: File) => void;
@@ -313,7 +308,6 @@ export interface SearchViewProps {
   onResultClick?: (file: ExtendedFile) => void;
   onFileSelect?: (fileId: string, selected: boolean) => void;
   onDownload?: (fileId: string) => void;
-  onDelete?: (fileId: string) => void;
   onRename?: (file: ExtendedFile) => void;
   onClearSearch?: () => void;
 } 

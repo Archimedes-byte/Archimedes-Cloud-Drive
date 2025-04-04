@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ChevronRight } from 'lucide-react';
+import { Home, ChevronRight, ChevronLeft } from 'lucide-react';
 import styles from '../../styles/shared.module.css';
 
 export interface FolderPath {
@@ -9,21 +9,50 @@ export interface FolderPath {
 
 interface BreadcrumbProps {
   folderPath: FolderPath[];
-  onNavigate: (folderId: string | null) => void;
+  showHome?: boolean;
+  onNavigate?: (folderId: string | null) => void;
+  onPathClick: (folderId: string | null) => void;
+  onBackClick?: () => void;
 }
 
-export function Breadcrumb({ folderPath, onNavigate }: BreadcrumbProps) {
+export function Breadcrumb({ 
+  folderPath, 
+  showHome = true, 
+  onNavigate, 
+  onPathClick,
+  onBackClick
+}: BreadcrumbProps) {
+  // 向下兼容：如果有onNavigate但没有onPathClick，就使用onNavigate
+  const handlePathClick = onPathClick || onNavigate;
+
+  if (!handlePathClick) {
+    console.error('Breadcrumb组件缺少必要的onPathClick或onNavigate回调函数');
+    return null;
+  }
+
   return (
     <div className={styles.breadcrumb}>
-      <div className={styles.breadcrumbItem}>
-        <button
-          className={styles.breadcrumbLink}
-          onClick={() => onNavigate(null)}
+      {onBackClick && folderPath.length > 0 && (
+        <button 
+          className={styles.breadcrumbBackButton}
+          onClick={onBackClick}
+          title="返回上一级"
         >
-          <Home size={16} className={styles.breadcrumbIcon} />
-          根目录
+          <ChevronLeft size={16} />
         </button>
-      </div>
+      )}
+      
+      {showHome && (
+        <div className={styles.breadcrumbItem}>
+          <button
+            className={styles.breadcrumbLink}
+            onClick={() => handlePathClick(null)}
+          >
+            <Home size={16} className={styles.breadcrumbIcon} />
+            根目录
+          </button>
+        </div>
+      )}
       
       {folderPath.map((folder, index) => (
         <React.Fragment key={folder.id}>
@@ -33,7 +62,7 @@ export function Breadcrumb({ folderPath, onNavigate }: BreadcrumbProps) {
           <div className={styles.breadcrumbItem}>
             <button
               className={styles.breadcrumbLink}
-              onClick={() => onNavigate(folder.id)}
+              onClick={() => handlePathClick(folder.id)}
             >
               {folder.name}
             </button>

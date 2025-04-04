@@ -1,3 +1,46 @@
+# 云盘系统
+
+## 项目结构说明
+
+本项目是基于Next.js的云盘系统，使用TypeScript开发。
+
+## 修复报告
+
+### 修复的问题
+
+1. 导入路径统一
+   - 创建了导入路径适配层，统一了 `@/lib/*` 和 `@/app/lib/*` 两种导入方式
+   - 创建了 `importFix.ts` 工具解决函数名称冲突问题
+   - 添加了多个重定向文件以支持旧的导入路径
+
+2. 类型定义优化
+   - 修复了 `File` 类型与原生 `File` 类型的冲突
+   - 替换了 `File` 为 `ExtendedFile` 以提高类型一致性
+   - 标准化了 `createdAt` 字段的使用，替代旧的 `uploadTime` 属性
+
+3. 身份验证配置
+   - 修复了 `PrismaAdapter` 的导入问题，从 `@auth/prisma-adapter` 导入
+   - 解决了与Prisma模型中字段不匹配的问题，如 `image` 字段
+
+4. 未使用的导入和变量
+   - 移除了未使用的导入和变量
+
+## 安装和运行
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式运行
+npm run dev
+
+# 构建
+npm run build
+
+# 生产模式运行
+npm run start
+```
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

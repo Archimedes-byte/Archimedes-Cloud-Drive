@@ -1,6 +1,0 @@
-分析用户遇到的错误：
-1. HTTP 400 错误(Bad Request)发生在上传文件时
-2. 请求目标是 http://localhost:3000/api/files/upload
-3. 错误发生在 UploadModal.tsx 中的 handleUpload 函数
-4. 关键错误位置：UploadModal.tsx:55 和 UploadModal.tsx:61
-5. 这是一个典型的前端发送请求到后端API，但请求被拒绝的情况 

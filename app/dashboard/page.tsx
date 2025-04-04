@@ -6,17 +6,21 @@ import { useState, useEffect, useRef } from "react"
 import { ArrowLeft } from 'lucide-react'
 
 // 导入自定义钩子
-import { useProfile } from '@/dashboard/hooks/useProfile'
-import { usePassword } from '@/dashboard/hooks/usePassword'
+import { useProfile } from '@/app/dashboard/hooks/useProfile'
+import { usePassword } from '@/app/dashboard/hooks/usePassword'
+import { useToast } from './components/Toaster'
+import { useValidation } from './hooks/useValidation'
+// 导入主题服务
+import { applyTheme as applyThemeService } from '@/app/shared/themes'
 
 // 导入组件
-import Modal from '@/dashboard/components/Modal'
-import ProfileHeader from '@/dashboard/components/ProfileHeader'
-import ProfileContent from '@/dashboard/components/ProfileContent'
-import EditProfileForm from '@/dashboard/components/EditProfileForm'
-import PasswordForm from '@/dashboard/components/PasswordForm'
-import ProfileCompleteness from '@/dashboard/components/ProfileCompleteness'
-import ThemeSelector from '@/dashboard/components/ThemeSelector'
+import Modal from '@/app/dashboard/components/Modal'
+import ProfileHeader from '@/app/dashboard/components/ProfileHeader'
+import ProfileContent from '@/app/dashboard/components/ProfileContent'
+import EditProfileForm from '@/app/dashboard/components/EditProfileForm'
+import PasswordForm from '@/app/dashboard/components/PasswordForm'
+import ProfileCompleteness from '@/app/dashboard/components/ProfileCompleteness'
+import ThemeSelector from '@/app/dashboard/components/ThemeSelector'
 
 // 导入样式
 import styles from './Dashboard.module.css'
@@ -56,14 +60,43 @@ export default function DashboardPage() {
     resetPasswordState
   } = usePassword()
 
+  const [isSaving, setIsSaving] = useState(false)
+  const toast = useToast()
+  const { validateForm } = useValidation()
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: string) => {
     setUserInfo(prev => ({...prev, [field]: e.target.value}))
   }
 
   const handleSave = async () => {
-    const success = await updateProfile(userInfo)
-    if (success) {
-      setIsEditModalOpen(false)
+    try {
+      console.log('保存用户资料:', userInfo);
+      
+      // 表单验证
+      if (!validateForm(userInfo)) {
+        toast.error('请修正表单中的错误后再提交');
+        return;
+      }
+      
+      // 禁用保存按钮，防止重复提交
+      setIsSaving(true);
+      
+      const success = await updateProfile(userInfo);
+      
+      if (success) {
+        setIsEditModalOpen(false);
+        // 使用Toast通知替代alert
+        toast.success('个人信息已成功保存！');
+      } else {
+        // 保存失败提示
+        toast.error('保存失败，请稍后重试');
+      }
+    } catch (error) {
+      console.error('保存用户资料时出错:', error);
+      toast.error('发生错误，请稍后重试');
+    } finally {
+      // 无论成功还是失败，都重新启用保存按钮
+      setIsSaving(false);
     }
   }
 
@@ -86,144 +119,30 @@ export default function DashboardPage() {
     }
   }, [userInfo.theme]);
 
-  // 将主题应用到文档
-  const applyTheme = (theme: string) => {
-    const themes = {
-      // 基础色彩主题
-      default: {
-        primary: '#3b82f6',
-        secondary: '#3b98f5',
-        accent: '#60a5fa',
-        background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%)'
-      },
-      violet: {
-        primary: '#8b5cf6',
-        secondary: '#a855f7',
-        accent: '#c4b5fd',
-        background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)'
-      },
-      emerald: {
-        primary: '#10b981',
-        secondary: '#059669',
-        accent: '#6ee7b7',
-        background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'
-      },
-      amber: {
-        primary: '#f59e0b',
-        secondary: '#d97706',
-        accent: '#fcd34d',
-        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
-      },
-      rose: {
-        primary: '#f43f5e',
-        secondary: '#e11d48',
-        accent: '#fda4af',
-        background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)'
-      },
-      
-      // 渐变主题
-      ocean: {
-        primary: '#0ea5e9',
-        secondary: '#0284c7',
-        accent: '#38bdf8',
-        background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)'
-      },
-      sunset: {
-        primary: '#f97316',
-        secondary: '#ea580c',
-        accent: '#fb923c',
-        background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)'
-      },
-      forest: {
-        primary: '#16a34a',
-        secondary: '#15803d',
-        accent: '#22c55e',
-        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
-      },
-      galaxy: {
-        primary: '#6366f1',
-        secondary: '#4f46e5',
-        accent: '#818cf8',
-        background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)'
-      },
-      
-      // 季节主题
-      spring: {
-        primary: '#ec4899',
-        secondary: '#db2777',
-        accent: '#f472b6',
-        background: 'linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%)'
-      },
-      summer: {
-        primary: '#eab308',
-        secondary: '#ca8a04',
-        accent: '#facc15',
-        background: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)'
-      },
-      autumn: {
-        primary: '#b45309',
-        secondary: '#92400e',
-        accent: '#f59e0b',
-        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
-      },
-      winter: {
-        primary: '#0369a1',
-        secondary: '#075985',
-        accent: '#38bdf8',
-        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
-      },
-      
-      // 柔和主题 - 浅色系列
-      pastel_pink: {
-        primary: '#f9a8d4',
-        secondary: '#ec4899',
-        accent: '#fbcfe8',
-        background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)'
-      },
-      pastel_blue: {
-        primary: '#93c5fd',
-        secondary: '#60a5fa',
-        accent: '#bfdbfe',
-        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
-      },
-      pastel_lavender: {
-        primary: '#c4b5fd',
-        secondary: '#a78bfa',
-        accent: '#ddd6fe',
-        background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)'
-      },
-      pastel_mint: {
-        primary: '#6ee7b7',
-        secondary: '#34d399',
-        accent: '#a7f3d0',
-        background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'
-      },
-      pastel_peach: {
-        primary: '#fda4af',
-        secondary: '#fb7185',
-        accent: '#fecdd3',
-        background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)'
-      },
-      pastel_lemon: {
-        primary: '#fde68a',
-        secondary: '#fcd34d',
-        accent: '#fef3c7',
-        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
-      },
-      pastel_teal: {
-        primary: '#5eead4',
-        secondary: '#2dd4bf',
-        accent: '#99f6e4',
-        background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)'
+  // 处理主题更改
+  const handleThemeChange = async (themeId: string) => {
+    // 先立即在本地应用主题，提升用户体验
+    applyTheme(themeId);
+    
+    // 然后尝试在服务器上保存
+    try {
+      const success = await updateTheme(themeId);
+      if (success) {
+        console.log(`主题 ${themeId} 已成功应用并保存到服务器`);
+      } else {
+        console.warn(`主题 ${themeId} 已在本地应用，但未能保存到服务器`);
       }
-    };
-    
-    const selectedTheme = themes[theme as keyof typeof themes] || themes.default;
-    
-    document.documentElement.style.setProperty('--theme-primary', selectedTheme.primary);
-    document.documentElement.style.setProperty('--theme-secondary', selectedTheme.secondary);
-    document.documentElement.style.setProperty('--theme-accent', selectedTheme.accent);
-    document.documentElement.style.setProperty('--theme-background', selectedTheme.background);
+      return success;
+    } catch (error) {
+      console.error(`主题 ${themeId} 应用发生错误:`, error);
+      // 即使保存失败，本地主题已应用，所以依然返回true让UI保持已选状态
+      return true;
+    }
+  };
+
+  // 将主题应用到文档 - 使用统一的主题服务
+  const applyTheme = (theme: string) => {
+    applyThemeService(theme);
   };
 
   // 引用ProfileHeader中的fileInputRef
@@ -312,14 +231,16 @@ export default function DashboardPage() {
       <button
         onClick={() => setIsEditModalOpen(false)}
         className={styles.cancelButton}
+        disabled={isSaving}
       >
         取消
       </button>
       <button
         onClick={handleSave}
         className={styles.saveButton}
+        disabled={isSaving}
       >
-        保存更改
+        {isSaving ? '保存中...' : '保存更改'}
       </button>
     </div>
   );
@@ -393,7 +314,7 @@ export default function DashboardPage() {
           <div className={styles.themeSelector}>
             <ThemeSelector 
               currentTheme={userInfo.theme || 'default'} 
-              onThemeChange={updateTheme} 
+              onThemeChange={handleThemeChange}
             />
           </div>
         </div>
