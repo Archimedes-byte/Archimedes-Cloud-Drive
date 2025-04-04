@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import { File } from '@/app/shared/types';
 import { getFileNameAndExtension } from '../utils/fileHelpers';
+import { LocalFileType } from '../utils/fileTypeConverter';
 
 type RefreshCallback = () => void;
 
@@ -13,11 +14,21 @@ export interface CustomFileOperationsHook {
   handleCreateFolder: (currentFolderId: string | null) => Promise<void>;
 }
 
+interface UseFileOperationsProps {
+  loadFiles: (folderId: string | null, fileType?: string | null) => Promise<any>;
+  currentFolderId: string | null;
+  selectedFileType: string | null;
+}
+
 /**
  * 统一的文件操作钩子
  * 合并了useFileOperations和useFileActions的功能
  */
-export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperationsHook & {
+export const useFileOperations = ({ 
+  loadFiles, 
+  currentFolderId, 
+  selectedFileType 
+}: UseFileOperationsProps): CustomFileOperationsHook & {
   selectedFiles: string[];
   setSelectedFiles: (files: string[]) => void;
   editingFile: string | null;
@@ -37,6 +48,23 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
   handleSelectFile: (fileId: string, checked: boolean) => void;
   handleAddTag: (tag: string) => void;
   handleRemoveTag: (tag: string) => void;
+  previewFile: LocalFileType | null;
+  isRenameModalOpen: boolean;
+  fileToRename: LocalFileType | null;
+  setPreviewFile: (file: LocalFileType | null) => void;
+  handleClosePreview: () => void;
+  handlePreviewFile: (file: LocalFileType) => void;
+  setIsRenameModalOpen: (open: boolean) => void;
+  setFileToRename: (file: LocalFileType | null) => void;
+  handleOpenRenameModal: (file: LocalFileType) => void;
+  handleRenameFile: (newName: string, tags?: string[]) => Promise<void>;
+  handleRenameButtonClick: (files: LocalFileType[], selectedFileIds: string[]) => void;
+  handleFileContextMenu: (
+    event: React.MouseEvent, 
+    file: LocalFileType,
+    setSelectedFile: (file: LocalFileType) => void,
+    setSelectedFiles: (fileIds: string[]) => void
+  ) => void;
 } => {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -46,6 +74,13 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderTags, setNewFolderTags] = useState('');
+  
+  // 预览相关状态
+  const [previewFile, setPreviewFile] = useState<LocalFileType | null>(null);
+  
+  // 重命名相关状态
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [fileToRename, setFileToRename] = useState<LocalFileType | null>(null);
 
   /**
    * 移动文件
@@ -70,7 +105,7 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
         // 清除选中状态
         setSelectedFiles([]);
         // 刷新文件列表
-        onRefresh();
+        loadFiles(currentFolderId, selectedFileType);
       } else {
         message.error(data.message || '移动文件失败');
       }
@@ -80,7 +115,7 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
     } finally {
       setLoading(false);
     }
-  }, [onRefresh]);
+  }, [loadFiles, currentFolderId, selectedFileType]);
 
   /**
    * 下载文件
@@ -143,7 +178,7 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadFiles, currentFolderId, selectedFileType]);
 
   // 开始编辑
   const handleStartEdit = (file: File) => {
@@ -181,7 +216,7 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
 
       await response.json();
       message.success('修改成功');
-      if (onRefresh) onRefresh();
+      loadFiles(currentFolderId, selectedFileType);
     } catch (error) {
       console.error('修改错误:', error);
       message.error('修改失败');
@@ -227,7 +262,7 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
       setIsCreatingFolder(false);
       setNewFolderName('');
       setNewFolderTags('');
-      if (onRefresh) onRefresh();
+      loadFiles(currentFolderId, selectedFileType);
     } catch (error) {
       console.error('创建文件夹错误:', error);
       message.error('创建文件夹失败');
@@ -255,6 +290,81 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
     setEditingTags(editingTags.filter(tag => tag !== tagToRemove));
   };
 
+  // 关闭预览
+  const handleClosePreview = useCallback(() => {
+    setPreviewFile(null);
+  }, []);
+
+  // 处理文件预览
+  const handlePreviewFile = useCallback((file: LocalFileType) => {
+    setPreviewFile(file);
+  }, []);
+
+  // 打开重命名模态窗口
+  const handleOpenRenameModal = useCallback((file: LocalFileType) => {
+    setFileToRename(file);
+    setIsRenameModalOpen(true);
+  }, []);
+  
+  // 处理重命名文件
+  const handleRenameFile = useCallback(async (newName: string, tags?: string[]) => {
+    if (!fileToRename) return;
+    
+    try {
+      const response = await fetch('/api/files/rename', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          id: fileToRename.id, 
+          newName,
+          tags: tags || fileToRename.tags
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('重命名失败');
+      }
+      
+      await response.json();
+      message.success('重命名成功');
+      
+      // 刷新文件列表
+      loadFiles(currentFolderId, selectedFileType);
+    } catch (error) {
+      console.error('重命名错误:', error);
+      message.error('重命名失败，请重试');
+    } finally {
+      setFileToRename(null);
+      setIsRenameModalOpen(false);
+    }
+  }, [fileToRename, currentFolderId, selectedFileType, loadFiles]);
+  
+  // 执行重命名
+  const handleRenameButtonClick = useCallback((files: LocalFileType[], selectedFileIds: string[]) => {
+    if (selectedFileIds.length !== 1) {
+      message.warning('请选择一个文件进行重命名');
+      return;
+    }
+    const selectedFile = files.find(file => file.id === selectedFileIds[0]);
+    if (selectedFile) {
+      handleOpenRenameModal(selectedFile);
+    }
+  }, [handleOpenRenameModal]);
+  
+  // 处理文件上下文菜单
+  const handleFileContextMenu = useCallback((
+    event: React.MouseEvent, 
+    file: LocalFileType,
+    setSelectedFile: (file: LocalFileType) => void,
+    setSelectedFiles: (fileIds: string[]) => void
+  ) => {
+    event.preventDefault();
+    setSelectedFile(file);
+    setSelectedFiles([file.id]);
+  }, []);
+
   return {
     loading,
     handleMove,
@@ -278,6 +388,18 @@ export const useFileOperations = (onRefresh: RefreshCallback): CustomFileOperati
     handleCreateFolder,
     handleSelectFile,
     handleAddTag,
-    handleRemoveTag
+    handleRemoveTag,
+    previewFile,
+    isRenameModalOpen,
+    fileToRename,
+    setPreviewFile,
+    handleClosePreview,
+    handlePreviewFile,
+    setIsRenameModalOpen,
+    setFileToRename,
+    handleOpenRenameModal,
+    handleRenameFile,
+    handleRenameButtonClick,
+    handleFileContextMenu
   };
 }; 
