@@ -1,19 +1,10 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
-import { getFileNameAndExtension } from '../../utils/fileHelpers';
+import { getFileNameAndExtension } from '../utils/fileHelpers';
+import { FileInfo } from '@/app/shared/types/file';
 
-// 定义更完整的文件类型
-interface FileType {
-  id: string;
-  name: string;
-  type?: string;
-  extension?: string;
-  size?: number;
-  isFolder?: boolean;
-  createdAt?: string | Date;
-  tags?: string[];
-  parentId?: string | null;
-}
+// 定义文件类型，兼容FileInfo
+type FileType = FileInfo;
 
 export const useFileActions = (onSuccessCallback: () => void) => {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);

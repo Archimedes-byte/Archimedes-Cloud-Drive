@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { File } from '../../types/index';
+import { FileInfo as File } from '@/app/shared/types/file';
 
 export const useSearch = () => {
   const [showSearchView, setShowSearchView] = useState(false);

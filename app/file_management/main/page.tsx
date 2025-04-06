@@ -26,10 +26,10 @@ import NewFolderForm from '../components/NewFolderForm';
 import { SearchView } from './components/SearchView';
 
 // 导入自定义 hooks
-import { useFiles } from './hooks/useFiles';
-import { useFileActions } from './hooks/useFileActions';
-import { useSearch } from './hooks/useSearch';
-import { useUserProfile } from './hooks/useUserProfile';
+import { useFiles } from '../hooks/useFiles';
+import { useFileActions } from '../hooks/useFileActions';
+import { useSearch } from '../hooks/useSearch';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useUIState } from '../hooks/useUIState';
 import { useFilePreviewAndRename } from '../hooks/useFilePreviewAndRename';
@@ -109,7 +109,7 @@ export default function FileManagementPage() {
     newFolderTags, setNewFolderTags, handleDownload, handleDelete,
     handleConfirmEdit, handleCreateFolder, handleSelectFile,
     handleAddTag, handleRemoveTag
-  } = useFileActions(() => loadFiles(currentFolderId, selectedFileType));
+  } = useFileActions(() => loadFiles(currentFolderId, selectedFileType, true));
 
   // 文件预览和重命名
   const {
@@ -118,7 +118,7 @@ export default function FileManagementPage() {
     setIsRenameModalOpen, setFileToRename, 
     handleRenameFile, handleRenameButtonClick, handleFileContextMenu
   } = useFilePreviewAndRename({
-    loadFiles,
+    loadFiles: (folderId, fileType) => loadFiles(folderId, fileType, true),
     currentFolderId,
     selectedFileType
   });
@@ -143,8 +143,8 @@ export default function FileManagementPage() {
     // 开始刷新加载状态
     startLoading(true);
     
-    // 刷新文件列表，保持当前文件类型过滤
-    loadFiles(currentFolderId, selectedFileType).finally(() => {
+    // 刷新文件列表，保持当前文件类型过滤，并强制刷新
+    loadFiles(currentFolderId, selectedFileType, true).finally(() => {
       finishLoading();
     });
   }, [currentFolderId, loadFiles, selectedFileType, startLoading, finishLoading]);
@@ -211,8 +211,8 @@ export default function FileManagementPage() {
     // 开始刷新加载状态
     startLoading(true);
     
-    // 传递null类型参数以确保清除过滤
-    loadFiles(null, null)
+    // 传递null类型参数以确保清除过滤，并强制刷新
+    loadFiles(null, null, true)
       .finally(() => finishLoading());
   }, [setShowSearchView, setSelectedFileType, setCurrentFolderId, setFolderPath, startLoading, loadFiles, finishLoading]);
 
@@ -224,8 +224,8 @@ export default function FileManagementPage() {
     // 开始刷新加载状态
     startLoading(true);
     
-    // 保持当前选中的文件类型
-    loadFiles(null, selectedFileType)
+    // 保持当前选中的文件类型，并强制刷新
+    loadFiles(null, selectedFileType, true)
       .finally(() => finishLoading());
   }, [setCurrentFolderId, setFolderPath, startLoading, loadFiles, selectedFileType, finishLoading]);
 
@@ -276,8 +276,8 @@ export default function FileManagementPage() {
   // 文件加载逻辑优化
   useEffect(() => {
     // 确保session存在且状态为已认证，且文件未加载过
-    if (status === 'authenticated' && !hasLoadedFilesRef.current) {
-      console.log('初始加载文件列表', { currentFolderId, selectedFileType });
+    if (status === 'authenticated' && session?.user && !hasLoadedFilesRef.current) {
+      console.log('初始加载文件列表', { currentFolderId, selectedFileType, session: !!session });
       
       // 标记已经开始加载
       hasLoadedFilesRef.current = true;
@@ -285,41 +285,63 @@ export default function FileManagementPage() {
       // 开始加载，这是初始加载，使用骨架屏
       startLoading(false);
       
-      // 修改为先加载用户资料，成功后再加载文件列表
-      fetchUserProfile()
-        .then(userProfileData => {
-          if (userProfileData) {
-            console.log('用户资料加载成功，继续加载文件列表');
-            // 只有在用户资料加载成功后才加载文件列表
-            return loadFiles(currentFolderId, selectedFileType)
-              .then(() => {
-                console.log('文件列表加载成功，完成初始化加载');
-                finishLoading(false);
-              });
-          } else {
-            console.log('用户资料为空，尝试重新获取...');
-            return fetchUserProfile(true) // 强制刷新模式
-              .then(retryProfileData => {
-                if (retryProfileData) {
-                  console.log('重试获取用户资料成功，继续加载文件列表');
-                  return loadFiles(currentFolderId, selectedFileType)
-                    .then(() => {
-                      console.log('文件列表加载成功，完成初始化加载');
-                      finishLoading(false);
-                    });
-                } else {
-                  console.error('重试获取用户资料失败');
-                  throw new Error("获取用户资料失败，请刷新页面重试");
-                }
-              });
-          }
-        })
-        .catch((error) => {
-          console.error('加载过程出错:', error);
-          finishLoading(true, error.message || '加载失败，请重试');
-        });
+      // 添加延迟，确保session完全初始化
+      setTimeout(() => {
+        // 修改为先加载用户资料，成功后再加载文件列表
+        fetchUserProfile()
+          .then(userProfileData => {
+            if (userProfileData) {
+              console.log('用户资料加载成功，继续加载文件列表');
+              // 只有在用户资料加载成功后才加载文件列表，并强制刷新
+              return loadFiles(currentFolderId, selectedFileType, true)
+                .then(() => {
+                  console.log('文件列表加载成功，完成初始化加载');
+                  finishLoading(false);
+                });
+            } else {
+              console.log('用户资料为空，尝试重新获取...');
+              // 增加重试延迟，确保session稳定
+              return new Promise(resolve => setTimeout(resolve, 1000))
+                .then(() => fetchUserProfile(true)) // 强制刷新模式
+                .then(retryProfileData => {
+                  if (retryProfileData) {
+                    console.log('重试获取用户资料成功，继续加载文件列表');
+                    return loadFiles(currentFolderId, selectedFileType, true)
+                      .then(() => {
+                        console.log('文件列表加载成功，完成初始化加载');
+                        finishLoading(false);
+                      });
+                  } else {
+                    console.error('重试获取用户资料失败');
+                    throw new Error("获取用户资料失败，请刷新页面重试");
+                  }
+                });
+            }
+          })
+          .catch((error) => {
+            console.error('加载过程出错:', error);
+            // 再次尝试获取用户资料，加强容错性
+            setTimeout(() => {
+              console.log('最后一次尝试获取用户资料...');
+              fetchUserProfile(true)
+                .then(lastTryProfile => {
+                  if (lastTryProfile) {
+                    console.log('最后尝试成功，继续加载文件列表');
+                    loadFiles(currentFolderId, selectedFileType, true)
+                      .then(() => finishLoading(false))
+                      .catch(err => finishLoading(true, '加载文件列表失败'));
+                  } else {
+                    finishLoading(true, '获取用户资料失败，请刷新页面重试');
+                  }
+                })
+                .catch(err => {
+                  finishLoading(true, err.message || '加载失败，请重试');
+                });
+            }, 1500);
+          });
+      }, 500); // 短暂延迟，等待session稳定
     }
-  }, [status, currentFolderId, selectedFileType, loadFiles, fetchUserProfile, startLoading, finishLoading]);
+  }, [status, session, currentFolderId, selectedFileType, loadFiles, fetchUserProfile, startLoading, finishLoading]);
 
   // 初始化Lucide图标
   useEffect(() => {
@@ -379,7 +401,7 @@ export default function FileManagementPage() {
           startLoading(false);
           fetchUserProfile(true)
             .then(() => {
-              return loadFiles(currentFolderId, selectedFileType);
+              return loadFiles(currentFolderId, selectedFileType, true);
             })
             .then(() => finishLoading())
             .catch((err) => finishLoading(true, err.message));
@@ -518,38 +540,19 @@ export default function FileManagementPage() {
           {/* 搜索视图或文件列表视图 */}
           <div className={styles.fileListWrapper}>
             {showSearchView ? (
-              <SearchView 
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                searchResults={searchResults}
-                searchType={searchType}
-                setSearchType={setSearchType}
-                searchLoading={searchLoading}
-                searchError={searchError}
-                handleSearch={handleSearch}
-                handleFileClick={(file) => {
-                  // 如果是文件夹，则导航到该文件夹
-                  if (file.isFolder) {
-                    setShowSearchView(false);
-                    setCurrentFolderId(file.id);
-                    if (file.path) {
-                      // 解析路径生成面包屑导航
-                      const segments = file.path.split('/').filter(Boolean);
-                      const newPath = segments.map((name, index) => ({
-                        id: file.id, // 暂时使用当前文件夹ID
-                        name
-                      }));
-                      setFolderPath(newPath);
-                    } else {
-                      setFolderPath([{ id: file.id, name: file.name }]);
-                    }
-                    loadFiles(file.id);
-                  } else {
-                    // 如果是文件，打开预览
-                    setPreviewFile(file as LocalFileType);
-                  }
-                }}
-              />
+              <div className="search-view-container">
+                <SearchView 
+                  searchType={searchType}
+                  setSearchType={setSearchType}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  searchResults={searchResults}
+                  isLoading={searchLoading}
+                  error={searchError}
+                  handleSearch={handleSearch}
+                  handleFileClick={handleFileItemClick}
+                />
+              </div>
             ) : (
               // 文件列表
               <>

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { FileContextType, FileState, ExtendedFile, SortOrder, FileType } from '../types/index';
 import { useFiles } from '../hooks/useFiles';
-import { useFileOperations } from '../hooks/useFileOperations';
+import { useFileOperations, CustomFileOperationsHook } from '../hooks/useFileOperations';
 
 // 创建文件上下文
 const FileContext = createContext<FileContextType | undefined>(undefined);
@@ -28,15 +28,19 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     updateFileSort
   } = useFiles();
 
-  // 使用文件操作钩子
+  // 使用文件操作钩子，使用类型断言调整类型
   const { 
     loading: operationsLoading
-  } = useFileOperations(() => loadFiles(currentFolderId));
+  } = useFileOperations({ 
+    loadFiles: loadFiles as any, 
+    currentFolderId, 
+    selectedFileType: selectedFileType as string | null 
+  });
 
-  // 提供给上下文的值
+  // 提供给上下文的值，使用类型断言处理 files 类型
   const contextValue: FileContextType = {
     // 状态
-    files,
+    files: files as any as ExtendedFile[],
     selectedFiles,
     currentFolderId,
     folderPath,
@@ -46,7 +50,8 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     selectedFileType,
 
     // 方法
-    loadFiles,
+    loadFiles: ((folderId?: string | null, fileType?: FileType | null, forceRefresh?: boolean) => 
+      loadFiles(folderId || null, fileType || null, forceRefresh || false)) as any,
     selectFiles,
     clearSelection,
     updateFileSort,

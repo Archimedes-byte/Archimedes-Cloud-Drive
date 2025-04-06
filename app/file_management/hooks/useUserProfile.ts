@@ -75,10 +75,18 @@ export const useUserProfile = () => {
     
     lastFetchTimeRef.current = now;
 
-    if (!session) {
-      console.log('未检测到会话，无法获取用户资料');
+    // 添加更详细的 session 检查日志
+    console.log('获取用户资料检查 session 状态:', { 
+      sessionExists: !!session, 
+      hasUser: !!session?.user, 
+      userEmail: session?.user?.email || 'unknown',
+      retryCount 
+    });
+
+    if (!session || !session.user) {
+      console.log('未检测到有效会话，无法获取用户资料');
       setIsLoading(false);
-      setError('未登录');
+      setError('未检测到有效会话');
       return null;
     }
 
@@ -96,6 +104,12 @@ export const useUserProfile = () => {
         return offlineProfile;
       }
       setIsLoading(false);
+      return userProfile;
+    }
+
+    // 如果已经有用户资料且不是重试模式，则直接返回现有资料
+    if (userProfile && !showToast && retryCount === 0) {
+      console.log('已有用户资料，直接返回:', userProfile.email);
       return userProfile;
     }
 
@@ -137,12 +151,25 @@ export const useUserProfile = () => {
       
       if (timeoutId) clearTimeout(timeoutId);
       
+      // 添加更详细的响应日志
+      console.log('资料请求响应状态:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      });
+      
       if (!response.ok) {
         console.error(`资料请求失败, 状态码: ${response.status}`);
         throw new Error(`服务器响应错误: ${response.status} ${response.statusText}`);
       }
       
       const data: UserProfileResponse = await response.json();
+      
+      console.log('资料请求返回数据:', {
+        success: data.success,
+        hasProfile: !!data.profile,
+        error: data.error || '无'
+      });
       
       if (!data.success) {
         console.error('资料请求返回失败状态:', data.error);
@@ -169,6 +196,13 @@ export const useUserProfile = () => {
       return data.profile;
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
+      
+      // 详细记录错误信息
+      console.error('获取用户资料发生错误:', {
+        errorType: err instanceof Error ? err.name : 'Unknown',
+        message: err instanceof Error ? err.message : String(err),
+        isAbort: err instanceof DOMException && err.name === 'AbortError'
+      });
       
       // 如果是因为我们主动取消请求，则不处理错误
       if (err instanceof DOMException && err.name === 'AbortError') {
@@ -199,246 +233,250 @@ export const useUserProfile = () => {
               // 重新获取前再次设置加载状态为true
               setIsLoading(true);
               fetchUserProfile(false, 1);
-            }, 500);
+            }, 1500);
           }
           
           return tempProfile;
         }
-        
-        return userProfile; // 返回当前资料，而不是null
+        setIsLoading(false);
+        return userProfile;
       }
       
-      // 其他网络错误处理
-      console.error('获取用户资料失败:', err);
+      const errorMessage = err instanceof Error ? err.message : '未知错误';
+      console.error('获取用户资料失败:', errorMessage);
       
-      // 记录连续错误次数
+      // 增加连续错误计数
       const newErrorCount = consecutiveErrors + 1;
       setConsecutiveErrors(newErrorCount);
       
-      // 确定是否进入离线模式
+      // 如果连续错误次数超过阈值，切换到离线模式
       if (newErrorCount >= MAX_ERROR_COUNT) {
-        console.log(`连续 ${MAX_ERROR_COUNT} 次错误，进入离线模式`);
+        console.log(`连续错误次数(${newErrorCount})已超过阈值(${MAX_ERROR_COUNT})，切换到离线模式`);
         setIsOfflineMode(true);
-        
-        // 使用默认离线配置 - 但如果已有用户资料，优先使用已有资料
-        const offlineProfile = userProfile || {
+        // 使用session信息创建离线配置
+        const offlineProfile = {
           ...DEFAULT_OFFLINE_PROFILE,
           email: session.user?.email || DEFAULT_OFFLINE_PROFILE.email,
           name: session.user?.name || DEFAULT_OFFLINE_PROFILE.name,
         };
-        
-        if (!userProfile) {
-          setUserProfile(offlineProfile);
-        }
-        
-        const offlineMessage = '网络连接问题，已切换到离线模式';
-        setError(offlineMessage);
-        
-        if (showToast) {
-          toast.error(offlineMessage);
-        }
-        
+        setUserProfile(offlineProfile);
+        setIsLoading(false);
+        setError('网络连接问题，已切换到离线模式');
         return offlineProfile;
+      }
+      
+      // 更新错误状态
+      setError(errorMessage);
+      
+      // 如果未达到最大重试次数，则重试
+      if (retryCount < MAX_RETRIES) {
+        console.log(`将在 ${RETRY_DELAY}ms 后第 ${retryCount + 1} 次重试获取用户资料`);
+        setTimeout(() => {
+          fetchUserProfile(false, retryCount + 1);
+        }, RETRY_DELAY);
       } else {
-        // 错误信息处理
-        let errorMessage: string;
+        // 达到最大重试次数，停止加载状态
+        setIsLoading(false);
         
-        if (err instanceof TypeError && err.message === 'Failed to fetch') {
-          errorMessage = '连接服务器失败，请检查网络连接';
-        } else {
-          errorMessage = err instanceof Error ? err.message : '获取用户资料失败';
-        }
-        
-        setError(errorMessage);
-        
-        if (showToast) {
-          toast.error(errorMessage);
-        }
-        
-        // 增加重试次数和延长重试间隔
-        if (retryCount < MAX_RETRIES) {
-          // 退避算法：重试时间随重试次数增加而延长
-          const retryDelay = RETRY_DELAY * Math.pow(1.5, retryCount);
-          console.log(`将在 ${retryDelay}ms 后重试...`);
-          
-          setTimeout(() => {
-            fetchUserProfile(showToast, retryCount + 1);
-          }, retryDelay);
+        // 如果此时没有用户资料，创建一个离线资料以保证UI可用
+        if (!userProfile && session) {
+          console.log('重试失败且没有用户资料，创建离线资料');
+          const offlineProfile = {
+            ...DEFAULT_OFFLINE_PROFILE,
+            email: session.user?.email || DEFAULT_OFFLINE_PROFILE.email,
+            name: session.user?.name || DEFAULT_OFFLINE_PROFILE.name,
+          };
+          setUserProfile(offlineProfile);
+          return offlineProfile;
         }
       }
       
-      // 如果已经有用户资料，即使出错也返回现有资料
-      return userProfile || null;
-    } finally {
-      if (retryCount === 0 || retryCount >= MAX_RETRIES) {
-        setIsLoading(false);
-      }
+      return userProfile;
     }
   };
 
   // 强制刷新用户资料
   const forceRefreshProfile = () => {
-    if (isOfflineMode) {
-      // 如果处于离线模式，尝试重新连接
-      setIsOfflineMode(false);
-      setConsecutiveErrors(0);
-    }
-    return fetchUserProfile(true);
+    // 确保重置isLoading状态，使UI显示正在加载
+    setIsLoading(true);
+    fetchUserProfile(true, 0);
   };
 
   // 更新用户资料
   const updateUserProfile = async (profileData: UserProfileInput) => {
     if (!session) {
-      toast.error('未登录');
-      return null;
-    }
-
-    // 如果处于离线模式，更新本地配置并提示
-    if (isOfflineMode) {
-      const updatedProfile = {
-        ...userProfile,
-        ...profileData,
-        updatedAt: new Date().toISOString()
-      };
-      setUserProfile(updatedProfile as UserProfile);
-      toast.info('离线模式：配置已在本地更新，但未同步到服务器');
-      return updatedProfile;
+      console.log('未检测到会话，无法更新用户资料');
+      return { success: false, error: '未登录' };
     }
 
     try {
       setIsLoading(true);
-      
       const response = await fetch('/api/user/profile', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(profileData),
       });
-      
-      const data: UserProfileResponse = await response.json();
-      
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `服务器响应错误: ${response.status}`);
+      }
+
+      const data = await response.json();
+
       if (!data.success) {
         throw new Error(data.error || '更新用户资料失败');
       }
-      
-      setUserProfile(data.profile || null);
-      setConsecutiveErrors(0); // 重置错误计数
-      toast.success('用户资料已更新');
-      return data.profile;
-    } catch (err) {
-      console.error('更新用户资料失败:', err);
-      
-      // 如果更新失败但我们有用户资料，则尝试本地更新
-      if (userProfile) {
+
+      // 更新本地用户资料
+      if (userProfile && data.profile) {
         const updatedProfile = {
           ...userProfile,
-          ...profileData,
-          updatedAt: new Date().toISOString()
+          ...data.profile,
         };
-        setUserProfile(updatedProfile as UserProfile);
-        toast.info('服务器更新失败，但配置已在本地更新');
-        return updatedProfile;
+        setUserProfile(updatedProfile);
       }
-      
-      const errorMessage = err instanceof Error ? err.message : '更新用户资料失败';
-      toast.error(errorMessage);
-      return null;
-    } finally {
+
+      // 如果更新了主题，应用它
+      if (profileData.theme && data.profile?.theme) {
+        applyTheme(data.profile.theme);
+      }
+
       setIsLoading(false);
+      toast.success('用户资料已更新');
+      return { success: true };
+    } catch (error) {
+      setIsLoading(false);
+      const errorMessage = error instanceof Error ? error.message : '更新用户资料失败';
+      console.error('更新用户资料错误:', errorMessage);
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // 更新用户主题
+  // 专门用于更新主题的方法
   const updateTheme = async (theme: string) => {
-    if (!session) {
-      toast.error('未登录');
-      return false;
-    }
-
     try {
-      setIsLoading(true);
+      // 先本地应用主题变更，优化用户体验
+      applyTheme(theme);
       
-      const response = await fetch('/api/user/theme', {
-        method: 'PUT',
+      // 然后发送请求保存主题设置
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ theme })
+        body: JSON.stringify({ theme }),
       });
-      
-      const data = await response.json();
-      
+
       if (!response.ok) {
+        throw new Error(`服务器响应错误: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
         throw new Error(data.error || '更新主题失败');
       }
-      
-      if (data.success) {
-        // 更新本地用户资料
-        if (userProfile) {
-          setUserProfile({
-            ...userProfile,
-            theme: theme
-          });
-        }
-        
-        // 应用主题到文档
-        applyTheme(theme);
-        
-        toast.success('主题已更新');
-        return true;
-      } else {
-        throw new Error('更新主题失败');
-      }
-    } catch (err) {
-      console.error('更新主题失败:', err);
-      
-      // 如果服务器更新失败，但想要在本地应用主题
+
+      // 更新本地用户资料中的主题设置
       if (userProfile) {
         setUserProfile({
           ...userProfile,
-          theme: theme
+          theme
         });
-        
-        // 仍然在本地应用主题，但告知用户同步失败
-        applyTheme(theme);
-        toast.warning('主题已在本地应用，但服务器同步失败');
-        return true;
       }
-      
-      toast.error(err instanceof Error ? err.message : '无法更新主题');
-      return false;
-    } finally {
-      setIsLoading(false);
+
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '更新主题失败';
+      console.error('更新主题错误:', errorMessage);
+      // 不显示错误通知，因为主题已应用，即使保存失败也不影响当前体验
+      return { success: false, error: errorMessage };
     }
   };
 
-  // 应用主题到文档
+  // 应用主题
   const applyTheme = (theme: string = 'default') => {
-    // 使用统一的主题服务
-    applyThemeService(theme);
-    console.log(`已应用主题: ${theme}`);
+    try {
+      if (!theme || theme === 'default' || theme === 'system') {
+        console.log(`应用系统默认主题`);
+        applyThemeService('system');
+      } else {
+        console.log(`应用主题: ${theme}`);
+        applyThemeService(theme);
+      }
+    } catch (error) {
+      console.error('应用主题时出错:', error);
+    }
   };
 
-  // 清理资源
+  // 组件挂载和session变化时获取用户资料
   useEffect(() => {
+    // 清除任何现有的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // 详细记录 session 状态
+    console.log('会话状态变化:', { 
+      sessionExists: !!session, 
+      hasUser: !!session?.user, 
+      userEmail: session?.user?.email || 'unknown' 
+    });
+    
+    // 仅当会话存在且有用户信息时获取用户资料
+    if (session?.user) {
+      console.log('会话变化，准备获取用户资料...');
+      
+      // 添加短暂延迟，确保 session 完全稳定
+      const timer = setTimeout(() => {
+        console.log('开始获取用户资料...');
+        fetchUserProfile();
+      }, 300);
+      
+      return () => {
+        clearTimeout(timer);
+      };
+    } else if (session === null) {
+      // 会话已确定不存在，设置为未登录状态
+      console.log('会话已确定不存在，设置为未登录状态');
+      setIsLoading(false);
+      setUserProfile(null);
+      setError('未登录');
+    } else {
+      // session 状态不确定，等待更新
+      console.log('会话状态不确定，等待更新...');
+    }
+    
+    // 组件卸载时中止任何挂起的请求
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, []);
+  }, [session]);
+
+  // 初始化时应用用户的主题设置
+  useEffect(() => {
+    if (userProfile?.theme) {
+      applyTheme(userProfile.theme);
+    }
+  }, [userProfile?.theme]);
 
   return {
     userProfile,
     isLoading,
     error,
     isOfflineMode,
+    effectiveAvatarUrl,
     fetchUserProfile,
     forceRefreshProfile,
     updateUserProfile,
     updateTheme,
-    applyTheme,
-    effectiveAvatarUrl
+    applyTheme
   };
 }; 
