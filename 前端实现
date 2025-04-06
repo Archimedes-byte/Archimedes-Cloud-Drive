@@ -1,6 +1,0 @@
-// 1. 添加和完善类型判断辅助函数：
-//    - isImageType, isVideoType, isAudioType处理扩展名和简化类型
-//    - 新增isDocumentType和isPreviewableFile函数
-//    - 修复了扩展名大小写兼容问题
-// 2. 改进UI呈现:
-//    - 文件类型显示优化，当类型未知时显示扩展名 
