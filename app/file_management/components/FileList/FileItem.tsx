@@ -2,7 +2,7 @@ import React from 'react';
 import { File, Folder, FileText, Image, Video, Music, Archive, Code, File as FileIcon } from 'lucide-react';
 import { ExtendedFile } from '../../types/index';
 import { formatFileSize, formatDate, getFileIcon, getFileType } from '../../utils/fileHelpers';
-import styles from './FileList.module.css';
+import styles from '@/app/shared/themes/components/fileList.module.css';
 
 interface FileItemProps {
   file: ExtendedFile;

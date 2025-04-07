@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { LocalFileType } from '../../utils/fileTypeConverter';
+import { getFileTypeByExtension } from '../../utils/fileHelpers';
 import { 
   File, X, Download, FileText, Folder,
   Image as ImageIcon, Video, Music, Archive, Code 
 } from 'lucide-react';
 import { ExtendedFile } from '../../types/index';
-import styles from './FilePreview.module.css';
+import styles from '@/app/shared/themes/components/filePreview.module.css';
 
 interface FilePreviewProps {
   file: ExtendedFile | null;

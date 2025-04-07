@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styles from './styles.module.css';
+import styles from '@/app/shared/themes/components/renameModal.module.css';
 import { CloseOutlined, TagOutlined, PlusOutlined } from '@ant-design/icons';
 
 interface RenameModalProps {

@@ -17,13 +17,13 @@ import {
   ErrorDisplay
 } from '../components/shared';
 import FilePreview from '../components/FilePreview';
-import RenameModal from './components/RenameModal';
+import RenameModal from '../components/RenameModal';
 
 // 导入自定义组件
 import MiniSidebar from '../components/MiniSidebar';
 import TopActionBar from '../components/TopActionBar';
 import NewFolderForm from '../components/NewFolderForm';
-import { SearchView } from './components/SearchView';
+import { SearchView } from '../components/SearchView';
 
 // 导入自定义 hooks
 import { useFiles } from '../hooks/useFiles';
@@ -33,6 +33,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useUIState } from '../hooks/useUIState';
 import { useFilePreviewAndRename } from '../hooks/useFilePreviewAndRename';
+import { useThemeManager } from '../hooks/useThemeManager';
 
 // 导入类型和工具函数
 import { SortOrder } from '@/app/types';
@@ -40,13 +41,6 @@ import { LocalFileType, convertFilesForDisplay } from '../utils/fileTypeConverte
 
 // 导入样式
 import styles from '../styles/shared.module.css';
-
-// 导入主题服务
-import { 
-  applyTheme as applyThemeService, 
-  loadThemeFromStorage, 
-  addThemeChangeListener 
-} from '@/app/shared/themes';
 
 export default function FileManagementPage() {
   const router = useRouter();
@@ -59,9 +53,11 @@ export default function FileManagementPage() {
     error: profileError,
     fetchUserProfile, 
     forceRefreshProfile,
-    effectiveAvatarUrl,
-    applyTheme
+    effectiveAvatarUrl
   } = useUserProfile();
+
+  // 使用主题管理hook
+  const { currentTheme } = useThemeManager();
 
   // 使用双状态加载管理
   const {
@@ -228,38 +224,6 @@ export default function FileManagementPage() {
     loadFiles(null, selectedFileType, true)
       .finally(() => finishLoading());
   }, [setCurrentFolderId, setFolderPath, startLoading, loadFiles, selectedFileType, finishLoading]);
-
-  // 应用用户主题
-  useEffect(() => {
-    // 应用主题优先级：
-    // 1. userProfile中的主题
-    // 2. localStorage中的主题
-    // 3. 默认主题
-    if (userProfile && userProfile.theme) {
-      console.log('从用户资料应用主题:', userProfile.theme);
-      applyThemeService(userProfile.theme);
-    } else {
-      const cachedTheme = loadThemeFromStorage();
-      if (cachedTheme) {
-        console.log('从localStorage恢复主题:', cachedTheme);
-        applyThemeService(cachedTheme);
-      } else {
-        console.log('应用默认主题');
-        applyThemeService('default');
-      }
-    }
-    
-    // 添加主题变更事件监听
-    const removeListener = addThemeChangeListener((themeId, themeStyle) => {
-      console.log('接收到主题变更事件，应用新主题:', themeId);
-      applyThemeService(themeId);
-    });
-    
-    // 组件卸载时移除事件监听
-    return () => {
-      removeListener();
-    };
-  }, [userProfile]);
 
   // 重定向逻辑优化
   useEffect(() => {
