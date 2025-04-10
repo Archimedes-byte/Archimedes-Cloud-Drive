@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -15,6 +15,22 @@ const ensureUploadDir = async () => {
     await mkdir(uploadDir, { recursive: true });
   }
   return uploadDir;
+};
+
+// 获取用户当前头像文件路径
+const getUserAvatarPath = async (userId: string) => {
+  const user = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: { avatarUrl: true }
+  });
+  
+  if (!user?.avatarUrl) return null;
+  
+  // 从URL提取文件名
+  const fileName = user.avatarUrl.split('/').pop();
+  if (!fileName) return null;
+  
+  return join(process.cwd(), 'public', 'uploads', 'avatars', fileName);
 };
 
 // 获取用户当前头像
@@ -43,7 +59,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      avatarUrl: user.profile?.avatarUrl || user.image || null
+      avatarUrl: user.profile?.avatarUrl || session.user.image || null
     });
   } catch (error) {
     console.error('获取头像失败:', error);
@@ -109,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 生成唯一文件名
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     
     // 确保上传目录存在
@@ -122,6 +138,18 @@ export async function POST(request: NextRequest) {
 
     // 读取文件内容
     const buffer = Buffer.from(await file.arrayBuffer());
+    
+    // 删除旧头像文件
+    try {
+      const oldAvatarPath = await getUserAvatarPath(user.id);
+      if (oldAvatarPath && fs.existsSync(oldAvatarPath)) {
+        console.log('删除旧头像文件:', oldAvatarPath);
+        await unlink(oldAvatarPath);
+      }
+    } catch (deleteError) {
+      console.error('删除旧头像文件失败:', deleteError);
+      // 继续执行，不中断上传流程
+    }
     
     // 写入文件
     try {
@@ -173,7 +201,7 @@ export async function DELETE() {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, image: true }
+      select: { id: true }
     });
 
     if (!user) {
@@ -181,6 +209,18 @@ export async function DELETE() {
         { success: false, error: '用户不存在' },
         { status: 404 }
       );
+    }
+    
+    // 删除头像文件
+    try {
+      const avatarPath = await getUserAvatarPath(user.id);
+      if (avatarPath && fs.existsSync(avatarPath)) {
+        console.log('删除头像文件:', avatarPath);
+        await unlink(avatarPath);
+      }
+    } catch (deleteError) {
+      console.error('删除头像文件失败:', deleteError);
+      // 继续执行，不中断删除流程
     }
 
     // 更新用户资料，删除自定义头像
@@ -191,7 +231,7 @@ export async function DELETE() {
 
     return NextResponse.json({
       success: true,
-      avatarUrl: user.image || null
+      avatarUrl: session.user.image || null
     });
   } catch (error) {
     console.error('删除头像失败:', error);
