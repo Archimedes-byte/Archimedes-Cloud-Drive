@@ -6,7 +6,10 @@ import { prisma } from "./prisma"
 import { OAuth2Client } from "google-auth-library"
 import { compare } from "bcrypt"
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// 创建基本的OAuth客户端
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID
+);
 
 if (!process.env.GITHUB_ID || !process.env.GITHUB_SECRET) {
   throw new Error('Please define GITHUB_ID and GITHUB_SECRET environment variables');
@@ -81,14 +84,32 @@ export const authOptions: NextAuthOptions = {
         try {
           if (!credentials?.credential) return null;
 
-          // 验证 Google ID token
-          const ticket = await googleClient.verifyIdToken({
-            idToken: credentials.credential,
-            audience: process.env.GOOGLE_CLIENT_ID
-          });
+          let ticket;
+          try {
+            // 增加错误处理，捕获特定网络错误
+            ticket = await googleClient.verifyIdToken({
+              idToken: credentials.credential,
+              audience: process.env.GOOGLE_CLIENT_ID
+            });
+          } catch (verifyError) {
+            console.error("Google token verification error:", verifyError);
+            // 检查是否为网络错误
+            if (verifyError.message && (
+              verifyError.message.includes('ETIMEDOUT') || 
+              verifyError.message.includes('Failed to retrieve verification certificates')
+            )) {
+              throw new Error("Google认证服务暂时不可用，可能需要代理才能访问Google服务");
+            }
+            throw verifyError;
+          }
 
           const payload = ticket.getPayload();
           if (!payload) return null;
+          
+          // 确保邮箱存在
+          if (!payload.email) {
+            throw new Error("Google账号未提供邮箱");
+          }
 
           // 检查用户是否存在
           let user = await prisma.user.findUnique({
@@ -99,8 +120,8 @@ export const authOptions: NextAuthOptions = {
             // 创建新用户
             user = await prisma.user.create({
               data: {
-                email: payload.email!,
-                name: payload.name,
+                email: payload.email,
+                name: payload.name || payload.email.split('@')[0], // 使用邮箱前缀作为备用名称
                 password: "",
               }
             });
@@ -113,7 +134,8 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           console.error("Error in authorize callback:", error);
-          return null;
+          // 向客户端返回更友好的错误信息
+          throw new Error(error instanceof Error ? error.message : "Google登录失败");
         }
       }
     })
