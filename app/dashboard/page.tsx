@@ -20,7 +20,6 @@ import ProfileContent from '@/app/dashboard/components/ProfileContent'
 import EditProfileForm from '@/app/dashboard/components/EditProfileForm'
 import PasswordForm from '@/app/dashboard/components/PasswordForm'
 import ProfileCompleteness from '@/app/dashboard/components/ProfileCompleteness'
-import ThemeSelector from '@/app/dashboard/components/ThemeSelector'
 
 // 导入样式
 import styles from './Dashboard.module.css'
@@ -309,14 +308,6 @@ export default function DashboardPage() {
               }
             }}
           />
-          
-          {/* 主题选择器 */}
-          <div className={styles.themeSelector}>
-            <ThemeSelector 
-              currentTheme={userInfo.theme || 'default'} 
-              onThemeChange={handleThemeChange}
-            />
-          </div>
         </div>
         
         {/* 资料完整度 */}

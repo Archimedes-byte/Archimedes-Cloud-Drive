@@ -18,6 +18,7 @@ import {
 } from '../components/shared';
 import FilePreview from '../components/FilePreview';
 import RenameModal from '../components/RenameModal';
+import ThemePanel from '@/app/shared/themes/components/ThemePanel';
 
 // 导入自定义组件
 import MiniSidebar from '../components/MiniSidebar';
@@ -57,7 +58,7 @@ export default function FileManagementPage() {
   } = useUserProfile();
 
   // 使用主题管理hook
-  const { currentTheme } = useThemeManager();
+  const { currentTheme, updateTheme } = useThemeManager();
 
   // 使用双状态加载管理
   const {
@@ -96,6 +97,9 @@ export default function FileManagementPage() {
     setShowUploadDropdown,
     uploadDropdownRef
   } = useUIState();
+
+  // 添加主题面板状态
+  const [showThemePanel, setShowThemePanel] = useState(false);
 
   // 文件操作钩子
   const {
@@ -403,10 +407,22 @@ export default function FileManagementPage() {
           onAvatarClick={() => {
             router.push('/dashboard');
           }}
+          currentTheme={currentTheme}
+          onThemeClick={() => {
+            // 切换主题面板显示状态，同时关闭其他面板
+            setShowThemePanel(!showThemePanel);
+            // 如果打开主题面板，关闭搜索和文件预览
+            if (!showThemePanel) {
+              setShowSearchView(false);
+              if (previewFile) {
+                handleClosePreview();
+              }
+            }
+          }}
         />
 
-        {/* 侧边栏 */}
-        {sidebarVisible && (
+        {/* 侧边栏 - 仅在非主题模式下显示 */}
+        {sidebarVisible && !showThemePanel && (
           <div className={styles.sidebarContainer}>
             <Sidebar
               selectedFileType={selectedFileType}
@@ -430,140 +446,153 @@ export default function FileManagementPage() {
           </div>
         )}
 
-        {/* 主内容区域 */}
-        <div className={styles.mainContent}>
-          {/* 当内容刷新加载时显示局部加载状态 */}
-          {isRefreshing && (
-            <div className={styles.refreshingOverlay}>
-              <Spin tip="正在刷新..." />
-            </div>
-          )}
-          
-          {/* 顶部操作栏 */}
-          <TopActionBar 
-            selectedFiles={selectedFiles}
-            onClearSelection={() => setSelectedFiles([])}
-            onDownload={handleDownload}
-            onRename={() => handleRenameButtonClick(files, selectedFiles)}
-            onMove={() => {}}
-            onDelete={handleDelete}
-            onClearFilter={handleClearFilter}
-            onCreateFolder={handleCreateFolderClick}
-            selectedFileType={selectedFileType}
-            showSearchView={showSearchView}
-            isInRootFolder={!currentFolderId && !selectedFileType && !showSearchView}
-            sortOrder={sortOrder}
-            setSortOrder={setSortOrder}
-            showUploadDropdown={showUploadDropdown}
-            setShowUploadDropdown={setShowUploadDropdown}
-            setIsUploadModalOpen={setIsUploadModalOpen}
-            setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
-            uploadDropdownRef={uploadDropdownRef}
+        {/* 根据视图状态显示不同内容 */}
+        {showThemePanel ? (
+          /* 主题设置视图 */
+          <ThemePanel 
+            currentTheme={currentTheme}
+            onThemeChange={async (themeId) => {
+              const success = await updateTheme(themeId);
+              return success;
+            }}
+            onClose={() => setShowThemePanel(false)}
           />
-          
-          {/* 面包屑导航栏 */}
-          <div className={styles.breadcrumbBar}>
-            <Breadcrumb 
-              folderPath={folderPath} 
-              showHome={true}
-              onPathClick={(folderId) => {
-                if (folderId === null) {
-                  setCurrentFolderId(null);
-                  setFolderPath([]);
-                  
-                  // 开始刷新加载状态
-                  startLoading(true);
-                  
-                  loadFiles(null, selectedFileType)
-                    .finally(() => finishLoading());
-                } else {
-                  // 查找用户点击的路径索引
-                  const index = folderPath.findIndex(p => p.id === folderId);
-                  if (index !== -1) {
-                    // 切断索引之后的部分
-                    const newPath = folderPath.slice(0, index + 1);
-                    setFolderPath(newPath);
-                    setCurrentFolderId(folderId);
+        ) : (
+          /* 文件管理视图 */
+          <div className={styles.mainContent}>
+            {/* 当内容刷新加载时显示局部加载状态 */}
+            {isRefreshing && (
+              <div className={styles.refreshingOverlay}>
+                <Spin tip="正在刷新..." />
+              </div>
+            )}
+            
+            {/* 顶部操作栏 */}
+            <TopActionBar 
+              selectedFiles={selectedFiles}
+              onClearSelection={() => setSelectedFiles([])}
+              onDownload={handleDownload}
+              onRename={() => handleRenameButtonClick(files, selectedFiles)}
+              onMove={() => {}}
+              onDelete={handleDelete}
+              onClearFilter={handleClearFilter}
+              onCreateFolder={handleCreateFolderClick}
+              selectedFileType={selectedFileType}
+              showSearchView={showSearchView}
+              isInRootFolder={!currentFolderId && !selectedFileType && !showSearchView}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              showUploadDropdown={showUploadDropdown}
+              setShowUploadDropdown={setShowUploadDropdown}
+              setIsUploadModalOpen={setIsUploadModalOpen}
+              setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
+              uploadDropdownRef={uploadDropdownRef}
+            />
+            
+            {/* 面包屑导航栏 */}
+            <div className={styles.breadcrumbBar}>
+              <Breadcrumb 
+                folderPath={folderPath} 
+                showHome={true}
+                onPathClick={(folderId) => {
+                  if (folderId === null) {
+                    setCurrentFolderId(null);
+                    setFolderPath([]);
                     
                     // 开始刷新加载状态
                     startLoading(true);
                     
-                    loadFiles(folderId, selectedFileType)
+                    loadFiles(null, selectedFileType)
                       .finally(() => finishLoading());
+                  } else {
+                    // 查找用户点击的路径索引
+                    const index = folderPath.findIndex(p => p.id === folderId);
+                    if (index !== -1) {
+                      // 切断索引之后的部分
+                      const newPath = folderPath.slice(0, index + 1);
+                      setFolderPath(newPath);
+                      setCurrentFolderId(folderId);
+                      
+                      // 开始刷新加载状态
+                      startLoading(true);
+                      
+                      loadFiles(folderId, selectedFileType)
+                        .finally(() => finishLoading());
+                    }
                   }
-                }
-              }}
-              onBackClick={() => {
-                if (folderPath.length > 0) {
-                  handleBackClick();
-                }
-              }}
-            />
-          </div>
+                }}
+                onBackClick={() => {
+                  if (folderPath.length > 0) {
+                    handleBackClick();
+                  }
+                }}
+              />
+            </div>
 
-          {/* 搜索视图或文件列表视图 */}
-          <div className={styles.fileListWrapper}>
-            {showSearchView ? (
-              <div className="search-view-container">
-                <SearchView 
-                  searchType={searchType}
-                  setSearchType={setSearchType}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  searchResults={searchResults}
-                  isLoading={searchLoading}
-                  error={searchError}
-                  handleSearch={handleSearch}
-                  handleFileClick={handleFileItemClick}
-                />
-              </div>
-            ) : (
-              // 文件列表
-              <>
-                {isCreatingFolder && (
-                  <NewFolderForm 
-                    folderName={newFolderName}
-                    setFolderName={setNewFolderName}
-                    folderTags={newFolderTags}
-                    setFolderTags={setNewFolderTags}
-                    onCreateFolder={() => handleCreateFolder(currentFolderId)}
-                    onCancel={() => {
-                      setIsCreatingFolder(false);
-                      setNewFolderName('');
-                      setNewFolderTags([]);
-                    }}
+            {/* 搜索视图或文件列表视图 */}
+            <div className={styles.fileListWrapper}>
+              {showSearchView ? (
+                <div className="search-view-container">
+                  <SearchView 
+                    searchType={searchType}
+                    setSearchType={setSearchType}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    searchResults={searchResults}
+                    isLoading={searchLoading}
+                    error={searchError}
+                    handleSearch={handleSearch}
+                    handleFileClick={handleFileItemClick}
                   />
-                )}
+                </div>
+              ) : (
+                // 文件列表
+                <>
+                  {isCreatingFolder && (
+                    <NewFolderForm 
+                      folderName={newFolderName}
+                      setFolderName={setNewFolderName}
+                      folderTags={newFolderTags}
+                      setFolderTags={setNewFolderTags}
+                      onCreateFolder={() => handleCreateFolder(currentFolderId)}
+                      onCancel={() => {
+                        setIsCreatingFolder(false);
+                        setNewFolderName('');
+                        setNewFolderTags([]);
+                      }}
+                    />
+                  )}
 
-                {/* 文件列表组件 */}
-                <FileList 
-                  files={convertFilesForDisplay(files)}
-                  onFileClick={handleFileItemClick}
-                  onFileSelect={(file, checked) => onFileCheckboxChange(file as LocalFileType, checked)}
-                  onSelectAll={onSelectAllFiles}
-                  onDeselectAll={onDeselectAllFiles}
-                  selectedFiles={selectedFiles}
-                  onFileContextMenu={(e, file) => handleFileContextMenu(e, file as LocalFileType, setSelectedFile, setSelectedFiles)}
-                  onBackClick={folderPath.length > 0 ? handleBackClick : undefined}
-                  isLoading={filesLoading}
-                  error={filesError}
-                  editingFile={editingFile}
-                  editingName={editingName}
-                  editingTags={editingTags}
-                  onEditNameChange={setEditingName}
-                  onConfirmEdit={handleConfirmEdit}
-                  onCancelEdit={() => setEditingFile(null)}
-                  onAddTag={handleAddTag}
-                  onRemoveTag={handleRemoveTag}
-                  newTag={newTag}
-                  onNewTagChange={setNewTag}
-                  showCheckboxes={true}
-                  areAllSelected={areAllFilesSelected}
-                />
-              </>
-            )}
+                  {/* 文件列表组件 */}
+                  <FileList 
+                    files={convertFilesForDisplay(files)}
+                    onFileClick={handleFileItemClick}
+                    onFileSelect={(file, checked) => onFileCheckboxChange(file as LocalFileType, checked)}
+                    onSelectAll={onSelectAllFiles}
+                    onDeselectAll={onDeselectAllFiles}
+                    selectedFiles={selectedFiles}
+                    onFileContextMenu={(e, file) => handleFileContextMenu(e, file as LocalFileType, setSelectedFile, setSelectedFiles)}
+                    onBackClick={folderPath.length > 0 ? handleBackClick : undefined}
+                    isLoading={filesLoading}
+                    error={filesError}
+                    editingFile={editingFile}
+                    editingName={editingName}
+                    editingTags={editingTags}
+                    onEditNameChange={setEditingName}
+                    onConfirmEdit={handleConfirmEdit}
+                    onCancelEdit={() => setEditingFile(null)}
+                    onAddTag={handleAddTag}
+                    onRemoveTag={handleRemoveTag}
+                    newTag={newTag}
+                    onNewTagChange={setNewTag}
+                    showCheckboxes={true}
+                    areAllSelected={areAllFilesSelected}
+                  />
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       {/* 上传模态窗口 */}

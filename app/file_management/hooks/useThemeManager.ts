@@ -1,11 +1,11 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { 
   applyTheme as applyThemeService, 
   loadThemeFromStorage, 
   addThemeChangeListener, 
   getAllThemes,
   getThemesByCategory,
-  useTheme
+  ThemeStyle
 } from '@/app/shared/themes';
 import { useUserProfile } from './useUserProfile';
 
@@ -15,34 +15,55 @@ import { useUserProfile } from './useUserProfile';
  */
 export const useThemeManager = () => {
   const { userProfile, updateTheme: updateUserProfileTheme } = useUserProfile();
-  const { currentTheme, themeStyle, setTheme, isLoading } = useTheme();
+  const [currentTheme, setCurrentTheme] = useState<string | null>(null);
+  const [themeStyle, setThemeStyle] = useState<ThemeStyle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // 从用户资料或本地存储中应用主题
   useEffect(() => {
-    // 应用主题优先级：
-    // 1. userProfile中的主题
-    // 2. localStorage中的主题
-    // 3. 默认主题
-    if (userProfile && userProfile.theme) {
-      console.log('从用户资料应用主题:', userProfile.theme);
-      applyThemeService(userProfile.theme);
-    } else {
-      const cachedTheme = loadThemeFromStorage();
-      if (cachedTheme) {
-        console.log('从localStorage恢复主题:', cachedTheme);
-        applyThemeService(cachedTheme);
+    setIsLoading(true);
+    
+    try {
+      // 应用主题优先级：
+      // 1. userProfile中的主题
+      // 2. localStorage中的主题
+      // 3. 默认主题
+      let themeToApply = 'default';
+      
+      if (userProfile && userProfile.theme) {
+        console.log('从用户资料应用主题:', userProfile.theme);
+        themeToApply = userProfile.theme;
       } else {
-        console.log('应用默认主题');
-        applyThemeService('default');
+        const cachedTheme = loadThemeFromStorage();
+        if (cachedTheme) {
+          console.log('从localStorage恢复主题:', cachedTheme);
+          themeToApply = cachedTheme;
+        } else {
+          console.log('应用默认主题');
+        }
       }
+      
+      // 应用主题并更新状态
+      const appliedThemeStyle = applyThemeService(themeToApply);
+      
+      if (appliedThemeStyle) {
+        setCurrentTheme(themeToApply);
+        setThemeStyle(appliedThemeStyle);
+      }
+    } catch (error) {
+      console.error('主题初始化错误:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, [userProfile]);
   
-  // 添加主题变更事件监听
+  // 添加主题变更事件监听（仅用于同步状态，不再触发新的主题应用）
   useEffect(() => {
-    const removeListener = addThemeChangeListener((themeId, themeStyle) => {
-      console.log('接收到主题变更事件，应用新主题:', themeId);
-      applyThemeService(themeId);
+    const removeListener = addThemeChangeListener((themeId, styles) => {
+      console.log('接收到主题变更事件，同步主题状态:', themeId);
+      // 更新本地状态
+      setCurrentTheme(themeId);
+      setThemeStyle(styles);
     });
     
     // 组件卸载时移除事件监听
@@ -51,15 +72,50 @@ export const useThemeManager = () => {
     };
   }, []);
   
+  // 设置主题方法
+  const setTheme = useCallback((themeId: string) => {
+    try {
+      // 应用主题
+      const styles = applyThemeService(themeId);
+      
+      if (styles) {
+        // 更新本地状态
+        setCurrentTheme(themeId);
+        setThemeStyle(styles);
+      }
+      
+      // 保存到localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user-theme', themeId);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('设置主题失败:', error);
+      return false;
+    }
+  }, []);
+  
   // 更新主题，同时更新用户资料
   const updateTheme = useCallback(async (themeId: string) => {
     try {
       // 先应用主题到UI
-      setTheme(themeId);
+      const success = setTheme(themeId);
       
-      // 然后更新用户资料
-      if (userProfile) {
-        await updateUserProfileTheme(themeId);
+      if (!success) {
+        return false;
+      }
+      
+      // 检查是否能够安全地更新用户资料
+      if (userProfile && updateUserProfileTheme) {
+        try {
+          // 如果服务器更新失败，仍然保持UI更新
+          await updateUserProfileTheme(themeId).catch(error => {
+            console.warn('无法更新服务器上的主题设置，但UI已更新:', error);
+          });
+        } catch (error) {
+          console.warn('更新用户资料主题失败，但UI已更新:', error);
+        }
       }
       
       return true;

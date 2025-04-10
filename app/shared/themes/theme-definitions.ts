@@ -9,6 +9,9 @@ export interface ThemeStyle {
   name?: string;
   category?: string;
   
+  // 字体设置
+  fontFamily?: string;
+  
   // 状态颜色
   success?: string;
   error?: string;

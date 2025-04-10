@@ -1,0 +1,1068 @@
+.themePanel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  position: relative;
+  animation: fadeIn 0.3s ease;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+  margin: 1rem;
+  max-height: calc(100vh - 2rem);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(to right, #f8fafc, white);
+}
+
+.backButton {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background-color: rgba(100, 116, 139, 0.1);
+  color: #334155;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+  background: linear-gradient(90deg, var(--theme-primary, #3b82f6) 0%, var(--theme-secondary, #3b98f5) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: flex;
+  align-items: center;
+}
+
+.titleIcon {
+  margin-right: 0.5rem;
+  color: var(--theme-primary, #3b82f6);
+}
+
+.searchContainer {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  width: 220px;
+  transition: all 0.2s;
+}
+
+.searchContainer:focus-within {
+  background-color: white;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.searchIcon {
+  color: #94a3b8;
+  margin-right: 0.5rem;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #334155;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.clearSearch {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  margin-left: 0.25rem;
+}
+
+.clearSearch:hover {
+  color: #64748b;
+}
+
+.categoryTabs {
+  display: flex;
+  overflow-x: auto;
+  padding: 1rem 1.5rem;
+  gap: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.categoryTab {
+  white-space: nowrap;
+  border: none;
+  background: none;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.categoryTab:hover {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+}
+
+.categoryTab.active {
+  background: var(--theme-primary, #3b82f6);
+  color: white;
+  font-weight: 500;
+}
+
+.themesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  align-content: start;
+}
+
+.themeOption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: white;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.themeOption:hover {
+  background-color: #f8fafc;
+  border-color: var(--theme-highlight, #3b82f6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.themeOption.selected {
+  background-color: #f0f7ff;
+  border-color: var(--theme-highlight, #3b82f6);
+}
+
+.themePreview {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--theme-preview, linear-gradient(135deg, #3b82f6 0%, #3b98f5 100%));
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.themeName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a202c;
+}
+
+.categoryTag {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: var(--theme-highlight, #3b82f6);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  animation: scaleIn 0.2s ease;
+}
+
+.noResults {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.noResultsIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.noResultsText {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: var(--theme-primary, #3b82f6);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.clearButton:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.footerText {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.currentTheme {
+  font-weight: 500;
+  color: #334155;
+}
+
+.closeButton {
+  background: var(--theme-primary, #3b82f6);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.closeButton:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* 自定义滚动条 */
+.themesContainer::-webkit-scrollbar,
+.categoryTabs::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.themesContainer::-webkit-scrollbar-track,
+.categoryTabs::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.themesContainer::-webkit-scrollbar-thumb,
+.categoryTabs::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.themesContainer::-webkit-scrollbar-thumb:hover,
+.categoryTabs::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .themePanel {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+  
+  .themesContainer {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 1rem;
+  }
+  
+  .header {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .searchContainer {
+    margin-left: 0;
+    margin-top: 1rem;
+    width: 100%;
+    order: 3;
+  }
+  
+  .categoryTabs {
+    padding: 0.75rem 1rem;
+  }
+  
+  .themeOption {
+    padding: 0.75rem;
+  }
+  
+  .themePreview {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .footer {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .closeButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 手机适配 */
+@media (max-width: 480px) {
+  .themesContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 自定义主题界面样式 */
+.customThemeContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.customThemeHeader {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(to right, #f8fafc, white);
+}
+
+.previewToggle {
+  margin-left: auto;
+}
+
+.previewButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.previewButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  border-radius: inherit;
+  opacity: 0.9;
+  z-index: -1;
+}
+
+.previewButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.previewButton.active {
+  background: var(--theme-primary, #3b82f6);
+  color: white;
+}
+
+.customThemeContent {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.customThemeForm {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.textInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #1a202c;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+
+.textInput:focus {
+  outline: none;
+  border-color: var(--theme-primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.colorSection,
+.fontSection {
+  margin-bottom: 2rem;
+}
+
+.colorOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.colorOption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.colorOption label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.colorInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.colorInput {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+}
+
+.colorInput::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.colorInput::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
+.colorValue {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.fontOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fontOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.fontOption:hover {
+  background: white;
+  border-color: #e2e8f0;
+}
+
+.fontOption.selected {
+  background: white;
+  border-color: var(--theme-primary, #3b82f6);
+}
+
+.fontName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.fontSample {
+  font-size: 1.25rem;
+  color: #1a202c;
+}
+
+.fontCheckmark {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: var(--theme-primary, #3b82f6);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 预览区域样式 */
+.themePreviewContainer {
+  width: 40%;
+  min-width: 300px;
+  background: var(--preview-background, linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%));
+  border-left: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  overflow-y: auto;
+  font-family: var(--preview-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.previewTitle {
+  margin: 0 0 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--preview-text, #1a202c);
+  text-align: center;
+}
+
+.previewContent {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: var(--preview-primary, #3b82f6);
+  color: white;
+}
+
+.previewLogo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.previewButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.previewButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.previewBody {
+  display: flex;
+  height: 300px;
+}
+
+.previewSidebar {
+  width: 80px;
+  background: var(--preview-secondary, #2c5282);
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.previewSidebarItem {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.previewMain {
+  flex: 1;
+  padding: 1.5rem;
+  background: #f8fafc;
+  overflow-y: auto;
+}
+
+.previewCard {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.previewCard h4 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  color: var(--preview-text, #1a202c);
+}
+
+.previewCard p {
+  margin: 0 0 1.5rem;
+  color: var(--preview-text, #64748b);
+  line-height: 1.6;
+}
+
+.previewButtonGroup {
+  display: flex;
+  gap: 1rem;
+}
+
+.previewPrimaryButton {
+  background: var(--preview-primary, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.previewSecondaryButton {
+  background: white;
+  color: var(--preview-secondary, #2c5282);
+  border: 1px solid var(--preview-secondary, #2c5282);
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* 自定义主题底部 */
+.customThemeFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.applyButton {
+  background: linear-gradient(90deg, var(--theme-primary, #3b82f6), var(--theme-secondary, #3b98f5));
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.applyButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+}
+
+.cancelButton {
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: #e2e8f0;
+}
+
+/* 自定义滚动条 */
+.themesContainer::-webkit-scrollbar,
+.categoryTabs::-webkit-scrollbar,
+.customThemeForm::-webkit-scrollbar,
+.themePreviewContainer::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.themesContainer::-webkit-scrollbar-track,
+.categoryTabs::-webkit-scrollbar-track,
+.customThemeForm::-webkit-scrollbar-track,
+.themePreviewContainer::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.themesContainer::-webkit-scrollbar-thumb,
+.categoryTabs::-webkit-scrollbar-thumb,
+.customThemeForm::-webkit-scrollbar-thumb,
+.themePreviewContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.themesContainer::-webkit-scrollbar-thumb:hover,
+.categoryTabs::-webkit-scrollbar-thumb:hover,
+.customThemeForm::-webkit-scrollbar-thumb:hover,
+.themePreviewContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .themePanel {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+  
+  .customThemeContent {
+    flex-direction: column;
+  }
+  
+  .themePreviewContainer {
+    width: 100%;
+    min-width: 0;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .themesContainer {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 1rem;
+  }
+  
+  .colorOptions {
+    grid-template-columns: 1fr;
+  }
+  
+  .header, 
+  .customThemeHeader {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .searchContainer {
+    margin-left: 0;
+    margin-top: 1rem;
+    width: 100%;
+    order: 3;
+  }
+  
+  .categoryTabs {
+    padding: 0.75rem 1rem;
+  }
+  
+  .themeOption {
+    padding: 0.75rem;
+  }
+  
+  .themePreview {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .footer, 
+  .customThemeFooter {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .closeButton, 
+  .applyButton, 
+  .cancelButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 手机适配 */
+@media (max-width: 480px) {
+  .themesContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 自定义主题按钮 */
+.customThemeButton {
+  padding: 1rem 1.5rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.createCustomThemeBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--theme-primary, #3b82f6) 0%, var(--theme-secondary, #3b98f5) 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.createCustomThemeBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
+}
+
+/* 主题列表容器 */
+.themesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  align-content: start;
+}
+
+/* 删除主题按钮样式 */
+.deleteThemeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #f43f5e;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 当鼠标悬停在主题选项上时显示删除按钮 */
+.themeOption:hover .deleteThemeButton {
+  opacity: 1;
+}
+
+.deleteThemeButton:hover {
+  background-color: #f43f5e;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* 确认删除对话框的遮罩层 */
+.deleteConfirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+/* 确认删除对话框 */
+.deleteConfirmDialog {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.3s ease;
+}
+
+/* 确认删除对话框的头部 */
+.deleteConfirmHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #f43f5e;
+}
+
+.deleteConfirmIcon {
+  margin-right: 10px;
+  color: #f43f5e;
+}
+
+.deleteConfirmHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #f43f5e;
+}
+
+/* 确认删除对话框的内容 */
+.deleteConfirmContent {
+  margin-bottom: 20px;
+}
+
+.deleteConfirmContent p {
+  margin: 5px 0;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.deleteConfirmContent strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+/* 确认删除对话框的按钮区域 */
+.deleteConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* 删除按钮样式 */
+.deleteButton {
+  background-color: #f43f5e;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deleteButton:hover {
+  background-color: #e11d48;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(225, 29, 72, 0.2);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .deleteConfirmDialog {
+    width: 95%;
+    max-width: 350px;
+    padding: 15px;
+  }
+  
+  .deleteConfirmHeader h3 {
+    font-size: 16px;
+  }
+  
+  .deleteThemeButton {
+    opacity: 1;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+  }
+} 

@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Home, LogOut } from 'lucide-react';
+import { Home, LogOut, Palette } from 'lucide-react';
 import styles from '../styles/shared.module.css';
 
 interface MiniSidebarProps {
@@ -10,6 +10,8 @@ interface MiniSidebarProps {
   onHomeClick: () => void;
   onLogoutClick: () => void;
   onAvatarClick: () => void;
+  currentTheme?: string | null;
+  onThemeClick: () => void;
 }
 
 const MiniSidebar: React.FC<MiniSidebarProps> = ({
@@ -18,7 +20,9 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
   userEmail,
   onHomeClick,
   onLogoutClick,
-  onAvatarClick
+  onAvatarClick,
+  currentTheme = 'default',
+  onThemeClick
 }) => {
   return (
     <div className={styles.miniSidebar}>
@@ -53,6 +57,16 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
       >
         <Home className="w-5 h-5 text-white" />
       </button>
+      
+      {/* 主题选择按钮 */}
+      <button 
+        className={styles.miniSidebarButton}
+        onClick={onThemeClick}
+        title="主题设置"
+      >
+        <Palette className="w-5 h-5 text-white" />
+      </button>
+      
       <button 
         className={styles.miniSidebarButton}
         onClick={onLogoutClick}
