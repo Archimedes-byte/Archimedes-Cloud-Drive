@@ -1,13 +1,26 @@
-// import { FileType } from '@/app/lib/file/utils';
-
 /**
- * 统一文件管理系统类型定义
+ * 文件系统核心类型定义
+ * 
+ * 本文件包含所有基础文件类型定义，主要关注文件实体、操作和数据模型，
+ * 其他更专业化的类型（如UI组件属性、上下文等）应放在fileManagement.ts中
  */
 
-// 文件类型枚举 - 自定义定义
-export type FileType = 'image' | 'document' | 'video' | 'audio' | 'archive' | 'folder' | 'other';
+// 文件类型枚举
+export type FileType = 'image' | 'document' | 'video' | 'audio' | 'archive' | 'folder' | 'other' | 'code';
 
-// 基础文件信息接口 - 避免与DOM File类型冲突
+// 排序顺序
+export interface SortOrder {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+// 文件夹路径项
+export interface FolderPath {
+  id: string;
+  name: string;
+}
+
+// 基础文件信息接口 - 核心文件属性
 export interface FileInfo {
   id: string;
   name: string;
@@ -25,7 +38,41 @@ export interface FileInfo {
   selected?: boolean;
 }
 
-// 文件进度接口 - 用于上传过程
+// API文件响应接口
+export interface FileResponse {
+  id: string;
+  name: string;
+  type: string | null;
+  size: number | null;
+  isFolder: boolean;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  url: string;
+  path?: string;
+}
+
+// 定义文件实体接口 - 基于Prisma模型
+export interface FileEntity {
+  id: string;
+  name: string;
+  filename: string;
+  path: string;
+  type: string | null;
+  size: number | null;
+  isFolder: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  parentId: string | null;
+  uploaderId: string;
+  tags: string[];
+  url: string | null;
+}
+
+// 文件上传进度接口
 export interface FileWithProgress {
   file: File; // 原生File类型
   id: string;
@@ -52,95 +99,17 @@ export interface FolderStructure {
   subFolders: Map<string, FolderStructure>;
 }
 
-// 文件夹路径项
-export interface FolderPath {
-  id: string;
-  name: string;
-}
-
-// 排序顺序
-export interface SortOrder {
-  field: string;
-  direction: 'asc' | 'desc';
-}
-
-// API文件响应接口
-export interface FileResponse {
-  id: string;
-  name: string;
-  type: string | null;
-  size: number | null;
-  isFolder: boolean;
-  parentId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  url: string;
-  path?: string;
-}
-
-// 文件夹信息接口
-export interface FolderInfo {
-  id: string;
-  name: string;
-  parentId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 文件树节点接口
-export interface FileTreeNode {
-  name: string;
-  type: 'file' | 'folder';
-  size: number;
-  children?: FileTreeNode[];
-  file?: globalThis.File & { webkitRelativePath?: string };
-}
-
-// 上传属性接口
-export interface FileUploadProps {
-  onUploadComplete: () => void;
-  folderId?: string | null;
-  withTags?: boolean;
-  isFolderUpload?: boolean;
-}
-
 // 存储使用情况接口
-export interface StorageUsageProps {
-  used: number;
-  total: number;
-}
-
-// 存储使用情况接口 - 兼容之前的命名
 export interface StorageUsageInfo {
   used: number;
   total: number;
-}
-
-// 定义文件实体接口 - 基于Prisma模型
-export interface FileEntity {
-  id: string;
-  name: string;
-  filename: string;
-  path: string;
-  type: string | null;
-  size: number | null;
-  isFolder: boolean;
-  isDeleted: boolean;
-  deletedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  parentId: string | null;
-  uploaderId: string;
-  tags: string[];
-  url: string | null;
 }
 
 // MIME类型与文件类型的映射
 export const FILE_TYPE_MAP: Record<FileType, { mimeTypes: string[]; extensions: string[] }> = {
   image: {
     mimeTypes: ['image'],
-    extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+    extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico']
   },
   document: {
     mimeTypes: [
@@ -153,15 +122,15 @@ export const FILE_TYPE_MAP: Record<FileType, { mimeTypes: string[]; extensions: 
       'application/vnd.openxmlformats-officedocument.presentationml',
       'text'
     ],
-    extensions: ['doc', 'docx', 'txt', 'pdf', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'csv']
+    extensions: ['doc', 'docx', 'txt', 'pdf', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'csv', 'md']
   },
   video: {
     mimeTypes: ['video'],
-    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
+    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'ogv']
   },
   audio: {
     mimeTypes: ['audio'],
-    extensions: ['mp3', 'wav', 'ogg', 'flac', 'm4a']
+    extensions: ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac']
   },
   archive: {
     mimeTypes: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'],
@@ -170,6 +139,10 @@ export const FILE_TYPE_MAP: Record<FileType, { mimeTypes: string[]; extensions: 
   folder: {
     mimeTypes: ['folder'],
     extensions: []
+  },
+  code: {
+    mimeTypes: ['text/plain', 'application/json', 'text/html', 'text/css', 'application/javascript'],
+    extensions: ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'rb', 'php', 'html', 'css', 'xml', 'json']
   },
   other: {
     mimeTypes: [],
@@ -198,72 +171,25 @@ export function mapFileResponseToFileInfo(response: FileResponse): FileInfo {
 export function mapFileEntityToFileInfo(entity: FileEntity): FileInfo {
   // 提取扩展名
   let extension: string | undefined;
-  if (entity.name && !entity.isFolder) {
+  if (!entity.isFolder && entity.name) {
     const parts = entity.name.split('.');
     if (parts.length > 1) {
-      extension = parts[parts.length - 1].toLowerCase();
+      extension = parts.pop();
     }
-  }
-  
-  // 确保文件类型有值
-  let type = entity.type || '';
-  
-  // 如果类型为空，尝试从扩展名推断
-  if (!type && extension) {
-    // 图片扩展名
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension)) {
-      type = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
-    }
-    // 文档扩展名
-    else if (['doc', 'docx'].includes(extension)) {
-      type = 'application/msword';
-    }
-    else if (['xls', 'xlsx'].includes(extension)) {
-      type = 'application/vnd.ms-excel';
-    }
-    else if (['ppt', 'pptx'].includes(extension)) {
-      type = 'application/vnd.ms-powerpoint';
-    }
-    else if (extension === 'pdf') {
-      type = 'application/pdf';
-    }
-    else if (extension === 'txt') {
-      type = 'text/plain';
-    }
-    // 音频扩展名
-    else if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(extension)) {
-      type = `audio/${extension === 'mp3' ? 'mpeg' : extension}`;
-    }
-    // 视频扩展名
-    else if (['mp4', 'webm', 'avi', 'mov', 'flv', 'mkv'].includes(extension)) {
-      type = `video/${extension === 'mov' ? 'quicktime' : extension}`;
-    }
-    // 压缩文件扩展名
-    else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
-      type = 'application/zip';
-    }
-  }
-  
-  // 文件夹特殊处理
-  if (entity.isFolder) {
-    type = 'folder';
   }
 
   return {
     id: entity.id,
     name: entity.name,
     size: entity.size || 0,
-    type: type,
+    type: entity.type || '',
     url: entity.url || '',
     createdAt: entity.createdAt.toISOString(),
     updatedAt: entity.updatedAt.toISOString(),
     parentId: entity.parentId,
     tags: entity.tags,
     isFolder: entity.isFolder,
-    path: entity.path || null,
-    extension: extension
+    path: entity.path,
+    extension
   };
-}
-
-// 兼容性导出
-export type File = FileInfo; 
+} 

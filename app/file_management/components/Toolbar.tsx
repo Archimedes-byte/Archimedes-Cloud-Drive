@@ -1,9 +1,14 @@
-import React, { useRef, useState } from 'react';
-import { useFileContext } from '../context/FileContext';
+import React, { useRef } from 'react';
 import { X, Download, Edit, Move } from 'lucide-react';
 import { message } from 'antd';
 import styles from './Toolbar.module.css';
 import commonStyles from '../styles/common.module.css';
+
+// 导入新的hooks替代旧的FileContext
+import { useAppFiles } from '../hooks/useAppFiles';
+import { useAppFileActions } from '../hooks/useAppFileActions';
+import { useAppUIState } from '../hooks/useAppUIState';
+import { useAppFilePreview } from '../hooks/useAppFilePreview';
 
 interface ToolbarProps {
   onUploadClick: () => void;
@@ -11,30 +16,45 @@ interface ToolbarProps {
   onCreateFolderClick: () => void;
 }
 
+/**
+ * @deprecated 这个组件已被TopActionBar替代，仅作为参考保留
+ */
 export function Toolbar({ onUploadClick, onFolderUploadClick, onCreateFolderClick }: ToolbarProps) {
-  const {
-    selectedFiles,
-    clearSelection,
-    files
-  } = useFileContext();
-
-  const [showUploadDropdown, setShowUploadDropdown] = useState(false);
+  // 使用新的hooks替代旧的FileContext
+  const { files, selectedFiles, setSelectedFiles } = useAppFiles();
+  const { handleDownload } = useAppFileActions();
+  const { showUploadDropdown, setShowUploadDropdown } = useAppUIState();
+  const { handleRenameButtonClick } = useAppFilePreview();
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleDownload = () => {
-    // TODO: 实现文件下载功能
-    message.info('下载功能开发中');
+  // 清除选择功能
+  const clearSelection = () => {
+    setSelectedFiles([]);
   };
 
-  const handleRename = () => {
+  // 下载功能
+  const handleDownloadClick = () => {
+    if (selectedFiles.length === 1) {
+      const fileToDownload = files.find(file => file.id === selectedFiles[0]);
+      if (fileToDownload) {
+        handleDownload(fileToDownload);
+      }
+    } else {
+      message.info('下载功能仅支持单个文件下载');
+    }
+  };
+
+  // 重命名功能
+  const handleRenameClick = () => {
     if (selectedFiles.length !== 1) {
       message.warning('请选择一个文件进行重命名');
       return;
     }
-    const selectedFile = files.find(file => file.id === selectedFiles[0]);
-    if (selectedFile) {
-      // TODO: 实现重命名功能
-      message.info('重命名功能开发中');
+    
+    const fileToRename = files.find(file => file.id === selectedFiles[0]);
+    if (fileToRename) {
+      handleRenameButtonClick(fileToRename);
     }
   };
 
@@ -43,15 +63,15 @@ export function Toolbar({ onUploadClick, onFolderUploadClick, onCreateFolderClic
       <div className={styles.buttonGroup}>
         {selectedFiles.length > 0 ? (
           <>
-            <button className={styles.topButton} onClick={() => clearSelection()}>
+            <button className={styles.topButton} onClick={clearSelection}>
               <X className={commonStyles.icon} />
               取消选择
             </button>
-            <button className={styles.topButton} onClick={handleDownload}>
+            <button className={styles.topButton} onClick={handleDownloadClick}>
               <Download className={commonStyles.icon} />
               下载
             </button>
-            <button className={styles.topButton} onClick={handleRename}>
+            <button className={styles.topButton} onClick={handleRenameClick}>
               <Edit className={commonStyles.icon} />
               重命名
             </button>

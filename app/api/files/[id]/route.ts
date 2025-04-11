@@ -1,20 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { ApiResponse, FileInfo, FileEntity, mapFileEntityToFileInfo } from '@/app/types';
-
-// 错误响应处理
-function errorResponse(message: string, status: number = 500): NextResponse<ApiResponse> {
-  return NextResponse.json({ 
-    success: false, 
-    error: message 
-  }, { status });
-}
+import { FileInfo, FileEntity, mapFileEntityToFileInfo } from '@/app/types';
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  STATUS_CODES, 
+  ERROR_CODES, 
+  ERROR_MESSAGES,
+  apiHandler
+} from '@/app/lib/api/responseHandler';
 
 // 文件更新响应处理
-function successResponse(file: FileEntity): NextResponse<ApiResponse<FileInfo>> {
+function mapFileToResponse(file: FileEntity): FileInfo {
   // 使用类型映射函数
   const fileInfo = mapFileEntityToFileInfo(file);
   
@@ -26,29 +26,22 @@ function successResponse(file: FileEntity): NextResponse<ApiResponse<FileInfo>> 
     }
   }
   
-  console.log('正在返回文件信息:', {
-    id: fileInfo.id,
-    name: fileInfo.name,
-    type: fileInfo.type,
-    extension: fileInfo.extension,
-    isFolder: fileInfo.isFolder
-  });
-  
-  return NextResponse.json({
-    success: true,
-    data: fileInfo
-  });
+  return fileInfo;
 }
 
 // 获取文件信息
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
-): Promise<NextResponse<ApiResponse<FileInfo>>> {
-  try {
+) {
+  return apiHandler(async () => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return errorResponse('未授权', 401);
+      return createErrorResponse(
+        ERROR_MESSAGES.UNAUTHORIZED,
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     // 获取用户信息
@@ -57,7 +50,11 @@ export async function GET(
     });
 
     if (!user) {
-      return errorResponse('用户不存在', 401);
+      return createErrorResponse(
+        '用户不存在',
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     const file = await prisma.file.findFirst({
@@ -68,25 +65,31 @@ export async function GET(
     });
 
     if (!file) {
-      return errorResponse('文件不存在或无权访问', 404);
+      return createErrorResponse(
+        '文件不存在或无权访问',
+        STATUS_CODES.NOT_FOUND,
+        ERROR_CODES.NOT_FOUND
+      );
     }
 
-    return successResponse(file as unknown as FileEntity);
-  } catch (error) {
-    console.error('获取文件信息失败:', error);
-    return errorResponse('获取文件信息失败');
-  }
+    const fileInfo = mapFileToResponse(file as unknown as FileEntity);
+    return createSuccessResponse(fileInfo, '获取文件信息成功');
+  });
 }
 
 // 更新文件信息
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
-): Promise<NextResponse<ApiResponse<FileInfo>>> {
-  try {
+) {
+  return apiHandler(async () => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return errorResponse('未授权', 401);
+      return createErrorResponse(
+        ERROR_MESSAGES.UNAUTHORIZED,
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     // 获取用户信息
@@ -95,7 +98,11 @@ export async function PUT(
     });
 
     if (!user) {
-      return errorResponse('用户不存在', 401);
+      return createErrorResponse(
+        '用户不存在',
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     const body = await request.json();
@@ -109,7 +116,11 @@ export async function PUT(
     });
 
     if (!file) {
-      return errorResponse('文件不存在或无权修改', 404);
+      return createErrorResponse(
+        '文件不存在或无权修改', 
+        STATUS_CODES.NOT_FOUND,
+        ERROR_CODES.NOT_FOUND
+      );
     }
 
     const updatedFile = await prisma.file.update({
@@ -119,22 +130,24 @@ export async function PUT(
       }
     });
 
-    return successResponse(updatedFile as unknown as FileEntity);
-  } catch (error) {
-    console.error('更新文件信息失败:', error);
-    return errorResponse('更新文件信息失败');
-  }
+    const fileInfo = mapFileToResponse(updatedFile as unknown as FileEntity);
+    return createSuccessResponse(fileInfo, '文件信息更新成功');
+  });
 }
 
 // 删除文件
 export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } }
-): Promise<NextResponse<ApiResponse>> {
-  try {
+) {
+  return apiHandler(async () => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return errorResponse('未授权', 401);
+      return createErrorResponse(
+        ERROR_MESSAGES.UNAUTHORIZED,
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     // 获取用户信息
@@ -143,7 +156,11 @@ export async function DELETE(
     });
 
     if (!user) {
-      return errorResponse('用户不存在', 401);
+      return createErrorResponse(
+        '用户不存在',
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     const file = await prisma.file.findFirst({
@@ -154,7 +171,11 @@ export async function DELETE(
     });
 
     if (!file) {
-      return errorResponse('文件不存在或无权删除', 404);
+      return createErrorResponse(
+        '文件不存在或无权删除',
+        STATUS_CODES.NOT_FOUND,
+        ERROR_CODES.NOT_FOUND
+      );
     }
 
     await prisma.file.update({
@@ -162,24 +183,22 @@ export async function DELETE(
       data: { isDeleted: true }
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: '文件删除成功' 
-    });
-  } catch (error) {
-    console.error('删除文件失败:', error);
-    return errorResponse('删除文件失败');
-  }
+    return createSuccessResponse(null, '文件删除成功');
+  });
 }
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
-): Promise<NextResponse<ApiResponse<FileInfo>>> {
-  try {
+) {
+  return apiHandler(async () => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return errorResponse('未授权', 401);
+      return createErrorResponse(
+        ERROR_MESSAGES.UNAUTHORIZED,
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     // 获取用户信息
@@ -188,7 +207,11 @@ export async function PATCH(
     });
 
     if (!user) {
-      return errorResponse('用户不存在', 401);
+      return createErrorResponse(
+        '用户不存在',
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
     const body = await request.json();
@@ -202,7 +225,11 @@ export async function PATCH(
     });
 
     if (!file) {
-      return errorResponse('文件不存在或无权修改', 404);
+      return createErrorResponse(
+        '文件不存在或无权修改',
+        STATUS_CODES.NOT_FOUND,
+        ERROR_CODES.NOT_FOUND
+      );
     }
 
     const updateData: Prisma.FileUpdateInput = {};
@@ -213,9 +240,7 @@ export async function PATCH(
       data: updateData
     });
 
-    return successResponse(updatedFile as unknown as FileEntity);
-  } catch (error) {
-    console.error('更新文件信息失败:', error);
-    return errorResponse('更新文件信息失败');
-  }
+    const fileInfo = mapFileToResponse(updatedFile as unknown as FileEntity);
+    return createSuccessResponse(fileInfo, '文件信息更新成功');
+  });
 } 

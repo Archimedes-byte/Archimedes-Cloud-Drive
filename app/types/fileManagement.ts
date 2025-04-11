@@ -3,15 +3,15 @@ import { FileType, FileInfo, SortOrder, FolderPath } from './file';
 /**
  * 文件管理系统类型定义
  * 
- * 本文件包含所有与文件管理相关的类型定义，按以下分类组织：
- * 1. 核心数据模型 - 如File, Folder等
- * 2. 组件Props - 如FileListProps, RenameModalProps等
+ * 本文件包含所有与文件管理UI组件和功能相关的类型定义，按以下分类组织：
+ * 1. 组件Props - 如FileListProps, UploadModalProps等
+ * 2. 上下文类型 - 如FileContextType
  * 3. Hooks接口 - 如FileOperationsHook, FileSearchHook等
- * 4. 辅助类型 - 如FileState等
+ * 4. 扩展数据模型 - 如ExtendedFile, UserProfile等
  */
 
 // ----------------------------------------------------------------------------
-// 核心数据模型
+// 扩展数据模型
 // ----------------------------------------------------------------------------
 
 /**
@@ -81,16 +81,8 @@ export interface UserProfile {
 }
 
 /**
- * 文件路径项
- * @deprecated 请使用FolderPath
- */
-export interface FilePathItem {
-  id: string;
-  name: string;
-}
-
-/**
- * 文件状态
+ * 文件状态接口
+ * @deprecated 此接口已废弃，请使用 AppState['files'] 类型，位于 app/file_management/context/AppStateContext.tsx
  */
 export interface FileState {
   files: ExtendedFile[];
@@ -106,6 +98,18 @@ export interface FileState {
 // ----------------------------------------------------------------------------
 // 组件Props
 // ----------------------------------------------------------------------------
+
+/**
+ * 文件上传组件Props
+ */
+export interface FileUploadProps {
+  onUploadComplete: (file: FileInfo) => void;
+  folderId?: string | null;
+  accept?: string;
+  multiple?: boolean;
+  withTags?: boolean;
+  isFolderUpload?: boolean;
+}
 
 /**
  * 文件列表组件Props
@@ -145,6 +149,7 @@ export interface RenameModalProps {
 
 /**
  * 文件上下文类型
+ * @deprecated 此接口已废弃，请使用 AppState 类型和相应的 useApp* hooks，位于 app/file_management/context/AppStateContext.tsx
  */
 export interface FileContextType {
   // 状态
@@ -172,6 +177,7 @@ export interface FileContextType {
 
 /**
  * 文件操作Hook接口
+ * @deprecated 此接口已废弃，请使用 useAppFileActions hook，位于 app/file_management/hooks/useAppFileActions.ts
  */
 export interface FileOperationsHook {
   loading: boolean;
@@ -197,6 +203,7 @@ export interface FileOperationsHook {
 
 /**
  * 文件搜索Hook接口
+ * @deprecated 此接口已废弃，请使用 useAppSearch hook，位于 app/file_management/hooks/useAppSearch.ts
  */
 export interface FileSearchHook {
   isSearching: boolean;
@@ -207,6 +214,7 @@ export interface FileSearchHook {
 
 /**
  * 文件上传Hook接口
+ * @deprecated 此接口已废弃，请使用全局状态管理的文件上传实现
  */
 export interface FileUploadHook {
   isUploading: boolean;

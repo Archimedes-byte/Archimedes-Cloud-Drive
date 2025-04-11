@@ -1,37 +1,64 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useAppState } from '../context/AppStateContext';
+import { FileInfo } from '@/app/types';
 import { message } from 'antd';
-import { FileInfo, FileWithProgress } from '@/app/types';
-
-type RefreshCallback = () => void;
+import { useAppFiles } from './useAppFiles';
 
 /**
- * 创建自定义上传Hook接口
+ * 文件上传Hook - 基于全局状态管理
+ * 负责处理文件和文件夹的上传功能
  */
-export interface CustomFileUploadHook {
-  isUploading: boolean;
-  uploadProgress: number;
-  handleUpload: (files: File[], folderId?: string | null) => Promise<void>;
-  handleFolderUpload: (folderItems: FileSystemEntry[], folderId?: string | null) => Promise<void>;
-}
-
-/**
- * 统一的文件上传钩子
- * 提供文件和文件夹上传功能
- */
-export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook & {
-  isUploadModalOpen: boolean;
-  setIsUploadModalOpen: (open: boolean) => void;
-  isFolderUploadModalOpen: boolean;
-  setIsFolderUploadModalOpen: (open: boolean) => void;
-  uploadError: string | null;
-} {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isFolderUploadModalOpen, setIsFolderUploadModalOpen] = useState(false);
-
-  const handleUpload = useCallback(async (files: File[], folderId: string | null = null) => {
+export const useAppUpload = () => {
+  const { state, dispatch } = useAppState();
+  const { isUploading, uploadProgress, uploadError, currentFiles } = state.upload;
+  const { loadFiles, currentFolderId } = useAppFiles();
+  
+  /**
+   * 设置上传状态
+   */
+  const setIsUploading = useCallback((uploading: boolean) => {
+    dispatch({ type: 'SET_IS_UPLOADING', payload: uploading });
+  }, [dispatch]);
+  
+  /**
+   * 设置上传进度
+   */
+  const setUploadProgress = useCallback((progress: number) => {
+    dispatch({ type: 'SET_UPLOAD_PROGRESS', payload: progress });
+  }, [dispatch]);
+  
+  /**
+   * 设置上传错误
+   */
+  const setUploadError = useCallback((error: string | null) => {
+    dispatch({ type: 'SET_UPLOAD_ERROR', payload: error });
+  }, [dispatch]);
+  
+  /**
+   * 设置当前上传文件
+   */
+  const setCurrentFiles = useCallback((files: File[]) => {
+    dispatch({ type: 'SET_CURRENT_FILES', payload: files });
+  }, [dispatch]);
+  
+  /**
+   * 设置已上传文件
+   */
+  const setUploadedFiles = useCallback((files: FileInfo[]) => {
+    dispatch({ type: 'SET_UPLOADED_FILES', payload: files });
+  }, [dispatch]);
+  
+  /**
+   * 清除上传状态
+   */
+  const clearUploadState = useCallback(() => {
+    dispatch({ type: 'CLEAR_UPLOAD_STATE', payload: undefined });
+  }, [dispatch]);
+  
+  /**
+   * 处理文件上传
+   */
+  const handleUpload = useCallback(async (files: File[], folderId: string | null = currentFolderId) => {
     if (!files.length) {
       message.warning('请选择要上传的文件');
       return;
@@ -39,6 +66,8 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
 
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
+    setCurrentFiles(files);
     
     try {
       const formData = new FormData();
@@ -93,19 +122,41 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
         xhr.send(formData);
       });
       
-      // 关闭上传模态框并刷新文件列表
-      setIsUploadModalOpen(false);
-      onRefresh();
+      // 上传成功后刷新文件列表
+      await loadFiles(folderId);
+      
+      // 关闭上传UI相关模态框和状态
+      dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: false });
+      dispatch({ type: 'SET_FOLDER_UPLOAD_MODAL_OPEN', payload: false });
+      
+      // 清除上传状态
+      clearUploadState();
+      
+      return true;
     } catch (error) {
       console.error('上传文件错误:', error);
+      setUploadError(error instanceof Error ? error.message : '上传失败，请重试');
       message.error(error instanceof Error ? error.message : '上传失败，请重试');
+      return false;
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [onRefresh]);
+  }, [
+    currentFolderId, 
+    setIsUploading, 
+    setUploadProgress, 
+    setUploadError, 
+    setCurrentFiles, 
+    clearUploadState, 
+    loadFiles, 
+    dispatch
+  ]);
 
-  const handleFolderUpload = useCallback(async (folderItems: FileSystemEntry[], folderId: string | null = null) => {
+  /**
+   * 处理文件夹上传
+   */
+  const handleFolderUpload = useCallback(async (folderItems: FileSystemEntry[], folderId: string | null = currentFolderId) => {
     if (!folderItems.length) {
       message.warning('请选择要上传的文件夹');
       return;
@@ -113,6 +164,7 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
 
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
     
     try {
       // 递归处理文件夹内容
@@ -188,26 +240,27 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
       if (allFiles.length === 0) {
         message.warning('选择的文件夹中没有文件');
         setIsUploading(false);
-        return;
+        return false;
       }
-
-      console.log(`准备上传文件夹中的 ${allFiles.length} 个文件，包含路径信息`);
       
+      const rawFiles = allFiles.map(item => item.file);
+      setCurrentFiles(rawFiles);
+
       // 上传所有文件及其路径信息
       const formData = new FormData();
       
       allFiles.forEach(({ file, path }, index) => {
         formData.append('file', file);
-        // 以索引为键存储路径信息
-        formData.append(`paths_${index}`, path);
+        formData.append('paths', path);
       });
       
-      // 添加文件夹上传标志
-      formData.append('isFolderUpload', 'true');
-      
+      // 添加目标文件夹ID（如果有）
       if (folderId) {
         formData.append('folderId', folderId);
       }
+      
+      // 标记为文件夹上传
+      formData.append('isFolderUpload', 'true');
       
       // 创建请求
       const xhr = new XMLHttpRequest();
@@ -222,7 +275,6 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
       
       // 返回一个Promise以便能够在上传完成后执行后续操作
       await new Promise<void>((resolve, reject) => {
-        // 统一使用同一个API路径处理文件夹上传
         xhr.open('POST', '/api/files/upload');
         
         xhr.onload = () => {
@@ -233,41 +285,66 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
               message.success(`成功上传文件夹，包含 ${allFiles.length} 个文件`);
               resolve();
             } else {
-              reject(new Error(response.error || '上传失败'));
+              reject(new Error(response.error || '上传文件夹失败'));
             }
           } else {
-            reject(new Error('上传失败，服务器返回错误'));
+            reject(new Error('上传文件夹失败，服务器返回错误'));
           }
         };
         
         xhr.onerror = () => {
-          reject(new Error('网络错误，上传失败'));
+          reject(new Error('网络错误，上传文件夹失败'));
         };
         
         xhr.send(formData);
       });
       
-      // 关闭上传模态框并刷新文件列表
-      setIsUploadModalOpen(false);
-      onRefresh();
+      // 上传成功后刷新文件列表
+      await loadFiles(folderId);
+      
+      // 关闭上传UI相关模态框和状态
+      dispatch({ type: 'SET_UPLOAD_MODAL_OPEN', payload: false });
+      dispatch({ type: 'SET_FOLDER_UPLOAD_MODAL_OPEN', payload: false });
+      
+      // 清除上传状态
+      clearUploadState();
+      
+      return true;
     } catch (error) {
       console.error('上传文件夹错误:', error);
+      setUploadError(error instanceof Error ? error.message : '上传文件夹失败，请重试');
       message.error(error instanceof Error ? error.message : '上传文件夹失败，请重试');
+      return false;
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [onRefresh]);
+  }, [
+    currentFolderId, 
+    setIsUploading, 
+    setUploadProgress, 
+    setUploadError, 
+    setCurrentFiles, 
+    clearUploadState, 
+    loadFiles, 
+    dispatch
+  ]);
 
   return {
+    // 状态
     isUploading,
     uploadProgress,
+    uploadError,
+    currentFiles,
+    
+    // 操作
     handleUpload,
     handleFolderUpload,
-    isUploadModalOpen,
-    setIsUploadModalOpen,
-    isFolderUploadModalOpen,
-    setIsFolderUploadModalOpen,
-    uploadError
+    
+    // 状态设置
+    setIsUploading,
+    setUploadProgress,
+    setUploadError,
+    clearUploadState
   };
-} 
+}; 

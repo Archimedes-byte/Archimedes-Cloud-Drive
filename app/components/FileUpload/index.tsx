@@ -2,13 +2,21 @@
 
 import React, { useState, useRef } from 'react';
 import { Progress } from '../ui/progress';
+import { FileInfo } from '@/app/types';
 
 interface FileUploadProps {
-  onUploadComplete: (file: any) => void;
+  onUploadComplete: (file: FileInfo) => void;
   folderId?: string;
+  accept?: string;
+  multiple?: boolean;
 }
 
-export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
+export function FileUpload({ 
+  onUploadComplete, 
+  folderId,
+  accept,
+  multiple = false
+}: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -45,24 +53,36 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
           onUploadComplete(response);
           setProgress(100);
         } else {
-          const error = JSON.parse(xhr.responseText);
-          throw new Error(error.message || '上传失败');
+          let errorMessage = '上传失败';
+          try {
+            const error = JSON.parse(xhr.responseText);
+            errorMessage = error.message || error.error || errorMessage;
+          } catch (e) {
+            // 解析错误时使用默认错误信息
+          }
+          setError(errorMessage);
         }
       };
 
       xhr.onerror = () => {
-        throw new Error('网络错误');
+        setError('网络错误，请检查您的连接并重试');
       };
 
       xhr.send(formData);
     } catch (err) {
       setError(err instanceof Error ? err.message : '上传失败');
     } finally {
-      setUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleCancelUpload = () => {
+    // 在此可添加取消上传逻辑
+    setUploading(false);
+    setProgress(0);
+    setError(null);
   };
 
   return (
@@ -73,6 +93,8 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
           type="file"
           onChange={handleFileSelect}
           disabled={uploading}
+          accept={accept}
+          multiple={multiple}
           className="block w-full text-sm text-gray-500
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
@@ -90,6 +112,12 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
             <span className="text-sm text-gray-600">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          <button 
+            onClick={handleCancelUpload}
+            className="mt-2 text-xs text-red-600 hover:text-red-800"
+          >
+            取消上传
+          </button>
         </div>
       )}
 

@@ -7,14 +7,14 @@ import {
   getThemesByCategory,
   ThemeStyle
 } from '@/app/shared/themes';
-import { useUserProfile } from './useUserProfile';
+import { useAppUserProfile } from './useAppUserProfile';
 
 /**
  * 文件管理系统主题管理Hook
  * 整合用户资料主题与主题系统
  */
 export const useThemeManager = () => {
-  const { userProfile, updateTheme: updateUserProfileTheme } = useUserProfile();
+  const { userProfile, updateUserProfile } = useAppUserProfile();
   const [currentTheme, setCurrentTheme] = useState<string | null>(null);
   const [themeStyle, setThemeStyle] = useState<ThemeStyle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,10 +107,10 @@ export const useThemeManager = () => {
       }
       
       // 检查是否能够安全地更新用户资料
-      if (userProfile && updateUserProfileTheme) {
+      if (userProfile && updateUserProfile) {
         try {
           // 如果服务器更新失败，仍然保持UI更新
-          await updateUserProfileTheme(themeId).catch(error => {
+          await updateUserProfile(themeId).catch(error => {
             console.warn('无法更新服务器上的主题设置，但UI已更新:', error);
           });
         } catch (error) {
@@ -123,7 +123,7 @@ export const useThemeManager = () => {
       console.error('更新主题失败:', error);
       return false;
     }
-  }, [userProfile, updateUserProfileTheme, setTheme]);
+  }, [userProfile, updateUserProfile, setTheme]);
   
   return {
     // 主题状态

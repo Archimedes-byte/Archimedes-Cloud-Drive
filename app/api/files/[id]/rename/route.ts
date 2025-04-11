@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { 
   createSuccessResponse, 
@@ -13,20 +12,23 @@ import {
   apiHandler
 } from '@/app/lib/api/responseHandler';
 
-// 创建文件夹请求验证模式
-const CreateFolderSchema = z.object({
-  name: z.string().min(1, '文件夹名称不能为空'),
-  parentId: z.string().nullable(),
-  tags: z.array(z.string()).optional().default([]),
+// 重命名文件请求验证模式
+const RenameFileSchema = z.object({
+  name: z.string().min(1, '文件名不能为空'),
 });
 
 export const dynamic = 'force-dynamic';
 
 /**
- * 创建文件夹
+ * 重命名文件API
  */
-export async function POST(req: NextRequest) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   return apiHandler(async () => {
+    const fileId = params.id;
+    
     // 验证用户登录状态
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
 
       // 解析并验证请求数据
       const data = await req.json();
-      const validationResult = CreateFolderSchema.safeParse(data);
+      const validationResult = RenameFileSchema.safeParse(data);
       
       if (!validationResult.success) {
         return createErrorResponse(
@@ -63,73 +65,60 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      const { name, parentId, tags } = validationResult.data;
+      const { name } = validationResult.data;
       
-      // 验证父文件夹是否存在（如果指定了父文件夹）
-      if (parentId) {
-        const parentFolder = await prisma.file.findFirst({
-          where: {
-            id: parentId,
-            uploaderId: user.id,
-            isFolder: true,
-            isDeleted: false
-          }
-        });
-        
-        if (!parentFolder) {
-          return createErrorResponse(
-            '父文件夹不存在或无权限访问',
-            STATUS_CODES.BAD_REQUEST,
-            ERROR_CODES.VALIDATION_ERROR
-          );
-        }
-      }
-      
-      // 检查同名文件夹是否已存在
-      const existingFolder = await prisma.file.findFirst({
+      // 查找文件并验证所有权
+      const file = await prisma.file.findFirst({
         where: {
-          name,
-          parentId,
+          id: fileId,
           uploaderId: user.id,
-          isFolder: true,
           isDeleted: false
         }
       });
       
-      if (existingFolder) {
+      if (!file) {
         return createErrorResponse(
-          '文件夹已存在',
+          '文件不存在或无权限访问',
+          STATUS_CODES.NOT_FOUND,
+          ERROR_CODES.NOT_FOUND
+        );
+      }
+      
+      // 检查同名文件是否已存在（在同级目录下）
+      const existingFile = await prisma.file.findFirst({
+        where: {
+          name,
+          parentId: file.parentId,
+          id: { not: fileId },
+          uploaderId: user.id,
+          isDeleted: false
+        }
+      });
+      
+      if (existingFile) {
+        return createErrorResponse(
+          '同名文件已存在',
           STATUS_CODES.CONFLICT,
           ERROR_CODES.RESOURCE_EXISTS
         );
       }
       
-      // 创建文件夹
-      const folderId = uuidv4();
-      const folder = await prisma.file.create({
+      // 更新文件名
+      const updatedFile = await prisma.file.update({
+        where: { id: fileId },
         data: {
-          id: folderId,
           name,
           filename: name,
-          path: parentId ? `/${name}` : '/',
-          type: 'folder',
-          size: 0,
-          isFolder: true,
-          uploaderId: user.id,
-          parentId,
-          tags,
-          url: null,
           updatedAt: new Date()
         }
       });
       
       return createSuccessResponse(
-        folder,
-        '文件夹创建成功',
-        STATUS_CODES.CREATED
+        updatedFile,
+        '文件重命名成功'
       );
     } catch (error) {
-      console.error('创建文件夹错误:', error);
+      console.error('重命名文件错误:', error);
       return createErrorResponse(
         error instanceof Error ? error.message : '服务器内部错误',
         STATUS_CODES.INTERNAL_ERROR,

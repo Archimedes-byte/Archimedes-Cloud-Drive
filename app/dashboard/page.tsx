@@ -69,8 +69,6 @@ export default function DashboardPage() {
 
   const handleSave = async () => {
     try {
-      console.log('保存用户资料:', userInfo);
-      
       // 表单验证
       if (!validateForm(userInfo)) {
         toast.error('请修正表单中的错误后再提交');
@@ -126,14 +124,13 @@ export default function DashboardPage() {
     // 然后尝试在服务器上保存
     try {
       const success = await updateTheme(themeId);
-      if (success) {
-        console.log(`主题 ${themeId} 已成功应用并保存到服务器`);
-      } else {
-        console.warn(`主题 ${themeId} 已在本地应用，但未能保存到服务器`);
+      if (!success) {
+        toast.warning('主题已在本地应用，但未能保存到服务器');
       }
       return success;
     } catch (error) {
-      console.error(`主题 ${themeId} 应用发生错误:`, error);
+      console.error('主题应用发生错误:', error);
+      toast.error('保存主题设置失败');
       // 即使保存失败，本地主题已应用，所以依然返回true让UI保持已选状态
       return true;
     }
@@ -144,48 +141,27 @@ export default function DashboardPage() {
     applyThemeService(theme);
   };
 
-  // 引用ProfileHeader中的fileInputRef
+  // 创建多个ref用于管理文件上传控件
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 触发头像上传功能
+  // 触发头像上传功能 - 使用React方式
   const handleAvatarClick = () => {
-    console.log('资料完整度头像点击被触发');
-    
-    // 首先尝试使用特定的class查找
-    const avatarInput = document.querySelector('.avatar-upload-input');
-    if (avatarInput && avatarInput instanceof HTMLInputElement) {
-      console.log('通过class找到头像上传input，触发点击');
-      avatarInput.click();
-      return;
-    }
-    
-    // 备用方案1：通过容器class查找
-    const containerInput = document.querySelector('.avatarContainer input[type="file"]');
-    if (containerInput && containerInput instanceof HTMLInputElement) {
-      console.log('通过容器找到头像上传input，触发点击');
-      containerInput.click();
-      return;
-    }
-    
-    // 备用方案2：查找所有文件上传input
-    console.error('未找到精确的头像上传input元素，尝试查找所有图片上传控件');
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    let found = false;
-    fileInputs.forEach(input => {
-      const fileInput = input as HTMLInputElement;
-      if (fileInput.accept && fileInput.accept.includes('image')) {
-        console.log('找到备选图片上传input，触发点击');
-        fileInput.click();
-        found = true;
-        return;
-      }
-    });
-    
-    if (!found) {
-      console.error('无法找到任何图片上传控件');
-      alert('无法找到头像上传控件，请尝试直接点击头像进行上传');
+    // 直接使用ref触发点击，避免DOM查询
+    if (avatarInputRef.current) {
+      avatarInputRef.current.click();
+    } else if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      toast.error('无法访问头像上传功能，请刷新页面重试');
     }
   };
+
+  // 将ref传递给相关组件
+  useEffect(() => {
+    // 这里可以处理组件间ref共享的逻辑
+    // 例如，可以通过上下文或其他方式共享ref
+  }, []);
 
   // 加载状态
   if (status === 'loading' || profileLoading) {
@@ -283,28 +259,25 @@ export default function DashboardPage() {
             onEditClick={() => setIsEditModalOpen(true)}
             onPasswordClick={openPasswordModal}
             isLoading={profileLoading || passwordLoading}
+            ref={avatarInputRef}
             onAvatarChange={async (avatarUrl) => {
-              console.log('头像变更被触发，新URL:', avatarUrl);
-              
               try {
                 // 创建新的userInfo对象
                 const updatedInfo = {...userInfo, avatarUrl};
-                console.log('更新后的userInfo:', updatedInfo);
                 
                 // 更新本地状态
                 setUserInfo(updatedInfo);
                 
                 // 保存到数据库并等待完成
                 const success = await updateProfile(updatedInfo);
-                console.log('保存头像到数据库结果:', success ? '成功' : '失败');
                 
                 // 如果保存失败，强制重新获取用户数据
                 if (!success) {
-                  window.location.reload(); // 最后的手段：刷新整个页面
+                  toast.error('保存头像失败，请刷新页面重试');
                 }
               } catch (error) {
                 console.error('处理头像变更时出错:', error);
-                alert('更新头像失败，请稍后再试');
+                toast.error('更新头像失败，请稍后重试');
               }
             }}
           />

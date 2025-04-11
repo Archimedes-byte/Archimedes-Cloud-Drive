@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, ForwardedRef } from 'react';
 import Image from 'next/image';
 import { Session } from 'next-auth';
 import { UserInfo } from '../../hooks/useProfile';
@@ -15,16 +15,22 @@ interface ProfileHeaderProps {
   onAvatarChange?: (avatarUrl: string) => void;
 }
 
-const ProfileHeader = ({ 
+const ProfileHeader = forwardRef(({ 
   session, 
   userInfo,
   onEditClick, 
   onPasswordClick, 
   isLoading,
   onAvatarChange
-}: ProfileHeaderProps) => {
+}: ProfileHeaderProps, ref: ForwardedRef<HTMLInputElement>) => {
   const [avatarError, setAvatarError] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  
+  // 内部文件输入ref（在没有传入ref的情况下使用）
+  const internalFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 决定使用哪个ref
+  const fileInputRef = (ref as React.RefObject<HTMLInputElement>) || internalFileInputRef;
   
   // 使用userInfo中的displayName作为首选，如果没有则使用session中的name
   const displayName = userInfo.displayName || session.user?.name || '未设置昵称';
@@ -45,19 +51,17 @@ const ProfileHeader = ({
     setAvatarError(false); // 重置错误状态
   }, [userInfo.avatarUrl]);
 
-  // 添加深度调试 - 监控props变化
-  useEffect(() => {
-    console.log('ProfileHeader收到新的userInfo:', 
-      { 
-        avatarUrl: userInfo.avatarUrl,
-        hasAvatar: !!userInfo.avatarUrl,
-        displayName: userInfo.displayName
-      }
-    );
-  }, [userInfo]);
-
   // 打开头像管理弹窗
   const handleAvatarClick = () => {
+    setShowAvatarModal(true);
+  };
+
+  // 处理文件选择
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // 打开裁剪模态框
     setShowAvatarModal(true);
   };
 
@@ -104,6 +108,16 @@ const ProfileHeader = ({
           </div>
         </div>
         <p className={styles.avatarHint}>点击更换头像</p>
+        
+        {/* 隐藏的文件上传输入框 */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="avatar-upload-input"
+          style={{ display: 'none' }}
+        />
       </div>
       
       <div className={styles.info}>
@@ -137,6 +151,8 @@ const ProfileHeader = ({
       />
     </div>
   );
-};
+});
+
+ProfileHeader.displayName = 'ProfileHeader';
 
 export default ProfileHeader; 

@@ -17,8 +17,7 @@ model User {
   storageUsed   Int      @default(0)
   storageLimit  Int      @default(10485760)
   isAdmin       Boolean  @default(false)
-  File          File[]
-  folders       Folder[]
+  files         File[]
   sharedFiles   Share[]  @relation("SharedBy")
   receivedFiles Share[]  @relation("SharedTo")
   profile       UserProfile?
@@ -40,42 +39,32 @@ model Share {
   sharedTo   User?     @relation("SharedTo", fields: [sharedToId], references: [id])
 }
 
-model Folder {
-  id        String   @id @default(cuid())
-  name      String
-  parentId  String?
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
-  children  Folder[] @relation("FolderToFolder")
-  owner     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model File {
   id         String    @id
-  name       String
-  filename   String
-  path       String
-  type       String?
-  size       Int?
-  data       Bytes?
+  name       String        // 显示给用户的原始文件名
+  filename   String        // 存储在文件系统中的唯一文件名 
+  path       String        // 文件系统中的物理存储路径（仅用于服务器端）
+  type       String?       // 文件MIME类型或分类
+  size       Int?          // 文件大小（字节数）
   isFolder   Boolean   @default(false)
   isDeleted  Boolean   @default(false)
   deletedAt  DateTime?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime  @updatedAt
   parentId   String?
   uploaderId String
   tags       String[]
-  url        String?
-  File       File?     @relation("FileToFile", fields: [parentId], references: [id])
-  other_File File[]    @relation("FileToFile")
-  User       User      @relation(fields: [uploaderId], references: [id])
+  url        String?       // 访问文件的URL（仅用于前端展示或下载）
+  parent     File?     @relation("FileToFolder", fields: [parentId], references: [id])
+  children   File[]    @relation("FileToFolder")
+  uploader   User      @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
   shares     Share[]
 
   @@index([parentId])
   @@index([uploaderId])
+  @@index([isFolder])
+  @@index([isDeleted])
+  @@index([type])
 }
 
 model MaintenanceLog {

@@ -1,9 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { prisma } from '@/app/lib/prisma'
-
-// 获取当前认证配置
-import { authOptions } from '@/app/lib/auth'
+import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/prisma';
+import { z } from 'zod';
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  STATUS_CODES, 
+  ERROR_CODES, 
+  ERROR_MESSAGES,
+  apiHandler
+} from '@/app/lib/api/responseHandler';
 
 // 从前端获取的用户资料接口
 interface UserProfileInput {
@@ -14,6 +21,32 @@ interface UserProfileInput {
   company?: string
   avatarUrl?: string
   theme?: string
+}
+
+// 用户资料接口
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  displayName: string;
+  avatarUrl?: string; // 改为可选字符串而不是null
+  bio?: string;
+  company?: string;
+  location?: string;
+  website?: string;
+  theme: string;
+  createdAt: string;
+  storageUsed: number;
+  storageLimit: number;
+  storagePercentUsed: number;
+  totalFiles: number;
+  recentFiles?: {
+    id: string;
+    name: string;
+    type: string;
+    size: number;
+    createdAt: string;
+  }[];
 }
 
 // 返回给前端的用户资料接口
@@ -33,174 +66,161 @@ interface UserProfileResponse {
   updatedAt: string
 }
 
-// 获取用户资料
-export async function GET() {
-  console.log('GET /api/user/profile 请求开始')
-  try {
-    const session = await getServerSession(authOptions)
-    console.log('获取到用户会话:', session ? '成功' : '失败')
-    
+// 更新用户资料验证模式
+const UpdateProfileSchema = z.object({
+  displayName: z.string().max(100).optional(),
+  bio: z.string().max(500).optional(),
+  location: z.string().max(100).optional(),
+  website: z.string().url('请输入有效的网址').max(255).optional().nullable(),
+  company: z.string().max(100).optional(),
+  avatarUrl: z.string().url('请输入有效的图片地址').max(500).optional().nullable(),
+  theme: z.string().max(50).optional()
+});
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * 获取用户资料
+ */
+export async function GET(req: NextRequest) {
+  return apiHandler(async () => {
+    // 验证用户登录状态
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      console.log('未授权访问: 没有找到用户邮箱')
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      )
+      return createErrorResponse(
+        ERROR_MESSAGES.UNAUTHORIZED,
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
-    console.log('查询用户信息，邮箱:', session.user.email)
-    // 查询用户，并包含用户资料
-    const user = await prisma.user.findUnique({
-      where: {
-        email: session.user.email
-      },
-      include: {
-        profile: true
+    try {
+      // 获取用户信息
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: {
+          profile: true
+        }
+      });
+
+      if (!user) {
+        return createErrorResponse(
+          '用户不存在',
+          STATUS_CODES.UNAUTHORIZED,
+          ERROR_CODES.UNAUTHORIZED
+        );
       }
-    })
 
-    if (!user) {
-      console.log('用户不存在:', session.user.email)
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      )
+      // 获取存储使用情况
+      const storageInfo = {
+        storageUsed: user.storageUsed || 0,
+        storageLimit: user.storageLimit || 0,
+        storagePercent: user.storageLimit ? Math.round((user.storageUsed / user.storageLimit) * 100) : 0
+      };
+      
+      // 响应对象包含用户基本信息和资料
+      const userInfo = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.createdAt,
+        isAdmin: user.isAdmin,
+        profile: user.profile || null,
+        storage: storageInfo
+      };
+      
+      return createSuccessResponse(
+        userInfo,
+        '用户资料获取成功'
+      );
+    } catch (error) {
+      console.error('获取用户资料错误:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : '服务器内部错误',
+        STATUS_CODES.INTERNAL_ERROR,
+        ERROR_CODES.INTERNAL_ERROR
+      );
     }
-
-    // 构建用户资料响应
-    const userProfile: UserProfileResponse = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatarUrl: user.profile?.avatarUrl || null, 
-      theme: user.profile?.theme || null,
-      bio: user.profile?.bio || null,
-      location: user.profile?.location || null,
-      website: user.profile?.website || null,
-      company: user.profile?.company || null,
-      storageUsed: user.storageUsed,
-      storageLimit: user.storageLimit,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString()
-    }
-
-    console.log('成功获取用户信息:', user.id)
-    return NextResponse.json({
-      success: true,
-      profile: userProfile
-    })
-  } catch (error) {
-    console.error('获取用户信息失败:', error)
-    return NextResponse.json(
-      { success: false, error: '获取用户信息失败' },
-      { status: 500 }
-    )
-  }
+  });
 }
 
-// 更新用户资料
-export async function PUT(request: NextRequest) {
-  console.log('PUT /api/user/profile 请求开始')
-  try {
-    const session = await getServerSession(authOptions)
-    console.log('获取到用户会话:', session ? '成功' : '失败')
-    
+/**
+ * 更新用户资料
+ */
+export async function PATCH(req: NextRequest) {
+  return apiHandler(async () => {
+    // 验证用户登录状态
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      console.log('未授权访问: 没有找到用户邮箱')
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      )
+      return createErrorResponse(
+        ERROR_MESSAGES.UNAUTHORIZED,
+        STATUS_CODES.UNAUTHORIZED,
+        ERROR_CODES.UNAUTHORIZED
+      );
     }
 
-    const data = await request.json() as UserProfileInput
-    console.log('接收到的数据:', data)
+    try {
+      // 获取用户信息
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      });
 
-    // 获取用户
-    const user = await prisma.user.findUnique({
-      where: {
-        email: session.user.email
-      },
-      include: {
-        profile: true
+      if (!user) {
+        return createErrorResponse(
+          '用户不存在',
+          STATUS_CODES.UNAUTHORIZED,
+          ERROR_CODES.UNAUTHORIZED
+        );
       }
-    })
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      )
+      // 解析并验证请求数据
+      const data = await req.json();
+      const validationResult = UpdateProfileSchema.safeParse(data);
+      
+      if (!validationResult.success) {
+        return createErrorResponse(
+          validationResult.error,
+          STATUS_CODES.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+      
+      const profileData = validationResult.data;
+      
+      // 检查用户是否已有资料
+      const existingProfile = await prisma.userProfile.findUnique({
+        where: { userId: user.id }
+      });
+      
+      let updatedProfile;
+      
+      if (existingProfile) {
+        // 更新现有资料
+        updatedProfile = await prisma.userProfile.update({
+          where: { userId: user.id },
+          data: profileData
+        });
+      } else {
+        // 创建新资料
+        updatedProfile = await prisma.userProfile.create({
+          data: {
+            ...profileData,
+            userId: user.id
+          }
+        });
+      }
+      
+      return createSuccessResponse(
+        updatedProfile,
+        '用户资料更新成功'
+      );
+    } catch (error) {
+      console.error('更新用户资料错误:', error);
+      return createErrorResponse(
+        error instanceof Error ? error.message : '服务器内部错误',
+        STATUS_CODES.INTERNAL_ERROR,
+        ERROR_CODES.INTERNAL_ERROR
+      );
     }
-
-    // 更新用户名称
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: user.id
-      },
-      data: {
-        name: data.displayName || user.name
-      }
-    })
-
-    // 更新或创建用户资料
-    console.log('开始更新用户资料，用户ID:', user.id);
-    console.log('当前用户Profile数据:', user.profile || '无');
-    
-    const profile = await prisma.userProfile.upsert({
-      where: {
-        userId: user.id
-      },
-      update: {
-        avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : user.profile?.avatarUrl,
-        theme: data.theme !== undefined ? data.theme : user.profile?.theme,
-        displayName: data.displayName || user.profile?.displayName || user.name,
-        bio: data.bio !== undefined ? data.bio : user.profile?.bio,
-        location: data.location !== undefined ? data.location : user.profile?.location,
-        website: data.website !== undefined ? data.website : user.profile?.website,
-        company: data.company !== undefined ? data.company : user.profile?.company
-      },
-      create: {
-        userId: user.id,
-        displayName: data.displayName || user.name || '',
-        avatarUrl: data.avatarUrl,
-        theme: data.theme,
-        bio: data.bio || '',
-        location: data.location || '',
-        website: data.website || '',
-        company: data.company || ''
-      }
-    });
-    
-    console.log('用户资料更新/创建成功:', profile);
-
-    // 构建用户资料响应
-    const userProfile: UserProfileResponse = {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      avatarUrl: profile.avatarUrl,
-      theme: profile.theme,
-      bio: profile.bio,
-      location: profile.location,
-      website: profile.website,
-      company: profile.company,
-      storageUsed: updatedUser.storageUsed,
-      storageLimit: updatedUser.storageLimit,
-      createdAt: updatedUser.createdAt.toISOString(),
-      updatedAt: updatedUser.updatedAt.toISOString()
-    }
-
-    console.log('成功更新用户信息:', user.id)
-    return NextResponse.json({
-      success: true,
-      profile: userProfile
-    })
-  } catch (error) {
-    console.error('更新用户信息失败:', error)
-    return NextResponse.json(
-      { success: false, error: '更新用户信息失败' },
-      { status: 500 }
-    )
-  }
+  });
 } 
