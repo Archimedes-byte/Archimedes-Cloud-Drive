@@ -33,6 +33,8 @@ export const useFiles = () => {
   // 使用ref记录最后一次请求的参数，防止重复请求
   const lastRequestRef = useRef<{folderId: string | null, type: FileType | null} | null>(null);
   const isInitialMount = useRef(true);
+  // 添加最后加载时间ref，防止短时间内重复加载
+  const lastLoadTimeRef = useRef<number>(0);
   
   // 记录首次渲染
   useEffect(() => {
@@ -247,8 +249,22 @@ export const useFiles = () => {
     // 跳过首次渲染
     if (isInitialMount.current) return;
     
+    // 防止短时间内多次触发的逻辑
+    const now = Date.now();
+    const timeSinceLastLoad = now - lastLoadTimeRef.current;
+    
+    // 如果距离上次加载时间太短（小于2秒），跳过此次加载
+    if (timeSinceLastLoad < 2000 && lastLoadTimeRef.current > 0) {
+      console.log(`距上次加载仅 ${timeSinceLastLoad}ms，跳过此次自动加载`);
+      return;
+    }
+    
     // 当文件夹ID或类型变化时加载文件
     console.log('文件夹或类型变化检测到', {currentFolderId, selectedFileType});
+    
+    // 更新最后加载时间
+    lastLoadTimeRef.current = now;
+    
     loadFiles(currentFolderId, selectedFileType);
   }, [currentFolderId, selectedFileType, loadFiles]);
 

@@ -54,6 +54,27 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
       );
     }
 
+    // 检查相同目录下是否已存在同名文件夹
+    const existingFolder = await prisma.file.findFirst({
+      where: {
+        name: name.trim(),
+        parentId: parentId || null,
+        uploaderId: user.id,
+        isFolder: true,
+        isDeleted: false,
+      },
+    });
+
+    if (existingFolder) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: `文件夹 "${name}" 已存在于当前目录` 
+        },
+        { status: 409 }  // 409 Conflict
+      );
+    }
+
     // 如果有父文件夹，验证其存在性和所有权
     let parentFolder = null;
     if (parentId) {

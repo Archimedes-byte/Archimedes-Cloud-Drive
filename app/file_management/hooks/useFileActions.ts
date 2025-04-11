@@ -126,13 +126,22 @@ export const useFileActions = (onSuccessCallback: () => void) => {
   // 创建文件夹
   const handleCreateFolder = useCallback(async (currentFolderId: string | null) => {
     try {
-      if (!newFolderName.trim()) {
+      // 前端基本验证
+      const trimmedName = newFolderName.trim();
+      if (!trimmedName) {
         message.warning('请输入文件夹名称');
+        return;
+      }
+
+      // 检查文件夹名称是否合法 (不包含特殊字符 / \ : * ? " < > |)
+      const invalidChars = /[\/\\:*?"<>|]/;
+      if (invalidChars.test(trimmedName)) {
+        message.error('文件夹名称不能包含下列任何字符: / \\ : * ? " < > |');
         return;
       }
         
       console.log('准备创建文件夹:', {
-        name: newFolderName,
+        name: trimmedName,
         parentId: currentFolderId,
         tags: newFolderTags
       });
@@ -143,7 +152,7 @@ export const useFileActions = (onSuccessCallback: () => void) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: newFolderName,
+          name: trimmedName,
           parentId: currentFolderId,
           tags: newFolderTags
         }),
@@ -156,7 +165,15 @@ export const useFileActions = (onSuccessCallback: () => void) => {
           状态: response.status,
           数据: responseData
         });
-        throw new Error(responseData.error || '创建文件夹失败');
+        
+        // 处理特定错误类型
+        if (response.status === 409) {
+          // 409 Conflict - 文件夹已存在
+          message.error(`创建失败：${responseData.error || '同名文件夹已存在'}`);
+        } else {
+          throw new Error(responseData.error || '创建文件夹失败');
+        }
+        return;
       }
 
       console.log('文件夹创建成功:', responseData);

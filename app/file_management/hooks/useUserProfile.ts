@@ -58,6 +58,8 @@ export const useUserProfile = () => {
   const [consecutiveErrors, setConsecutiveErrors] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
+  // 添加会话状态变化次数的引用，放在顶层
+  const sessionChangeRef = useRef<number>(0);
 
   // 有效的头像URL，优先使用用户资料中的，其次是会话中的
   const effectiveAvatarUrl = userProfile?.avatarUrl || session?.user?.image || null;
@@ -425,18 +427,41 @@ export const useUserProfile = () => {
     console.log('会话状态变化:', { 
       sessionExists: !!session, 
       hasUser: !!session?.user, 
-      userEmail: session?.user?.email || 'unknown' 
+      userEmail: session?.user?.email || 'unknown',
+      changeCount: sessionChangeRef.current
     });
+    
+    // 防止短时间内重复触发
+    const currentTime = Date.now();
+    if (currentTime - lastFetchTimeRef.current < 5000 && userProfile && lastFetchTimeRef.current > 0) {
+      console.log('会话状态短时间内重复变化，跳过此次请求');
+      return;
+    }
     
     // 仅当会话存在且有用户信息时获取用户资料
     if (session?.user) {
       console.log('会话变化，准备获取用户资料...');
       
+      // 如果已经有用户资料且邮箱匹配，不要重复获取
+      if (userProfile && userProfile.email === session.user.email) {
+        console.log('用户资料已存在且邮箱匹配，跳过重新获取');
+        return;
+      }
+      
       // 添加短暂延迟，确保 session 完全稳定
       const timer = setTimeout(() => {
+        // 增加变化计数
+        sessionChangeRef.current += 1;
+        
+        // 如果短时间内变化次数过多，可能是循环触发
+        if (sessionChangeRef.current > 3) {
+          console.warn('检测到可能的无限循环，暂停会话状态处理');
+          return;
+        }
+        
         console.log('开始获取用户资料...');
         fetchUserProfile();
-      }, 300);
+      }, 500); // 增加延迟时间
       
       return () => {
         clearTimeout(timer);
@@ -458,7 +483,7 @@ export const useUserProfile = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, [session]);
+  }, [session, userProfile, fetchUserProfile]); // 添加必要的依赖项
 
   // 初始化时应用用户的主题设置
   useEffect(() => {

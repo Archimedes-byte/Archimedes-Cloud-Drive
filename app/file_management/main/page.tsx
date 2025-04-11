@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { message, Spin } from 'antd';
@@ -139,6 +139,8 @@ export default function FileManagementPage() {
   // 状态跟踪引用
   const hasLoadedFilesRef = React.useRef(false);
   const sessionInitializedRef = React.useRef(false);
+  // 添加防止重复加载的标志，放在顶层
+  const loadInProgressRef = useRef(false);
 
   // 在文件上传或文件夹上传成功后触发的函数
   const handleUploadSuccess = useCallback(() => {
@@ -246,11 +248,12 @@ export default function FileManagementPage() {
   // 文件加载逻辑优化
   useEffect(() => {
     // 确保session存在且状态为已认证，且文件未加载过
-    if (status === 'authenticated' && session?.user && !hasLoadedFilesRef.current) {
+    if (status === 'authenticated' && session?.user && !hasLoadedFilesRef.current && !loadInProgressRef.current) {
       console.log('初始加载文件列表', { currentFolderId, selectedFileType, session: !!session });
       
       // 标记已经开始加载
       hasLoadedFilesRef.current = true;
+      loadInProgressRef.current = true;
       
       // 开始加载，这是初始加载，使用骨架屏
       startLoading(false);
@@ -267,6 +270,12 @@ export default function FileManagementPage() {
                 .then(() => {
                   console.log('文件列表加载成功，完成初始化加载');
                   finishLoading(false);
+                  loadInProgressRef.current = false;
+                })
+                .catch(error => {
+                  console.error('加载文件列表失败:', error);
+                  finishLoading(true, '加载文件列表失败');
+                  loadInProgressRef.current = false;
                 });
             } else {
               console.log('用户资料为空，尝试重新获取...');
@@ -280,9 +289,16 @@ export default function FileManagementPage() {
                       .then(() => {
                         console.log('文件列表加载成功，完成初始化加载');
                         finishLoading(false);
+                        loadInProgressRef.current = false;
+                      })
+                      .catch(error => {
+                        console.error('加载文件列表失败:', error);
+                        finishLoading(true, '加载文件列表失败');
+                        loadInProgressRef.current = false;
                       });
                   } else {
                     console.error('重试获取用户资料失败');
+                    loadInProgressRef.current = false;
                     throw new Error("获取用户资料失败，请刷新页面重试");
                   }
                 });
@@ -298,14 +314,22 @@ export default function FileManagementPage() {
                   if (lastTryProfile) {
                     console.log('最后尝试成功，继续加载文件列表');
                     loadFiles(currentFolderId, selectedFileType, true)
-                      .then(() => finishLoading(false))
-                      .catch(err => finishLoading(true, '加载文件列表失败'));
+                      .then(() => {
+                        finishLoading(false);
+                        loadInProgressRef.current = false;
+                      })
+                      .catch(err => {
+                        finishLoading(true, '加载文件列表失败');
+                        loadInProgressRef.current = false;
+                      });
                   } else {
                     finishLoading(true, '获取用户资料失败，请刷新页面重试');
+                    loadInProgressRef.current = false;
                   }
                 })
                 .catch(err => {
                   finishLoading(true, err.message || '加载失败，请重试');
+                  loadInProgressRef.current = false;
                 });
             }, 1500);
           });

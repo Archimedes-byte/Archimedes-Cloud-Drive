@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Folder } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Folder, AlertCircle } from 'lucide-react';
 import styles from '../styles/shared.module.css';
 
 interface NewFolderFormProps {
@@ -20,23 +20,62 @@ const NewFolderForm: React.FC<NewFolderFormProps> = ({
   onCancel
 }) => {
   const [newTag, setNewTag] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 检查文件夹名称是否有效
+  useEffect(() => {
+    const trimmedName = folderName.trim();
+    
+    if (trimmedName === '') {
+      setNameError(null); // 空名称不显示错误，但创建按钮会处理
+      return;
+    }
+
+    // 检查特殊字符
+    const invalidChars = /[\/\\:*?"<>|]/;
+    if (invalidChars.test(trimmedName)) {
+      setNameError('文件夹名称不能包含下列字符: / \\ : * ? " < > |');
+      return;
+    }
+
+    setNameError(null);
+  }, [folderName]);
+
+  // 处理回车键创建文件夹
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !nameError && folderName.trim()) {
+      onCreateFolder();
+    }
+  };
 
   return (
     <div className={`${styles.newFolderRow} p-4 border border-gray-200 rounded-lg bg-white shadow-sm mb-4`}>
       <div className={`${styles.newFolderForm} flex flex-col space-y-4`}>
         <div className={`flex items-center`}>
           <Folder className="w-6 h-6 text-blue-500 flex-shrink-0 mr-3" />
-          <div className={`${styles.newFolderNameContainer} flex-grow`}>
+          <div className={`${styles.newFolderNameContainer} flex-grow relative`}>
             <input
               type="text"
               ref={inputRef}
-              className={`${styles.newFolderInput} h-10 px-3 rounded-md border border-gray-300 w-full text-base`}
+              className={`${styles.newFolderInput} h-10 px-3 rounded-md border ${nameError ? 'border-red-500' : 'border-gray-300'} w-full text-base`}
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
               placeholder="新文件夹名称"
               autoFocus
+              onKeyDown={handleKeyDown}
             />
+            {nameError && (
+              <div className="text-red-500 text-xs mt-1 flex items-center">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                <span>{nameError}</span>
+              </div>
+            )}
+            {!nameError && (
+              <div className="text-gray-500 text-xs mt-1">
+                相同目录下不能存在同名文件夹
+              </div>
+            )}
           </div>
         </div>
         
@@ -77,8 +116,9 @@ const NewFolderForm: React.FC<NewFolderFormProps> = ({
         
         <div className={`${styles.newFolderActions} flex items-center gap-3 ml-9`}>
           <button 
-            className={`${styles.confirmButton} h-10 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center justify-center`}
+            className={`${styles.confirmButton} h-10 px-4 ${nameError || !folderName.trim() ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-md flex items-center justify-center`}
             onClick={onCreateFolder}
+            disabled={!!nameError || !folderName.trim()}
           >
             创建
           </button>
