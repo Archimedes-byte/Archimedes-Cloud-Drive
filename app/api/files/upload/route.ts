@@ -5,7 +5,7 @@ import { prisma } from '@/app/lib/prisma';
 import { mkdir } from 'fs/promises';
 import { writeFile } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-import { FileResponse } from '@/app/shared/types/file';
+import { FileResponse } from '@/app/types';
 import { STORAGE_CONFIG } from '@/app/lib/config';
 import { getStoragePath, generateUniqueFilename, generateFileUrl } from '@/app/lib/file/paths';
 

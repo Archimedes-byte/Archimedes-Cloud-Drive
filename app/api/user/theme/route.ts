@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { prisma } from '@/app/lib/prisma';
+import { authOptions } from '@/app/lib/auth';
 
 // 获取用户当前主题
 export async function GET() {
@@ -10,7 +10,7 @@ export async function GET() {
     
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       );
     }
@@ -22,7 +22,7 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, error: '用户不存�? },
         { status: 404 }
       );
     }
@@ -47,18 +47,17 @@ export async function PUT(request: NextRequest) {
     
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       );
     }
 
-    // 获取请求体
-    const data = await request.json();
+    // 获取请求�?    const data = await request.json();
     const { theme } = data;
     
     if (!theme) {
       return NextResponse.json(
-        { success: false, error: '未提供主题参数' },
+        { success: false, error: '未提供主题参�? },
         { status: 400 }
       );
     }
@@ -77,7 +76,7 @@ export async function PUT(request: NextRequest) {
     ];
     if (!validThemes.includes(theme)) {
       return NextResponse.json(
-        { success: false, error: '无效的主题' },
+        { success: false, error: '无效的主�? },
         { status: 400 }
       );
     }
@@ -90,7 +89,7 @@ export async function PUT(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, error: '用户不存�? },
         { status: 404 }
       );
     }

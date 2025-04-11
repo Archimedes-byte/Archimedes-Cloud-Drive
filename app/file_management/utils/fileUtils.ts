@@ -1,4 +1,4 @@
-import { ExtendedFile } from '../types/index';
+import { ExtendedFile } from '@/app/types';
 
 export function getFileNameAndExtension(filename: string): { name: string; extension: string } {
   const lastDotIndex = filename.lastIndexOf('.');

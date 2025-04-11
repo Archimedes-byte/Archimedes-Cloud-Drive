@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
-import { ApiResponse, FileInfo, FileListResponse, SearchFilesRequest } from '@/app/shared/types';
+import { ApiResponse, FileInfo, FileListResponse, SearchFilesRequest } from '@/app/types';
 
 export async function GET(request: Request): Promise<NextResponse<FileListResponse>> {
   try {

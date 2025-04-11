@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { ApiResponse, FileInfo, FileEntity, mapFileEntityToFileInfo } from '@/app/shared/types';
+import { ApiResponse, FileInfo, FileEntity, mapFileEntityToFileInfo } from '@/app/types';
 
 // 错误响应处理
 function errorResponse(message: string, status: number = 500): NextResponse<ApiResponse> {

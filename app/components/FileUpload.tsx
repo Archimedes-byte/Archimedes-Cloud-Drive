@@ -2,7 +2,9 @@
 
 import React, { useState, useRef } from 'react';
 import { Progress } from '@/app/components/ui/progress';
-import { FileUploadProps, FileInfo, mapFileResponseToFileInfo } from '@/app/shared/types';
+import { FileUploadProps, FileInfo, mapFileResponseToFileInfo } from '@/app/types';
+import { Upload, Button, message, Tag, Input, Space } from 'antd';
+import { UploadOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
 
 export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -38,7 +40,7 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
       const responseData = await response.json();
       // 使用类型映射函数转换API响应为FileInfo
       const fileInfo = mapFileResponseToFileInfo(responseData);
-      onUploadComplete?.(fileInfo);
+      onUploadComplete();
       setProgress(100);
     } catch (err) {
       setError(err instanceof Error ? err.message : '上传失败');

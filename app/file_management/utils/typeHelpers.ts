@@ -1,4 +1,4 @@
-import { FileType } from '../types/index';
+import { FileType } from '@/app/types';
 
 export const TYPE_MAP: Record<FileType, string> = {
   'image': 'image/',

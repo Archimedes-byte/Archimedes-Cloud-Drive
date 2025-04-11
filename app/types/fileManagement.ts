@@ -1,12 +1,13 @@
+import { FileType, FileInfo, SortOrder, FolderPath } from './file';
+
 /**
  * 文件管理系统类型定义
  * 
  * 本文件包含所有与文件管理相关的类型定义，按以下分类组织：
  * 1. 核心数据模型 - 如File, Folder等
- * 2. 枚举和常量 - 如FileType和类型映射
- * 3. 组件Props - 如FileListProps, RenameModalProps等
- * 4. Hooks接口 - 如FileOperationsHook, FileSearchHook等
- * 5. 辅助类型 - 如SortOrder, FolderPath等
+ * 2. 组件Props - 如FileListProps, RenameModalProps等
+ * 3. Hooks接口 - 如FileOperationsHook, FileSearchHook等
+ * 4. 辅助类型 - 如FileState等
  */
 
 // ----------------------------------------------------------------------------
@@ -15,7 +16,6 @@
 
 /**
  * 基础文件类型，包含文件的共同属性
- * 注意: 不要与DOM的File类型混淆
  */
 export interface FileBase {
   id: string;
@@ -30,7 +30,7 @@ export interface FileBase {
 /**
  * 文件类型
  */
-export interface File extends FileBase {
+export interface FileItem extends FileBase {
   type: 'file' | string;
   extension?: string;
   mimeType?: string;
@@ -80,74 +80,6 @@ export interface UserProfile {
   updatedAt?: string;
 }
 
-// ----------------------------------------------------------------------------
-// 枚举和常量
-// ----------------------------------------------------------------------------
-
-/**
- * 文件类型枚举
- */
-export type FileType = 'image' | 'document' | 'video' | 'audio' | 'archive' | 'folder' | 'other';
-
-/**
- * MIME类型与文件类型的映射
- */
-export const TYPE_MAP: Record<FileType, string> = {
-  'image': 'image/',
-  'video': 'video/',
-  'audio': 'audio/',
-  'document': 'application/',
-  'archive': 'application/zip',
-  'folder': 'folder',
-  'other': 'other'
-};
-
-/**
- * 文件类型详细映射（MIME类型和扩展名）
- */
-export const FILE_TYPE_MAP: Record<FileType, { mimeTypes: string[]; extensions: string[] }> = {
-  image: {
-    mimeTypes: ['image'],
-    extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
-  },
-  document: {
-    mimeTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml', 'text'],
-    extensions: ['doc', 'docx', 'txt', 'pdf', 'xls', 'xlsx', 'ppt', 'pptx']
-  },
-  video: {
-    mimeTypes: ['video'],
-    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
-  },
-  audio: {
-    mimeTypes: ['audio'],
-    extensions: ['mp3', 'wav', 'ogg', 'flac', 'm4a']
-  },
-  archive: {
-    mimeTypes: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'],
-    extensions: ['zip', 'rar', '7z', 'tar', 'gz']
-  },
-  folder: {
-    mimeTypes: ['folder'],
-    extensions: []
-  },
-  other: {
-    mimeTypes: [],
-    extensions: []
-  }
-};
-
-// ----------------------------------------------------------------------------
-// 辅助类型
-// ----------------------------------------------------------------------------
-
-/**
- * 文件夹路径项
- */
-export interface FolderPath {
-  id: string;
-  name: string;
-}
-
 /**
  * 文件路径项
  * @deprecated 请使用FolderPath
@@ -155,14 +87,6 @@ export interface FolderPath {
 export interface FilePathItem {
   id: string;
   name: string;
-}
-
-/**
- * 排序顺序
- */
-export interface SortOrder {
-  field: string;
-  direction: 'asc' | 'desc';
 }
 
 /**
@@ -219,10 +143,6 @@ export interface RenameModalProps {
   extension?: string;
 }
 
-// ----------------------------------------------------------------------------
-// Context 类型
-// ----------------------------------------------------------------------------
-
 /**
  * 文件上下文类型
  */
@@ -247,7 +167,7 @@ export interface FileContextType {
 }
 
 // ----------------------------------------------------------------------------
-// Hooks 接口
+// Hooks接口
 // ----------------------------------------------------------------------------
 
 /**
@@ -257,12 +177,12 @@ export interface FileOperationsHook {
   loading: boolean;
   handleMove: (fileIds: string[], targetFolderId: string) => Promise<void>;
   handleDownload: (fileIds: string[]) => Promise<void>;
-  startEditing: (file: File) => void;
+  startEditing: (file: FileItem) => void;
   handleRename: () => Promise<void>;
   handleCreateFolder: () => Promise<void>;
   isRenameModalVisible: boolean;
   setIsRenameModalVisible: (visible: boolean) => void;
-  editingFile: File | null;
+  editingFile: FileItem | null;
   newFileName: string;
   setNewFileName: (name: string) => void;
   newExtension: string;
@@ -287,7 +207,6 @@ export interface FileSearchHook {
 
 /**
  * 文件上传Hook接口
- * 注意：此处的File类型是DOM的File类型，不是本模块的File类型
  */
 export interface FileUploadHook {
   isUploading: boolean;
@@ -296,12 +215,8 @@ export interface FileUploadHook {
   handleFolderUpload: (files: File[], tags?: string[], folderId?: string | null) => Promise<void>;
 }
 
-// ----------------------------------------------------------------------------
-// 搜索视图组件属性
-// ----------------------------------------------------------------------------
-
 /**
- * 搜索视图组件属性
+ * 搜索视图Props
  */
 export interface SearchViewProps {
   results: ExtendedFile[];

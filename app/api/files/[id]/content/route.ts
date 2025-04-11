@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/app/lib/prisma';
+import { getFile } from '@/app/lib/storage';
 import { readFile, stat } from 'fs/promises';
 import { existsSync } from 'fs';
-import { ApiResponse } from '@/app/shared/types';
+import { ApiResponse } from '@/app/types';
 import path from 'path';
 
 // 路由配置

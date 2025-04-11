@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { message } from 'antd';
-import { FileInfo, FolderPath, FileType, SortOrder } from '@/app/shared/types/file';
+import { FileInfo, FolderPath, FileType, SortOrder } from '@/app/types';
 import { filterFiles } from '../utils/fileHelpers';
 
 // 扩展FileInfo类型，但保持与原有接口兼容

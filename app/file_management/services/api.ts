@@ -1,4 +1,4 @@
-import { ExtendedFile, FileType } from '../types/index';
+import { ExtendedFile, FileType } from '@/app/types';
 import { 
   FileListRequest, 
   FileSearchRequest, 

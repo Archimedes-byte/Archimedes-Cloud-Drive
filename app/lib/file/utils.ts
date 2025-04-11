@@ -1,4 +1,4 @@
-export type FileType = 'image' | 'video' | 'audio' | 'document' | 'archive' | 'folder' | 'other';
+import { FileType } from '@/app/types/file';
 
 // 文件类型映射
 export const TYPE_MAP: Record<FileType, string> = {

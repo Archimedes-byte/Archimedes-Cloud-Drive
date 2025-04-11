@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
-import { FileInfo, FileWithProgress } from '@/app/shared/types/file';
+import { FileInfo, FileWithProgress } from '@/app/types';
 
 type RefreshCallback = () => void;
 

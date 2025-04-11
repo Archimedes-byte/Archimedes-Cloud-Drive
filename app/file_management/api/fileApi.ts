@@ -1,5 +1,5 @@
-import { ExtendedFile } from '../types/index';
-import { FileType } from '../types/index';
+import { ExtendedFile } from '@/app/types';
+import { FileType } from '@/app/types';
 import { 
   API_PATHS,
   ApiResponse,

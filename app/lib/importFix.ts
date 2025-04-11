@@ -1,32 +1,29 @@
 /**
- * 导入修复工具
+ * 导入路径修复
  * 
- * 这个文件解决项目中导入路径不一致的问题
- * 使得 @/lib/* 和 @/app/lib/* 导入路径都能正常工作
+ * 这个文件用于帮助解决导入路径问题，确保从@/lib导入的模块能够正确地重定向到@/app/lib
  */
 
-// 重新导出认证相关内容
+// 导出核心功能
 export * from './auth';
-
-// 重新导出Prisma客户端
 export * from './prisma';
 
-// 重新导出工具函数
-export * from './utils';
-
-// 重新导出文件工具函数
-export * from './file/utils';
-
-// 带名称重新导出存储相关函数，避免命名冲突
-export { 
-  saveFile as saveFileStorage,
-  getFile as getFileStorage,
-  deleteFile as deleteFileStorage
-} from './storage';
-
-// 带名称重新导出文件服务相关函数，避免命名冲突
+// 导出文件服务功能
 export { 
   saveFile as saveFileService,
-  getFile as getFileService,
-  deleteFile as deleteFileService
-} from './fileService'; 
+  deleteFile as deleteFileService,
+  getFile as getFileService
+} from './fileService';
+
+// 导出存储功能
+export { 
+  saveFile as saveFileToStorage,
+  getFile as getFileFromStorage,
+  deleteFile as deleteFileFromStorage
+} from './storage';
+
+// 导出工具函数
+export * from './utils';
+
+// 导出配置
+export * from './config'; 

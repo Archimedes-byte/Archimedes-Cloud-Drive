@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { ExtendedFile, FileType } from '../../types/index';
+import { ExtendedFile, FileType } from '@/app/types';
 
 const prisma = new PrismaClient();
 

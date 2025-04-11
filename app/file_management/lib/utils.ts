@@ -1,4 +1,4 @@
-import { FileType } from '../types/index';
+import { FileType } from '@/app/types';
 
 // 文件类型映射
 export const TYPE_MAP: Record<string, string> = {

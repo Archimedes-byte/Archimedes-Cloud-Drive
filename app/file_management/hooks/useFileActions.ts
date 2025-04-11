@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import { getFileNameAndExtension } from '../utils/fileHelpers';
-import { FileInfo } from '@/app/shared/types/file';
+import { FileInfo } from '@/app/types';
 
 // 定义文件类型，兼容FileInfo
 type FileType = FileInfo;

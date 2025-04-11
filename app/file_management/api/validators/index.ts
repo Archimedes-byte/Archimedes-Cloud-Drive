@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FileType } from '../../types/index';
+import { FileType } from '@/app/types';
 
 // 基础验证规则
 const fileTypeSchema = z.enum(['image', 'document', 'video', 'audio', 'other']);

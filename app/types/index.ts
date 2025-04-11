@@ -1,34 +1,25 @@
-// 文件类型枚举
-export enum FileType {
-  Folder = 'folder',
-  Image = 'image',
-  Document = 'document',
-  Video = 'video',
-  Audio = 'audio',
-  Other = 'other'
-}
+/**
+ * 类型定义统一导出
+ * 
+ * 本文件导出所有应用中使用的类型定义，集中在一个地方管理
+ */
 
-// 文件类型定义
-export interface File {
-  id: string;
-  name: string;
-  type: string;
-  extension?: string;
-  size?: number;
-  isFolder?: boolean;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  parentId?: string | null;
-  path?: string;
-  tags?: string[];
-  userId?: string;
-}
+// 导出通用类型
+export * from './common';
 
-// 排序选项定义
-export interface SortOrder {
-  field: 'name' | 'size' | 'createdAt' | 'updatedAt';
-  direction: 'asc' | 'desc';
-}
+// 导出文件相关类型
+export * from './file';
+
+// 导出文件管理相关类型
+export * from './fileManagement';
+
+// 导出UI相关类型
+export * from './ui';
+
+// 导出API相关类型
+export * from './api';
+
+// 以下是未分类的类型定义，后续可能会移动到专门的类型文件中
 
 // 搜索类型定义
 export interface SearchOptions {
@@ -36,15 +27,6 @@ export interface SearchOptions {
   type?: string | null;
   tags?: string[];
   limit?: number;
-}
-
-// 文件上传进度定义
-export interface UploadProgress {
-  id: string;
-  name: string;
-  progress: number;
-  status: 'uploading' | 'success' | 'error';
-  errorMessage?: string;
 }
 
 // 权限类型定义

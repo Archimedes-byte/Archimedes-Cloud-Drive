@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { AudioVisualizerProps, AudioSpectrumConfig } from '@/app/shared/types';
+import { AudioVisualizerProps, AudioSpectrumConfig } from '@/app/types';
 
 // 扩展AudioVisualizerProps接口，支持更灵活的属性传递
 interface ExtendedAudioVisualizerProps extends Partial<AudioVisualizerProps> {

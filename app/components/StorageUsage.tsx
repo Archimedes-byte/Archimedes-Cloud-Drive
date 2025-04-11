@@ -2,8 +2,11 @@
 
 import React from 'react';
 import { Progress } from '@/app/components/ui/progress';
+import { Card, Typography, Space } from 'antd';
+import { CloudOutlined } from '@ant-design/icons';
+import styles from './StorageUsage.module.css';
+import { StorageUsageInfo } from '@/app/types';
 import { formatFileSize } from "@/app/lib/file/utils";
-import { StorageUsageInfo } from "@/app/shared/types";
 
 interface StorageUsageProps {
   usage: StorageUsageInfo;

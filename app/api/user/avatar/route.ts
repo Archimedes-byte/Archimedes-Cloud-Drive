@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { prisma } from '@/app/lib/prisma';
+import { authOptions } from '@/app/lib/auth';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import crypto from 'crypto';
@@ -26,7 +26,7 @@ const getUserAvatarPath = async (userId: string) => {
   
   if (!user?.avatarUrl) return null;
   
-  // 从URL提取文件名
+  // 从URL提取文件�?
   const fileName = user.avatarUrl.split('/').pop();
   if (!fileName) return null;
   
@@ -40,7 +40,7 @@ export async function GET() {
     
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       );
     }
@@ -52,7 +52,7 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, error: '用户不存�? },
         { status: 404 }
       );
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       );
     }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, error: '用户不存�? },
         { status: 404 }
       );
     }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     
     if (!file) {
       return NextResponse.json(
-        { success: false, error: '未提供头像文件' },
+        { success: false, error: '未提供头像文�? },
         { status: 400 }
       );
     }
@@ -115,16 +115,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证文件大小（最大2MB）
+    // 验证文件大小（最�?MB�?
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { success: false, error: '文件大小超过限制（最大2MB）' },
+        { success: false, error: '文件大小超过限制（最�?MB�? },
         { status: 400 }
       );
     }
 
-    // 生成唯一文件名
+    // 生成唯一文件�?
     const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     
@@ -139,15 +139,15 @@ export async function POST(request: NextRequest) {
     // 读取文件内容
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // 删除旧头像文件
+    // 删除旧头像文�?
     try {
       const oldAvatarPath = await getUserAvatarPath(user.id);
       if (oldAvatarPath && fs.existsSync(oldAvatarPath)) {
-        console.log('删除旧头像文件:', oldAvatarPath);
+        console.log('删除旧头像文�?', oldAvatarPath);
         await unlink(oldAvatarPath);
       }
     } catch (deleteError) {
-      console.error('删除旧头像文件失败:', deleteError);
+      console.error('删除旧头像文件失�?', deleteError);
       // 继续执行，不中断上传流程
     }
     
@@ -194,7 +194,7 @@ export async function DELETE() {
     
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       );
     }
@@ -206,7 +206,7 @@ export async function DELETE() {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, error: '用户不存�? },
         { status: 404 }
       );
     }

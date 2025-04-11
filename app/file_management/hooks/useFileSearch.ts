@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ExtendedFile } from '../types/index';
+import { ExtendedFile } from '@/app/types';
 
 /**
  * 文件搜索钩子

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
@@ -7,9 +7,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { 
   ApiResponse, 
   FileInfo, 
-  CreateFolderRequest, 
-  mapFileEntityToFileInfo 
-} from '@/app/shared/types';
+  FileEntity, 
+  mapFileEntityToFileInfo, 
+  CreateFolderRequest 
+} from '@/app/types';
 
 export async function POST(request: Request): Promise<NextResponse<ApiResponse<FileInfo>>> {
   try {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { FileInfo as File } from '@/app/shared/types/file';
+import { FileInfo as File } from '@/app/types';
 
 // 防抖函数
 const debounce = (fn: Function, ms = 300) => {

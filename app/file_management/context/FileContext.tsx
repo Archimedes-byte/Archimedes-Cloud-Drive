@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { FileContextType, FileState, ExtendedFile, SortOrder, FileType } from '../types/index';
+import { FileContextType, FileState, ExtendedFile, SortOrder, FileType } from '@/app/types';
 import { useFiles } from '../hooks/useFiles';
 import { useFileOperations, CustomFileOperationsHook } from '../hooks/useFileOperations';
 

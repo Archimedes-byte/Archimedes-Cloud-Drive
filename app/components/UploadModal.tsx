@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Modal, message } from 'antd';
-import { UploadModalProps, FileTreeNode as IFileTreeNode, FileInfo, mapFileResponseToFileInfo } from '@/app/shared/types';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Modal, Button, Space, Upload, Spin, Input, message } from 'antd';
+import { UploadOutlined, FolderOutlined } from '@ant-design/icons';
+import { UploadModalProps, FileTreeNode as IFileTreeNode, FileInfo, mapFileResponseToFileInfo } from '@/app/types';
+import { formatFileSize } from '@/app/lib/utils/file';
 
 interface ExtendedFile extends Omit<File, 'webkitRelativePath'> {
   webkitRelativePath: string;
@@ -91,8 +93,10 @@ function processSelectedFiles(files: File[], isFolderUpload: boolean): ExtendedF
 const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
   onClose,
-  folderId = null,
-  onUploadComplete
+  onUploadSuccess,
+  currentFolderId,
+  isFolderUpload,
+  withTags
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<ExtendedFile[]>([]);
@@ -101,7 +105,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
   const [tagInput, setTagInput] = useState('');
   const [folderName, setFolderName] = useState<string | null>(null);
   const [fileTree, setFileTree] = useState<IFileTreeNode | null>(null);
-  const [isFolderUpload, setIsFolderUpload] = useState(false);
   const fileInputRef = useRef<HTMLInputElementWithDirectory>(null);
 
   useEffect(() => {
@@ -238,7 +241,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
           },
           body: JSON.stringify({
             name: folderName,
-            parentId: folderId,
+            parentId: currentFolderId,
           }),
         });
         
@@ -271,8 +274,8 @@ const UploadModal: React.FC<UploadModalProps> = ({
           const formData = new FormData();
           formData.append('file', file);
           
-          if (folderId) {
-            formData.append('folderId', folderId);
+          if (currentFolderId) {
+            formData.append('folderId', currentFolderId);
           }
           
           // 添加标签
@@ -290,10 +293,9 @@ const UploadModal: React.FC<UploadModalProps> = ({
           }
           
           const responseData = await response.json();
-          if (onUploadComplete) {
-            // 使用类型映射函数
-            const fileInfo = mapFileResponseToFileInfo(responseData);
-            onUploadComplete(fileInfo);
+          if (onUploadSuccess) {
+            // 不再传递文件信息作为参数
+            onUploadSuccess();
           }
         }
       }

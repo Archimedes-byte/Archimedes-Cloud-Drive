@@ -1,4 +1,4 @@
-import { FileType } from '../../types/index';
+import { FileType } from '@/app/types';
 
 // 基础响应接口
 export interface ApiResponse<T = any> {

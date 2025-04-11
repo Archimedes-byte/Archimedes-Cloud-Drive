@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
-import { File } from '@/app/shared/types';
+import { ExtendedFile as File } from '@/app/types';
 import { getFileNameAndExtension } from '../utils/fileHelpers';
 import { LocalFileType } from '../utils/fileTypeConverter';
 

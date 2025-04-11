@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 import { rename } from 'fs/promises';
-import { join, dirname, basename } from 'path';
-import { ApiResponse, FileInfo, mapFileEntityToFileInfo } from '@/app/shared/types';
+import path from 'path';
+import { ApiResponse, FileInfo, mapFileEntityToFileInfo } from '@/app/types';
 import { generateFileUrl } from '@/app/lib/file/paths';
 
 // 扩展RenameFileRequest接口以包含标签
@@ -83,12 +83,12 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     }
 
     // 构建新的文件路径
-    const oldPath = join(process.cwd(), file.path);
+    const oldPath = path.join(process.cwd(), file.path);
     
     // 正确处理文件路径，保持目录结构不变，只替换文件名
-    const dirPath = dirname(oldPath);
+    const dirPath = path.dirname(oldPath);
     // 保持原始的文件名格式（包含唯一标识符）
-    const oldBasename = basename(oldPath);
+    const oldBasename = path.basename(oldPath);
     const fileExtension = oldBasename.substring(oldBasename.lastIndexOf('.'));
     
     // 生成新的唯一文件名（保持原有格式但替换显示名）

@@ -6,7 +6,7 @@ import {
   File, X, Download, FileText, Folder,
   Image as ImageIcon, Video, Music, Archive, Code 
 } from 'lucide-react';
-import { ExtendedFile } from '../../types/index';
+import { ExtendedFile } from '@/app/types';
 import styles from '@/app/shared/themes/components/filePreview.module.css';
 
 interface FilePreviewProps {

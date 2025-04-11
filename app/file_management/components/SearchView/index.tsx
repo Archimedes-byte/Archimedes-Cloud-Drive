@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExtendedFile } from '../../types/index';
+import { ExtendedFile } from '@/app/types';
 import { getFileIcon } from '../../utils/fileHelpers';
 import { Home, Folder, Image as ImageIcon, FileText, Video, Music, File, Search, AlertCircle, Calendar, Tag, Database, Settings } from 'lucide-react';
 import styles from '@/app/shared/themes/components/searchView.module.css';

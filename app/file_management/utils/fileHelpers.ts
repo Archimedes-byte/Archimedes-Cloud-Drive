@@ -1,4 +1,4 @@
-import { File, FileType, FILE_TYPE_MAP } from '../types/index';
+import { File, FileType, FILE_TYPE_MAP } from '@/app/types';
 
 // 获取文件图标
 export const getFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean): string => {

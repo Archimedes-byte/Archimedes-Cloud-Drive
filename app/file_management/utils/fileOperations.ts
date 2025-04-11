@@ -1,7 +1,7 @@
 /**
  * 文件操作相关工具函数
  */
-import { ExtendedFile, FileType } from '../types/index';
+import { ExtendedFile, FileType } from '@/app/types';
 import { FILE_TYPE_MAP } from './typeHelpers';
 
 // 添加获取文件名和后缀的辅助函数
