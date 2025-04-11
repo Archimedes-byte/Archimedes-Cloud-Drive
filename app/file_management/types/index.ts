@@ -60,6 +60,9 @@ export interface ExtendedFile extends Omit<FileBase, 'isFolder'> {
   uploading?: boolean;
   uploadProgress?: number;
   error?: string | null;
+  fullPath?: string;
+  isDeleted?: boolean;
+  uploaderId?: string;
 }
 
 /**

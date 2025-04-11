@@ -142,13 +142,37 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       filtered = filtered.filter(theme => theme.category === activeCategory);
     }
     
-    // 按搜索词过滤
+    // 按搜索词过滤 - 增强搜索能力
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(theme => 
-        theme.name.toLowerCase().includes(query) || 
-        theme.category.toLowerCase().includes(query)
-      );
+      
+      filtered = filtered.filter(theme => {
+        // 基础搜索：名称和分类
+        const nameMatch = theme.name.toLowerCase().includes(query);
+        const categoryMatch = theme.category.toLowerCase().includes(query);
+        
+        // 增强搜索：ID中的关键字、颜色值、类型
+        const idMatch = theme.id.toLowerCase().includes(query);
+        const primaryColorMatch = theme.primary.toLowerCase().includes(query);
+        const secondaryColorMatch = theme.secondary.toLowerCase().includes(query);
+        const typeMatch = theme.isCustom ? 
+          '自定义'.includes(query) || 'custom'.includes(query) : 
+          '预设'.includes(query) || 'preset'.includes(query);
+        
+        // 智能搜索：分词匹配 - 将搜索词分解为多个关键词进行匹配
+        const keywords = query.split(/\s+/);
+        const keywordMatch = keywords.length > 1 ? 
+          keywords.every(keyword => 
+            theme.name.toLowerCase().includes(keyword) || 
+            theme.category.toLowerCase().includes(keyword) ||
+            theme.id.toLowerCase().includes(keyword)
+          ) : false;
+        
+        // 组合所有匹配结果
+        return nameMatch || categoryMatch || idMatch || 
+               primaryColorMatch || secondaryColorMatch || 
+               typeMatch || keywordMatch;
+      });
     }
     
     return filtered;
@@ -501,6 +525,67 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     </div>
   );
 
+  // 处理搜索输入变化
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // 重置搜索
+  const resetSearch = () => {
+    setSearchQuery('');
+    setActiveCategory(null);
+  };
+
+  // 获取搜索结果状态
+  const hasSearchResults = filteredThemes.length > 0;
+  const isSearching = searchQuery.trim().length > 0;
+
+  // 渲染搜索信息提示
+  const renderSearchInfo = () => {
+    if (!isSearching) return null;
+    
+    return (
+      <div className={styles.searchInfo}>
+        <p className={styles.searchResultsCount}>
+          {hasSearchResults 
+            ? `找到 ${filteredThemes.length} 个匹配主题` 
+            : '没有找到匹配的主题'}
+        </p>
+      </div>
+    );
+  };
+
+  // 渲染无结果提示
+  const renderNoResults = () => (
+    <div className={styles.noResults}>
+      <div className={styles.noResultsIcon}>🔍</div>
+      <p className={styles.noResultsText}>
+        {isSearching 
+          ? `没有找到与"${searchQuery}"相关的主题` 
+          : "该分类下暂无主题"}
+      </p>
+      <div className={styles.noResultsHint}>
+        {isSearching && (
+          <p className={styles.searchHint}>
+            尝试以下搜索技巧:
+            <ul>
+              <li>检查拼写是否正确</li>
+              <li>使用更简短的关键词</li>
+              <li>尝试搜索颜色值(如 #3b82f6)</li>
+              <li>搜索主题类型(如 "自定义"或"预设")</li>
+            </ul>
+          </p>
+        )}
+      </div>
+      <button 
+        className={styles.clearButton}
+        onClick={resetSearch}
+      >
+        显示所有主题
+      </button>
+    </div>
+  );
+
   // 渲染主界面
   const renderMainUI = () => (
     <>
@@ -522,14 +607,21 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="搜索主题..."
+            placeholder="搜索主题名称、颜色、类型..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
+            onKeyDown={(e) => {
+              // 按ESC键清空搜索
+              if (e.key === 'Escape') {
+                resetSearch();
+              }
+            }}
           />
-          {searchQuery && (
+          {isSearching && (
             <button 
               className={styles.clearSearch}
-              onClick={() => setSearchQuery('')}
+              onClick={resetSearch}
+              title="清除搜索"
             >
               &times;
             </button>
@@ -566,7 +658,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       </div>
       
       <div className={styles.themesContainer}>
-        {filteredThemes.length > 0 ? (
+        {hasSearchResults ? (
           <>
             {filteredThemes.map(theme => (
               <button
@@ -605,23 +697,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
             ))}
           </>
         ) : (
-          <div className={styles.noResults}>
-            <div className={styles.noResultsIcon}>🔍</div>
-            <p className={styles.noResultsText}>
-              {searchQuery 
-                ? `没有找到与"${searchQuery}"相关的主题` 
-                : "该分类下暂无主题"}
-            </p>
-            <button 
-              className={styles.clearButton}
-              onClick={() => {
-                setSearchQuery('');
-                setActiveCategory(null);
-              }}
-            >
-              显示所有主题
-            </button>
-          </div>
+          renderNoResults()
         )}
       </div>
       
@@ -645,6 +721,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     <div className={styles.themePanel}>
       {isCustomizing ? renderCustomThemeUI() : renderMainUI()}
       {showDeleteConfirm && renderDeleteConfirmDialog()}
+      {renderSearchInfo()}
     </div>
   );
 };

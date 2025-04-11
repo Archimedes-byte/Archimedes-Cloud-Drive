@@ -127,7 +127,9 @@ export default function FileManagementPage() {
   const {
     showSearchView, setShowSearchView, searchQuery, setSearchQuery,
     searchResults, searchType, setSearchType,
-    searchLoading, searchError, handleSearch
+    searchLoading, searchError, handleSearch,
+    enableRealTimeSearch, setEnableRealTimeSearch,
+    debounceDelay, setDebounceDelay
   } = useSearch();
 
   // 其他独立状态
@@ -543,6 +545,10 @@ export default function FileManagementPage() {
                     error={searchError}
                     handleSearch={handleSearch}
                     handleFileClick={handleFileItemClick}
+                    enableRealTimeSearch={enableRealTimeSearch}
+                    setEnableRealTimeSearch={setEnableRealTimeSearch}
+                    debounceDelay={debounceDelay}
+                    setDebounceDelay={setDebounceDelay}
                   />
                 </div>
               ) : (

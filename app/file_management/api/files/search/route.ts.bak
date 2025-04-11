@@ -1,0 +1,189 @@
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { prisma } from '@/app/lib/prisma';
+import { ExtendedFile } from '../../../types/index';
+import { Prisma } from '@prisma/client';
+
+export async function GET(request: Request) {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('query');
+    const searchType = searchParams.get('type') || 'name';  // 默认按名称搜索
+
+    if (!query) {
+      return NextResponse.json(
+        { error: '请输入搜索关键词' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`执行${searchType === 'tag' ? '标签' : '文件名'}搜索，关键词: ${query}`);
+
+    // 基础查询条件
+    const baseWhere: Prisma.FileWhereInput = {
+      uploaderId: session.user.id,
+      isDeleted: false,
+    };
+
+    // 转换函数 - 将prisma结果转换为ExtendedFile
+    const toExtendedFile = (file: any, parentPath = ''): ExtendedFile => ({
+      id: file.id,
+      name: file.name,
+      size: file.size || 0,
+      type: file.type as string,
+      isFolder: file.isFolder,
+      isDeleted: file.isDeleted || false,
+      createdAt: file.createdAt instanceof Date ? file.createdAt.toISOString() : file.createdAt,
+      updatedAt: file.updatedAt instanceof Date ? file.updatedAt.toISOString() : file.updatedAt,
+      path: parentPath ? parentPath : file.path || '',
+      tags: Array.isArray(file.tags) ? file.tags : [],
+      parentId: file.parentId,
+      extension: file.isFolder ? undefined : file.name.split('.').pop(),
+      fullPath: parentPath ? `${parentPath}/${file.name}` : file.path || '',
+      uploaderId: file.uploaderId,
+    });
+
+    // 处理父文件夹路径信息的函数
+    async function processFilePaths(files: ExtendedFile[]): Promise<ExtendedFile[]> {
+      // 收集所有需要查询的父文件夹ID
+      const parentIds = files
+        .filter(file => file.parentId && !file.path)
+        .map(file => file.parentId as string);
+      
+      if (parentIds.length === 0) {
+        return files;
+      }
+      
+      // 一次性查询所有父文件夹
+      const parents = await prisma.file.findMany({
+        where: { 
+          id: { in: parentIds },
+          isFolder: true
+        },
+        select: {
+          id: true,
+          name: true,
+          path: true,
+          parentId: true
+        }
+      });
+      
+      // 创建父文件夹ID到路径的映射
+      const parentPathMap = new Map();
+      
+      // 处理父文件夹的路径
+      for (const parent of parents) {
+        // 如果父文件夹有自己的路径，使用它，否则使用名称
+        let fullPath = parent.path || parent.name;
+        parentPathMap.set(parent.id, fullPath);
+      }
+      
+      // 更新文件的路径
+      return files.map(file => {
+        if (file.parentId && parentPathMap.has(file.parentId)) {
+          const parentPath = parentPathMap.get(file.parentId);
+          return {
+            ...file,
+            path: parentPath,
+            fullPath: `${parentPath}/${file.name}`
+          };
+        }
+        return file;
+      });
+    }
+
+    try {
+      let results: ExtendedFile[] = [];
+      
+      if (searchType === 'tag') {
+        // 1. 按标签搜索 - 同时搜索文件和文件夹
+        const filesWithTags = await prisma.file.findMany({
+          where: {
+            ...baseWhere,
+            tags: {
+              hasSome: [query]
+            }
+          },
+          orderBy: [
+            { isFolder: 'desc' },
+            { createdAt: 'desc' }
+          ],
+          include: {
+            parent: {
+              select: {
+                id: true,
+                name: true,
+                path: true
+              }
+            }
+          }
+        });
+
+        // 转换为ExtendedFile，包括路径信息
+        results = filesWithTags.map(file => {
+          const parentPath = file.parent ? (file.parent.path || file.parent.name) : '';
+          return toExtendedFile(file, parentPath);
+        });
+        
+        // 处理文件路径
+        results = await processFilePaths(results);
+        
+        console.log(`标签搜索成功，返回结果：${results.length}个`);
+      } else {
+        // 2. 默认按名称搜索 - 同时搜索文件和文件夹
+        const filesByName = await prisma.file.findMany({
+          where: {
+            ...baseWhere,
+            name: {
+              contains: query,
+              mode: 'insensitive'
+            }
+          },
+          orderBy: [
+            { isFolder: 'desc' },
+            { createdAt: 'desc' }
+          ],
+          include: {
+            parent: {
+              select: {
+                id: true,
+                name: true,
+                path: true
+              }
+            }
+          }
+        });
+
+        // 转换为ExtendedFile，包括路径信息
+        results = filesByName.map(file => {
+          const parentPath = file.parent ? (file.parent.path || file.parent.name) : '';
+          return toExtendedFile(file, parentPath);
+        });
+        
+        // 处理文件路径
+        results = await processFilePaths(results);
+        
+        console.log(`文件名搜索成功，返回结果：${results.length}个`);
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      console.error('数据查询出错：', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('搜索文件失败:', error);
+    return NextResponse.json(
+      { error: '搜索文件失败' },
+      { status: 500 }
+    );
+  }
+} 
