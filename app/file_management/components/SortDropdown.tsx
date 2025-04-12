@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, ArrowUp, ArrowDown } from 'lucide-react';
 import styles from '../styles/SortDropdown.module.css';
 import { FileSortInterface, SortDirectionEnum } from '@/app/types';
 

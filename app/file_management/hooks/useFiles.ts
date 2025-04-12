@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { message } from 'antd';
 import { 
   FolderPathItem,
@@ -24,7 +23,6 @@ export { SortDirectionEnum };
  * 合并了两个useFiles实现的功能
  */
 export const useFiles = () => {
-  const router = useRouter();
   // 基础状态
   const [files, setFiles] = useState<FileWithSize[]>([]);
   const [isLoading, setIsLoading] = useState(false);

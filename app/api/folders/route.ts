@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
+import { authOptions } from '@/app/lib/auth/auth';
+import { prisma } from '@/app/lib/database/prisma';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   ApiResponse, 
   FileInfo, 
-  FileEntity, 
   mapFileEntityToFileInfo, 
   CreateFolderRequest 
 } from '@/app/types';

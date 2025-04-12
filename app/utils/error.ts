@@ -5,4 +5,4 @@
  * 新代码应直接导入自@/app/utils/error
  */
 
-export * from '@/app/utils/error'; 
+export * from './error/index'; 

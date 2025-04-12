@@ -5,25 +5,25 @@
  */
 
 // 导出核心功能
-export * from './auth';
-export * from './prisma';
+export * from './auth/index';
+export * from './database/prisma';
 
 // 导出文件服务功能
 export { 
-  saveFile as saveFileService,
-  deleteFile as deleteFileService,
-  getFile as getFileService
-} from './fileService';
+  saveFileService,
+  deleteFileService,
+  getFileService
+} from './storage/index';
 
 // 导出存储功能
 export { 
-  saveFile as saveFileToStorage,
-  getFile as getFileFromStorage,
-  deleteFile as deleteFileFromStorage
-} from './storage';
+  saveFileToStorage,
+  getFileFromStorage,
+  deleteFileFromStorage
+} from './storage/index';
 
 // 导出工具函数
 export * from './utils';
 
 // 导出配置
-export * from './config'; 
+export * from './config/index'; 

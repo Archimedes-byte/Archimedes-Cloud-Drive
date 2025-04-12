@@ -1,5 +1,4 @@
-import { FileInfo, FolderPathItem, FileTypeEnum, SortOrder } from './fileTypes';
-import { UserProfile } from './userProfile';
+import { FolderPathItem, FileTypeEnum, SortOrder } from './fileTypes';
 
 /**
  * 文件管理系统类型定义

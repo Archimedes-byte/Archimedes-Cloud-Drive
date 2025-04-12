@@ -50,7 +50,7 @@ export function Breadcrumb({
         </div>
       )}
       
-      {folderPath.map((folder, index) => (
+      {folderPath.map((folder) => (
         <React.Fragment key={folder.id}>
           <span className={styles.breadcrumbSeparator}>
             <ChevronRight size={14} />

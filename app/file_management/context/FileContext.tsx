@@ -1,16 +1,13 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { 
   FileContextType, 
-  FileState, 
   ExtendedFile, 
-  FileTypeEnum, 
-  FileSortInterface,
   SortOrder,
   convertInterfaceToSortOrder,
   convertSortOrderToInterface
 } from '@/app/types';
 import { useFiles } from '../hooks/useFiles';
-import { useFileOperations, CustomFileOperationsHook } from '../hooks/useFileOperations';
+import { useFileOperations } from '../hooks/useFileOperations';
 
 // 创建文件上下文
 const FileContext = createContext<FileContextType | undefined>(undefined);

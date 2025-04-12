@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
-import { rename } from 'fs/promises';
-import path from 'path';
+import { authOptions } from '@/app/lib/auth/auth';
+import { prisma } from '@/app/lib/database/prisma';
 import { ApiResponse, FileInfo, mapFileEntityToFileInfo } from '@/app/types';
 import { generateFileUrl } from '@/app/lib/file/paths';
 
@@ -120,13 +118,9 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     }
 
     // 构建新的文件路径
-    const oldPath = path.join(process.cwd(), file.path);
     
     // 正确处理文件路径，保持目录结构不变，只替换文件名
-    const dirPath = path.dirname(oldPath);
     // 保持原始的文件名格式（包含唯一标识符）
-    const oldBasename = path.basename(oldPath);
-    const fileExtension = oldBasename.substring(oldBasename.lastIndexOf('.'));
     
     // 生成新的唯一文件名（保持原有格式但替换显示名）
     // 注意我们不改变物理文件名，只改变显示名，所以不需要重命名文件系统上的文件

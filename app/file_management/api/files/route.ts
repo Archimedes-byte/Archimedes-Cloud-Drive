@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const files = await prisma.file.findMany({
       where: {
         uploaderId: session.user.id,
-        folderId: folderId || null,
+        parentId: folderId || null,
         ...(type && { type })
       },
       orderBy: [

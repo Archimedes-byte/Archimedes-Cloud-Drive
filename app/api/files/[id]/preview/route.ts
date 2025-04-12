@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
+import { authOptions } from '@/app/lib/auth/auth';
+import { prisma } from '@/app/lib/database/prisma';
 import { getSignedUrl } from '@/app/lib/storage/getSignedUrl';
 import { validateFileAccess } from '@/app/lib/file/validateFileAccess';
 import { existsSync } from 'fs';
@@ -118,7 +118,6 @@ function getMimeType(type: string | null, extension: string): string {
  * 支持图片、视频、音频等文件类型的预览
  */
 export async function GET(
-  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   console.log('接收预览请求，文件ID:', params.id);

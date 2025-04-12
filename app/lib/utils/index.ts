@@ -1,12 +1,8 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+/**
+ * 工具函数重定向
+ * 
+ * 这个文件通过从@/app/utils重新导出功能来保持向后兼容性
+ * 新代码应直接导入自@/app/utils
+ */
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-// 导出错误处理
-export * from './error';
-
-// 导出文件工具函数
-export * from './file'; 
+export * from '@/app/utils'; 

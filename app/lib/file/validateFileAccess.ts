@@ -2,7 +2,7 @@
  * 验证用户对文件的访问权限
  */
 
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database/prisma';
 
 interface FileInfo {
   id: string;

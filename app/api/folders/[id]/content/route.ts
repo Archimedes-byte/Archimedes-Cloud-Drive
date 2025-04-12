@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
+import { authOptions } from '@/app/lib/auth/auth';
+import { prisma } from '@/app/lib/database/prisma';
 
 /**
  * 获取文件夹内容
@@ -9,7 +9,6 @@ import { prisma } from '@/app/lib/prisma';
  * 此API端点返回特定文件夹的内容
  */
 export async function GET(
-  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
