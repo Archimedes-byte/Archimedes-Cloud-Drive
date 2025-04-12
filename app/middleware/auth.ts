@@ -1,0 +1,103 @@
+/**
+ * API身份验证中间件
+ * 处理所有API路由的身份验证逻辑
+ */
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/database';
+
+export interface AuthenticatedRequest extends NextRequest {
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+  };
+}
+
+// API响应类型定义
+export type ApiSuccessResponse<T> = {
+  success: true;
+  data: T;
+  message?: string;
+};
+
+export type ApiErrorResponse = {
+  success: false;
+  error: string;
+  code?: string;
+};
+
+export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+/**
+ * 处理API响应的通用格式
+ */
+export function createApiResponse<T>(data: T, success = true, message?: string) {
+  return NextResponse.json({
+    success,
+    data,
+    message,
+  } as ApiSuccessResponse<T>);
+}
+
+/**
+ * 创建API错误响应
+ */
+export function createApiErrorResponse(error: string, status = 400, code?: string) {
+  return NextResponse.json(
+    {
+      success: false,
+      error,
+      code,
+    } as ApiErrorResponse,
+    { status }
+  );
+}
+
+/**
+ * 身份验证中间件
+ * 验证用户身份并将用户信息附加到请求对象
+ */
+export async function withAuth<T>(
+  handler: (req: AuthenticatedRequest) => Promise<NextResponse<ApiResponse<T>>>
+): Promise<(req: NextRequest) => Promise<NextResponse<ApiResponse<T> | ApiErrorResponse>>> {
+  return async (req: NextRequest) => {
+    try {
+      // 获取用户会话
+      const session = await getServerSession(authOptions);
+      
+      if (!session?.user?.email) {
+        return createApiErrorResponse('未授权', 401);
+      }
+      
+      // 获取用户信息
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      });
+      
+      if (!user) {
+        return createApiErrorResponse('用户不存在', 404);
+      }
+      
+      // 将用户信息附加到请求对象
+      const authReq = req as AuthenticatedRequest;
+      authReq.user = {
+        id: user.id,
+        email: user.email,
+        name: user.name || undefined,
+      };
+      
+      // 调用处理函数
+      return handler(authReq);
+    } catch (error) {
+      console.error('身份验证错误:', error);
+      return createApiErrorResponse('身份验证失败', 500);
+    }
+  };
+} 

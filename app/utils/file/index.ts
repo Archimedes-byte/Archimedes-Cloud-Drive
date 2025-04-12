@@ -5,6 +5,7 @@
  * - 文件类型识别和处理
  * - 文件格式化（大小、日期等）
  * - 文件路径和名称处理
+ * - 文件转换和排序
  */
 
 // 导出文件类型相关功能
@@ -14,4 +15,10 @@ export * from './type';
 export * from './format';
 
 // 导出文件路径相关功能
-export * from './path'; 
+export * from './path';
+
+// 导出文件转换相关功能
+export * from './converter'; 
+
+// 导出文件排序相关功能
+export * from './sort'; 

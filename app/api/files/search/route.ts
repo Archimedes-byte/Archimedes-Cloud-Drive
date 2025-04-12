@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database';
 import { ApiResponse, FileInfo, FileListResponse, SearchFilesRequest } from '@/app/types';
 
 export async function GET(request: Request): Promise<NextResponse<FileListResponse>> {
@@ -12,7 +12,8 @@ export async function GET(request: Request): Promise<NextResponse<FileListRespon
       return NextResponse.json(
         { 
           success: false,
-          error: '请先登录' 
+          error: '请先登录',
+          data: [] // 添加缺失的 data 属性以满足 FileListResponse 类型要求
         },
         { status: 401 }
       );
@@ -22,12 +23,12 @@ export async function GET(request: Request): Promise<NextResponse<FileListRespon
     const user = await prisma.user.findUnique({
       where: { email: session.user.email }
     });
-
     if (!user) {
       return NextResponse.json(
         { 
           success: false,
-          error: '用户不存在' 
+          error: '用户不存在',
+          data: [] // 添加缺失的 data 属性以满足 FileListResponse 类型要求
         },
         { status: 401 }
       );
@@ -201,7 +202,10 @@ export async function GET(request: Request): Promise<NextResponse<FileListRespon
 
     return NextResponse.json({
       success: true,
-      data: formattedFiles
+      data: formattedFiles.map(file => ({
+        ...file,
+        isFolder: file.isFolder || false
+      }))
     });
   } catch (error) {
     console.error('搜索文件失败:', error);

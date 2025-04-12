@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { message } from 'antd';
 import { 
   FolderPathItem,
@@ -8,6 +8,9 @@ import {
   SortDirectionEnum,
   SortField
 } from '@/app/types';
+import { filterFilesByType, sortFiles } from '@/app/utils/file';
+import { API_PATHS } from '@/app/lib/api/paths';
+import { fileApi } from '@/app/lib/api/file-api';
 
 /**
  * 扩展FileInfo类型，但保持与原有接口兼容
@@ -18,53 +21,6 @@ export interface FileWithSize extends Omit<FileInfo, 'size'> {
 
 // 只导出需要的枚举
 export { SortDirectionEnum };
-
-/**
- * 文件过滤函数
- * 根据文件类型过滤文件列表
- */
-const filterFiles = (files: FileWithSize[], fileType: FileTypeEnum): FileWithSize[] => {
-  if (!files || !Array.isArray(files)) return [];
-  
-  // 文档类型特殊处理
-  if (fileType === 'document') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt'].includes(ext);
-    });
-  }
-
-  // 图片类型
-  if (fileType === 'image') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
-    });
-  }
-
-  // 音频类型
-  if (fileType === 'audio') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
-    });
-  }
-
-  // 视频类型
-  if (fileType === 'video') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
-    });
-  }
-
-  // 默认行为 - 返回所有文件
-  return files;
-};
 
 /**
  * 文件管理钩子
@@ -100,6 +56,7 @@ export const useFiles = () => {
 
   /**
    * 处理文件排序
+   * 使用工具函数和记忆化处理，提高性能
    */
   const handleSort = useCallback((fileList: FileWithSize[]) => {
     if (!Array.isArray(fileList)) {
@@ -109,32 +66,8 @@ export const useFiles = () => {
 
     console.log('应用排序:', sortOrder);
     
-    return [...fileList].sort((a, b) => {
-      // 文件夹始终排在前面
-      if (a.isFolder !== b.isFolder) {
-        return a.isFolder ? -1 : 1;
-      }
-
-      // 根据排序规则排序
-      let comparison = 0;
-      switch (sortOrder.field) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'size':
-          comparison = (a.size || 0) - (b.size || 0);
-          break;
-        case 'createdAt':
-          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          comparison = timeA - timeB;
-          break;
-        default:
-          break;
-      }
-
-      return sortOrder.direction === SortDirectionEnum.ASC ? comparison : -comparison;
-    });
+    // 使用工具函数进行排序
+    return sortFiles(fileList, sortOrder);
   }, [sortOrder]);
 
   /**
@@ -148,7 +81,7 @@ export const useFiles = () => {
     }
 
     try {
-      const response = await fetch(`/api/folders/${folderId}/path`);
+      const response = await fetch(`${API_PATHS.STORAGE.FOLDERS.GET(folderId)}/path`);
       
       if (!response.ok) {
         const data = await response.json();
@@ -215,47 +148,37 @@ export const useFiles = () => {
       // 判断是否为按类型过滤模式
       const isTypeFilterMode = !!effectiveFileType;
       
-      const queryParams = new URLSearchParams();
-      if (folderId) {
-        queryParams.append('folderId', folderId);
-      }
-      if (effectiveFileType) {
-        queryParams.append('type', effectiveFileType);
-        // 在文件类型过滤模式下启用递归查询
-        queryParams.append('recursive', 'true');
-      }
-
-      const apiUrl = `/api/files?${queryParams.toString()}`;
-      console.log(`请求API: ${apiUrl}, 是否为类型过滤模式: ${isTypeFilterMode}`);
-
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '加载文件列表失败');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        // 获取API返回的文件列表
-        const files = data.data || [];
+      // 使用fileApi获取文件列表
+      try {
+        const result = await fileApi.getFiles({
+          folderId,
+          type: effectiveFileType || undefined,
+          // 在文件类型过滤模式下启用递归查询
+          ...(effectiveFileType ? { recursive: true } : {})
+        });
         
         // 在前端执行额外过滤（确保筛选结果的准确性）
-        let filteredFiles = files;
+        let filteredFiles = result.items;
         if (effectiveFileType) {
-          // 使用辅助函数过滤文件
-          filteredFiles = filterFiles(files, effectiveFileType);
-          console.log(`前端过滤 - 类型 "${effectiveFileType}": 过滤前 ${files.length} 项, 过滤后 ${filteredFiles.length} 项`);
+          // 使用统一的工具函数过滤文件
+          filteredFiles = filterFilesByType(filteredFiles as any, effectiveFileType);
+          console.log(`前端过滤 - 类型 "${effectiveFileType}": 过滤前 ${result.items.length} 项, 过滤后 ${filteredFiles.length} 项`);
         }
         
+        // 将结果映射为FileWithSize类型
+        const filesWithSize: FileWithSize[] = filteredFiles.map(file => ({
+          ...file,
+          size: file.size || 0
+        }));
+        
         // 应用排序逻辑到过滤后的文件
-        const sortedFiles = handleSort(filteredFiles);
+        const sortedFiles = handleSort(filesWithSize);
         setFiles(sortedFiles);
         setLastSortApplied(`${sortOrder.field}-${sortOrder.direction}`);
         
         console.log('文件列表加载成功，共获取到', sortedFiles.length, '个文件');
-      } else {
-        throw new Error(data.error || '加载文件列表失败');
+      } catch (apiError) {
+        throw new Error(apiError instanceof Error ? apiError.message : '加载文件列表失败');
       }
     } catch (error) {
       console.error('加载文件列表失败:', error);
@@ -397,4 +320,4 @@ export const useFiles = () => {
     setSelectedFiles,
     setSortOrder
   };
-}; 
+};

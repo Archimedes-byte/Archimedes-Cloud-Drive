@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth/auth';
-import { prisma } from '@/app/lib/database/prisma';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/database';
 
 /**
  * 获取文件夹内容

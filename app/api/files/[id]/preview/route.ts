@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth/auth';
-import { prisma } from '@/app/lib/database/prisma';
-import { getSignedUrl } from '@/app/lib/storage/getSignedUrl';
-import { validateFileAccess } from '@/app/lib/file/validateFileAccess';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/database';
+import { getSignedUrl, validateFileAccess } from '@/app/lib/storage';
 import { existsSync } from 'fs';
+import { ApiResponse } from '@/app/types';
 
 /**
  * 判断文件是否可预览的辅助函数

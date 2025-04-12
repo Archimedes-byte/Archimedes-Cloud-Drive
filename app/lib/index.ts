@@ -1,49 +1,43 @@
 /**
- * 库功能集中导出
+ * 核心库模块统一入口 (Core Library Entry Point)
  * 
- * 提供应用核心功能的集中访问点
+ * 此文件作为核心库的统一入口点，提供对所有子模块的访问。
+ * 主要功能：
+ * - 集中导出所有模块功能
+ * - 提供便捷的导入路径
+ * - 确保模块间依赖关系清晰
+ * 
+ * 推荐通过专用模块路径导入具体功能，而不是通过此文件导入所有内容：
+ * 
+ * @example
+ * // 推荐方式：从具体模块导入
+ * import { prisma } from '@/app/lib/database';
+ * import { fileApi } from '@/app/lib/api';
+ * 
+ * // 不推荐方式：通过统一入口导入
+ * import { database, api } from '@/app/lib';
  */
 
-// 导出认证相关功能，使用具体路径避免错误
-import * as auth from './auth/index';
-export { auth };
-
-// 导出数据库相关功能
-import * as database from './database/index';
+// 导出数据库模块
+import * as database from './database';
 export { database };
 
-// 导出配置相关功能
-import * as config from './config/index';
+// 导出存储模块
+import * as storage from './storage';
+export { storage };
+
+// 导出认证模块
+import * as auth from './auth';
+export { auth };
+
+// 导出API模块
+import * as api from './api';
+export { api };
+
+// 导出配置模块
+import * as config from './config';
 export { config };
 
-// 文件和存储导出使用别名避免冲突
-import * as fileLib from './file/index';
-import * as storageLib from './storage/index';
-
-// 重新导出文件相关功能
-export { fileLib };
-
-// 重新导出存储相关功能
-export { storageLib };
-
-// 保持向后兼容的导出
-import { 
-  saveFileService, 
-  getFileService, 
-  deleteFileService,
-  saveFileToStorage,
-  getFileFromStorage,
-  deleteFileFromStorage 
-} from './storage/index';
-
-export { 
-  saveFileService, 
-  getFileService, 
-  deleteFileService,
-  saveFileToStorage,
-  getFileFromStorage,
-  deleteFileFromStorage 
-};
-
-// 导出工具函数（重定向到app/utils）
-export * from './utils'; 
+// 导出工具函数
+import * as utils from './utils';
+export { utils }; 

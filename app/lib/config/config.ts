@@ -3,6 +3,7 @@
  * 集中管理系统中的配置参数，避免多处定义造成不一致
  */
 import { join } from 'path';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 // 文件存储相关配置
 export const STORAGE_CONFIG = {
@@ -21,7 +22,7 @@ export const STORAGE_CONFIG = {
   DIR_PERMISSIONS: 0o755,
   
   // 文件URLs基础路径
-  FILE_BASE_URL: '/api/files',
+  FILE_BASE_URL: API_PATHS.STORAGE.FILES.LIST.replace('/list', ''),
   
   // 临时文件存储
   TEMP_DIR: 'tmp'
@@ -37,11 +38,11 @@ export const API_CONFIG = {
   
   // 文件相关API路径
   FILES: {
-    UPLOAD: '/api/files/upload',
-    LIST: '/api/files',
-    SEARCH: '/api/files/search',
-    CONTENT: (id: string) => `/api/files/${id}/content`,
-    DOWNLOAD: (id: string) => `/api/files/${id}/download`,
+    UPLOAD: API_PATHS.STORAGE.FILES.UPLOAD,
+    LIST: API_PATHS.STORAGE.FILES.LIST,
+    SEARCH: API_PATHS.STORAGE.FILES.SEARCH,
+    CONTENT: (id: string) => API_PATHS.STORAGE.FILES.CONTENT(id),
+    DOWNLOAD: (id: string) => API_PATHS.STORAGE.FILES.DOWNLOAD,
   }
 };
 

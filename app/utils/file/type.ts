@@ -3,9 +3,15 @@
  * 处理文件类型判断、图标获取等
  */
 
-import { FILE_TYPE_MAP } from '@/app/types';
+import { FILE_TYPE_MAP, FileInfo, FileTypeEnum } from '@/app/types';
 
-// 获取文件图标
+/**
+ * 获取文件图标
+ * @param type 文件MIME类型
+ * @param extension 文件扩展名
+ * @param isFolder 是否是文件夹
+ * @returns 对应的图标名称
+ */
 export const getFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean): string => {
   if (isFolder) {
     return 'folder';
@@ -33,6 +39,7 @@ export const getFileIcon = (type: string | undefined, extension: string | undefi
         case 'video': return 'video';
         case 'audio': return 'music';
         case 'archive': return 'archive';
+        case 'code': return 'code';
         case 'folder': return 'folder';
         case 'other': return 'file';
         default: return 'file';
@@ -100,7 +107,11 @@ const EXTENSION_TO_TYPE: Record<string, string> = {
   cs: 'C#代码'
 };
 
-// 根据扩展名获取文件类型
+/**
+ * 根据扩展名获取文件类型
+ * @param extension 文件扩展名
+ * @returns 文件类型描述或null
+ */
 export const getFileTypeByExtension = (extension: string | undefined): string | null => {
   if (!extension) return null;
   
@@ -108,7 +119,12 @@ export const getFileTypeByExtension = (extension: string | undefined): string | 
   return EXTENSION_TO_TYPE[ext] || null;
 };
 
-// 处理文件类型显示
+/**
+ * 处理文件类型显示
+ * @param type 文件MIME类型
+ * @param extension 文件扩展名
+ * @returns 用户友好的文件类型描述
+ */
 export const getFileType = (type: string | null, extension?: string): string => {
   if (!type && !extension) return '未知';
   
@@ -119,6 +135,9 @@ export const getFileType = (type: string | null, extension?: string): string => 
   }
   
   if (!type) return '文件';
+  
+  // 文件夹单独处理
+  if (type === 'folder') return '文件夹';
   
   // 使用MIME类型判断
   if (type.startsWith('image')) return '图片';
@@ -135,5 +154,95 @@ export const getFileType = (type: string | null, extension?: string): string => 
   // 压缩文件
   if (type.includes('zip') || type.includes('rar') || type.includes('compressed')) return '压缩文件';
   
+  // 直接使用document类型
+  if (type === 'document') return '文档';
+  
   return '文件';
 };
+
+/**
+ * 统一的文件过滤函数
+ * 根据指定的文件类型过滤文件列表
+ * 
+ * @param files 要过滤的文件列表
+ * @param fileType 文件类型枚举或字符串
+ * @returns 过滤后的文件列表
+ */
+export function filterFilesByType<T extends { isFolder: boolean; name: string; type?: string }>(
+  files: T[], 
+  fileType: FileTypeEnum | string | null
+): T[] {
+  if (!files || !Array.isArray(files) || !fileType) {
+    return files;
+  }
+  
+  // 文件夹处理
+  if (fileType === 'folder') {
+    return files.filter(file => file.isFolder);
+  }
+  
+  // 文档类型
+  if (fileType === 'document') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+    });
+  }
+
+  // 图片类型
+  if (fileType === 'image') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
+    });
+  }
+
+  // 音频类型
+  if (fileType === 'audio') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
+    });
+  }
+
+  // 视频类型
+  if (fileType === 'video') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
+    });
+  }
+  
+  // 代码类型
+  if (fileType === 'code') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext);
+    });
+  }
+  
+  // 压缩类型
+  if (fileType === 'archive') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext);
+    });
+  }
+
+  // 默认行为 - 返回所有文件
+  return files;
+}
+
+// 旧的filterFiles函数保留兼容性，但内部调用新的实现
+export function filterFiles<T extends { isFolder: boolean; name: string; type?: string }>(
+  files: T[], 
+  type: string | null
+): T[] {
+  return filterFilesByType(files, type);
+}

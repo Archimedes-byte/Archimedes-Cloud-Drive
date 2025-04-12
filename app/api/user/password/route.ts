@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/database'
 import bcrypt from 'bcrypt'
 
 // 获取当前认证配置
@@ -8,21 +8,21 @@ import { authOptions } from '@/app/lib/auth'
 
 // 更新用户密码
 export async function PUT(request: NextRequest) {
-  console.log('PUT /api/user/password 请求开�?)
+  console.log('PUT /api/user/password 请求开始')
   try {
     const session = await getServerSession(authOptions)
-    console.log('获取到用户会�?', session ? '成功' : '失败')
+    console.log('获取到用户会话', session ? '成功' : '失败')
     
     if (!session?.user?.email) {
-      console.log('未授权访�? 没有找到用户邮箱')
+      console.log('未授权访问，没有找到用户邮箱')
       return NextResponse.json(
-        { success: false, error: '未授权访�? },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       )
     }
 
     const data = await request.json()
-    console.log('接收到密码更新请�?)
+    console.log('接收到密码更新请求')
 
     if (!data.password) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest) {
 
     if (data.password.length < 8) {
       return NextResponse.json(
-        { success: false, error: '密码长度至少�?个字�? },
+        { success: false, error: '密码长度至少为8个字符' },
         { status: 400 }
       )
     }

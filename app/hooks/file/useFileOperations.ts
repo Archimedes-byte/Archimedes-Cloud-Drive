@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import { FileWithSize } from './useFiles';
+import { API_PATHS } from '@/app/lib/api/paths';
+import { fileApi } from '@/app/lib/api/file-api';
 
 /**
  * 文件操作接口
@@ -92,7 +94,7 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
 
       // 处理单文件下载
       if (fileIds.length === 1) {
-        window.open(`/api/files/download?fileId=${fileIds[0]}`, '_blank');
+        window.open(`${API_PATHS.STORAGE.FILES.DOWNLOAD}?fileId=${fileIds[0]}`, '_blank');
         return true;
       }
 
@@ -100,7 +102,7 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       const queryParams = new URLSearchParams();
       fileIds.forEach(id => queryParams.append('fileIds', id));
       
-      window.open(`/api/files/download-batch?${queryParams.toString()}`, '_blank');
+      window.open(`${API_PATHS.STORAGE.FILES.DOWNLOAD}-batch?${queryParams.toString()}`, '_blank');
       return true;
     } catch (error) {
       console.error('下载文件失败:', error);
@@ -128,29 +130,10 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/files/move', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileIds,
-          targetFolderId,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || '移动文件失败');
-      }
-
-      if (data.success) {
-        message.success('文件移动成功');
-        return true;
-      } else {
-        throw new Error(data.error || '移动文件失败');
-      }
+      // 使用fileApi客户端
+      await fileApi.moveFiles(fileIds, targetFolderId);
+      message.success('文件移动成功');
+      return true;
     } catch (error) {
       console.error('移动文件失败:', error);
       setError(error instanceof Error ? error.message : '移动失败');
@@ -176,28 +159,12 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/files', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileIds }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || '删除文件失败');
-      }
-
-      if (data.success) {
-        message.success('文件删除成功');
-        // 清除已删除文件的选择
-        setSelectedFileIds(prev => prev.filter(id => !fileIds.includes(id)));
-        return true;
-      } else {
-        throw new Error(data.error || '删除文件失败');
-      }
+      // 使用fileApi客户端
+      await fileApi.deleteFiles(fileIds);
+      message.success('文件删除成功');
+      // 清除已删除文件的选择
+      setSelectedFileIds(prev => prev.filter(id => !fileIds.includes(id)));
+      return true;
     } catch (error) {
       console.error('删除文件失败:', error);
       setError(error instanceof Error ? error.message : '删除失败');
@@ -237,26 +204,10 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/files/${fileId}/rename`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ newName: newName.trim() }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || '重命名文件失败');
-      }
-
-      if (data.success) {
-        message.success('文件重命名成功');
-        return true;
-      } else {
-        throw new Error(data.error || '重命名文件失败');
-      }
+      // 使用fileApi客户端
+      await fileApi.updateFile(fileId, newName.trim());
+      message.success('文件重命名成功');
+      return true;
     } catch (error) {
       console.error('重命名文件失败:', error);
       setError(error instanceof Error ? error.message : '重命名失败');
@@ -272,17 +223,14 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
    * @param name 文件夹名称
    * @param parentId 父文件夹ID
    * @param tags 标签列表
-   * @returns 新文件夹ID，创建失败返回null
+   * @returns 文件夹ID (如果创建成功)
    */
-  const createFolder = useCallback(async (name: string, parentId: string | null, tags: string[] = []): Promise<string | null> => {
-    // 先检查name是否为null或undefined
-    if (!name || typeof name !== 'string') {
-      message.warning('文件夹名称不能为空');
-      return null;
-    }
-    
-    // 检查trim后的结果
-    if (!name.trim()) {
+  const createFolder = useCallback(async (
+    name: string, 
+    parentId: string | null = null,
+    tags: string[] = []
+  ): Promise<string | null> => {
+    if (!name || !name.trim()) {
       message.warning('文件夹名称不能为空');
       return null;
     }
@@ -290,65 +238,11 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
     try {
       setIsLoading(true);
       setError(null);
-      
-      // 构建请求数据
-      const requestData = {
-        name: name.trim(),
-        parentId,
-        tags: tags || [],
-      };
-      
-      console.log('创建文件夹请求数据:', requestData);
 
-      const response = await fetch('/api/folders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      const data = await response.json();
-      console.log('创建文件夹API响应:', data);
-
-      if (!response.ok) {
-        const errorMsg = data.error || `服务器返回错误状态码: ${response.status}`;
-        console.error('创建文件夹失败 - 服务器错误:', errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      // 更健壮的响应处理
-      if (data.success === true) {
-        // 服务器表示成功
-        if (data.folder && data.folder.id) {
-          // 标准响应：包含完整的文件夹对象和ID
-          message.success('文件夹创建成功');
-          return data.folder.id;
-        } else if (data.data && data.data.id) {
-          // API实际上使用data字段返回文件夹信息
-          message.success('文件夹创建成功');
-          return data.data.id;
-        } else if (data.folderId) {
-          // 备选响应格式：直接包含folderId字段
-          message.success('文件夹创建成功');
-          return data.folderId;
-        } else if (data.id) {
-          // 备选响应格式：直接包含id字段
-          message.success('文件夹创建成功');
-          return data.id;
-        } else {
-          // 虽然标记为成功，但没有返回有效ID
-          console.error('创建文件夹数据不完整:', data);
-          message.success('文件夹创建成功，但无法获取文件夹ID');
-          // 返回一个非空值以表示成功
-          return 'unknown-id';
-        }
-      } else {
-        // 服务器明确表示失败
-        const errorMsg = data.error || '创建文件夹失败: 服务器拒绝请求';
-        console.error('创建文件夹被服务器拒绝:', errorMsg);
-        throw new Error(errorMsg);
-      }
+      // 使用fileApi客户端
+      const folder = await fileApi.createFolder(name.trim(), parentId, tags);
+      message.success('文件夹创建成功');
+      return folder.id;
     } catch (error) {
       console.error('创建文件夹过程中出错:', error);
       setError(error instanceof Error ? error.message : '创建失败');

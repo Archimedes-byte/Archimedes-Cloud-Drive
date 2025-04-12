@@ -5,6 +5,8 @@ import { Modal, Button, Space, Upload, Spin, Input, message } from 'antd';
 import { UploadOutlined, FolderOutlined } from '@ant-design/icons';
 import { UploadModalProps, FileTreeNode as IFileTreeNode, FileInfo, mapFileResponseToFileInfo } from '@/app/types';
 import { formatFileSize } from '@/app/lib/utils/file';
+import { API_PATHS } from '@/app/lib/api/paths';
+import { fileApi } from '@/app/lib/api/file-api';
 
 interface ExtendedFile extends Omit<File, 'webkitRelativePath'> {
   webkitRelativePath: string;
@@ -234,77 +236,59 @@ const UploadModal: React.FC<UploadModalProps> = ({
       // 处理文件夹上传
       if (isFolderUpload && folderName) {
         // 创建根文件夹
-        const createFolderResponse = await fetch('/api/files/folder', {
+        const folder = await fileApi.createFolder(folderName, currentFolderId);
+        
+        // 上传文件到新创建的文件夹
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('folderId', folder.id);
+          
+          if (tags.length > 0) {
+            formData.append('tags', JSON.stringify(tags));
+          }
+          
+          await fetch(API_PATHS.STORAGE.FILES.UPLOAD, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+        
+        message.success(`文件夹 "${folderName}" 上传成功`);
+        handleClose();
+        onUploadSuccess();
+      } else {
+        // 处理文件上传
+        const formData = new FormData();
+        
+        for (const file of files) {
+          formData.append('file', file);
+        }
+        
+        if (currentFolderId) {
+          formData.append('folderId', currentFolderId);
+        }
+        
+        if (tags.length > 0) {
+          formData.append('tags', JSON.stringify(tags));
+        }
+        
+        const response = await fetch(API_PATHS.STORAGE.FILES.UPLOAD, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: folderName,
-            parentId: currentFolderId,
-          }),
+          body: formData,
         });
         
-        if (!createFolderResponse.ok) {
-          throw new Error('创建文件夹失败');
+        if (!response.ok) {
+          throw new Error('文件上传失败');
         }
         
-        const folderData = await createFolderResponse.json();
-        const newFolderId = folderData.id as string;
-        
-        // 依次上传文件
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('folderId', newFolderId);
-          
-          // 添加标签
-          if (tags.length > 0) {
-            tags.forEach(tag => formData.append('tags[]', tag));
-          }
-          
-          await fetch('/api/files', {
-            method: 'POST',
-            body: formData,
-          });
-        }
-      } else {
-        // 单个文件上传
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append('file', file);
-          
-          if (currentFolderId) {
-            formData.append('folderId', currentFolderId);
-          }
-          
-          // 添加标签
-          if (tags.length > 0) {
-            tags.forEach(tag => formData.append('tags[]', tag));
-          }
-          
-          const response = await fetch('/api/files', {
-            method: 'POST',
-            body: formData,
-          });
-          
-          if (!response.ok) {
-            throw new Error(`文件 ${file.name} 上传失败`);
-          }
-          
-          const responseData = await response.json();
-          if (onUploadSuccess) {
-            // 不再传递文件信息作为参数
-            onUploadSuccess();
-          }
-        }
+        message.success(`${files.length} 个文件上传成功`);
+        handleClose();
+        onUploadSuccess();
       }
-      
-      message.success('上传成功');
-      handleClose();
     } catch (error) {
       console.error('上传失败:', error);
-      message.error('上传失败，请重试');
+      message.error('上传失败: ' + (error instanceof Error ? error.message : '未知错误'));
     } finally {
       setIsUploading(false);
     }

@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { FileInfo } from '@/app/types';
+import { API_PATHS } from '@/app/lib/api/paths';
+import { fileApi } from '@/app/lib/api/file-api';
 
 /**
  * 防抖函数
@@ -130,25 +132,11 @@ export const useFileSearch = ({
       setError(null);
       console.log(`正在执行搜索，查询: ${query}, 类型: ${type}`);
       
-      // 构建完整的URL，确保包含搜索类型参数
-      const url = `/api/files/search?query=${encodeURIComponent(query.trim())}&type=${type}`;
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`搜索失败 (${response.status}): ${errText || '服务器错误'}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      // 从API响应中获取文件列表
-      const results = Array.isArray(data.data) ? data.data : 
-                      Array.isArray(data.files) ? data.files : [];
+      // 使用fileApi客户端执行搜索
+      const results = await fileApi.searchFiles({
+        query: query.trim(),
+        type
+      });
       
       setSearchResults(results);
       

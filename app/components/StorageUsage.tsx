@@ -5,11 +5,11 @@ import { Progress } from '@/app/components/ui/progress';
 import { Card, Typography, Space } from 'antd';
 import { CloudOutlined } from '@ant-design/icons';
 import styles from './StorageUsage.module.css';
-import { StorageUsageInfo } from '@/app/types';
-import { formatFileSize } from "@/app/lib/file/utils";
+import { StorageUsageResponse } from '@/app/types/api/responses';
+import { formatFileSize } from "@/app/lib/storage";
 
 interface StorageUsageProps {
-  usage: StorageUsageInfo;
+  usage: StorageUsageResponse['data'];
 }
 
 export function StorageUsage({ usage }: StorageUsageProps) {

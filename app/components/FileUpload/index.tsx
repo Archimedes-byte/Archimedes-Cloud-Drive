@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Progress } from '../ui/progress';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 interface FileUploadProps {
   onUploadComplete: (file: any) => void;
@@ -30,7 +31,7 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
 
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/files', true);
+      xhr.open('POST', API_PATHS.STORAGE.FILES.UPLOAD, true);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {

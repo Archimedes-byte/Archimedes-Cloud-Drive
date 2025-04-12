@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database';
 import { ExtendedFile } from '@/app/types';
 import { Prisma } from '@prisma/client';
 

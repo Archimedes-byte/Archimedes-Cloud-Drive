@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth/auth';
-import { prisma } from '@/app/lib/database/prisma';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/database';
 import { ApiResponse, FileInfo, mapFileEntityToFileInfo } from '@/app/types';
-import { generateFileUrl } from '@/app/lib/file/paths';
+import { generateFileUrl } from '@/app/lib/storage';
 import path from 'path';
 import fs from 'fs/promises';
 

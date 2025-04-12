@@ -2,9 +2,15 @@
 
 import React, { useState, useRef } from 'react';
 import { Progress } from '@/app/components/ui/progress';
-import { FileUploadProps, FileInfo, mapFileResponseToFileInfo } from '@/app/types';
+import { FileInfo, mapFileEntityToFileInfo } from '@/app/types';
 import { Upload, Button, message, Tag, Input, Space } from 'antd';
 import { UploadOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
+import { API_PATHS } from '@/app/lib/api/paths';
+
+interface FileUploadProps {
+  onUploadComplete: (file?: any) => void;
+  folderId?: string;
+}
 
 export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -27,7 +33,7 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
     }
 
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch(API_PATHS.STORAGE.FILES.UPLOAD, {
         method: 'POST',
         body: formData,
       });
@@ -39,7 +45,7 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
 
       const responseData = await response.json();
       // 使用类型映射函数转换API响应为FileInfo
-      const fileInfo = mapFileResponseToFileInfo(responseData);
+      const fileInfo = mapFileEntityToFileInfo(responseData);
       onUploadComplete();
       setProgress(100);
     } catch (err) {

@@ -30,7 +30,7 @@ export async function getSignedUrl(filePath: string, expiresIn: number = 600): P
     );
 
     // 构建带有token的URL
-    const signedUrl = `/api/files/serve?token=${encodeURIComponent(token)}`;
+    const signedUrl = `/api/storage/files/serve?token=${encodeURIComponent(token)}`;
     
     console.log('生成签名URL:', { filePath, expiresIn, tokenLength: token.length });
     

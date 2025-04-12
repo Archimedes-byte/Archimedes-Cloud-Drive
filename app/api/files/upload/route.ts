@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/auth/auth';
-import { prisma } from '@/app/lib/database/prisma';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/database';
 import { mkdir } from 'fs/promises';
 import { writeFile } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import { FileResponse } from '@/app/types';
-import { STORAGE_CONFIG } from '@/app/lib/config/config';
-import { getStoragePath, generateUniqueFilename, generateFileUrl } from '@/app/lib/file/paths';
+import { STORAGE_CONFIG } from '@/app/lib/config';
+import { getStoragePath, generateUniqueFilename, generateFileUrl } from '@/app/lib/storage';
+import { formatFileSize, getFileIcon, getFileNameAndExtension } from '@/app/lib/storage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

@@ -108,7 +108,7 @@ export const useFilePreview = ({ onRefresh }: FilePreviewOptions = {}): FilePrev
         newName: newName
       });
       
-      const apiUrl = `/api/files/${fileToRename.id}/rename`;
+      const apiUrl = `/api/storage/files/${fileToRename.id}/rename`;
       console.log('请求URL:', apiUrl);
       
       const response = await fetch(apiUrl, {

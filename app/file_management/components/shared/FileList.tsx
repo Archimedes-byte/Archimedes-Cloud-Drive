@@ -15,27 +15,18 @@ import {
   Plus
 } from 'lucide-react';
 import styles from '../../styles/shared.module.css';
-import { getFileType as getFileTypeDisplay, getFileNameAndExtension } from '../../utils/fileHelpers';
-
-export interface FileItemType {
-  id: string;
-  name: string;
-  type?: string;
-  extension?: string;
-  size?: number;
-  isFolder?: boolean;
-  createdAt?: string;
-  tags?: string[];
-}
+import { getFileType as getFileTypeDisplay } from '@/app/utils/file/type';
+import { getFileNameAndExtension } from '@/app/utils/file/path';
+import { FileInfo } from '@/app/types';
 
 interface FileListProps {
-  files: FileItemType[];
+  files: FileInfo[];
   selectedFiles: string[];
-  onFileClick: (file: FileItemType) => void;
-  onFileDoubleClick?: (file: FileItemType) => void;
-  onFileContextMenu?: (event: React.MouseEvent, file: FileItemType) => void;
+  onFileClick: (file: FileInfo) => void;
+  onFileDoubleClick?: (file: FileInfo) => void;
+  onFileContextMenu?: (event: React.MouseEvent, file: FileInfo) => void;
   onSelectFiles?: (fileIds: string[]) => void;
-  onFileSelect?: (file: FileItemType, checked: boolean) => void;
+  onFileSelect?: (file: FileInfo, checked: boolean) => void;
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
   onSelectAllFiles?: () => void;
@@ -51,7 +42,7 @@ interface FileListProps {
   newTag?: string;
   onNewTagChange?: (value: string) => void;
   onEditNameChange?: (value: string) => void;
-  onStartEdit?: (file: FileItemType) => void;
+  onStartEdit?: (file: FileInfo) => void;
   onConfirmEdit?: (fileId: string, newName: string, newTags: string[]) => void;
   onCancelEdit?: () => void;
   onAddTag?: (tag: string) => void;
@@ -188,7 +179,7 @@ export function FileList({
     }
   };
 
-  const handleFileCheckboxChange = (file: FileItemType, checked: boolean) => {
+  const handleFileCheckboxChange = (file: FileInfo, checked: boolean) => {
     if (onFileSelect) {
       onFileSelect(file, checked);
       return;
@@ -239,7 +230,7 @@ export function FileList({
     return <IconComponent className={styles.fileIcon} />;
   };
 
-  const renderTags = (file: FileItemType) => {
+  const renderTags = (file: FileInfo) => {
     const tags = file.tags || [];
     
     if (actualEditingFileId === file.id) {

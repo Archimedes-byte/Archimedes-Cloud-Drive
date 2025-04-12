@@ -1,5 +1,5 @@
 import { ExtendedFile } from '@/app/types';
-import { FileType } from '@/app/types';
+import { FileTypeEnum } from '@/app/types/domains/fileTypes';
 import { 
   API_PATHS,
   ApiResponse,
@@ -89,7 +89,7 @@ export const fileApi = {
 
   // 创建文件夹
   async createFolder(name: string, parentId: string | null = null, tags: string[] = []): Promise<ExtendedFile> {
-    const response = await fetch('/api/files/folder', {
+    const response = await fetch('/api/storage/folders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

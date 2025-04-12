@@ -1,4 +1,4 @@
-import { FileType } from '@/app/types';
+import { FileTypeEnum } from '@/app/types/domains/fileTypes';
 
 // 基础响应接口
 export interface ApiResponse<T = any> {
@@ -12,7 +12,7 @@ export interface ApiResponse<T = any> {
 // 文件相关接口
 export interface FileListRequest {
   folderId?: string | null;
-  type?: FileType | null;
+  type?: FileTypeEnum | string | null;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -21,7 +21,7 @@ export interface FileListRequest {
 
 export interface FileSearchRequest {
   query: string;
-  type?: FileType | null;
+  type?: FileTypeEnum | string | null;
   tags?: string[];
 }
 
@@ -65,17 +65,17 @@ export interface PaginatedResponse<T> {
 // API 路径常量
 export const API_PATHS = {
   FILES: {
-    LIST: '/file_management/api/files',
-    SEARCH: '/file_management/api/files/search',
-    UPLOAD: '/file_management/api/files/upload',
-    DELETE: '/file_management/api/files/delete',
-    MOVE: '/file_management/api/files/move',
-    UPDATE: (id: string) => `/file_management/api/files/${id}`,
-    DOWNLOAD: '/file_management/api/files/download',
+    LIST: '/api/storage/files',
+    SEARCH: '/api/storage/files/search',
+    UPLOAD: '/api/storage/files/upload',
+    DELETE: '/api/storage/files/delete',
+    MOVE: '/api/storage/files/move',
+    UPDATE: (id: string) => `/api/storage/files/${id}`,
+    DOWNLOAD: '/api/storage/files/download',
   },
   FOLDERS: {
-    CREATE: '/file_management/api/folders',
-    LIST: '/file_management/api/folders',
-    DELETE: '/file_management/api/folders/delete',
+    CREATE: '/api/storage/folders',
+    LIST: '/api/storage/folders',
+    DELETE: '/api/storage/folders/delete',
   }
 } as const; 

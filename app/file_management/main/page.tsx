@@ -39,8 +39,8 @@ import {
   useProfile 
 } from '@/app/hooks';
 // 导入类型和工具函数
-import { SortOrder } from '@/app/types';
-import { LocalFileType, convertFilesForDisplay } from '../utils/fileTypeConverter';
+import { SortOrder, FileInfo } from '@/app/types';
+import { convertFilesForDisplay } from '@/app/utils/file/converter';
 
 // 导入样式
 import styles from '../styles/shared.module.css';
@@ -158,7 +158,7 @@ export default function FileManagementPage() {
   const [editingName, setEditingName] = useState('');
   const [editingTags, setEditingTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
-  const [selectedFile, setSelectedFile] = useState<LocalFileType | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
 
   // 文件上下文菜单处理 - 移至hooks声明区域
   const handleFileContextMenu = useCallback((e, file, setSelectedFile, setSelectedFiles) => {
@@ -265,7 +265,7 @@ export default function FileManagementPage() {
   }, [setSelectedFiles]);
 
   // 处理文件复选框变化
-  const onFileCheckboxChange = useCallback((file: LocalFileType, checked: boolean) => {
+  const onFileCheckboxChange = useCallback((file: FileInfo, checked: boolean) => {
     handleSelectFile(file.id, checked);
   }, [handleSelectFile]);
 
@@ -720,7 +720,7 @@ export default function FileManagementPage() {
                   <FileList 
                     files={convertFilesForDisplay(files)}
                     onFileClick={handleFileItemClick}
-                    onFileSelect={(file, checked) => onFileCheckboxChange(file as LocalFileType, checked)}
+                    onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
                     onSelectAll={onSelectAllFiles}
                     onDeselectAll={onDeselectAllFiles}
                     selectedFiles={selectedFiles}

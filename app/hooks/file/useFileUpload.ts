@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 /**
  * 文件上传钩子接口
@@ -95,7 +96,7 @@ export const useFileUpload = (onSuccess?: () => void): FileUploadHook => {
       
       // 返回一个Promise以便能够在上传完成后执行后续操作
       await new Promise<void>((resolve, reject) => {
-        xhr.open('POST', '/api/files/upload');
+        xhr.open('POST', API_PATHS.STORAGE.FILES.UPLOAD);
         
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -276,8 +277,7 @@ export const useFileUpload = (onSuccess?: () => void): FileUploadHook => {
       
       // 返回一个Promise以便能够在上传完成后执行后续操作
       await new Promise<void>((resolve, reject) => {
-        // 统一使用同一个API路径处理文件夹上传
-        xhr.open('POST', '/api/files/upload');
+        xhr.open('POST', API_PATHS.STORAGE.FILES.UPLOAD);
         
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {

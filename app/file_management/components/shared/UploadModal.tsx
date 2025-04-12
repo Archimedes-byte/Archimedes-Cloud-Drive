@@ -4,16 +4,17 @@ import { Modal, Upload, Input, message, Button, Tag } from 'antd';
 import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import type { UploadProps } from 'antd';
 import type { InputRef } from 'antd/es/input';
-import { FileItemType } from './FileList';
+import { FileInfo, FileResponse } from '@/app/types';
 import styles from '../../styles/shared.module.css';
 import { useSession } from 'next-auth/react';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 const { Dragger } = Upload;
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (files?: FileItemType[]) => void;
+  onSuccess: (files?: FileInfo[]) => void;
   isFolderUpload?: boolean;
   currentFolderId?: string | null;
 }
@@ -171,7 +172,7 @@ export function UploadModal({
       message.loading({ content: '正在上传文件...', key: uploadKey, duration: 0 });
 
       // 使用fetch发送请求
-      const response = await fetch('/api/files/upload', {
+      const response = await fetch(API_PATHS.STORAGE.FILES.UPLOAD, {
         method: 'POST',
         body: formData,
       });

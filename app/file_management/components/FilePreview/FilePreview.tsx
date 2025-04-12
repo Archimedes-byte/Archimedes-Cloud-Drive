@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { LocalFileType } from '../../utils/fileTypeConverter';
-import { getFileTypeByExtension } from '../../utils/fileHelpers';
+import { getFileTypeByExtension } from '@/app/utils/file/type';
 import { 
   File, X, Download, FileText, Folder,
   Image as ImageIcon, Video, Music, Archive, Code 
 } from 'lucide-react';
-import { ExtendedFile } from '@/app/types';
+import { ExtendedFile, FileInfo } from '@/app/types';
 import styles from '@/app/shared/themes/components/filePreview.module.css';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 interface FilePreviewProps {
-  file: ExtendedFile | null;
+  file: ExtendedFile | FileInfo | null;
   onClose: () => void;
-  onDownload: (file: ExtendedFile) => void;
+  onDownload: (file: ExtendedFile | FileInfo) => void;
 }
 
 const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownload }) => {
@@ -147,7 +147,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownload }) 
         if (isPreviewableFile(file.type, extension)) {
           console.log('文件类型支持预览，正在获取预览URL');
           
-          const response = await fetch(`/api/files/${file.id}/preview`);
+          const response = await fetch(API_PATHS.STORAGE.FILES.PREVIEW(file.id));
           const responseText = await response.text();
           
           let data;

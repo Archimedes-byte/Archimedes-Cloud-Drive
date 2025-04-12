@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/database'
 
 // 获取当前认证配置
 import { authOptions } from '@/app/lib/auth'

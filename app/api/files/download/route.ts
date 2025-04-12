@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database';
 import { createReadStream } from 'fs';
 import { join } from 'path';
 import { stat } from 'fs/promises';
