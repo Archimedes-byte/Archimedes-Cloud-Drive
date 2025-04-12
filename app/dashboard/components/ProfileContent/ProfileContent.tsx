@@ -1,6 +1,6 @@
 import React from 'react';
 import { Session } from 'next-auth';
-import { UserInfo } from '@/dashboard/hooks/useProfile';
+import { UserInfo } from '@/app/dashboard/page';
 import styles from './ProfileContent.module.css';
 
 interface ProfileContentProps {

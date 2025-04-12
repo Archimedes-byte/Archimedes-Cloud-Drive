@@ -6,8 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { ArrowLeft } from 'lucide-react'
 
 // 导入自定义钩子
-import { useProfile } from '@/app/dashboard/hooks/useProfile'
-import { usePassword } from '@/app/dashboard/hooks/usePassword'
+import { useProfile, usePassword, UserProfile, UserProfileInput } from '@/app/hooks'
 import { useToast } from './components/Toaster'
 import { useValidation } from './hooks/useValidation'
 // 导入主题服务
@@ -20,6 +19,18 @@ import ProfileContent from '@/app/dashboard/components/ProfileContent'
 import EditProfileForm from '@/app/dashboard/components/EditProfileForm'
 import PasswordForm from '@/app/dashboard/components/PasswordForm'
 import ProfileCompleteness from '@/app/dashboard/components/ProfileCompleteness'
+
+// 创建兼容旧组件的UserInfo接口
+export interface UserInfo {
+  displayName: string;
+  bio: string;
+  location: string;
+  website: string;
+  company: string;
+  avatarUrl?: string | null; 
+  theme?: string | null;     
+  createdAt?: string;        
+}
 
 // 导入样式
 import styles from './Dashboard.module.css'
@@ -37,13 +48,39 @@ export default function DashboardPage() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   
   const { 
-    userInfo, 
-    setUserInfo, 
+    userProfile, 
     isLoading: profileLoading, 
     error: profileError, 
-    updateProfile,
-    updateTheme
+    updateUserProfile,
+    effectiveAvatarUrl
   } = useProfile()
+  
+  // 创建一个本地状态用于编辑，兼容旧的UserInfo格式
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    displayName: '',
+    bio: '',
+    location: '',
+    website: '',
+    company: '',
+    avatarUrl: null,
+    theme: null
+  })
+  
+  // 当userProfile更新时，同步更新userInfo
+  useEffect(() => {
+    if (userProfile) {
+      setUserInfo({
+        displayName: userProfile.name || '',
+        bio: userProfile.bio || '',
+        location: userProfile.location || '',
+        website: userProfile.website || '',
+        company: userProfile.company || '',
+        avatarUrl: userProfile.avatarUrl,
+        theme: userProfile.theme,
+        createdAt: userProfile.createdAt
+      })
+    }
+  }, [userProfile])
   
   const {
     passwordInfo,
@@ -80,7 +117,20 @@ export default function DashboardPage() {
       // 禁用保存按钮，防止重复提交
       setIsSaving(true);
       
-      const success = await updateProfile(userInfo);
+      // 转换为UserProfileInput格式
+      const profileInput: UserProfileInput = {
+        displayName: userInfo.displayName,
+        bio: userInfo.bio,
+        location: userInfo.location,
+        website: userInfo.website,
+        company: userInfo.company,
+        // 仅在非null时包含avatarUrl
+        ...(userInfo.avatarUrl && { avatarUrl: userInfo.avatarUrl }),
+        // 仅在非null时包含theme
+        ...(userInfo.theme && { theme: userInfo.theme })
+      };
+      
+      const success = await updateUserProfile(profileInput);
       
       if (success) {
         setIsEditModalOpen(false);
@@ -113,19 +163,22 @@ export default function DashboardPage() {
 
   // 应用主题
   useEffect(() => {
-    if (userInfo.theme) {
-      applyTheme(userInfo.theme);
+    if (userProfile?.theme) {
+      applyTheme(userProfile.theme);
     }
-  }, [userInfo.theme]);
+  }, [userProfile?.theme]);
 
   // 处理主题更改
   const handleThemeChange = async (themeId: string) => {
     // 先立即在本地应用主题，提升用户体验
     applyTheme(themeId);
     
-    // 然后尝试在服务器上保存
+    // 更新用户资料中的主题
     try {
-      const success = await updateTheme(themeId);
+      const profileInput: UserProfileInput = {
+        theme: themeId
+      };
+      const success = await updateUserProfile(profileInput);
       if (success) {
         console.log(`主题 ${themeId} 已成功应用并保存到服务器`);
       } else {
@@ -294,8 +347,20 @@ export default function DashboardPage() {
                 // 更新本地状态
                 setUserInfo(updatedInfo);
                 
+                // 转换为UserProfileInput格式
+                const profileInput: UserProfileInput = {
+                  displayName: updatedInfo.displayName,
+                  bio: updatedInfo.bio,
+                  location: updatedInfo.location,
+                  website: updatedInfo.website,
+                  company: updatedInfo.company,
+                  avatarUrl: updatedInfo.avatarUrl,
+                  // 仅在theme不为null时包含
+                  ...(updatedInfo.theme && { theme: updatedInfo.theme })
+                };
+                
                 // 保存到数据库并等待完成
-                const success = await updateProfile(updatedInfo);
+                const success = await updateUserProfile(profileInput);
                 console.log('保存头像到数据库结果:', success ? '成功' : '失败');
                 
                 // 如果保存失败，强制重新获取用户数据

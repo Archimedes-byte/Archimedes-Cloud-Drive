@@ -218,6 +218,8 @@ export interface FileInfo {
   size?: number;
   /** 文件路径 */
   path?: string;
+  /** 文件物理文件名 */
+  filename?: string;
   /** 文件扩展名 */
   extension?: CommonFileExtension;
   /** 是否为文件夹 */
@@ -357,6 +359,7 @@ export function mapFileEntityToFileInfo(entity: FileEntity): FileInfo {
   return {
     id: entity.id,
     name: entity.name,
+    filename: entity.filename,
     type: entity.type || '',
     size: entity.size || 0,
     path: entity.path,

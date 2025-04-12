@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { UserInfo } from '@/dashboard/hooks/useProfile';
+import { UserInfo } from '@/app/dashboard/page';
 import styles from './ProfileCompleteness.module.css';
 import { AlertCircle, CheckCircle, User, FileText, MapPin, Globe, Briefcase, Image } from 'lucide-react';
 

@@ -5,11 +5,13 @@ import {
   FileInfo,
   FileTypeEnum,
   FileSortInterface,
-  SortDirectionEnum
+  SortDirectionEnum,
+  SortField
 } from '@/app/types';
-import { filterFiles } from '../utils/fileHelpers';
 
-// 扩展FileInfo类型，但保持与原有接口兼容
+/**
+ * 扩展FileInfo类型，但保持与原有接口兼容
+ */
 export interface FileWithSize extends Omit<FileInfo, 'size'> {
   size: number | undefined;
 }
@@ -18,9 +20,57 @@ export interface FileWithSize extends Omit<FileInfo, 'size'> {
 export { SortDirectionEnum };
 
 /**
+ * 文件过滤函数
+ * 根据文件类型过滤文件列表
+ */
+const filterFiles = (files: FileWithSize[], fileType: FileTypeEnum): FileWithSize[] => {
+  if (!files || !Array.isArray(files)) return [];
+  
+  // 文档类型特殊处理
+  if (fileType === 'document') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt'].includes(ext);
+    });
+  }
+
+  // 图片类型
+  if (fileType === 'image') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
+    });
+  }
+
+  // 音频类型
+  if (fileType === 'audio') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
+    });
+  }
+
+  // 视频类型
+  if (fileType === 'video') {
+    return files.filter(file => {
+      if (file.isFolder) return false;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      return ext && ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
+    });
+  }
+
+  // 默认行为 - 返回所有文件
+  return files;
+};
+
+/**
  * 文件管理钩子
  * 负责文件列表的获取、状态管理和基本操作
- * 合并了两个useFiles实现的功能
+ * 
+ * @returns 文件相关状态和方法
  */
 export const useFiles = () => {
   // 基础状态
@@ -88,6 +138,37 @@ export const useFiles = () => {
   }, [sortOrder]);
 
   /**
+   * 加载文件夹路径
+   */
+  const loadFolderPath = useCallback(async (folderId: string | null) => {
+    // 如果是根文件夹，直接设置路径为空数组
+    if (!folderId) {
+      setFolderPath([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/folders/${folderId}/path`);
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '加载文件夹路径失败');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setFolderPath(data.path || []);
+      } else {
+        console.error('加载文件夹路径失败:', data.error);
+      }
+    } catch (error) {
+      console.error('获取文件夹路径错误:', error);
+      // 不显示错误，保持当前路径
+    }
+  }, []);
+
+  /**
    * 加载文件列表
    */
   const loadFiles = useCallback(async (folderId: string | null = null, type: FileTypeEnum | null = selectedFileType, forceRefresh: boolean = false) => {
@@ -117,6 +198,13 @@ export const useFiles = () => {
       
       // 优先使用传入的type，如果没有传入则使用状态中的selectedFileType
       const effectiveFileType = type !== undefined ? type : selectedFileType;
+      
+      // 更新当前文件夹ID，仅在非文件类型筛选模式下
+      if (effectiveFileType === null) {
+        setCurrentFolderId(folderId);
+        // 加载文件夹路径
+        loadFolderPath(folderId);
+      }
 
       console.log('加载文件列表，参数:', { 
         folderId, 
@@ -152,32 +240,12 @@ export const useFiles = () => {
         // 获取API返回的文件列表
         const files = data.data || [];
         
-        // 调试文件类型信息
-        if (effectiveFileType === 'document') {
-          console.log('文档类型文件信息:', files.map((f: any) => ({
-            id: f.id,
-            name: f.name,
-            type: f.type,
-            extension: f.name.split('.').pop()
-          })));
-        }
-        
         // 在前端执行额外过滤（确保筛选结果的准确性）
         let filteredFiles = files;
         if (effectiveFileType) {
           // 使用辅助函数过滤文件
           filteredFiles = filterFiles(files, effectiveFileType);
           console.log(`前端过滤 - 类型 "${effectiveFileType}": 过滤前 ${files.length} 项, 过滤后 ${filteredFiles.length} 项`);
-        }
-        
-        // 统计分类结果
-        const folders = filteredFiles.filter((f: any) => f.isFolder);
-        const nonFolders = filteredFiles.filter((f: any) => !f.isFolder);
-        console.log(`过滤结果: ${folders.length}个文件夹, ${nonFolders.length}个文件`);
-        
-        // 调试文件夹信息
-        if (folders.length > 0) {
-          console.log('文件夹:', folders.map((f: any) => ({ id: f.id, name: f.name })));
         }
         
         // 应用排序逻辑到过滤后的文件
@@ -196,148 +264,109 @@ export const useFiles = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, selectedFileType, sortOrder, handleSort, currentFolderId]);
+  }, [isLoading, selectedFileType, sortOrder, handleSort, currentFolderId, loadFolderPath]);
 
   /**
-   * 处理文件类型过滤
+   * 选择或取消选择单个文件
    */
-  const setFileType = useCallback((type: FileTypeEnum | null) => {
-    // 如果类型没变，不要重新加载
-    if (type === selectedFileType) {
-      console.log('文件类型未变更，跳过重新加载');
-      return;
-    }
-    
-    console.log(`切换文件类型过滤: ${selectedFileType} -> ${type}`);
-    setSelectedFileType(type);
-    // 不直接调用loadFiles，而是让useEffect处理
-  }, [selectedFileType]);
+  const toggleSelectFile = useCallback((fileId: string) => {
+    setSelectedFiles(prev => {
+      if (prev.includes(fileId)) {
+        return prev.filter(id => id !== fileId);
+      } else {
+        return [...prev, fileId];
+      }
+    });
+  }, []);
 
   /**
-   * 导航到指定文件夹
+   * 全选/取消全选
    */
-  const navigateToFolder = useCallback((folderId: string | null, folderName?: string) => {
-    if (folderId === currentFolderId) return;
-    
-    if (folderId === null) {
-      // 返回根目录
-      setFolderPath([]);
-    } else if (folderName) {
-      // 添加到导航路径
-      setFolderPath(prev => [...prev, { id: folderId, name: folderName }]);
-    }
-    
-    console.log(`导航到文件夹: ${currentFolderId} -> ${folderId}`);
-    setCurrentFolderId(folderId);
-    // 不直接调用loadFiles，而是让useEffect处理
-  }, [currentFolderId]);
-
-  /**
-   * 返回上级目录
-   */
-  const navigateUp = useCallback(() => {
-    if (folderPath.length <= 1) {
-      // 返回根目录
-      setFolderPath([]);
-      setCurrentFolderId(null);
+  const toggleSelectAll = useCallback((selected: boolean) => {
+    if (selected) {
+      const fileIds = files.map(file => file.id);
+      setSelectedFiles(fileIds);
     } else {
-      // 移除当前路径，返回上一级
-      const newPath = [...folderPath];
-      newPath.pop();
-      const parentFolder = newPath[newPath.length - 1];
-      setFolderPath(newPath);
-      setCurrentFolderId(parentFolder.id);
+      setSelectedFiles([]);
     }
-    // 不直接调用loadFiles，而是让useEffect处理
-  }, [folderPath]);
+  }, [files]);
 
-  // 监听文件夹ID和类型变化，自动加载文件
-  useEffect(() => {
-    // 跳过首次渲染
-    if (isInitialMount.current) return;
+  /**
+   * 更改排序
+   */
+  const changeSort = useCallback((field: SortField, direction: SortDirectionEnum) => {
+    setSortOrder({ field, direction });
     
-    // 防止短时间内多次触发的逻辑
-    const now = Date.now();
-    const timeSinceLastLoad = now - lastLoadTimeRef.current;
+    // 重新应用排序
+    const sortedFiles = handleSort(files);
+    setFiles(sortedFiles);
+    setLastSortApplied(`${field}-${direction}`);
+  }, [files, handleSort]);
+
+  /**
+   * 选择文件类型进行过滤
+   */
+  const filterByFileType = useCallback((type: FileTypeEnum | null) => {
+    setSelectedFileType(type);
     
-    // 如果距离上次加载时间太短（小于2秒），跳过此次加载
-    if (timeSinceLastLoad < 2000 && lastLoadTimeRef.current > 0) {
-      console.log(`距上次加载仅 ${timeSinceLastLoad}ms，跳过此次自动加载`);
-      return;
-    }
-    
-    // 当文件夹ID或类型变化时加载文件
-    console.log('文件夹或类型变化检测到', {currentFolderId, selectedFileType});
-    
-    // 更新最后加载时间
-    lastLoadTimeRef.current = now;
-    
-    loadFiles(currentFolderId, selectedFileType);
+    // 类型改变时重新加载文件
+    loadFiles(currentFolderId, type);
+  }, [currentFolderId, loadFiles]);
+
+  /**
+   * 打开文件夹
+   */
+  const openFolder = useCallback((folderId: string | null) => {
+    loadFiles(folderId, null);
+  }, [loadFiles]);
+
+  /**
+   * 刷新当前文件夹
+   */
+  const refreshCurrentFolder = useCallback(() => {
+    loadFiles(currentFolderId, selectedFileType, true);
   }, [currentFolderId, selectedFileType, loadFiles]);
 
   /**
-   * 选择文件（单个或多个）
+   * 处理点击文件/文件夹
    */
-  const selectFiles = useCallback((fileIds: string[]) => {
-    setSelectedFiles(fileIds);
-  }, []);
-
-  /**
-   * 清除所有选择
-   */
-  const clearSelection = useCallback(() => {
-    setSelectedFiles([]);
-  }, []);
-
-  /**
-   * 更新排序顺序
-   */
-  const updateFileSort = useCallback((newSortOrder: FileSortInterface) => {
-    setSortOrder(newSortOrder);
-  }, []);
-
-  /**
-   * 处理文件点击事件
-   */
-  const handleFileClick = useCallback((file: FileInfo) => {
-    // 确保isFolder属性存在，未定义时默认为false
-    if (file.isFolder === true) {
-      navigateToFolder(file.id, file.name);
-    } else {
-      // 返回文件对象供下载或预览
-      console.log(`文件点击: ${file.name}，返回文件对象供下载或预览`);
-      return file;
+  const handleFileClick = useCallback((file: FileWithSize) => {
+    if (file.isFolder) {
+      // 设置当前文件夹ID
+      setCurrentFolderId(file.id);
+      // 加载文件夹内容
+      loadFiles(file.id, null);
     }
-  }, [navigateToFolder]);
+    // 如果是文件，不做特殊处理，由调用者处理
+  }, [setCurrentFolderId, loadFiles]);
 
   /**
-   * 处理返回点击事件
+   * 处理返回上一级
    */
   const handleBackClick = useCallback(() => {
-    navigateUp();
-  }, [navigateUp]);
-
-  // 当排序条件变化时重新排序文件列表
-  useEffect(() => {
-    // 创建排序标识
-    const sortSignature = `${sortOrder.field}-${sortOrder.direction}`;
-    
-    // 仅在排序条件变化且与上次应用的排序不同，且有文件数据时才重新排序
-    if (!isLoading && sortSignature !== lastSortApplied) {
-      console.log('排序条件变化，重新应用排序:', sortOrder);
+    if (folderPath.length > 0) {
+      // 获取上一级文件夹ID
+      const parentFolder = folderPath[folderPath.length - 2] || null;
+      const parentId = parentFolder ? parentFolder.id : null;
       
-      // 仅当有文件数据时执行排序
-      if (files.length > 0) {
-        const sortedFiles = handleSort(files);
-        // 更新最后应用的排序标识，确保在设置文件前更新，避免不必要的重渲染
-        setLastSortApplied(sortSignature);
-        setFiles(sortedFiles);
-      } else {
-        // 即使没有文件，也更新排序标识，避免后续不必要的处理
-        setLastSortApplied(sortSignature);
-      }
+      // 设置当前文件夹ID为上一级
+      setCurrentFolderId(parentId);
+      // 裁剪路径
+      setFolderPath(prev => prev.slice(0, prev.length - 1));
+      // 加载上一级文件夹内容
+      loadFiles(parentId, null);
     }
-  }, [sortOrder, isLoading, handleSort, lastSortApplied, files]);
+  }, [folderPath, setCurrentFolderId, setFolderPath, loadFiles]);
+
+  // 在排序顺序变更时重新排序文件列表
+  useEffect(() => {
+    // 避免初次渲染时重复排序
+    if (files.length > 0 && lastSortApplied !== `${sortOrder.field}-${sortOrder.direction}`) {
+      const sortedFiles = handleSort(files);
+      setFiles(sortedFiles);
+      setLastSortApplied(`${sortOrder.field}-${sortOrder.direction}`);
+    }
+  }, [sortOrder, files, handleSort, lastSortApplied]);
 
   return {
     // 状态
@@ -350,23 +379,22 @@ export const useFiles = () => {
     selectedFiles,
     sortOrder,
     
-    // 状态更新方法
-    setFiles,
-    setCurrentFolderId,
-    setFolderPath,
-    setSelectedFileType, // 直接使用状态setter，不调用loadFiles
-    setSortOrder,
-    
     // 操作方法
     loadFiles,
-    selectFiles,
-    clearSelection,
-    setFileType,
-    navigateToFolder,
-    navigateUp,
-    updateFileSort,
+    toggleSelectFile,
+    toggleSelectAll,
+    changeSort,
+    filterByFileType,
+    openFolder,
+    refreshCurrentFolder,
     handleFileClick,
     handleBackClick,
-    handleSort
+    
+    // 设置函数
+    setCurrentFolderId,
+    setFolderPath,
+    setSelectedFileType,
+    setSelectedFiles,
+    setSortOrder
   };
 }; 

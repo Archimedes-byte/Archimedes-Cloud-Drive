@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Session } from 'next-auth';
-import { UserInfo } from '../../hooks/useProfile';
+import { UserInfo } from '@/app/dashboard/page';
 import { Camera, Upload, Trash2 } from 'lucide-react';
 import styles from './ProfileHeader.module.css';
 import { AvatarModal } from '../AvatarCropper';

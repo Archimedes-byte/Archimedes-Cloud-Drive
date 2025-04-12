@@ -65,8 +65,13 @@ const RenameModal: React.FC<RenameModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newName.trim() && (newName !== initialName || JSON.stringify(tags) !== JSON.stringify(initialTags))) {
+    // 首先确保新名称是有效的非空字符串
+    if (newName && typeof newName === 'string' && newName.trim() && 
+        (newName !== initialName || JSON.stringify(tags) !== JSON.stringify(initialTags))) {
       onRename(newName, tags);
+    } else if (!newName || !newName.trim()) {
+      // 如果名称为空，显示错误信息但不关闭模态框
+      return;
     }
     onClose();
   };

@@ -1,44 +1,69 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
-import { FileInfo, FileWithProgress } from '@/app/types';
-
-type RefreshCallback = () => void;
 
 /**
- * 创建自定义上传Hook接口
+ * 文件上传钩子接口
  */
-export interface CustomFileUploadHook {
+export interface FileUploadHook {
+  /** 是否正在上传 */
   isUploading: boolean;
+  /** 上传进度 (0-100) */
   uploadProgress: number;
-  handleUpload: (files: File[], folderId?: string | null) => Promise<void>;
-  handleFolderUpload: (folderItems: FileSystemEntry[], folderId?: string | null) => Promise<void>;
+  /** 上传错误信息 */
+  uploadError: string | null;
+  /** 文件上传模态框是否打开 */
+  isUploadModalOpen: boolean;
+  /** 设置文件上传模态框状态 */
+  setIsUploadModalOpen: (open: boolean) => void;
+  /** 文件夹上传模态框是否打开 */
+  isFolderUploadModalOpen: boolean;
+  /** 设置文件夹上传模态框状态 */
+  setIsFolderUploadModalOpen: (open: boolean) => void;
+  /** 上传文件 */
+  uploadFiles: (files: File[], folderId?: string | null, tags?: string[]) => Promise<boolean>;
+  /** 上传文件夹 */
+  uploadFolder: (folderItems: FileSystemEntry[], folderId?: string | null, tags?: string[]) => Promise<boolean>;
+  /** 取消上传 */
+  cancelUpload: () => void;
 }
 
 /**
- * 统一的文件上传钩子
- * 提供文件和文件夹上传功能
+ * 文件上传钩子
+ * 提供文件和文件夹的上传功能
+ * 
+ * @param onSuccess 上传成功回调函数
+ * @returns 文件上传相关状态和方法
  */
-export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook & {
-  isUploadModalOpen: boolean;
-  setIsUploadModalOpen: (open: boolean) => void;
-  isFolderUploadModalOpen: boolean;
-  setIsFolderUploadModalOpen: (open: boolean) => void;
-  uploadError: string | null;
-} {
+export const useFileUpload = (onSuccess?: () => void): FileUploadHook => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFolderUploadModalOpen, setIsFolderUploadModalOpen] = useState(false);
+  
+  // 使用ref存储当前XHR请求，以便能够取消
+  const currentXhrRef = useRef<XMLHttpRequest | null>(null);
 
-  const handleUpload = useCallback(async (files: File[], folderId: string | null = null) => {
+  /**
+   * 上传文件
+   * @param files 文件列表
+   * @param folderId 目标文件夹ID
+   * @param tags 标签列表
+   * @returns 是否上传成功
+   */
+  const uploadFiles = useCallback(async (
+    files: File[], 
+    folderId: string | null = null,
+    tags: string[] = []
+  ): Promise<boolean> => {
     if (!files.length) {
       message.warning('请选择要上传的文件');
-      return;
+      return false;
     }
 
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
     
     try {
       const formData = new FormData();
@@ -53,11 +78,12 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
         formData.append('folderId', folderId);
       }
       
-      // 添加标签（可选）
-      formData.append('tags', JSON.stringify([]));
+      // 添加标签
+      formData.append('tags', JSON.stringify(tags));
       
       // 创建请求
       const xhr = new XMLHttpRequest();
+      currentXhrRef.current = xhr;
       
       // 监听上传进度
       xhr.upload.addEventListener('progress', (event) => {
@@ -73,16 +99,20 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
         
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            const response = JSON.parse(xhr.responseText);
-            
-            if (response.success) {
-              message.success(`成功上传 ${files.length} 个文件`);
-              resolve();
-            } else {
-              reject(new Error(response.error || '上传失败'));
+            try {
+              const response = JSON.parse(xhr.responseText);
+              
+              if (response.success) {
+                message.success(`成功上传 ${files.length} 个文件`);
+                resolve();
+              } else {
+                reject(new Error(response.error || '上传失败'));
+              }
+            } catch (error) {
+              reject(new Error('解析服务器响应失败'));
             }
           } else {
-            reject(new Error('上传失败，服务器返回错误'));
+            reject(new Error(`上传失败，服务器返回状态码: ${xhr.status}`));
           }
         };
         
@@ -90,29 +120,49 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
           reject(new Error('网络错误，上传失败'));
         };
         
+        xhr.onabort = () => {
+          reject(new Error('上传已取消'));
+        };
+        
         xhr.send(formData);
       });
       
-      // 关闭上传模态框并刷新文件列表
+      // 关闭上传模态框并执行成功回调
       setIsUploadModalOpen(false);
-      onRefresh();
+      if (onSuccess) onSuccess();
+      return true;
     } catch (error) {
       console.error('上传文件错误:', error);
-      message.error(error instanceof Error ? error.message : '上传失败，请重试');
+      const errorMessage = error instanceof Error ? error.message : '上传失败，请重试';
+      setUploadError(errorMessage);
+      message.error(errorMessage);
+      return false;
     } finally {
       setIsUploading(false);
-      setUploadProgress(0);
+      currentXhrRef.current = null;
     }
-  }, [onRefresh]);
+  }, [onSuccess]);
 
-  const handleFolderUpload = useCallback(async (folderItems: FileSystemEntry[], folderId: string | null = null) => {
+  /**
+   * 上传文件夹
+   * @param folderItems 文件系统条目列表
+   * @param folderId 目标文件夹ID
+   * @param tags 标签列表
+   * @returns 是否上传成功
+   */
+  const uploadFolder = useCallback(async (
+    folderItems: FileSystemEntry[], 
+    folderId: string | null = null,
+    tags: string[] = []
+  ): Promise<boolean> => {
     if (!folderItems.length) {
       message.warning('请选择要上传的文件夹');
-      return;
+      return false;
     }
 
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
     
     try {
       // 递归处理文件夹内容
@@ -188,7 +238,7 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
       if (allFiles.length === 0) {
         message.warning('选择的文件夹中没有文件');
         setIsUploading(false);
-        return;
+        return false;
       }
 
       console.log(`准备上传文件夹中的 ${allFiles.length} 个文件，包含路径信息`);
@@ -209,8 +259,12 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
         formData.append('folderId', folderId);
       }
       
+      // 添加标签
+      formData.append('tags', JSON.stringify(tags));
+      
       // 创建请求
       const xhr = new XMLHttpRequest();
+      currentXhrRef.current = xhr;
       
       // 监听上传进度
       xhr.upload.addEventListener('progress', (event) => {
@@ -227,16 +281,20 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
         
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            const response = JSON.parse(xhr.responseText);
-            
-            if (response.success) {
-              message.success(`成功上传文件夹，包含 ${allFiles.length} 个文件`);
-              resolve();
-            } else {
-              reject(new Error(response.error || '上传失败'));
+            try {
+              const response = JSON.parse(xhr.responseText);
+              
+              if (response.success) {
+                message.success(`成功上传文件夹，包含 ${allFiles.length} 个文件`);
+                resolve();
+              } else {
+                reject(new Error(response.error || '上传失败'));
+              }
+            } catch (error) {
+              reject(new Error('解析服务器响应失败'));
             }
           } else {
-            reject(new Error('上传失败，服务器返回错误'));
+            reject(new Error(`上传失败，服务器返回状态码: ${xhr.status}`));
           }
         };
         
@@ -244,30 +302,51 @@ export function useFileUpload(onRefresh: RefreshCallback): CustomFileUploadHook 
           reject(new Error('网络错误，上传失败'));
         };
         
+        xhr.onabort = () => {
+          reject(new Error('上传已取消'));
+        };
+        
         xhr.send(formData);
       });
       
-      // 关闭上传模态框并刷新文件列表
-      setIsUploadModalOpen(false);
-      onRefresh();
+      // 关闭上传模态框并执行成功回调
+      setIsFolderUploadModalOpen(false);
+      if (onSuccess) onSuccess();
+      return true;
     } catch (error) {
       console.error('上传文件夹错误:', error);
-      message.error(error instanceof Error ? error.message : '上传文件夹失败，请重试');
+      const errorMessage = error instanceof Error ? error.message : '上传文件夹失败，请重试';
+      setUploadError(errorMessage);
+      message.error(errorMessage);
+      return false;
     } finally {
+      setIsUploading(false);
+      currentXhrRef.current = null;
+    }
+  }, [onSuccess]);
+
+  /**
+   * 取消上传
+   */
+  const cancelUpload = useCallback(() => {
+    if (currentXhrRef.current && isUploading) {
+      currentXhrRef.current.abort();
+      message.info('上传已取消');
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [onRefresh]);
+  }, [isUploading]);
 
   return {
     isUploading,
     uploadProgress,
-    handleUpload,
-    handleFolderUpload,
+    uploadError,
     isUploadModalOpen,
     setIsUploadModalOpen,
     isFolderUploadModalOpen,
     setIsFolderUploadModalOpen,
-    uploadError
+    uploadFiles,
+    uploadFolder,
+    cancelUpload
   };
-} 
+}; 

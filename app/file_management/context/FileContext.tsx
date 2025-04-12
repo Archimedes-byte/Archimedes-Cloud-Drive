@@ -6,8 +6,7 @@ import {
   convertInterfaceToSortOrder,
   convertSortOrderToInterface
 } from '@/app/types';
-import { useFiles } from '../hooks/useFiles';
-import { useFileOperations } from '../hooks/useFileOperations';
+import { useFiles, useFileOperations } from '@/app/hooks';
 
 // 创建文件上下文
 const FileContext = createContext<FileContextType | undefined>(undefined);
@@ -27,21 +26,20 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     selectedFileType,
     sortOrder,
     loadFiles,
-    selectFiles,
-    clearSelection,
-    setFileType,
-    navigateToFolder,
-    updateFileSort
+    toggleSelectFile,
+    toggleSelectAll,
+    filterByFileType,
+    openFolder,
+    changeSort
   } = useFiles();
 
-  // 使用文件操作钩子，使用类型断言调整类型
+  // 使用文件操作钩子
   const { 
-    loading: operationsLoading
-  } = useFileOperations({ 
-    loadFiles: loadFiles as any, 
-    currentFolderId, 
-    selectedFileType: selectedFileType as string | null 
-  });
+    isLoading: operationsLoading,
+    downloadFiles,
+    moveFiles,
+    deleteFiles
+  } = useFileOperations(selectedFiles); 
   
   // 提供给上下文的值
   const contextValue: FileContextType = {
@@ -57,15 +55,20 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
     // 方法
     loadFiles: loadFiles as any,
-    selectFiles,
-    clearSelection,
+    selectFiles: (fileIds: string[]) => {
+      // 清除当前选择
+      toggleSelectAll(false);
+      // 然后选择新的文件集合
+      fileIds.forEach(id => toggleSelectFile(id));
+    },
+    clearSelection: () => toggleSelectAll(false),
     updateFileSort: ((order: SortOrder) => {
       // 将 SortOrder 转换回 FileSortInterface
       const sortInterface = convertSortOrderToInterface(order);
-      updateFileSort(sortInterface);
+      changeSort(sortInterface.field, sortInterface.direction);
     }) as (order: SortOrder) => void,
-    setFileType,
-    navigateToFolder
+    setFileType: filterByFileType,
+    navigateToFolder: openFolder
   };
 
   return (

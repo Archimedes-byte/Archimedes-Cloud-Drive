@@ -27,15 +27,17 @@ import NewFolderForm from '../components/NewFolderForm';
 import { SearchView } from '../components/SearchView';
 
 // 导入自定义 hooks
-import { useFiles } from '../hooks/useFiles';
-import { useFileActions } from '../hooks/useFileActions';
-import { useSearch } from '../hooks/useSearch';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { useLoadingState } from '../hooks/useLoadingState';
-import { useUIState } from '../hooks/useUIState';
-import { useFilePreviewAndRename } from '../hooks/useFilePreviewAndRename';
-import { useThemeManager } from '../hooks/useThemeManager';
-
+import { 
+  useFiles, 
+  useFileOperations, 
+  useFileUpload, 
+  useFileSearch, 
+  useFilePreview,
+  useLoadingState, 
+  useUIState, 
+  useThemeManager, 
+  useProfile 
+} from '@/app/hooks';
 // 导入类型和工具函数
 import { SortOrder } from '@/app/types';
 import { LocalFileType, convertFilesForDisplay } from '../utils/fileTypeConverter';
@@ -55,7 +57,7 @@ export default function FileManagementPage() {
     fetchUserProfile, 
     forceRefreshProfile,
     effectiveAvatarUrl
-  } = useUserProfile();
+  } = useProfile();
 
   // 使用主题管理hook
   const { currentTheme, updateTheme } = useThemeManager();
@@ -103,39 +105,101 @@ export default function FileManagementPage() {
 
   // 文件操作钩子
   const {
-    selectedFiles, setSelectedFiles, editingFile, setEditingFile,
-    editingName, setEditingName, editingTags, setEditingTags,
-    isCreatingFolder, setIsCreatingFolder, newFolderName, setNewFolderName,
-    newFolderTags, setNewFolderTags, handleDownload, handleDelete,
-    handleConfirmEdit, handleCreateFolder, handleSelectFile,
-    handleAddTag, handleRemoveTag
-  } = useFileActions(() => loadFiles(currentFolderId, selectedFileType, true));
+    selectedFileIds: selectedFiles,
+    selectFile: handleSelectFile,
+    selectFiles: setSelectedFiles,
+    createFolder: handleCreateFolder,
+    downloadFiles: handleDownload,
+    deleteFiles: handleDelete,
+    renameFile: handleRenameFile,
+    isLoading: fileOperationsLoading,
+    error: fileOperationsError
+  } = useFileOperations([]);
 
   // 文件预览和重命名
   const {
-    previewFile, isRenameModalOpen, fileToRename,
-    setPreviewFile, handleClosePreview, handlePreviewFile,
-    setIsRenameModalOpen, setFileToRename, 
-    handleRenameFile, handleRenameButtonClick, handleFileContextMenu
-  } = useFilePreviewAndRename({
-    loadFiles: (folderId, fileType) => loadFiles(folderId, fileType, true),
-    currentFolderId,
-    selectedFileType
+    previewFile,
+    setPreviewFile,
+    handlePreview: handlePreviewFile,
+    closePreview: handleClosePreview,
+    isRenameModalOpen,
+    setIsRenameModalOpen,
+    fileToRename,
+    setFileToRename,
+    openRename: handleRenameButtonClick,
+    renameFile: handleConfirmEdit
+  } = useFilePreview({
+    onRefresh: () => loadFiles(currentFolderId, selectedFileType, true)
   });
 
-  // 搜索钩子
+  // 文件搜索钩子
   const {
-    showSearchView, setShowSearchView, searchQuery, setSearchQuery,
-    searchResults, searchType, setSearchType,
-    searchLoading, searchError, handleSearch,
-    enableRealTimeSearch, setEnableRealTimeSearch,
-    debounceDelay, setDebounceDelay
-  } = useSearch();
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    isLoading: searchLoading,
+    error: searchError,
+    showSearchView,
+    setShowSearchView,
+    searchType,
+    setSearchType,
+    enableRealTimeSearch,
+    setEnableRealTimeSearch,
+    debounceDelay,
+    setDebounceDelay,
+    handleSearch
+  } = useFileSearch();
 
-  // 其他独立状态
+  // 添加创建文件夹相关状态
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderTags, setNewFolderTags] = useState<string[]>([]);
+  const [editingFile, setEditingFile] = useState<any>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingTags, setEditingTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [selectedFile, setSelectedFile] = useState<LocalFileType | null>(null);
-  
+
+  // 文件上下文菜单处理 - 移至hooks声明区域
+  const handleFileContextMenu = useCallback((e, file, setSelectedFile, setSelectedFiles) => {
+    // 阻止默认右键菜单
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    if (file) {
+      // 设置当前选中的文件
+      setSelectedFile?.(file);
+      
+      // 如果是单击选择，只选择当前文件
+      if (e?.type === 'contextmenu') {
+        setSelectedFiles?.([file.id]);
+      }
+      
+      // 如果是文件（不是文件夹），可以设置为要重命名的文件
+      if (!file.isFolder) {
+        setFileToRename(file);
+      }
+    }
+  }, [setFileToRename]);
+
+  // 标签相关处理函数
+  const handleAddTag = useCallback((tag: string) => {
+    if (editingFile) {
+      setEditingTags(prev => [...prev, tag]);
+    } else {
+      setNewFolderTags(prev => [...prev, tag]);
+    }
+    setNewTag('');
+  }, [editingFile]);
+
+  const handleRemoveTag = useCallback((tag: string) => {
+    if (editingFile) {
+      setEditingTags(prev => prev.filter(t => t !== tag));
+    } else {
+      setNewFolderTags(prev => prev.filter(t => t !== tag));
+    }
+  }, [editingFile]);
+
   // 状态跟踪引用
   const hasLoadedFilesRef = React.useRef(false);
   const sessionInitializedRef = React.useRef(false);
@@ -498,7 +562,30 @@ export default function FileManagementPage() {
               selectedFiles={selectedFiles}
               onClearSelection={() => setSelectedFiles([])}
               onDownload={handleDownload}
-              onRename={() => handleRenameButtonClick(files, selectedFiles)}
+              onRename={() => {
+                // 如果选中了多个文件，提示用户一次只能重命名一个文件
+                if (selectedFiles.length > 1) {
+                  message.warning('一次只能重命名一个文件');
+                  return;
+                }
+                
+                // 如果选中了一个文件，找到该文件并打开重命名对话框
+                if (selectedFiles.length === 1) {
+                  const selectedFile = files.find(file => file.id === selectedFiles[0]);
+                  if (selectedFile) {
+                    console.log('打开重命名对话框，文件:', {
+                      id: selectedFile.id,
+                      name: selectedFile.name,
+                      isFolder: selectedFile.isFolder
+                    });
+                    handleRenameButtonClick(selectedFile);
+                  } else {
+                    message.warning('未找到选中的文件');
+                  }
+                } else {
+                  message.warning('请先选择要重命名的文件');
+                }
+              }}
               onMove={() => {}}
               onDelete={handleDelete}
               onClearFilter={handleClearFilter}
@@ -584,7 +671,43 @@ export default function FileManagementPage() {
                       setFolderName={setNewFolderName}
                       folderTags={newFolderTags}
                       setFolderTags={setNewFolderTags}
-                      onCreateFolder={() => handleCreateFolder(currentFolderId)}
+                      onCreateFolder={() => {
+                        // 先判断文件夹名称是否为空
+                        if (!newFolderName || !newFolderName.trim()) {
+                          return; // 如果为空，直接返回
+                        }
+                        
+                        console.log('开始创建文件夹:', newFolderName);
+                        
+                        // 确保传递名称和标签
+                        handleCreateFolder(newFolderName, currentFolderId, newFolderTags)
+                          .then(folderId => {
+                            console.log('文件夹创建返回ID:', folderId);
+                            
+                            // 只要返回值不是null，就认为是成功的
+                            if (folderId !== null) {
+                              console.log('文件夹创建成功，准备刷新');
+                              // 创建成功，关闭表单并刷新
+                              setIsCreatingFolder(false);
+                              setNewFolderName('');
+                              setNewFolderTags([]);
+                              
+                              // 刷新当前文件夹
+                              loadFiles(currentFolderId, selectedFileType, true)
+                                .then(() => {
+                                  console.log('文件列表刷新完成');
+                                })
+                                .catch(err => {
+                                  console.error('刷新文件列表失败:', err);
+                                });
+                            } else {
+                              console.error('创建文件夹失败，API返回null');
+                            }
+                          })
+                          .catch(error => {
+                            console.error('创建文件夹请求出错:', error);
+                          });
+                      }}
                       onCancel={() => {
                         setIsCreatingFolder(false);
                         setNewFolderName('');
@@ -601,7 +724,7 @@ export default function FileManagementPage() {
                     onSelectAll={onSelectAllFiles}
                     onDeselectAll={onDeselectAllFiles}
                     selectedFiles={selectedFiles}
-                    onFileContextMenu={(e, file) => handleFileContextMenu(e, file as LocalFileType, setSelectedFile, setSelectedFiles)}
+                    onFileContextMenu={(e, file) => handleFileContextMenu(e, file, setSelectedFile, setSelectedFiles)}
                     onBackClick={folderPath.length > 0 ? handleBackClick : undefined}
                     isLoading={filesLoading}
                     error={filesError}
@@ -646,7 +769,32 @@ export default function FileManagementPage() {
       <RenameModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
-        onRename={handleRenameFile}
+        onRename={(newName, tags) => {
+          if (!fileToRename) {
+            message.warning('未选择要重命名的文件');
+            return;
+          }
+          
+          console.log('准备重命名文件:', {
+            id: fileToRename.id,
+            name: fileToRename.name,
+            newName: newName,
+            tagsCount: tags?.length || 0
+          });
+          
+          // 使用useFilePreview的renameFile函数
+          handleConfirmEdit(newName, tags)
+            .then(success => {
+              if (success) {
+                console.log('重命名成功，刷新文件列表');
+              } else {
+                console.error('重命名失败');
+              }
+            })
+            .catch(err => {
+              console.error('重命名过程出错:', err);
+            });
+        }}
         initialName={fileToRename?.name || ''}
         initialTags={fileToRename?.tags || []}
         fileType={fileToRename?.isFolder ? 'folder' : 'file'}

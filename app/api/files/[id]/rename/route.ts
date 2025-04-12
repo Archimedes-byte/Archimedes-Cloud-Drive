@@ -7,18 +7,28 @@ import { generateFileUrl } from '@/app/lib/file/paths';
 import path from 'path';
 import fs from 'fs/promises';
 
-// 扩展RenameFileRequest接口以包含标签
+// 重命名请求接口
 interface RenameFileRequest {
-  id: string;
   newName: string;
   tags?: string[];
 }
 
-export async function POST(request: Request): Promise<NextResponse<ApiResponse<FileInfo | null>>> {
+/**
+ * POST /api/files/[id]/rename
+ * 
+ * 重命名指定ID的文件或文件夹
+ */
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+): Promise<NextResponse<ApiResponse<FileInfo | null>>> {
   try {
+    console.log('接收重命名请求，文件ID:', params.id);
+    
     // 验证用户是否登录
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
+      console.log('未授权访问，用户未登录');
       return NextResponse.json(
         { 
           success: false,
@@ -34,6 +44,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     });
 
     if (!user) {
+      console.log('用户不存在，邮箱:', session.user.email);
       return NextResponse.json(
         { 
           success: false,
@@ -43,10 +54,16 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
       );
     }
 
+    // 获取文件ID和请求体
+    const fileId = params.id;
+    console.log('解析的文件ID:', fileId);
+    
     const body = await request.json() as RenameFileRequest;
-    const { id: fileId, newName, tags } = body;
+    const { newName, tags } = body;
+    console.log('请求体:', { newName, tagsCount: tags?.length });
 
     if (!newName || newName.trim() === '') {
+      console.log('文件名为空');
       return NextResponse.json(
         { 
           success: false,
@@ -60,8 +77,14 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     const uniqueTags = Array.isArray(tags) 
       ? [...new Set(tags.filter(tag => tag && typeof tag === 'string' && tag.trim() !== ''))]
       : undefined;
+    console.log('处理后的标签:', uniqueTags);
 
     // 获取文件信息
+    console.log('查询文件信息，条件:', {
+      id: fileId,
+      uploaderId: user.id
+    });
+    
     const file = await prisma.file.findFirst({
       where: {
         id: fileId,
@@ -70,6 +93,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     });
 
     if (!file) {
+      console.log('文件不存在或不属于当前用户');
       return NextResponse.json(
         { 
           success: false,
@@ -78,6 +102,13 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
         { status: 404 }
       );
     }
+    
+    console.log('找到文件:', {
+      id: file.id,
+      name: file.name,
+      isFolder: file.isFolder,
+      parentId: file.parentId
+    });
 
     // 检查同一目录下是否已存在同名文件/文件夹
     const existingFile = await prisma.file.findFirst({
@@ -92,6 +123,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     });
 
     if (existingFile) {
+      console.log('同目录下存在同名文件', existingFile.name);
       return NextResponse.json(
         { 
           success: false,
@@ -103,6 +135,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
 
     // 判断是否是文件夹
     if (file.isFolder) {
+      console.log('更新文件夹:', file.id);
       // 更新文件夹名称和标签
       const updatedFolder = await prisma.file.update({
         where: { id: fileId },
@@ -112,6 +145,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
         },
       });
 
+      console.log('文件夹更新成功');
       return NextResponse.json({
         success: true,
         message: '重命名成功',
@@ -119,6 +153,8 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
       });
     }
 
+    console.log('更新文件:', file.id);
+    
     // 获取文件扩展名
     const oldExtension = file.name.includes('.') ? file.name.split('.').pop() : '';
     const fileNameWithoutExt = file.name.includes('.') 
@@ -149,12 +185,13 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
       await fs.access(file.path);
       // 重命名文件
       await fs.rename(file.path, newPath);
+      console.log('物理文件重命名成功:', file.path, '->', newPath);
     } catch (fsError) {
       console.error('文件系统操作错误:', fsError);
       // 如果文件不存在，只更新数据库记录，不返回错误
     }
     
-    // 更新数据库记录
+    // 更新文件记录
     const updatedFile = await prisma.file.update({
       where: { id: fileId },
       data: {
@@ -166,13 +203,20 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
       },
     });
 
+    console.log('文件更新成功');
     return NextResponse.json({
       success: true,
       message: '重命名成功',
       data: mapFileEntityToFileInfo(updatedFile)
     });
   } catch (error) {
-    console.error('重命名错误:', error);
+    console.error('重命名错误 -', error);
+    console.error('错误详情:', error instanceof Error ? {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    } : String(error));
+    
     return NextResponse.json(
       { 
         success: false,

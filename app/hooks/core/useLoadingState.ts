@@ -1,18 +1,34 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-// 加载状态类型
+/**
+ * 加载状态类型
+ * initial: 初始加载状态，适用于首次加载，展示完整骨架屏
+ * refresh: 刷新加载状态，适用于数据更新，展示局部加载指示器
+ * success: 加载成功状态
+ * error: 加载错误状态
+ * idle: 闲置状态，未加载
+ */
 export type LoadingState = 'initial' | 'refresh' | 'success' | 'error' | 'idle';
 
-// 加载状态管理钩子参数
-interface UseLoadingStateProps {
+/**
+ * 加载状态管理钩子参数
+ */
+export interface UseLoadingStateProps {
+  /** 是否初始加载 */
   initialLoad?: boolean;
+  /** 最小加载时间（毫秒），防止闪烁 */
   minLoadingTime?: number;
+  /** 错误超时时间（毫秒） */
   errorTimeout?: number;
 }
 
 /**
- * 双状态管理模式 - 区分初始加载和刷新加载
+ * 加载状态管理钩子
+ * 提供双状态管理模式 - 区分初始加载和刷新加载
  * 初始加载会展示完整的骨架屏，而刷新加载只展示局部加载指示器
+ * 
+ * @param options 配置选项
+ * @returns 加载状态和控制方法
  */
 export const useLoadingState = ({
   initialLoad = true,
@@ -33,7 +49,10 @@ export const useLoadingState = ({
   // 标记是否为第一次加载
   const isFirstLoadRef = useRef<boolean>(true);
 
-  // 开始加载
+  /**
+   * 开始加载
+   * @param isRefresh 是否为刷新模式（而非初始加载）
+   */
   const startLoading = useCallback((isRefresh = false) => {
     // 清除之前的计时器
     if (timerRef.current) {
@@ -65,7 +84,11 @@ export const useLoadingState = ({
     };
   }, [errorTimeout]);
 
-  // 完成加载
+  /**
+   * 完成加载
+   * @param hasError 是否发生错误
+   * @param errorMessage 错误信息
+   */
   const finishLoading = useCallback((hasError = false, errorMessage?: string) => {
     // 清除错误超时
     if (errorTimerRef.current) {
@@ -108,7 +131,9 @@ export const useLoadingState = ({
     }
   }, [minLoadingTime]);
 
-  // 重置加载状态
+  /**
+   * 重置加载状态
+   */
   const resetLoadingState = useCallback(() => {
     setLoadingState('idle');
     setError(null);
