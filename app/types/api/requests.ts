@@ -1,21 +1,10 @@
-import { FileInfo } from './file';
-
 /**
- * API相关类型定义
+ * API请求相关类型定义
  * 
- * 本文件包含与API请求和响应相关的类型定义
+ * 本文件包含与API请求相关的类型定义
  */
 
-// API文件列表响应接口
-export interface FileListResponse {
-  status: 'success' | 'error';
-  data: FileInfo[];
-  message?: string;
-  error?: string;
-  total?: number;
-  page?: number;
-  limit?: number;
-}
+import { FileInfo } from '../files/file';
 
 // 搜索文件请求接口
 export interface SearchFilesRequest {

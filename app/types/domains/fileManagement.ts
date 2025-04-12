@@ -1,4 +1,6 @@
-import { FileType, FileInfo, SortOrder, FolderPath } from './file';
+import { FileType, FileInfo, SortOrder } from '../files/file';
+import { FolderPath } from '../files/folder';
+import { UserProfile } from './userProfile';
 
 /**
  * 文件管理系统类型定义
@@ -63,21 +65,6 @@ export interface ExtendedFile extends Omit<FileBase, 'isFolder'> {
   fullPath?: string;
   isDeleted?: boolean;
   uploaderId?: string;
-}
-
-/**
- * 用户资料类型
- */
-export interface UserProfile {
-  id: string;
-  email: string;
-  name?: string;
-  avatarUrl?: string;
-  role?: string;
-  storageUsed?: number;
-  storageLimit?: number;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 /**
@@ -216,7 +203,7 @@ export interface FileUploadHook {
 }
 
 /**
- * 搜索视图Props
+ * 搜索视图组件Props
  */
 export interface SearchViewProps {
   results: ExtendedFile[];

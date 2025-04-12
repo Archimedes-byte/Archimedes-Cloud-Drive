@@ -1,10 +1,12 @@
-// import { FileType } from '@/app/lib/file/utils';
-
 /**
- * 统一文件管理系统类型定义
+ * 文件相关类型定义
+ * 
+ * 包含文件的基本数据结构和操作相关的类型定义
  */
 
-// 文件类型枚举 - 自定义定义
+import { BaseEntity } from '../core/common';
+
+// 文件类型枚举
 export type FileType = 'image' | 'document' | 'video' | 'audio' | 'archive' | 'folder' | 'other';
 
 // 基础文件信息接口 - 避免与DOM File类型冲突
@@ -25,45 +27,6 @@ export interface FileInfo {
   selected?: boolean;
 }
 
-// 文件进度接口 - 用于上传过程
-export interface FileWithProgress {
-  file: File; // 原生File类型
-  id: string;
-  name: string;
-  relativePath?: string;
-  progress: {
-    loaded: number;
-    total: number;
-    percentage: number;
-    status: 'pending' | 'uploading' | 'success' | 'error';
-    error?: string;
-  };
-}
-
-// 上传进度跟踪接口
-export interface UploadProgress {
-  [key: string]: FileWithProgress;
-}
-
-// 文件夹结构接口
-export interface FolderStructure {
-  path: string;
-  files: FileWithProgress[];
-  subFolders: Map<string, FolderStructure>;
-}
-
-// 文件夹路径项
-export interface FolderPath {
-  id: string;
-  name: string;
-}
-
-// 排序顺序
-export interface SortOrder {
-  field: string;
-  direction: 'asc' | 'desc';
-}
-
 // API文件响应接口
 export interface FileResponse {
   id: string;
@@ -77,44 +40,6 @@ export interface FileResponse {
   tags: string[];
   url: string;
   path?: string;
-}
-
-// 文件夹信息接口
-export interface FolderInfo {
-  id: string;
-  name: string;
-  parentId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 文件树节点接口
-export interface FileTreeNode {
-  name: string;
-  type: 'file' | 'folder';
-  size: number;
-  children?: FileTreeNode[];
-  file?: globalThis.File & { webkitRelativePath?: string };
-}
-
-// 上传属性接口
-export interface FileUploadProps {
-  onUploadComplete: () => void;
-  folderId?: string | null;
-  withTags?: boolean;
-  isFolderUpload?: boolean;
-}
-
-// 存储使用情况接口
-export interface StorageUsageProps {
-  used: number;
-  total: number;
-}
-
-// 存储使用情况接口 - 兼容之前的命名
-export interface StorageUsageInfo {
-  used: number;
-  total: number;
 }
 
 // 定义文件实体接口 - 基于Prisma模型
@@ -134,6 +59,21 @@ export interface FileEntity {
   uploaderId: string;
   tags: string[];
   url: string | null;
+}
+
+// 排序顺序
+export interface SortOrder {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+// 文件树节点接口
+export interface FileTreeNode {
+  name: string;
+  type: 'file' | 'folder';
+  size: number;
+  children?: FileTreeNode[];
+  file?: globalThis.File & { webkitRelativePath?: string };
 }
 
 // MIME类型与文件类型的映射
@@ -204,66 +144,22 @@ export function mapFileEntityToFileInfo(entity: FileEntity): FileInfo {
       extension = parts[parts.length - 1].toLowerCase();
     }
   }
-  
-  // 确保文件类型有值
-  let type = entity.type || '';
-  
-  // 如果类型为空，尝试从扩展名推断
-  if (!type && extension) {
-    // 图片扩展名
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension)) {
-      type = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
-    }
-    // 文档扩展名
-    else if (['doc', 'docx'].includes(extension)) {
-      type = 'application/msword';
-    }
-    else if (['xls', 'xlsx'].includes(extension)) {
-      type = 'application/vnd.ms-excel';
-    }
-    else if (['ppt', 'pptx'].includes(extension)) {
-      type = 'application/vnd.ms-powerpoint';
-    }
-    else if (extension === 'pdf') {
-      type = 'application/pdf';
-    }
-    else if (extension === 'txt') {
-      type = 'text/plain';
-    }
-    // 音频扩展名
-    else if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(extension)) {
-      type = `audio/${extension === 'mp3' ? 'mpeg' : extension}`;
-    }
-    // 视频扩展名
-    else if (['mp4', 'webm', 'avi', 'mov', 'flv', 'mkv'].includes(extension)) {
-      type = `video/${extension === 'mov' ? 'quicktime' : extension}`;
-    }
-    // 压缩文件扩展名
-    else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
-      type = 'application/zip';
-    }
-  }
-  
-  // 文件夹特殊处理
-  if (entity.isFolder) {
-    type = 'folder';
-  }
 
   return {
     id: entity.id,
     name: entity.name,
     size: entity.size || 0,
-    type: type,
-    url: entity.url || '',
+    type: entity.type || '',
+    isFolder: entity.isFolder,
+    parentId: entity.parentId,
     createdAt: entity.createdAt.toISOString(),
     updatedAt: entity.updatedAt.toISOString(),
-    parentId: entity.parentId,
+    url: entity.url || '',
     tags: entity.tags,
-    isFolder: entity.isFolder,
-    path: entity.path || null,
-    extension: extension
+    path: entity.path,
+    extension
   };
 }
 
-// 兼容性导出
+// 类型别名 - 兼容旧代码
 export type File = FileInfo; 

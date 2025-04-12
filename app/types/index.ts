@@ -2,16 +2,16 @@
  * 类型定义统一导出
  * 
  * 本文件导出所有应用中使用的类型定义，集中在一个地方管理
+ * 类型按照功能领域和用途进行分类，便于维护和查找
  */
 
-// 导出通用类型
-export * from './common';
+// 导出核心/通用类型
+export * from './core/common';
+export * from './core/auth';
+export * from './core/api';
 
 // 导出文件相关类型
-export * from './file';
-
-// 导出文件管理相关类型
-export * from './fileManagement';
+export * from './files';
 
 // 导出UI相关类型
 export * from './ui';
@@ -19,23 +19,17 @@ export * from './ui';
 // 导出API相关类型
 export * from './api';
 
-// 以下是未分类的类型定义，后续可能会移动到专门的类型文件中
+// 导出业务领域类型
+export * from './domains';
 
-// 搜索类型定义
-export interface SearchOptions {
-  query: string;
-  type?: string | null;
-  tags?: string[];
-  limit?: number;
-}
+// 导出第三方服务集成类型
+// 如果integrations子目录未被TSC正确识别，可能需要项目重新构建
+// export * from './integrations/google-user';
 
-// 权限类型定义
-export interface Permission {
-  id: string;
-  fileId: string;
-  userId: string;
-  email?: string;
-  name?: string;
-  accessLevel: 'read' | 'write' | 'admin';
-  createdAt: string | Date;
-} 
+// 导出全局类型扩展
+// 注意：.d.ts文件通常不需要显式导出，它们在全局范围内自动生效
+// export * from './global/next-auth';
+// export * from './global/declarations';
+
+// 解决导出歧义
+export type { PaginatedResponse } from './core/common'; 

@@ -1,5 +1,5 @@
 /**
- * 通用类型定义
+ * 核心通用类型定义
  * 
  * 包含应用中共享的基础类型定义，如分页、排序等
  */
@@ -49,29 +49,18 @@ export enum ErrorCode {
   INVALID_FILE_TYPE = 'INVALID_FILE_TYPE',
 }
 
-// 响应状态接口
-export interface ResponseStatus {
-  success: boolean;
-  message?: string;
-  code?: string | number;
-}
-
-// API基础响应接口
-export interface ApiResponse<T = any> extends ResponseStatus {
-  data?: T;
-  errors?: Record<string, string[]>;
-}
-
-// 配置接口
-export interface AppConfig {
-  apiUrl: string;
-  maxUploadSize: number;
-  allowedFileTypes: string[];
-  version: string;
-}
-
 // 通用键值对接口
 export interface KeyValuePair<T = any> {
   key: string;
   value: T;
+}
+
+// 统一时间类型（可以是ISO字符串或Date对象）
+export type TimeValue = string | Date;
+
+// 基础实体接口
+export interface BaseEntity {
+  id: string;
+  createdAt: TimeValue;
+  updatedAt: TimeValue;
 } 
