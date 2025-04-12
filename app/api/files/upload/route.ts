@@ -155,6 +155,11 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // 处理标签 - 去除重复标签
+    const uniqueTags = Array.isArray(tags) 
+      ? [...new Set(tags.filter(tag => tag && typeof tag === 'string' && tag.trim() !== ''))]
+      : [];
+
     // 确保上传目录存在
     await mkdir(STORAGE_CONFIG.UPLOAD_PATH, { recursive: true });
 
@@ -236,7 +241,7 @@ export async function POST(req: NextRequest) {
                     isFolder: true,
                     uploaderId: user.id,
                     parentId: currentParentId,
-                    tags: tags,
+                    tags: uniqueTags,
                     url: null,
                     updatedAt: new Date()
                   }
@@ -266,7 +271,7 @@ export async function POST(req: NextRequest) {
           isFolder: false,
           uploaderId: user.id,
           parentId: parentId,
-          tags: tags,
+          tags: uniqueTags,
           url: fileUrl,
           updatedAt: new Date()
         }

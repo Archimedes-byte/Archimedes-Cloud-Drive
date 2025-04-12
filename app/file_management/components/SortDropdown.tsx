@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styles from '../styles/shared.module.css';
-import { SortOrder } from '@/app/types';
+import { ChevronDown, Check, ArrowUp, ArrowDown } from 'lucide-react';
+import styles from '../styles/SortDropdown.module.css';
+import { FileSortInterface, SortDirectionEnum } from '@/app/types';
 
 interface SortDropdownProps {
-  sortOrder: SortOrder;
-  onSortChange: (newSortOrder: SortOrder) => void;
+  sortOrder: FileSortInterface;
+  onSortChange: (order: FileSortInterface) => void;
 }
 
 export const SortDropdown: React.FC<SortDropdownProps> = ({
@@ -46,16 +47,16 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
         }}
       >
         <span>↕️</span>
-        排序: {getSortFieldText()} {sortOrder.direction === 'asc' ? '↑' : '↓'}
+        排序: {getSortFieldText()} {sortOrder.direction === SortDirectionEnum.ASC ? '↑' : '↓'}
       </button>
       {showDropdown && (
         <div className={styles.dropdownMenu}>
           <button 
             className={styles.dropdownItem}
             onClick={() => {
-              const newSortOrder: SortOrder = {
+              const newSortOrder: FileSortInterface = {
                 field: 'name',
-                direction: sortOrder.field === 'name' && sortOrder.direction === 'asc' ? 'desc' : 'asc'
+                direction: sortOrder.field === 'name' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC
               };
               onSortChange(newSortOrder);
               setShowDropdown(false);
@@ -66,14 +67,14 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
             }}
           >
             <span>📝</span>
-            按文件名{sortOrder.field === 'name' ? (sortOrder.direction === 'asc' ? ' ↑' : ' ↓') : ''}
+            按文件名{sortOrder.field === 'name' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
           </button>
           <button 
             className={styles.dropdownItem}
             onClick={() => {
-              const newSortOrder: SortOrder = {
+              const newSortOrder: FileSortInterface = {
                 field: 'size',
-                direction: sortOrder.field === 'size' && sortOrder.direction === 'asc' ? 'desc' : 'asc'
+                direction: sortOrder.field === 'size' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC
               };
               onSortChange(newSortOrder);
               setShowDropdown(false);
@@ -84,14 +85,14 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
             }}
           >
             <span>📊</span>
-            按大小{sortOrder.field === 'size' ? (sortOrder.direction === 'asc' ? ' ↑' : ' ↓') : ''}
+            按大小{sortOrder.field === 'size' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
           </button>
           <button 
             className={styles.dropdownItem}
             onClick={() => {
-              const newSortOrder: SortOrder = {
+              const newSortOrder: FileSortInterface = {
                 field: 'createdAt',
-                direction: sortOrder.field === 'createdAt' && sortOrder.direction === 'asc' ? 'desc' : 'asc'
+                direction: sortOrder.field === 'createdAt' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC
               };
               onSortChange(newSortOrder);
               setShowDropdown(false);
@@ -102,7 +103,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
             }}
           >
             <span>🕒</span>
-            按时间{sortOrder.field === 'createdAt' ? (sortOrder.direction === 'asc' ? ' ↑' : ' ↓') : ''}
+            按时间{sortOrder.field === 'createdAt' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
           </button>
         </div>
       )}

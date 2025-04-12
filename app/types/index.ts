@@ -11,7 +11,41 @@ export * from './core/auth';
 export * from './core/api';
 
 // 导出文件相关类型
-export * from './files';
+// 注意：从多个模块导出同名类型会产生冲突，以下是解决方案
+export type { 
+  FileSystemItemBase, FileBase, FolderBase,
+  FileSortEnum,
+  // 导出FolderPathItem作为推荐的文件路径类型
+  FolderPathItem,
+  // 导出FileInfo用于API请求和简化场景
+  FileInfo,
+  // 导出排序相关类型
+  FileSortInterface, SortField, FileSortOptions
+} from './domains/fileTypes';
+
+// 导出排序转换工具函数和枚举
+export { 
+  convertInterfaceToSortOrder, 
+  convertSortOrderToInterface,
+  SortDirectionEnum,
+  FileTypeEnum,
+  // 导出新的文件类型映射
+  FILE_TYPE_MAP,
+  // 导出文件实体映射函数
+  mapFileEntityToFileInfo
+} from './domains/fileTypes';
+
+// 导出File类型别名以保持兼容性，使用FileInfo代替
+export type { 
+  FileInfo as File, 
+  // 导出数据库实体类型
+  FileEntity,
+  // 导出API响应类型
+  FileResponse,
+  // 导出创建文件夹请求类型
+  CreateFolderRequest
+} from './domains/fileTypes';
+export type { SortOrder } from './domains/fileTypes';
 
 // 导出UI相关类型
 export * from './ui';
@@ -19,8 +53,24 @@ export * from './ui';
 // 导出API相关类型
 export * from './api';
 
-// 导出业务领域类型
-export * from './domains';
+// 导出进行重命名以避免冲突的类型
+export type { 
+  // UI相关，避免与./ui冲突
+  FileListProps as DomainFileListProps,
+  RenameModalProps as DomainRenameModalProps,
+  SearchViewProps as DomainSearchViewProps,
+  UploadModalProps as DomainUploadModalProps,
+  // 导出FileContextType及相关类型
+  FileContextType,
+  FileState,
+  ExtendedFile
+} from './domains/fileManagement';
+
+// 导出Hook相关类型 - 从新位置导出以避免冲突
+export * from './hooks';
+
+// 导出工具类型
+export * from './utils';
 
 // 导出第三方服务集成类型
 // 如果integrations子目录未被TSC正确识别，可能需要项目重新构建
@@ -31,5 +81,6 @@ export * from './domains';
 // export * from './global/next-auth';
 // export * from './global/declarations';
 
-// 解决导出歧义
-export type { PaginatedResponse } from './core/common'; 
+// 解决其他导出歧义
+export type { PaginatedResponse } from './core/common';
+export type { FileUploadHook, FileSearchHook, FileOperationsHook } from './hooks/hooks'; 

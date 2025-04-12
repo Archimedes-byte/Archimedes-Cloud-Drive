@@ -53,6 +53,11 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
         { status: 400 }
       );
     }
+    
+    // 处理标签 - 去除重复标签
+    const uniqueTags = Array.isArray(tags) 
+      ? [...new Set(tags.filter(tag => tag && typeof tag === 'string' && tag.trim() !== ''))]
+      : [];
 
     // 检查相同目录下是否已存在同名文件夹
     const existingFolder = await prisma.file.findFirst({
@@ -128,7 +133,7 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
         uploaderId: user.id,
         parentId: parentId || null,
         path: folderPath,
-        tags: Array.isArray(tags) ? tags : [],
+        tags: uniqueTags,  // 使用去重后的标签
         url: null,
         updatedAt: new Date()
       },

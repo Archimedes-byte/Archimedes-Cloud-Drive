@@ -29,7 +29,8 @@ const RenameModal: React.FC<RenameModalProps> = ({
 
   useEffect(() => {
     setNewName(initialName);
-    setTags(initialTags);
+    // 确保初始标签不包含重复项
+    setTags(Array.from(new Set(initialTags)));
   }, [initialName, initialTags]);
 
   useEffect(() => {

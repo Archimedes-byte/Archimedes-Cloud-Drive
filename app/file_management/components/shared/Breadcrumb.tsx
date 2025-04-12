@@ -1,14 +1,10 @@
 import React from 'react';
 import { Home, ChevronRight, ChevronLeft } from 'lucide-react';
 import styles from '../../styles/shared.module.css';
-
-export interface FolderPath {
-  id: string;
-  name: string;
-}
+import { FolderPathItem } from '@/app/types';
 
 interface BreadcrumbProps {
-  folderPath: FolderPath[];
+  folderPath: FolderPathItem[];
   showHome?: boolean;
   onNavigate?: (folderId: string | null) => void;
   onPathClick: (folderId: string | null) => void;

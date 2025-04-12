@@ -1,35 +1,18 @@
-/**
- * API响应相关类型定义
- * 
- * 包含API响应结构和格式的类型定义
- */
-
-import { FileInfo } from '../files/file';
+import { FileWithUIState, FileTypeEnum } from '../domains/fileTypes';
 import { ApiResponse } from '../core/api';
+import { PaginatedResponse as CorePaginatedResponse } from '../core/common';
 
-// 分页响应接口
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
-// 文件列表响应接口
 export interface FileListResponse extends ApiResponse {
-  data: FileInfo[];
+  data: FileWithUIState[];
   total?: number;
   page?: number;
   limit?: number;
 }
 
-// 文件详情响应接口
 export interface FileDetailResponse extends ApiResponse {
-  data: FileInfo;
+  data: FileWithUIState;
 }
 
-// 文件操作响应接口
 export interface FileOperationResponse extends ApiResponse {
   data: {
     affected: number;
@@ -37,36 +20,59 @@ export interface FileOperationResponse extends ApiResponse {
   };
 }
 
-// 存储使用情况响应
+
+export interface FileTypeStats {
+  type: FileTypeEnum | string;
+  size: number;
+  count: number;
+  percentage: number;
+}
+
 export interface StorageUsageResponse extends ApiResponse {
   data: {
     used: number;
     total: number;
     percentage: number;
-    typeStats?: {
-      type: string;
-      size: number;
-      count: number;
-      percentage: number;
-    }[];
+    typeStats?: FileTypeStats[];
   };
 }
 
-// 认证响应接口
+export interface UserInfo {
+  id: string;
+  name: string | null;
+  email: string;
+  avatar?: string | null;
+  accountType?: 'free' | 'premium' | 'enterprise';
+}
+
 export interface AuthResponse extends ApiResponse {
   data: {
-    user: {
-      id: string;
-      name: string | null;
-      email: string;
-    };
+    user: UserInfo;
     token?: string;
+    refreshToken?: string;
+    expiresIn?: number;
   };
 }
 
-// 搜索响应接口
-export interface SearchResponse<T = any> extends ApiResponse {
+/**
+ * 搜索响应接口
+ * 搜索API的通用响应
+ * @template T 搜索结果项的类型
+ */
+export interface SearchResponse<T = FileWithUIState> extends ApiResponse {
+  /** 搜索结果数据 */
   data: T[];
+  /** 总记录数 */
   total?: number;
+  /** 搜索查询关键词 */
   query?: string;
-} 
+  /** 搜索耗时(毫秒) */
+  took?: number;
+}
+
+/**
+ * 通用分页响应类型
+ * 封装分页数据响应
+ * @template T 分页数据项的类型
+ */
+export type PaginatedApiResponse<T> = ApiResponse & CorePaginatedResponse<T>; 

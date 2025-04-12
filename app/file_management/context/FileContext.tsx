@@ -1,5 +1,14 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { FileContextType, FileState, ExtendedFile, SortOrder, FileType } from '@/app/types';
+import { 
+  FileContextType, 
+  FileState, 
+  ExtendedFile, 
+  FileTypeEnum, 
+  FileSortInterface,
+  SortOrder,
+  convertInterfaceToSortOrder,
+  convertSortOrderToInterface
+} from '@/app/types';
 import { useFiles } from '../hooks/useFiles';
 import { useFileOperations, CustomFileOperationsHook } from '../hooks/useFileOperations';
 
@@ -36,8 +45,8 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     currentFolderId, 
     selectedFileType: selectedFileType as string | null 
   });
-
-  // 提供给上下文的值，使用类型断言处理 files 类型
+  
+  // 提供给上下文的值
   const contextValue: FileContextType = {
     // 状态
     files: files as any as ExtendedFile[],
@@ -46,15 +55,18 @@ export const FileProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     folderPath,
     isLoading: isLoading || operationsLoading,
     error,
-    sortOrder,
+    sortOrder: convertInterfaceToSortOrder(sortOrder),
     selectedFileType,
 
     // 方法
-    loadFiles: ((folderId?: string | null, fileType?: FileType | null, forceRefresh?: boolean) => 
-      loadFiles(folderId || null, fileType || null, forceRefresh || false)) as any,
+    loadFiles: loadFiles as any,
     selectFiles,
     clearSelection,
-    updateFileSort,
+    updateFileSort: ((order: SortOrder) => {
+      // 将 SortOrder 转换回 FileSortInterface
+      const sortInterface = convertSortOrderToInterface(order);
+      updateFileSort(sortInterface);
+    }) as (order: SortOrder) => void,
     setFileType,
     navigateToFolder
   };

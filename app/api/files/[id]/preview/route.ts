@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/prisma';
 import { getSignedUrl } from '@/app/lib/storage/getSignedUrl';
-import { validateFileAccess } from '@/app/lib/files/validateFileAccess';
+import { validateFileAccess } from '@/app/lib/file/validateFileAccess';
 import { existsSync } from 'fs';
 
 /**

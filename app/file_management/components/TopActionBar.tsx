@@ -5,7 +5,7 @@ import {
 import styles from '../styles/shared.module.css';
 import SortDropdown from './SortDropdown';
 import { UploadButton } from '../components/shared';
-import { SortOrder } from '@/app/types';
+import { FileSortInterface } from '@/app/types';
 
 interface TopActionBarProps {
   selectedFiles: string[];
@@ -19,8 +19,8 @@ interface TopActionBarProps {
   selectedFileType: string | null;
   showSearchView: boolean;
   isInRootFolder: boolean;
-  sortOrder: SortOrder;
-  setSortOrder: (order: SortOrder) => void;
+  sortOrder: FileSortInterface;
+  setSortOrder: (order: FileSortInterface) => void;
   showUploadDropdown: boolean;
   setShowUploadDropdown: (show: boolean) => void;
   setIsUploadModalOpen: (open: boolean) => void;

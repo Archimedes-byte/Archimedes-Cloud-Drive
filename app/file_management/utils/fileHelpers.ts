@@ -1,4 +1,4 @@
-import { File, FileType, FILE_TYPE_MAP } from '@/app/types';
+import { File, FileTypeEnum, FILE_TYPE_MAP } from '@/app/types';
 
 // 获取文件图标
 export const getFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean): string => {
@@ -37,7 +37,7 @@ export const getFileIcon = (type: string | undefined, extension: string | undefi
 };
 
 // 过滤文件
-export function filterFiles(files: File[], type: FileType | null): File[] {
+export function filterFiles(files: File[], type: FileTypeEnum | null | string): File[] {
   // 如果没有类型或是"other"类型，返回所有文件
   if (!type || type === 'other') return files;
   
@@ -47,7 +47,7 @@ export function filterFiles(files: File[], type: FileType | null): File[] {
   }
   
   // 获取类型定义
-  const fileTypeInfo = FILE_TYPE_MAP[type];
+  const fileTypeInfo = FILE_TYPE_MAP[type as keyof typeof FILE_TYPE_MAP];
   if (!fileTypeInfo) return files;
   
   return files.filter(file => {
@@ -61,7 +61,7 @@ export function filterFiles(files: File[], type: FileType | null): File[] {
     if (file.type === type) return true;
     
     // 检查MIME类型
-    const mimeTypeMatch = file.type && fileTypeInfo.mimeTypes.some(mimeType => 
+    const mimeTypeMatch = file.type && fileTypeInfo.mimeTypes.some((mimeType: string) => 
       file.type!.startsWith(mimeType) || file.type === mimeType
     );
     

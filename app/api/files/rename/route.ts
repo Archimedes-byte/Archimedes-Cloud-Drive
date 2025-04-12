@@ -46,6 +46,21 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     const body = await request.json() as RenameFileRequest;
     const { id: fileId, newName, tags } = body;
 
+    if (!newName || newName.trim() === '') {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: '文件名不能为空' 
+        },
+        { status: 400 }
+      );
+    }
+
+    // 处理标签 - 去除重复标签
+    const uniqueTags = Array.isArray(tags) 
+      ? [...new Set(tags.filter(tag => tag && typeof tag === 'string' && tag.trim() !== ''))]
+      : undefined;
+
     // 获取文件信息
     const file = await prisma.file.findFirst({
       where: {
@@ -64,14 +79,36 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
       );
     }
 
+    // 检查同一目录下是否已存在同名文件/文件夹
+    const existingFile = await prisma.file.findFirst({
+      where: {
+        name: newName.trim(),
+        parentId: file.parentId,
+        uploaderId: user.id,
+        isFolder: file.isFolder, // 同类型检查（文件夹只检查同名文件夹，文件只检查同名文件）
+        id: { not: fileId }, // 排除当前文件/文件夹自身
+        isDeleted: false,
+      },
+    });
+
+    if (existingFile) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: `同一目录下已存在同名${file.isFolder ? '文件夹' : '文件'}` 
+        },
+        { status: 409 } // 409 Conflict
+      );
+    }
+
     // 判断是否是文件夹
     if (file.isFolder) {
       // 更新文件夹名称和标签
       const updatedFolder = await prisma.file.update({
         where: { id: fileId },
         data: {
-          name: newName,
-          tags: tags || file.tags, // 如果提供了标签则更新
+          name: newName.trim(),
+          tags: uniqueTags || file.tags, // 使用去重后的标签
         },
       });
 
@@ -98,10 +135,10 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<F
     const updatedFile = await prisma.file.update({
       where: { id: fileId },
       data: {
-        name: newName, // 更新显示名称
+        name: newName.trim(), // 更新显示名称
         // filename和path保持不变，文件在文件系统中的位置和名称不变
         url: generateFileUrl(fileId), // 确保URL正确更新
-        tags: tags || file.tags, // 如果提供了标签则更新
+        tags: uniqueTags || file.tags, // 使用去重后的标签
       },
     });
 

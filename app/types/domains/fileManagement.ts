@@ -1,5 +1,4 @@
-import { FileType, FileInfo, SortOrder } from '../files/file';
-import { FolderPath } from '../files/folder';
+import { FileInfo, FolderPathItem, FileTypeEnum, SortOrder } from './fileTypes';
 import { UserProfile } from './userProfile';
 
 /**
@@ -68,26 +67,17 @@ export interface ExtendedFile extends Omit<FileBase, 'isFolder'> {
 }
 
 /**
- * 文件路径项
- * @deprecated 请使用FolderPath
- */
-export interface FilePathItem {
-  id: string;
-  name: string;
-}
-
-/**
  * 文件状态
  */
 export interface FileState {
   files: ExtendedFile[];
   selectedFiles: string[];
   currentFolderId: string | null;
-  folderPath: FolderPath[];
+  folderPath: FolderPathItem[];
   isLoading: boolean;
   error: string | null;
   sortOrder: SortOrder;
-  selectedFileType: FileType | null;
+  selectedFileType: FileTypeEnum | null;
 }
 
 // ----------------------------------------------------------------------------
@@ -138,18 +128,18 @@ export interface FileContextType {
   files: ExtendedFile[];
   selectedFiles: string[];
   currentFolderId: string | null;
-  folderPath: FolderPath[];
+  folderPath: FolderPathItem[];
   isLoading: boolean;
   error: string | null;
   sortOrder: SortOrder;
-  selectedFileType: FileType | null;
+  selectedFileType: FileTypeEnum | null;
 
   // 方法
   loadFiles: (folderId?: string | null) => Promise<void>;
   selectFiles: (fileIds: string[]) => void;
   clearSelection: () => void;
   updateFileSort: (sortOrder: SortOrder) => void;
-  setFileType: (type: FileType | null) => void;
+  setFileType: (type: FileTypeEnum | null) => void;
   navigateToFolder: (folderId: string | null, folderName?: string) => void;
 }
 

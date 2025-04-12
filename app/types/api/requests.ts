@@ -1,65 +1,66 @@
-/**
- * API请求相关类型定义
- * 
- * 本文件包含与API请求相关的类型定义
- */
+import { FileTypeEnum } from '../domains/fileTypes';
+import { PaginationParams } from '../core/common';
 
-import { FileInfo } from '../files/file';
-
-// 搜索文件请求接口
-export interface SearchFilesRequest {
+export interface SearchFilesRequest extends Partial<PaginationParams> {
   query: string;
-  type?: string;
+  type?: FileTypeEnum | string;
   tags?: string[];
-  limit?: number;
-  page?: number;
 }
 
-// 上传文件请求接口
 export interface UploadFileRequest {
   file: File;
   folderId?: string | null;
   tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
-// 创建文件夹请求接口
 export interface CreateFolderRequest {
   name: string;
   parentId?: string | null;
   tags?: string[];
 }
 
-// 重命名文件请求接口
 export interface RenameFileRequest {
   id: string;
   name: string;
+  tags?: string[];
 }
 
-// 移动文件请求接口
 export interface MoveFileRequest {
   id: string;
   targetFolderId: string | null;
 }
 
-// 删除文件请求接口
+export interface BulkMoveRequest {
+  ids: string[];
+  targetFolderId: string | null;
+}
+
 export interface DeleteFileRequest {
   id: string;
   permanent?: boolean;
 }
 
-// 批量删除文件请求接口
 export interface BulkDeleteRequest {
   ids: string[];
   permanent?: boolean;
 }
 
-// 恢复文件请求接口
 export interface RestoreFileRequest {
   id: string;
 }
 
-// 更新文件标签请求接口
+export interface BulkRestoreRequest {
+  ids: string[];
+}
+
 export interface UpdateTagsRequest {
   id: string;
   tags: string[];
+}
+
+export interface BulkUpdateTagsRequest {
+  ids: string[];
+  tags: string[];
+  mode: 'replace' | 'add' | 'remove';
 } 

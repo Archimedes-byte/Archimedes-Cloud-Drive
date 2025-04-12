@@ -1,13 +1,22 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { message } from 'antd';
-import { FileInfo, FolderPath, FileType, SortOrder } from '@/app/types';
+import { 
+  FolderPathItem,
+  FileInfo,
+  FileTypeEnum,
+  FileSortInterface,
+  SortDirectionEnum
+} from '@/app/types';
 import { filterFiles } from '../utils/fileHelpers';
 
 // 扩展FileInfo类型，但保持与原有接口兼容
-interface FileWithSize extends Omit<FileInfo, 'size'> {
+export interface FileWithSize extends Omit<FileInfo, 'size'> {
   size: number | undefined;
 }
+
+// 只导出需要的枚举
+export { SortDirectionEnum };
 
 /**
  * 文件管理钩子
@@ -21,17 +30,17 @@ export const useFiles = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [folderPath, setFolderPath] = useState<FolderPath[]>([]);
-  const [selectedFileType, setSelectedFileType] = useState<FileType | null>(null);
+  const [folderPath, setFolderPath] = useState<FolderPathItem[]>([]);
+  const [selectedFileType, setSelectedFileType] = useState<FileTypeEnum | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState<SortOrder>({
+  const [sortOrder, setSortOrder] = useState<FileSortInterface>({
     field: 'createdAt',
-    direction: 'desc'
+    direction: SortDirectionEnum.DESC
   });
   const [lastSortApplied, setLastSortApplied] = useState<string>('');
 
   // 使用ref记录最后一次请求的参数，防止重复请求
-  const lastRequestRef = useRef<{folderId: string | null, type: FileType | null} | null>(null);
+  const lastRequestRef = useRef<{folderId: string | null, type: FileTypeEnum | null} | null>(null);
   const isInitialMount = useRef(true);
   // 添加最后加载时间ref，防止短时间内重复加载
   const lastLoadTimeRef = useRef<number>(0);
@@ -76,14 +85,14 @@ export const useFiles = () => {
           break;
       }
 
-      return sortOrder.direction === 'asc' ? comparison : -comparison;
+      return sortOrder.direction === SortDirectionEnum.ASC ? comparison : -comparison;
     });
   }, [sortOrder]);
 
   /**
    * 加载文件列表
    */
-  const loadFiles = useCallback(async (folderId: string | null = null, type: FileType | null = selectedFileType, forceRefresh: boolean = false) => {
+  const loadFiles = useCallback(async (folderId: string | null = null, type: FileTypeEnum | null = selectedFileType, forceRefresh: boolean = false) => {
     console.log('loadFiles被调用', {folderId, type, isLoading, forceRefresh});
     
     // 如果已经在加载中，不要重复请求
@@ -194,7 +203,7 @@ export const useFiles = () => {
   /**
    * 处理文件类型过滤
    */
-  const setFileType = useCallback((type: FileType | null) => {
+  const setFileType = useCallback((type: FileTypeEnum | null) => {
     // 如果类型没变，不要重新加载
     if (type === selectedFileType) {
       console.log('文件类型未变更，跳过重新加载');
@@ -285,7 +294,7 @@ export const useFiles = () => {
   /**
    * 更新排序顺序
    */
-  const updateFileSort = useCallback((newSortOrder: SortOrder) => {
+  const updateFileSort = useCallback((newSortOrder: FileSortInterface) => {
     setSortOrder(newSortOrder);
   }, []);
 
@@ -293,7 +302,8 @@ export const useFiles = () => {
    * 处理文件点击事件
    */
   const handleFileClick = useCallback((file: FileInfo) => {
-    if (file.isFolder) {
+    // 确保isFolder属性存在，未定义时默认为false
+    if (file.isFolder === true) {
       navigateToFolder(file.id, file.name);
     } else {
       // 返回文件对象供下载或预览
