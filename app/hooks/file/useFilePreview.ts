@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import { FileWithSize } from './useFiles';
+import { API_PATHS } from '@/app/lib/api/paths';
+import { fileApi } from '@/app/lib/api/file-api';
+import { FileInfo, FileTypeEnum } from '@/app/types';
 
 /**
  * 文件预览钩子接口
@@ -34,6 +37,12 @@ export interface FilePreviewHook {
 export interface FilePreviewOptions {
   /** 刷新文件列表的函数 */
   onRefresh?: () => void;
+  /** 更新文件函数 */
+  onFileUpdate?: (updatedFile: FileInfo) => void;
+  /** 更新搜索结果中的文件函数 */
+  onSearchResultsUpdate?: (updatedFile: FileInfo) => void;
+  /** 当前选择的文件类型 */
+  selectedFileType?: FileTypeEnum | null;
 }
 
 /**
@@ -43,7 +52,12 @@ export interface FilePreviewOptions {
  * @param options 配置选项
  * @returns 文件预览相关状态和方法
  */
-export const useFilePreview = ({ onRefresh }: FilePreviewOptions = {}): FilePreviewHook => {
+export const useFilePreview = ({ 
+  onRefresh, 
+  onFileUpdate, 
+  onSearchResultsUpdate,
+  selectedFileType
+}: FilePreviewOptions = {}): FilePreviewHook => {
   // 预览相关状态
   const [previewFile, setPreviewFile] = useState<FileWithSize | null>(null);
   
@@ -105,51 +119,87 @@ export const useFilePreview = ({ onRefresh }: FilePreviewOptions = {}): FilePrev
         id: fileToRename.id,
         name: fileToRename.name,
         isFolder: fileToRename.isFolder,
-        newName: newName
+        newName: newName,
+        currentType: fileToRename.type
       });
       
-      const apiUrl = `/api/storage/files/${fileToRename.id}/rename`;
-      console.log('请求URL:', apiUrl);
+      // 获取原始文件扩展名，用于后续比较
+      const oldExt = fileToRename.name.includes('.') 
+        ? fileToRename.name.split('.').pop()?.toLowerCase() 
+        : '';
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          newName,
-          tags: tags || fileToRename.tags
-        }),
-      });
+      // 获取新文件扩展名
+      const newExt = newName.includes('.') 
+        ? newName.split('.').pop()?.toLowerCase() 
+        : '';
       
-      const data = await response.json();
+      // 创建更新参数，确保保留原始文件类型
+      const updateParams = {
+        name: newName.trim(), 
+        tags,
+        preserveOriginalType: true
+      };
       
-      if (!response.ok) {
-        throw new Error(data.error || '重命名失败');
-      }
+      // 使用fileApi直接更新文件信息，传递完整的更新参数对象
+      const updatedFile = await fileApi.updateFile(fileToRename.id, newName.trim(), tags, true);
       
-      if (data.success) {
-        message.success('重命名成功');
+      message.success('重命名成功');
+      
+      // 关闭模态框
+      setIsRenameModalOpen(false);
+      setFileToRename(null);
+      
+      // 检查扩展名是否变化且当前有文件类型过滤
+      const extensionChanged = oldExt !== newExt;
+      
+      // 扩展名变化时可能需要重新加载文件列表
+      if (extensionChanged && selectedFileType) {
+        console.log('文件扩展名已变更，需要刷新文件列表', { oldExt, newExt, selectedFileType });
         
-        // 关闭模态框
-        setIsRenameModalOpen(false);
-        setFileToRename(null);
-        
-        // 刷新文件列表
+        // 如果提供了刷新函数，强制刷新整个文件列表
         if (onRefresh) {
-          onRefresh();
+          setTimeout(() => {
+            console.log('重新加载文件列表以反映类型变化');
+            onRefresh();
+          }, 300); // 短暂延迟，确保UI正常更新
+          
+          // 扩展名变化情况下，仍然更新当前视图中的对应文件
+          // 这有助于在刷新之前保持UI的连续性
+          if (onFileUpdate) {
+            // 特别添加一个标记，确保前端过滤时考虑这个文件
+            const fileWithType = {
+              ...updatedFile,
+              _forceInclude: true // 添加特殊标记
+            } as any; // 使用类型断言避免类型错误
+            onFileUpdate(fileWithType);
+          }
+        } else {
+          // 如果没有刷新函数，至少更新当前文件
+          if (onFileUpdate) {
+            onFileUpdate(updatedFile);
+          }
+        }
+      } else {
+        // 非扩展名变化情况，只更新相关视图
+        
+        // 1. 更新文件列表 - 如果提供了更新文件函数
+        if (onFileUpdate) {
+          onFileUpdate(updatedFile);
         }
         
-        return true;
-      } else {
-        throw new Error(data.error || '重命名失败');
+        // 2. 更新搜索结果 - 如果提供了更新搜索结果函数
+        if (onSearchResultsUpdate) {
+          onSearchResultsUpdate(updatedFile);
+        }
       }
+      
+      return true;
     } catch (error) {
       console.error('重命名错误:', error);
       message.error(error instanceof Error ? error.message : '重命名失败，请重试');
       return false;
     }
-  }, [fileToRename, onRefresh]);
+  }, [fileToRename, onRefresh, onFileUpdate, onSearchResultsUpdate, selectedFileType]);
 
   return {
     // 预览相关

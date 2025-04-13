@@ -23,7 +23,7 @@ export const fileService = {
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
-    const response = await fetch(`${API_PATHS.FILES.LIST}?${queryParams.toString()}`);
+    const response = await fetch(`${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || '获取文件列表失败');
@@ -42,7 +42,7 @@ export const fileService = {
     if (params.type) queryParams.append('type', params.type);
     if (params.tags?.length) queryParams.append('tags', JSON.stringify(params.tags));
 
-    const response = await fetch(`${API_PATHS.FILES.SEARCH}?${queryParams.toString()}`);
+    const response = await fetch(`${API_PATHS.STORAGE.FILES.SEARCH}?${queryParams.toString()}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || '搜索失败');
@@ -56,7 +56,7 @@ export const fileService = {
    * 删除文件
    */
   async deleteFiles(fileIds: string[]): Promise<{ deletedCount: number }> {
-    const response = await fetch(API_PATHS.FILES.DELETE, {
+    const response = await fetch(API_PATHS.STORAGE.FILES.DELETE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fileIds }),
@@ -74,7 +74,7 @@ export const fileService = {
    * 更新文件
    */
   async updateFile(fileId: string, name: string, tags?: string[]): Promise<ExtendedFile> {
-    const response = await fetch(API_PATHS.FILES.UPDATE(fileId), {
+    const response = await fetch(API_PATHS.STORAGE.FILES.UPDATE(fileId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, tags }),
@@ -92,7 +92,7 @@ export const fileService = {
    * 移动文件
    */
   async moveFiles(fileIds: string[], targetFolderId: string): Promise<{ movedCount: number }> {
-    const response = await fetch(API_PATHS.FILES.MOVE, {
+    const response = await fetch(API_PATHS.STORAGE.FILES.MOVE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fileIds, targetFolderId }),
@@ -110,7 +110,7 @@ export const fileService = {
    * 下载文件
    */
   async downloadFiles(fileIds: string[]): Promise<Blob> {
-    const response = await fetch(API_PATHS.FILES.DOWNLOAD, {
+    const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fileIds }),
@@ -128,7 +128,7 @@ export const fileService = {
    * 创建文件夹
    */
   async createFolder(name: string, parentId: string | null = null, tags: string[] = []): Promise<ExtendedFile> {
-    const response = await fetch(API_PATHS.FOLDERS.CREATE, {
+    const response = await fetch(API_PATHS.STORAGE.FOLDERS.CREATE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, parentId, tags }),
@@ -162,7 +162,7 @@ export const fileService = {
       formData.append('tags', JSON.stringify(tags));
     }
     
-    const response = await fetch(API_PATHS.FILES.UPLOAD, {
+    const response = await fetch(API_PATHS.STORAGE.FILES.UPLOAD, {
       method: 'POST',
       body: formData,
     });

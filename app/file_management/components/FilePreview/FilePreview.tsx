@@ -147,19 +147,36 @@ const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownload }) 
         if (isPreviewableFile(file.type, extension)) {
           console.log('文件类型支持预览，正在获取预览URL');
           
-          const response = await fetch(API_PATHS.STORAGE.FILES.PREVIEW(file.id));
-          const responseText = await response.text();
+          // 使用新API并添加format=json参数获取JSON格式的预览URL
+          const response = await fetch(`${API_PATHS.STORAGE.FILES.PREVIEW(file.id)}?format=json`);
           
-          let data;
-          try {
-            data = JSON.parse(responseText);
-            setDebugInfo({ responseStatus: response.status, data });
-          } catch (e) {
-            setDebugInfo({ responseStatus: response.status, responseText });
-            throw new Error('解析预览响应失败');
+          // 检查HTTP请求状态
+          if (!response.ok) {
+            throw new Error(`预览请求失败: HTTP ${response.status}`);
           }
-
-          if (response.ok && data.success && data.url) {
+          
+          // 解析JSON响应
+          const data = await response.json();
+          setDebugInfo({ responseStatus: response.status, data });
+          
+          // 处理嵌套data结构
+          // 检查是否有嵌套数据结构 data.data.data
+          if (data.data && data.data.success && data.data.data) {
+            const fileData = data.data.data;
+            if (fileData.success && fileData.url) {
+              console.log('获取到预览URL:', fileData.url);
+              setPreviewUrl(fileData.url);
+            } else {
+              throw new Error(fileData.error || '获取预览URL失败');
+            }
+          } 
+          // 检查第一层嵌套 data.data
+          else if (data.data && data.data.success && data.data.url) {
+            console.log('获取到预览URL:', data.data.url);
+            setPreviewUrl(data.data.url);
+          }
+          // 检查无嵌套的情况
+          else if (data.success && data.url) {
             console.log('获取到预览URL:', data.url);
             setPreviewUrl(data.url);
           } else {

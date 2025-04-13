@@ -75,12 +75,19 @@ async function handleResponse<T>(response: Response): Promise<T> {
       errorCode = errorData.code;
     } catch (e) {
       // 解析错误响应失败，使用默认错误信息
+      console.error('解析API错误响应失败:', e);
     }
     
     throw new ApiError(errorMessage, response.status, errorCode);
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    console.error('解析API响应JSON失败:', e);
+    throw new ApiError('解析API响应失败', 500);
+  }
   
   // 处理不同的响应格式
   if (data.success === false) {
@@ -91,8 +98,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
     );
   }
   
-  // 返回数据
-  return data.data as T;
+  // 返回数据 - 确保处理标准API响应格式
+  return (data.data !== undefined ? data.data : data) as T;
 }
 
 /**
@@ -182,12 +189,21 @@ export const fileApi = {
   },
 
   // 更新文件
-  async updateFile(fileId: string, name?: string, tags?: string[]): Promise<FileInfo> {
+  async updateFile(fileId: string, name?: string, tags?: string[], preserveOriginalType?: boolean): Promise<FileInfo> {
+    console.log('调用文件API.updateFile:', { fileId, name, tagsCount: tags?.length, preserveOriginalType });
+    
+    // 确保preserveOriginalType始终为true，除非明确指定为false
+    const effectivePreserveType = preserveOriginalType !== false;
+    
     // 使用新的API路径
     const response = await fetch(API_PATHS.STORAGE.FILES.UPDATE(fileId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, tags }),
+      body: JSON.stringify({ 
+        name, 
+        tags, 
+        preserveOriginalType: effectivePreserveType 
+      }),
     });
 
     return handleResponse<FileInfo>(response);
@@ -219,14 +235,25 @@ export const fileApi = {
 
   // 创建文件夹
   async createFolder(name: string, parentId: string | null = null, tags: string[] = []): Promise<FileInfo> {
-    // 使用新的API路径
-    const response = await fetch(API_PATHS.STORAGE.FOLDERS.CREATE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, parentId, tags }),
-    });
+    try {
+      console.log('API调用 - 创建文件夹:', { name, parentId, tagsCount: tags.length });
+      
+      // 使用新的API路径
+      const response = await fetch(API_PATHS.STORAGE.FOLDERS.CREATE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, parentId, tags }),
+      });
 
-    return handleResponse<FileInfo>(response);
+      console.log('创建文件夹API响应状态:', response.status);
+      
+      const result = await handleResponse<FileInfo>(response);
+      console.log('创建文件夹成功，返回数据:', result);
+      return result;
+    } catch (error) {
+      console.error('创建文件夹API调用失败:', error);
+      throw error;
+    }
   },
   
   // 获取文件夹列表

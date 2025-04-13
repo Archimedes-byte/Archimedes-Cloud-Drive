@@ -64,18 +64,36 @@ export interface PaginatedResponse<T> {
 
 // API 路径常量
 export const API_PATHS = {
-  FILES: {
-    LIST: '/api/storage/files',
-    SEARCH: '/api/storage/files/search',
-    UPLOAD: '/api/storage/files/upload',
-    DELETE: '/api/storage/files/delete',
-    MOVE: '/api/storage/files/move',
-    UPDATE: (id: string) => `/api/storage/files/${id}`,
-    DOWNLOAD: '/api/storage/files/download',
-  },
-  FOLDERS: {
-    CREATE: '/api/storage/folders',
-    LIST: '/api/storage/folders',
-    DELETE: '/api/storage/folders/delete',
+  STORAGE: {
+    // 文件操作
+    FILES: {
+      LIST: '/api/storage/files',
+      SEARCH: '/api/storage/files/search',
+      UPLOAD: '/api/storage/files/upload',
+      DELETE: '/api/storage/files/delete',
+      MOVE: '/api/storage/files/move',
+      UPDATE: (id: string) => `/api/storage/files/${id}`,
+      DOWNLOAD: '/api/storage/files/download',
+      PREVIEW: (id: string) => `/api/storage/files/${id}/preview`,
+      CONTENT: (id: string) => `/api/storage/files/${id}/content`,
+      RENAME: (id: string) => `/api/storage/files/${id}/rename`,
+    },
+    
+    // a文件夹操作
+    FOLDERS: {
+      LIST: '/api/storage/folders',
+      GET: (id: string) => `/api/storage/folders/${id}`,
+      CREATE: '/api/storage/folders',
+      DELETE: '/api/storage/folders/delete',
+      UPDATE: (id: string) => `/api/storage/folders/${id}`,
+      CHILDREN: (id: string) => `/api/storage/folders/${id}/children`,
+      RENAME: (id: string) => `/api/storage/folders/${id}/rename`,
+    },
+    
+    // 通用存储操作
+    INFO: '/api/storage/info',
+    QUOTA: '/api/storage/quota',
+    RECENT: '/api/storage/recent',
+    STATS: '/api/storage/stats',
   }
 } as const; 

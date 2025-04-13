@@ -76,11 +76,31 @@ export default function FileManagementPage() {
     minLoadingTime: 800
   });
   
-  // 引用文件相关hooks
-  const { 
-    files, isLoading: filesLoading, error: filesError, currentFolderId, setCurrentFolderId, 
-    folderPath, setFolderPath, selectedFileType, setSelectedFileType,
-    sortOrder, setSortOrder, loadFiles, handleFileClick, handleBackClick
+  // 使用useFiles钩子获取文件列表和相关操作
+  const {
+    files,
+    isLoading: filesLoading,
+    error: filesError,
+    currentFolderId,
+    folderPath,
+    selectedFileType,
+    selectedFiles,
+    sortOrder,
+    loadFiles,
+    toggleSelectFile: handleSelectFile,
+    toggleSelectAll,
+    changeSort,
+    filterByFileType,
+    openFolder,
+    refreshCurrentFolder,
+    handleFileClick,
+    handleBackClick,
+    handleFileUpdate,
+    setCurrentFolderId,
+    setFolderPath,
+    setSelectedFileType,
+    setSelectedFiles,
+    setSortOrder
   } = useFiles();
 
   // UI状态管理
@@ -105,9 +125,6 @@ export default function FileManagementPage() {
 
   // 文件操作钩子
   const {
-    selectedFileIds: selectedFiles,
-    selectFile: handleSelectFile,
-    selectFiles: setSelectedFiles,
     createFolder: handleCreateFolder,
     downloadFiles: handleDownload,
     deleteFiles: handleDelete,
@@ -116,23 +133,7 @@ export default function FileManagementPage() {
     error: fileOperationsError
   } = useFileOperations([]);
 
-  // 文件预览和重命名
-  const {
-    previewFile,
-    setPreviewFile,
-    handlePreview: handlePreviewFile,
-    closePreview: handleClosePreview,
-    isRenameModalOpen,
-    setIsRenameModalOpen,
-    fileToRename,
-    setFileToRename,
-    openRename: handleRenameButtonClick,
-    renameFile: handleConfirmEdit
-  } = useFilePreview({
-    onRefresh: () => loadFiles(currentFolderId, selectedFileType, true)
-  });
-
-  // 文件搜索钩子
+  // 先调用文件搜索钩子，确保updateFileInResults可用
   const {
     searchQuery,
     setSearchQuery,
@@ -147,8 +148,28 @@ export default function FileManagementPage() {
     setEnableRealTimeSearch,
     debounceDelay,
     setDebounceDelay,
-    handleSearch
+    handleSearch,
+    updateFileInResults
   } = useFileSearch();
+
+  // 文件预览和重命名 - 传入selectedFileType参数
+  const {
+    previewFile,
+    setPreviewFile,
+    handlePreview: handlePreviewFile,
+    closePreview: handleClosePreview,
+    isRenameModalOpen,
+    setIsRenameModalOpen,
+    fileToRename,
+    setFileToRename,
+    openRename: handleRenameButtonClick,
+    renameFile: handleConfirmEdit
+  } = useFilePreview({
+    onRefresh: () => loadFiles(currentFolderId, selectedFileType, true),
+    onFileUpdate: handleFileUpdate,  // 传入文件更新处理函数
+    onSearchResultsUpdate: updateFileInResults,  // 传入搜索结果更新函数
+    selectedFileType  // 传入当前选择的文件类型
+  });
 
   // 添加创建文件夹相关状态
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);

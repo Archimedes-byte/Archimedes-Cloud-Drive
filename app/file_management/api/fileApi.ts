@@ -24,7 +24,7 @@ export const fileApi = {
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
-    const response = await fetch(`${API_PATHS.FILES.LIST}?${queryParams.toString()}`);
+    const response = await fetch(`${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`);
     if (!response.ok) {
       throw new Error('获取文件列表失败');
     }
@@ -38,7 +38,7 @@ export const fileApi = {
     if (params.type) queryParams.append('type', params.type);
     if (params.tags?.length) queryParams.append('tags', JSON.stringify(params.tags));
 
-    const response = await fetch(`${API_PATHS.FILES.SEARCH}?${queryParams.toString()}`);
+    const response = await fetch(`${API_PATHS.STORAGE.FILES.SEARCH}?${queryParams.toString()}`);
     if (!response.ok) {
       throw new Error('搜索失败');
     }
@@ -47,7 +47,7 @@ export const fileApi = {
 
   // 删除文件
   async deleteFiles(params: FileDeleteRequest): Promise<{ deletedCount: number }> {
-    const response = await fetch(API_PATHS.FILES.DELETE, {
+    const response = await fetch(API_PATHS.STORAGE.FILES.DELETE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -61,7 +61,7 @@ export const fileApi = {
 
   // 更新文件
   async updateFile(fileId: string, params: FileUpdateRequest): Promise<ExtendedFile> {
-    const response = await fetch(API_PATHS.FILES.UPDATE(fileId), {
+    const response = await fetch(API_PATHS.STORAGE.FILES.UPDATE(fileId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -75,7 +75,7 @@ export const fileApi = {
 
   // 移动文件
   async moveFiles(params: FileMoveRequest): Promise<{ movedCount: number }> {
-    const response = await fetch(API_PATHS.FILES.MOVE, {
+    const response = await fetch(API_PATHS.STORAGE.FILES.MOVE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -89,7 +89,7 @@ export const fileApi = {
 
   // 创建文件夹
   async createFolder(name: string, parentId: string | null = null, tags: string[] = []): Promise<ExtendedFile> {
-    const response = await fetch('/api/storage/folders', {
+    const response = await fetch(API_PATHS.STORAGE.FOLDERS.CREATE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

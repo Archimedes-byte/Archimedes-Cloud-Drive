@@ -28,6 +28,7 @@ export const API_PATHS = {
       DOWNLOAD: `${STORAGE_BASE}/files/download`,
       PREVIEW: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/preview`,
       CONTENT: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/content`,
+      RENAME: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/rename`,
     },
     
     // 文件夹操作
@@ -38,6 +39,7 @@ export const API_PATHS = {
       DELETE: `${STORAGE_BASE}/folders/delete`,
       UPDATE: (folderId: string) => `${STORAGE_BASE}/folders/${folderId}`,
       CHILDREN: (folderId: string) => `${STORAGE_BASE}/folders/${folderId}/children`,
+      RENAME: (folderId: string) => `${STORAGE_BASE}/folders/${folderId}/rename`,
     },
     
     // 通用存储操作
@@ -59,26 +61,5 @@ export const API_PATHS = {
       CREATE: `${STORAGE_BASE}/tags`,
       DELETE: `${STORAGE_BASE}/tags/delete`,
     }
-  },
-  
-  // 为了向后兼容，保留旧路径结构（将来可以删除）
-  // 在迁移期间使用这些路径
-  FILES: {
-    LIST: `${API_BASE}/files`,
-    SEARCH: `${API_BASE}/files/search`,
-    UPLOAD: `${API_BASE}/files/upload`,
-    DELETE: `${API_BASE}/files/delete`,
-    MOVE: `${API_BASE}/files/move`,
-    UPDATE: (fileId: string) => `${API_BASE}/files/${fileId}`,
-    DOWNLOAD: `${API_BASE}/files/download`,
-    META: (fileId: string) => `${API_BASE}/files/${fileId}/meta`,
-  },
-  
-  FOLDERS: {
-    CREATE: `${API_BASE}/folders`,
-    LIST: `${API_BASE}/folders`,
-    DELETE: `${API_BASE}/folders/delete`,
-    UPDATE: (folderId: string) => `${API_BASE}/folders/${folderId}`,
-    CHILDREN: (folderId: string) => `${API_BASE}/folders/${folderId}/children`,
-  },
+  }
 }; 

@@ -30,6 +30,7 @@ export const POST = withAuth<FileInfo>(async (req: AuthenticatedRequest) => {
     // 创建文件夹
     const folder = await storageService.createFolder(req.user.id, name, parentId, tags);
     
+    // 确保返回正确的响应格式
     return createApiResponse(folder);
   } catch (error: any) {
     console.error('创建文件夹失败:', error);

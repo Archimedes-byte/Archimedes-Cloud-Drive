@@ -156,8 +156,8 @@ export function UploadModal({
       
       // 将标签数组转换为逗号分隔的字符串
       if (tagList.length > 0) {
-        formData.append('tags', tagList.join(','));
-        console.log('添加标签:', tagList.join(','));
+        formData.append('tags', JSON.stringify(tagList));
+        console.log('添加标签:', tagList);
       }
 
       if (currentFolderId) {

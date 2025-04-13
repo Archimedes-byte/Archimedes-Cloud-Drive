@@ -16,6 +16,8 @@ import {
 } from '@/app/utils/file-utils';
 import { ExtendedFile, FileEntity, FileInfo } from '@/app/types';
 import { existsSync } from 'fs';
+import { Prisma } from '@prisma/client';
+import fs from 'fs/promises';
 
 // 上传目录
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
@@ -78,18 +80,21 @@ export class StorageService {
       const total = await prisma.file.count({ where });
 
       // 构建排序条件
-      const orderBy: any = {};
+      const orderByArray: Prisma.FileOrderByWithRelationInput[] = [];
+      
       // 文件夹始终优先显示
       if (sortBy !== 'isFolder') {
-        orderBy.isFolder = 'desc';
+        orderByArray.push({ isFolder: Prisma.SortOrder.desc });
       }
+      
       // 添加用户指定的排序
-      orderBy[sortBy] = sortOrder;
+      const sortOrderValue = sortOrder.toLowerCase() === 'desc' ? Prisma.SortOrder.desc : Prisma.SortOrder.asc;
+      orderByArray.push({ [sortBy]: sortOrderValue });
 
       // 获取分页数据
       const items = await prisma.file.findMany({
         where,
-        orderBy,
+        orderBy: orderByArray,
         skip: (page - 1) * pageSize,
         take: pageSize,
       });
@@ -315,7 +320,8 @@ export class StorageService {
       arrayBuffer: () => Promise<ArrayBuffer>;
     },
     folderId: string | null = null,
-    tags: string[] = []
+    tags: string[] = [],
+    originalFileName?: string
   ): Promise<FileInfo> {
     try {
       // 确保上传目录存在
@@ -323,8 +329,11 @@ export class StorageService {
         await mkdir(UPLOAD_DIR, { recursive: true });
       }
 
+      // 使用提供的原始文件名或默认的文件名
+      const fileName = originalFileName || file.name;
+      
       // 清理文件名
-      const originalName = sanitizeFilename(file.name);
+      const originalName = sanitizeFilename(fileName);
       
       // 获取文件扩展名
       const extension = extname(originalName).substring(1);
@@ -507,6 +516,7 @@ export class StorageService {
       tags?: string[];
       lastModified?: Date;
       updatedAt?: Date;
+      preserveOriginalType?: boolean;
     }
   ): Promise<FileInfo> {
     try {
@@ -552,6 +562,35 @@ export class StorageService {
         }
 
         updateData.name = sanitizedName;
+        
+        // 记录文件类型保留信息
+        console.log('文件更新 - 类型保留状态:', {
+          preserveOriginalType: updates.preserveOriginalType,
+          fileId: fileId,
+          fileName: file.name,
+          newName: sanitizedName,
+          currentType: file.type
+        });
+        
+        // 如果不是保留原始类型模式，根据新文件名更新类型
+        if (!file.isFolder && !updates.preserveOriginalType) {
+          // 获取新文件扩展名
+          const extension = sanitizedName.includes('.') 
+            ? sanitizedName.split('.').pop()?.toLowerCase() 
+            : '';
+            
+          // 更新文件类型 (只有在未设置preserveOriginalType时)
+          if (extension) {
+            // 根据扩展名决定新的文件类型 - 这里可以保留原有的类型判断逻辑
+            // 但不在此做类型更新
+            console.log('保留原始文件类型，不根据扩展名更新类型');
+          }
+        } else if (!file.isFolder) {
+          // 即使扩展名变化，也确保保留原始文件类型
+          console.log('明确保留原始文件类型:', file.type);
+          // 确保文件类型字段不变
+          updateData.type = file.type;
+        }
       }
 
       // 更新标签
@@ -849,7 +888,7 @@ export class StorageService {
           file: true
         },
         orderBy: {
-          createdAt: 'desc'
+          createdAt: Prisma.SortOrder.desc
         },
         skip: (page - 1) * pageSize,
         take: pageSize
@@ -942,7 +981,7 @@ export class StorageService {
           isFolder: false, // 只显示文件
         },
         orderBy: {
-          updatedAt: 'desc',
+          updatedAt: Prisma.SortOrder.desc
         },
         take: limit,
       });
@@ -950,6 +989,160 @@ export class StorageService {
       return recentFiles.map(mapFileEntityToFileInfo);
     } catch (error) {
       console.error('获取最近文件失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 重命名文件或文件夹
+   */
+  async renameFile(
+    fileId: string,
+    newName: string,
+    userId: string,
+    tags?: string[]
+  ): Promise<FileInfo> {
+    try {
+      // 清理文件名称
+      const sanitizedName = sanitizeFilename(newName);
+      if (!sanitizedName) {
+        throw new Error('文件名称无效');
+      }
+
+      // 处理标签 - 去除重复标签
+      const uniqueTags = Array.isArray(tags)
+        ? [...new Set(tags.filter(tag => tag && typeof tag === 'string' && tag.trim() !== ''))]
+        : undefined;
+
+      // 查找文件并验证所有权
+      const file = await prisma.file.findFirst({
+        where: {
+          id: fileId,
+          uploaderId: userId,
+          isDeleted: false,
+        },
+      });
+
+      if (!file) {
+        throw new Error('文件不存在或您没有权限操作此文件');
+      }
+
+      // 检查同一目录下是否已存在同名文件/文件夹
+      const existingFile = await prisma.file.findFirst({
+        where: {
+          name: sanitizedName,
+          parentId: file.parentId,
+          uploaderId: userId,
+          isFolder: file.isFolder, // 同类型检查（文件夹只检查同名文件夹，文件只检查同名文件）
+          id: { not: fileId }, // 排除当前文件/文件夹自身
+          isDeleted: false,
+        },
+      });
+
+      if (existingFile) {
+        throw new Error(`同一目录下已存在同名${file.isFolder ? '文件夹' : '文件'}`);
+      }
+
+      // 判断是否是文件夹
+      if (file.isFolder) {
+        // 更新文件夹名称和标签
+        const updatedFolder = await prisma.file.update({
+          where: { id: fileId },
+          data: {
+            name: sanitizedName,
+            tags: uniqueTags || file.tags,
+          },
+        });
+
+        return mapFileEntityToFileInfo(updatedFolder);
+      }
+
+      // 如果是文件，需要处理物理文件的重命名
+      // 获取文件扩展名
+      const oldExtension = file.name.includes('.') ? file.name.split('.').pop() : '';
+      const fileNameWithoutExt = file.name.includes('.')
+        ? file.name.substring(0, file.name.lastIndexOf('.'))
+        : file.name;
+      
+      const newNameWithoutExt = sanitizedName.includes('.')
+        ? sanitizedName.substring(0, sanitizedName.lastIndexOf('.'))
+        : sanitizedName;
+        
+      const newExtension = sanitizedName.includes('.') ? sanitizedName.split('.').pop() : oldExtension;
+      
+      // 构建新的文件名，保持原始文件唯一标识
+      const oldFilename = file.filename || '';
+      const uniquePart = oldFilename.includes('_') ? oldFilename.split('_')[0] : '';
+      const newFilename = uniquePart 
+        ? `${uniquePart}_${newNameWithoutExt}.${newExtension}`
+        : `${newNameWithoutExt}.${newExtension}`;
+      
+      // 检查文件是否存储在上传目录
+      let physicalFilePath = file.path;
+      let newPhysicalPath;
+      
+      // 确保我们使用真实的物理文件路径，而不是相对路径或逻辑路径
+      if (existsSync(join(UPLOAD_DIR, oldFilename))) {
+        // 如果文件在上传目录中
+        physicalFilePath = join(UPLOAD_DIR, oldFilename);
+        newPhysicalPath = join(UPLOAD_DIR, newFilename);
+      } else if (existsSync(file.path)) {
+        // 如果文件路径是绝对路径
+        const dirName = path.dirname(file.path);
+        // 安全检查：确保目录路径不是根目录
+        if (dirName === '/' || dirName.match(/^[A-Z]:\\$/i)) {
+          console.error('不能重命名根目录中的文件:', file.path);
+          // 只更新数据库记录，不尝试重命名物理文件
+          newPhysicalPath = file.path; // 保持原路径
+        } else {
+          newPhysicalPath = join(dirName, newFilename);
+        }
+      } else {
+        // 文件不存在，只更新数据库
+        console.log('物理文件不存在，只更新数据库记录:', file.path);
+        newPhysicalPath = file.path.replace(path.basename(file.path), newFilename);
+      }
+      
+      console.log('重命名文件路径:', {
+        原路径: physicalFilePath,
+        新路径: newPhysicalPath
+      });
+      
+      // 如果物理文件存在且路径不同，则重命名物理文件
+      if (existsSync(physicalFilePath) && physicalFilePath !== newPhysicalPath) {
+        try {
+          await fs.rename(physicalFilePath, newPhysicalPath);
+          console.log('物理文件重命名成功:', physicalFilePath, '->', newPhysicalPath);
+        } catch (fsError) {
+          console.error('文件系统操作错误:', fsError);
+          // 文件重命名失败，但仍然更新数据库记录
+        }
+      }
+      
+      // 构建新的文件URL
+      let newUrl = file.url;
+      if (newUrl) {
+        // 替换URL中的文件名部分
+        const urlParts = newUrl.split('/');
+        urlParts[urlParts.length - 1] = newFilename;
+        newUrl = urlParts.join('/');
+      }
+      
+      // 更新文件记录
+      const updatedFile = await prisma.file.update({
+        where: { id: fileId },
+        data: {
+          name: sanitizedName, // 更新显示名称
+          filename: newFilename, // 更新文件名
+          path: newPhysicalPath, // 更新文件路径
+          url: newUrl, // 更新URL
+          tags: uniqueTags || file.tags, // 使用去重后的标签
+        },
+      });
+
+      return mapFileEntityToFileInfo(updatedFile);
+    } catch (error) {
+      console.error('重命名文件失败:', error);
       throw error;
     }
   }

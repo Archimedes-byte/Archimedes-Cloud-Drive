@@ -76,6 +76,8 @@ export interface FileSearchHook {
   searchFromHistory: (query: string) => void;
   /** 清除搜索历史 */
   clearSearchHistory: () => void;
+  /** 更新搜索结果中的文件 */
+  updateFileInResults: (updatedFile: FileInfo) => void;
 }
 
 /**
@@ -245,6 +247,24 @@ export const useFileSearch = ({
     }
   }, []);
 
+  /**
+   * 更新搜索结果中的文件
+   * 当文件被重命名或更新时调用此方法
+   */
+  const updateFileInResults = useCallback((updatedFile: FileInfo) => {
+    setSearchResults(prevResults => {
+      // 查找并更新文件
+      const updatedResults = prevResults.map(file => {
+        if (file.id === updatedFile.id) {
+          return updatedFile;
+        }
+        return file;
+      });
+      
+      return updatedResults;
+    });
+  }, []);
+
   return {
     // 搜索状态
     searchQuery,
@@ -268,6 +288,7 @@ export const useFileSearch = ({
     handleSearch,
     clearSearch,
     searchFromHistory,
-    clearSearchHistory
+    clearSearchHistory,
+    updateFileInResults
   };
 }; 

@@ -22,13 +22,13 @@ const mimeTypes: Record<string, string> = {
   // 视频
   'mp4': 'video/mp4',
   'webm': 'video/webm',
-  'ogv': 'video/ogg',  // 修正：从'ogg'改为'ogv'作为视频扩展名
+  'ogv': 'video/ogg',
   'mov': 'video/quicktime',
   'avi': 'video/x-msvideo',
   // 音频
   'mp3': 'audio/mpeg',
   'wav': 'audio/wav',
-  'ogg': 'audio/ogg',  // 保留 ogg 作为音频格式
+  'ogg': 'audio/ogg',
   'flac': 'audio/flac',
   'aac': 'audio/aac',
   'm4a': 'audio/mp4',
@@ -81,7 +81,7 @@ const isDocumentType = (mimeType: string): boolean => {
 };
 
 /**
- * GET /api/files/serve
+ * GET /api/storage/files/serve
  * 
  * 提供文件内容的API端点
  * 使用token进行授权访问

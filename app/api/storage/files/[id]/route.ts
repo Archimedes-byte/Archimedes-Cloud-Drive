@@ -48,15 +48,19 @@ export const PATCH = withAuth<FileInfo>(async (req: AuthenticatedRequest) => {
     }
     
     // 获取请求体数据
-    const { name, tags } = await req.json();
+    const { name, tags, preserveOriginalType } = await req.json();
     
     // 验证至少有一个要更新的字段
-    if (!name && !tags) {
+    if (!name && !tags && preserveOriginalType === undefined) {
       return createApiErrorResponse('至少提供一个更新字段', 400);
     }
     
     // 更新文件信息
-    const updatedFile = await storageService.updateFile(req.user.id, fileId, { name, tags });
+    const updatedFile = await storageService.updateFile(req.user.id, fileId, { 
+      name, 
+      tags,
+      preserveOriginalType
+    });
     
     return createApiResponse(updatedFile);
   } catch (error: any) {

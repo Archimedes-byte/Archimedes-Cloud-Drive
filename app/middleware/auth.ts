@@ -59,9 +59,9 @@ export function createApiErrorResponse(error: string, status = 400, code?: strin
  * 身份验证中间件
  * 验证用户身份并将用户信息附加到请求对象
  */
-export async function withAuth<T>(
+export function withAuth<T>(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse<ApiResponse<T>>>
-): Promise<(req: NextRequest) => Promise<NextResponse<ApiResponse<T> | ApiErrorResponse>>> {
+): (req: NextRequest) => Promise<NextResponse<ApiResponse<T> | ApiErrorResponse>> {
   return async (req: NextRequest) => {
     try {
       // 获取用户会话
@@ -93,8 +93,13 @@ export async function withAuth<T>(
         name: user.name || undefined,
       };
       
-      // 调用处理函数
-      return handler(authReq);
+      // 调用处理函数并确保捕获处理函数中的错误
+      try {
+        return await handler(authReq);
+      } catch (handlerError) {
+        console.error('API处理函数错误:', handlerError);
+        return createApiErrorResponse('API处理失败', 500);
+      }
     } catch (error) {
       console.error('身份验证错误:', error);
       return createApiErrorResponse('身份验证失败', 500);

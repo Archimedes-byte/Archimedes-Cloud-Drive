@@ -2,14 +2,10 @@
  * 文件API路由
  * 处理文件相关请求
  */
-import { NextRequest } from 'next/server';
-import { 
-  withAuth, 
-  AuthenticatedRequest, 
-  createApiResponse, 
-  createApiErrorResponse,
-  ApiResponse
-} from '@/app/middleware/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
+import { prisma } from '@/app/lib/database';
 import { StorageService } from '@/app/services/storage-service';
 
 const storageService = new StorageService();
@@ -17,43 +13,102 @@ const storageService = new StorageService();
 /**
  * 获取文件列表
  */
-export const GET = withAuth<{ items: any[]; total: number; page: number; pageSize: number }>(
-  async (req: AuthenticatedRequest) => {
-    try {
-      // 获取查询参数
-      const { searchParams } = new URL(req.url);
-      const folderId = searchParams.get('folderId');
-      const type = searchParams.get('type');
-      const page = searchParams.has('page') ? parseInt(searchParams.get('page')!) : 1;
-      const pageSize = searchParams.has('pageSize') ? parseInt(searchParams.get('pageSize')!) : 50;
-      const sortBy = searchParams.get('sortBy') || 'createdAt';
-      const sortOrder = searchParams.get('sortOrder') || 'desc';
-
-      // 获取文件列表
-      const result = await storageService.getFiles(
-        req.user.id,
-        folderId,
-        type,
-        page,
-        pageSize,
-        sortBy,
-        sortOrder
-      );
-
-      return createApiResponse(result);
-    } catch (error: any) {
-      console.error('获取文件列表失败:', error);
-      return createApiErrorResponse(error.message || '获取文件列表失败', 500);
+export async function GET(request: NextRequest) {
+  try {
+    // 获取用户会话
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '未授权访问' 
+      }, { status: 401 });
     }
+    
+    // 获取用户信息
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+    
+    if (!user) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '用户不存在' 
+      }, { status: 404 });
+    }
+    
+    // 获取查询参数
+    const { searchParams } = new URL(request.url);
+    const folderId = searchParams.get('folderId');
+    const type = searchParams.get('type');
+    const page = searchParams.has('page') ? parseInt(searchParams.get('page')!) : 1;
+    const pageSize = searchParams.has('pageSize') ? parseInt(searchParams.get('pageSize')!) : 50;
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+    // 获取文件列表
+    const result = await storageService.getFiles(
+      user.id,
+      folderId,
+      type,
+      page,
+      pageSize,
+      sortBy,
+      sortOrder
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('获取文件列表失败:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: '获取文件列表失败', 
+      message: error.message || '未知错误' 
+    }, { status: 500 });
   }
-);
+}
 
 /**
  * 文件上传处理
  */
-export const POST = withAuth<any>(async (req: AuthenticatedRequest) => {
+export async function POST(request: NextRequest) {
   try {
-    const formData = await req.formData();
+    // 获取用户会话
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '未授权访问' 
+      }, { status: 401 });
+    }
+    
+    // 获取用户信息
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+    
+    if (!user) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '用户不存在' 
+      }, { status: 404 });
+    }
+    
+    const formData = await request.formData();
     const files = formData.getAll('file');
     const tagsJson = formData.get('tags');
     const folderId = formData.get('folderId')?.toString() || null;
@@ -70,14 +125,20 @@ export const POST = withAuth<any>(async (req: AuthenticatedRequest) => {
     
     // 验证文件
     if (!files || files.length === 0) {
-      return createApiErrorResponse('未提供文件', 400);
+      return NextResponse.json({ 
+        success: false, 
+        error: '未提供文件' 
+      }, { status: 400 });
     }
     
     // 处理单个文件上传
     if (files.length === 1) {
       const file = files[0] as File;
-      const result = await storageService.uploadFile(req.user.id, file, folderId, tags);
-      return createApiResponse(result);
+      const result = await storageService.uploadFile(user.id, file, folderId, tags);
+      return NextResponse.json({ 
+        success: true, 
+        data: result 
+      });
     }
     
     // 处理批量上传
@@ -85,7 +146,7 @@ export const POST = withAuth<any>(async (req: AuthenticatedRequest) => {
     for (const fileData of files) {
       const file = fileData as File;
       try {
-        const result = await storageService.uploadFile(req.user.id, file, folderId, tags);
+        const result = await storageService.uploadFile(user.id, file, folderId, tags);
         results.push(result);
       } catch (error: any) {
         console.error(`上传文件 ${file.name} 失败:`, error);
@@ -93,9 +154,16 @@ export const POST = withAuth<any>(async (req: AuthenticatedRequest) => {
       }
     }
     
-    return createApiResponse(results);
+    return NextResponse.json({ 
+      success: true, 
+      data: results 
+    });
   } catch (error: any) {
     console.error('文件上传失败:', error);
-    return createApiErrorResponse(error.message || '文件上传失败', 500);
+    return NextResponse.json({ 
+      success: false, 
+      error: '文件上传失败', 
+      message: error.message || '未知错误' 
+    }, { status: 500 });
   }
-}); 
+} 

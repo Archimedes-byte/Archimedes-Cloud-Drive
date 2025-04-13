@@ -26,7 +26,8 @@ const OLD_API_PATTERNS = [
 
 // 排除这些文件（保留的文件）
 const EXCLUDE_PATTERNS = [
-  '/app/api/files/serve', // 文件服务路由可能仍需要保留
+  // 旧的文件服务API已迁移到新路径，不再需要保留
+  // '/app/api/files/serve', // 文件服务路由可能仍需要保留
 ];
 
 // 记录文件

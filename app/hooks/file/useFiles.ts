@@ -42,6 +42,8 @@ export const useFiles = () => {
     direction: SortDirectionEnum.DESC
   });
   const [lastSortApplied, setLastSortApplied] = useState<string>('');
+  // 添加一个新的状态来跟踪文件更新
+  const [fileUpdateTrigger, setFileUpdateTrigger] = useState(0);
 
   // 使用ref记录最后一次请求的参数，防止重复请求
   const lastRequestRef = useRef<{folderId: string | null, type: FileTypeEnum | null} | null>(null);
@@ -281,6 +283,96 @@ export const useFiles = () => {
     }
   }, [folderPath, setCurrentFolderId, setFolderPath, loadFiles]);
 
+  /**
+   * 处理文件更新
+   * 用于在文件被修改（重命名等）后更新列表
+   */
+  const handleFileUpdate = useCallback((updatedFile: FileInfo) => {
+    console.log('处理文件更新:', updatedFile);
+    
+    // 更新文件列表中的对应文件
+    setFiles(prevFiles => {
+      // 查找并更新文件
+      let updatedFiles = prevFiles.map(file => {
+        if (file.id === updatedFile.id) {
+          // 保留原有的size属性，因为它在FileWithSize中可能不一样
+          return {
+            ...updatedFile,
+            size: file.size
+          };
+        }
+        return file;
+      });
+      
+      // 如果当前有文件类型过滤，重新应用过滤逻辑
+      if (selectedFileType) {
+        // 检查是否有强制包含标记
+        const hasForceInclude = (updatedFile as any)._forceInclude === true;
+        
+        // 首先检查更新后的文件是否符合当前过滤条件
+        const ext = updatedFile.name.split('.').pop()?.toLowerCase();
+        let shouldInclude = false;
+        
+        // 如果有强制包含标记，直接包含文件
+        if (hasForceInclude) {
+          shouldInclude = true;
+          console.log('文件被标记为强制包含，忽略过滤条件:', updatedFile.name);
+        } 
+        // 否则检查文件扩展名是否符合当前过滤类型
+        else if (selectedFileType === 'folder' && updatedFile.isFolder) {
+          shouldInclude = true;
+        } else if (selectedFileType === 'document' && !updatedFile.isFolder && ext && 
+                  ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext)) {
+          shouldInclude = true;
+        } else if (selectedFileType === 'image' && !updatedFile.isFolder && ext && 
+                  ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext)) {
+          shouldInclude = true;
+        } else if (selectedFileType === 'audio' && !updatedFile.isFolder && ext && 
+                  ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext)) {
+          shouldInclude = true;
+        } else if (selectedFileType === 'video' && !updatedFile.isFolder && ext && 
+                  ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext)) {
+          shouldInclude = true;
+        } else if (selectedFileType === 'code' && !updatedFile.isFolder && ext && 
+                  ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext)) {
+          shouldInclude = true;
+        } else if (selectedFileType === 'archive' && !updatedFile.isFolder && ext && 
+                  ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) {
+          shouldInclude = true;
+        }
+        
+        console.log('文件更新后过滤结果:', {
+          文件名: updatedFile.name,
+          扩展名: ext,
+          当前过滤类型: selectedFileType,
+          是否包含: shouldInclude,
+          强制包含: hasForceInclude
+        });
+        
+        // 根据过滤结果处理文件列表
+        if (shouldInclude) {
+          // 如果文件应该包含在当前视图，但可能不存在于列表中
+          if (!updatedFiles.some(file => file.id === updatedFile.id)) {
+            // 将更新后的文件添加到列表中
+            const fileWithSize = {
+              ...updatedFile,
+              size: updatedFile.size || 0
+            };
+            updatedFiles.push(fileWithSize);
+          }
+        } else {
+          // 如果文件不应该包含在当前视图，将其从列表中移除
+          updatedFiles = updatedFiles.filter(file => file.id !== updatedFile.id);
+        }
+      }
+      
+      return updatedFiles;
+    });
+    
+    // 触发更新计数器增加，可用于通知其他依赖组件
+    setFileUpdateTrigger(prev => prev + 1);
+  }, [selectedFileType]);
+
   // 在排序顺序变更时重新排序文件列表
   useEffect(() => {
     // 避免初次渲染时重复排序
@@ -301,6 +393,7 @@ export const useFiles = () => {
     selectedFileType,
     selectedFiles,
     sortOrder,
+    fileUpdateTrigger,
     
     // 操作方法
     loadFiles,
@@ -312,6 +405,7 @@ export const useFiles = () => {
     refreshCurrentFolder,
     handleFileClick,
     handleBackClick,
+    handleFileUpdate,
     
     // 设置函数
     setCurrentFolderId,

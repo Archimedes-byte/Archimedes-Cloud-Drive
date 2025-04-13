@@ -14,6 +14,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import path from 'path';
 import { FILE_CATEGORIES } from '@/app/utils/file-utils';
+import { getSignedUrl } from '@/app/lib/storage';
 
 const storageService = new StorageService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
@@ -63,6 +64,49 @@ function getMimeType(fileCategory: string, extension: string): string {
 }
 
 /**
+ * 判断文件是否可预览的辅助函数
+ */
+function isPreviewableFile(type?: string, extension?: string): boolean {
+  if (!type && !extension) return false;
+  
+  // 简化类型名判断
+  if (type === 'image' || type === 'video' || type === 'audio' || type === 'document') {
+    return true;
+  }
+  
+  // MIME类型判断
+  if (type?.startsWith('image/') || 
+      type?.startsWith('video/') || 
+      type?.startsWith('audio/') ||
+      type?.startsWith('application/pdf') ||
+      type?.includes('msword') ||
+      type?.includes('officedocument') ||
+      type?.includes('ms-excel') ||
+      type?.includes('ms-powerpoint')) {
+    return true;
+  }
+  
+  // 基于扩展名判断
+  const supportedImageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+  const supportedVideoExts = ['mp4', 'webm', 'ogv', 'mov', 'avi'];
+  const supportedAudioExts = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'];
+  const supportedDocumentExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'];
+  
+  const supportedExtensions = [
+    ...supportedImageExts,
+    ...supportedVideoExts,
+    ...supportedAudioExts,
+    ...supportedDocumentExts
+  ];
+  
+  if (extension) {
+    return supportedExtensions.includes(extension.toLowerCase());
+  }
+  
+  return false;
+}
+
+/**
  * 文件预览处理
  */
 export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
@@ -81,6 +125,14 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
       return createApiErrorResponse('不能预览文件夹', 400);
     }
     
+    // 判断文件是否可预览
+    const fileExtension = path.extname(fileInfo.name).substring(1);
+    const isPreviewable = isPreviewableFile(fileInfo.type, fileExtension);
+    
+    if (!isPreviewable) {
+      return createApiErrorResponse('此文件类型不支持预览', 400);
+    }
+    
     // 获取文件路径
     const filename = path.basename(fileInfo.url || '');
     const filePath = join(UPLOAD_DIR, filename);
@@ -90,15 +142,31 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
       return createApiErrorResponse('文件不存在', 404);
     }
     
-    // 读取文件内容
-    const fileContent = readFileSync(filePath);
-    const fileExtension = path.extname(fileInfo.name).substring(1);
+    // 判断请求类型
+    const { searchParams } = new URL(req.url);
+    const format = searchParams.get('format');
     
-    // 根据文件类型设置相应的内容类型
+    // 如果需要JSON格式的预览URL，返回带签名的URL
+    if (format === 'json') {
+      const contentType = getMimeType(fileInfo.type, fileExtension);
+      
+      // 根据文件类型设置过期时间
+      const expiresIn = contentType.startsWith('image/') ? 60 * 10 : 60 * 30; // 10分钟或30分钟
+      const signedUrl = await getSignedUrl(filePath, expiresIn);
+      
+      return createApiResponse({
+        success: true,
+        url: signedUrl,
+        fileType: contentType,
+        fileName: fileInfo.name
+      });
+    }
+    
+    // 默认行为：直接返回文件内容
+    const fileContent = readFileSync(filePath);
     const contentType = getMimeType(fileInfo.type, fileExtension);
     
     // 判断是下载还是预览
-    const { searchParams } = new URL(req.url);
     const download = searchParams.get('download') === 'true';
     
     const headers: Record<string, string> = {

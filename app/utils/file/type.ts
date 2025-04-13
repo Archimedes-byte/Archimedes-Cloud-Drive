@@ -176,67 +176,49 @@ export function filterFilesByType<T extends { isFolder: boolean; name: string; t
     return files;
   }
   
+  console.log(`过滤文件列表，类型: ${fileType}, 总文件数: ${files.length}`);
+  
   // 文件夹处理
   if (fileType === 'folder') {
     return files.filter(file => file.isFolder);
   }
   
-  // 文档类型
-  if (fileType === 'document') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
-    });
-  }
-
-  // 图片类型
-  if (fileType === 'image') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
-    });
-  }
-
-  // 音频类型
-  if (fileType === 'audio') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
-    });
-  }
-
-  // 视频类型
-  if (fileType === 'video') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
-    });
-  }
-  
-  // 代码类型
-  if (fileType === 'code') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext);
-    });
-  }
-  
-  // 压缩类型
-  if (fileType === 'archive') {
-    return files.filter(file => {
-      if (file.isFolder) return false;
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      return ext && ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext);
-    });
-  }
-
-  // 默认行为 - 返回所有文件
-  return files;
+  return files.filter(file => {
+    // 如果是文件夹，且不是筛选文件夹，则排除
+    if (file.isFolder) return false;
+    
+    // 检查文件是否有显式的类型标记（例如从重命名操作）
+    if ((file as any)._forceInclude === true) {
+      return true;
+    }
+    
+    // 首先检查文件的type字段，这是从数据库获取的类型
+    if (file.type === fileType) {
+      return true;
+    }
+    
+    // 然后检查文件扩展名
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext) return false;
+    
+    // 根据文件类型和扩展名进行过滤
+    switch (fileType) {
+      case 'document':
+        return ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+      case 'image':
+        return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
+      case 'audio':
+        return ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
+      case 'video':
+        return ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
+      case 'code':
+        return ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext);
+      case 'archive':
+        return ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext);
+      default:
+        return false;
+    }
+  });
 }
 
 // 旧的filterFiles函数保留兼容性，但内部调用新的实现

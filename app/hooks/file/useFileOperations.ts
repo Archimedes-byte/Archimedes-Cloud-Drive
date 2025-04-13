@@ -3,6 +3,7 @@ import { message } from 'antd';
 import { FileWithSize } from './useFiles';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { fileApi } from '@/app/lib/api/file-api';
+import { FileInfo } from '@/app/types';
 
 /**
  * 文件操作接口
@@ -23,7 +24,7 @@ export interface FileOperations {
   /** 删除文件 */
   deleteFiles: (fileIds: string[]) => Promise<boolean>;
   /** 重命名文件 */
-  renameFile: (fileId: string, newName: string) => Promise<boolean>;
+  renameFile: (fileId: string, newName: string, onSuccess?: (updatedFile: FileInfo) => void) => Promise<boolean>;
   /** 创建文件夹 */
   createFolder: (name: string, parentId: string | null, tags?: string[]) => Promise<string | null>;
   /** 是否正在加载 */
@@ -179,9 +180,10 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
    * 重命名文件
    * @param fileId 文件ID
    * @param newName 新文件名
+   * @param onSuccess 成功回调，返回更新后的文件信息
    * @returns 是否成功
    */
-  const renameFile = useCallback(async (fileId: string, newName: string): Promise<boolean> => {
+  const renameFile = useCallback(async (fileId: string, newName: string, onSuccess?: (updatedFile: FileInfo) => void): Promise<boolean> => {
     // 检查fileId和newName的有效性
     if (!fileId) {
       message.warning('文件ID不能为空');
@@ -205,8 +207,14 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       setError(null);
 
       // 使用fileApi客户端
-      await fileApi.updateFile(fileId, newName.trim());
+      const updatedFile = await fileApi.updateFile(fileId, newName.trim());
       message.success('文件重命名成功');
+      
+      // 如果提供了成功回调，调用它并传递更新后的文件信息
+      if (onSuccess && typeof onSuccess === 'function') {
+        onSuccess(updatedFile);
+      }
+      
       return true;
     } catch (error) {
       console.error('重命名文件失败:', error);
