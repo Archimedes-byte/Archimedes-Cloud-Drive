@@ -2,64 +2,77 @@
 
 import React, { useState, useRef } from 'react';
 import { Progress } from '../ui/progress';
-import { API_PATHS } from '@/app/lib/api/paths';
+import { mapFileEntityToFileInfo } from '@/app/types';
+import { uploadFile } from '@/app/lib/upload-service';
 
 interface FileUploadProps {
-  onUploadComplete: (file: any) => void;
+  onUploadComplete: (file?: any) => void;
   folderId?: string;
+  tags?: string[];
+  multiple?: boolean;
+  allowFolders?: boolean;
+  className?: string;
 }
 
-export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
+export function FileUpload({ 
+  onUploadComplete, 
+  folderId,
+  tags,
+  multiple = false, 
+  allowFolders = false,
+  className = ''
+}: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
     setProgress(0);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    if (folderId) {
-      formData.append('folderId', folderId);
-    }
+    // 只处理第一个文件 (或在多文件模式下可以处理所有文件)
+    const file = files[0];
 
     try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', API_PATHS.STORAGE.FILES.UPLOAD, true);
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = (e.loaded / e.total) * 100;
-          setProgress(Math.round(percentComplete));
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          onUploadComplete(response);
+      // 使用上传服务模块
+      uploadFile(file, {
+        folderId,
+        tags,
+        onProgress: (progress) => {
+          setProgress(progress);
+        },
+        onSuccess: (response) => {
+          // 使用类型映射函数转换API响应为FileInfo
+          const fileInfo = mapFileEntityToFileInfo ? mapFileEntityToFileInfo(response) : response;
+          onUploadComplete(fileInfo);
           setProgress(100);
-        } else {
-          const error = JSON.parse(xhr.responseText);
-          throw new Error(error.message || '上传失败');
+          setUploading(false);
+          
+          // 清空文件输入
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        },
+        onError: (error) => {
+          setError(error.message);
+          setUploading(false);
+          
+          // 清空文件输入
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
         }
-      };
-
-      xhr.onerror = () => {
-        throw new Error('网络错误');
-      };
-
-      xhr.send(formData);
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : '上传失败');
-    } finally {
       setUploading(false);
+      
+      // 清空文件输入
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -67,13 +80,16 @@ export function FileUpload({ onUploadComplete, folderId }: FileUploadProps) {
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className={`w-full max-w-md ${className}`}>
       <div className="mb-4">
         <input
           ref={fileInputRef}
           type="file"
           onChange={handleFileSelect}
           disabled={uploading}
+          multiple={multiple}
+          // 如果允许文件夹上传，添加相关属性
+          {...(allowFolders ? { webkitdirectory: "", directory: "" } : {})}
           className="block w-full text-sm text-gray-500
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0

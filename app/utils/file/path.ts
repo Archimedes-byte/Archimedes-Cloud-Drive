@@ -1,7 +1,9 @@
 /**
- * 文件路径工具函数
- * 处理文件名、扩展名、路径等
+ * 文件路径工具函数集合
+ * 处理文件名、扩展名、路径等操作
  */
+
+import path from 'path';
 
 /**
  * 获取文件名和后缀
@@ -24,48 +26,83 @@ export const getFileNameAndExtension = (filename: string) => {
  * @param path 文件完整路径
  * @returns 文件所在目录路径
  */
-export const getFilePath = (path: string | undefined) => {
-  if (!path) return '/';
-  const parts = path.split('/');
+export const getFilePath = (filePath: string | undefined) => {
+  if (!filePath) return '/';
+  const parts = filePath.split('/');
   return parts.slice(0, -1).join('/') || '/';
 };
 
 /**
- * 对文件列表进行简单排序
- * @deprecated 请使用 sort.ts 中的 sortFiles 函数
- * @param files 文件列表
- * @param field 排序字段
- * @param direction 排序方向
- * @returns 排序后的文件列表
+ * 获取文件扩展名(不带点)
+ * @param filename 文件名
+ * @returns 文件扩展名
  */
-export function sortPathFiles(files: any[], field: string, direction: 'asc' | 'desc'): any[] {
-  return [...files].sort((a, b) => {
-    let comparison = 0;
-    
-    // 文件夹始终排在前面
-    if ((a.isFolder === true) !== (b.isFolder === true)) {
-      return a.isFolder ? -1 : 1;
-    }
-    
-    switch (field) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'size':
-        comparison = (a.size || 0) - (b.size || 0);
-        break;
-      case 'type':
-        comparison = (a.type || '').localeCompare(b.type || '');
-        break;
-      case 'createdAt':
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        comparison = dateA - dateB;
-        break;
-      default:
-        comparison = 0;
-    }
-    
-    return direction === 'asc' ? comparison : -comparison;
-  });
-}
+export const getExtension = (filename: string): string => {
+  return path.extname(filename).substring(1).toLowerCase();
+};
+
+/**
+ * 获取不带扩展名的文件名
+ * @param filename 文件名
+ * @returns 不带扩展名的文件名
+ */
+export const getBaseName = (filename: string): string => {
+  const { name } = getFileNameAndExtension(filename);
+  return name;
+};
+
+/**
+ * 合并路径片段
+ * @param segments 路径片段数组
+ * @returns 合并后的规范化路径
+ */
+export const joinPath = (...segments: string[]): string => {
+  // 使用path.join并替换反斜杠为正斜杠，保持URL路径风格一致
+  return path.join(...segments).replace(/\\/g, '/');
+};
+
+/**
+ * 规范化路径，确保以/开头
+ * @param filePath 文件路径
+ * @returns 规范化的路径
+ */
+export const normalizePath = (filePath: string): string => {
+  if (!filePath) return '/';
+  
+  const normalized = filePath.replace(/\\/g, '/');
+  return normalized.startsWith('/') ? normalized : `/${normalized}`;
+};
+
+/**
+ * 检查是否是有效的文件路径
+ * @param filePath 文件路径
+ * @returns 是否有效
+ */
+export const isValidPath = (filePath: string | undefined): boolean => {
+  if (!filePath) return false;
+  
+  // 检查是否包含非法字符
+  const invalidCharsRegex = /[<>:"\\|?*\x00-\x1F]/g;
+  return !invalidCharsRegex.test(filePath);
+};
+
+/**
+ * 构建文件URL路径
+ * @param baseUrl 基础URL
+ * @param filename 文件名
+ * @returns 完整的文件URL
+ */
+export const buildFileUrl = (baseUrl: string, filename: string): string => {
+  return joinPath(baseUrl, filename);
+};
+
+/**
+ * 从完整路径中获取文件名
+ * @param fullPath 完整路径
+ * @returns 文件名
+ */
+export const getFilenameFromPath = (fullPath: string): string => {
+  return path.basename(fullPath);
+};
+
+// 废弃的sortPathFiles函数已删除，请使用sort.ts中的sortFiles函数

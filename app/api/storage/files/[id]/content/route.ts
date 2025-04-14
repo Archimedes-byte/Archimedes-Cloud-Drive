@@ -12,7 +12,7 @@ import { StorageService } from '@/app/services/storage-service';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import path from 'path';
-import { FILE_CATEGORIES } from '@/app/utils/file-utils';
+import { FILE_CATEGORIES } from '@/app/utils/file/type';
 
 const storageService = new StorageService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');

@@ -45,6 +45,30 @@ export function getFileSize(size: number): string {
 }
 
 /**
+ * 格式化文件大小，提供更友好的显示方式
+ * 
+ * @param size - 文件大小（字节数）
+ * @returns 格式化后的文件大小字符串（如：1.5 MB）
+ */
+export function formatFileSize(size: number): string {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  let formattedSize = size;
+  
+  while (formattedSize >= 1024 && i < units.length - 1) {
+    formattedSize /= 1024;
+    i++;
+  }
+  
+  // 保留两位小数，对于B单位不显示小数
+  if (i === 0) {
+    return `${Math.round(formattedSize)} ${units[i]}`;
+  } else {
+    return `${formattedSize.toFixed(2)} ${units[i]}`;
+  }
+}
+
+/**
  * 根据文件扩展名获取文件类型
  * 
  * @param fileName - 文件名

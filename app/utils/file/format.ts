@@ -38,20 +38,3 @@ export const formatDate = (date: string | Date | undefined): string => {
     return '-';
   }
 };
-
-/**
- * 处理文件类型显示
- * @param type 文件MIME类型
- * @returns 用户友好的文件类型描述
- */
-export const getFileTypeDisplay = (type: string | null): string => {
-  if (!type) return '未知';
-  if (type.startsWith('image/')) return '图片';
-  if (type.startsWith('video/')) return '视频';
-  if (type.startsWith('audio/')) return '音频';
-  if (type.startsWith('application/pdf')) return 'PDF';
-  if (type.startsWith('application/msword') || type.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml')) return 'Word';
-  if (type.startsWith('application/vnd.ms-excel') || type.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml')) return 'Excel';
-  if (type.startsWith('application/vnd.ms-powerpoint') || type.startsWith('application/vnd.openxmlformats-officedocument.presentationml')) return 'PowerPoint';
-  return '其他';
-};

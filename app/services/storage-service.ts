@@ -13,7 +13,7 @@ import {
   sanitizeFilename,
   buildFileTypeFilter,
   FILE_CATEGORIES
-} from '@/app/utils/file-utils';
+} from '@/app/utils/file/type';
 import { ExtendedFile, FileEntity, FileInfo } from '@/app/types';
 import { existsSync } from 'fs';
 import { Prisma } from '@prisma/client';

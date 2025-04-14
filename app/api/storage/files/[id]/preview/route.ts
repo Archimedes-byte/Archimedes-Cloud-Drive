@@ -13,7 +13,7 @@ import { NextResponse } from 'next/server';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import path from 'path';
-import { FILE_CATEGORIES } from '@/app/utils/file-utils';
+import { FILE_CATEGORIES } from '@/app/utils/file/type';
 import { getSignedUrl } from '@/app/lib/storage';
 
 const storageService = new StorageService();
