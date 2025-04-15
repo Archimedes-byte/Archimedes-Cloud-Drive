@@ -1,0 +1,88 @@
+.toastContainer {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 350px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: white;
+  animation: slideIn 0.3s ease-out;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  border-left: 4px solid var(--toast-color, currentColor);
+}
+
+.toast:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.toastContent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toast p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #2d3748;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #718096;
+  font-size: 1.25rem;
+  padding: 0;
+  line-height: 1;
+  margin-left: 0.5rem;
+  transition: color 0.2s;
+}
+
+.closeButton:hover {
+  color: #4a5568;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: bold;
+  background-color: var(--toast-bg-color, rgba(66, 153, 225, 0.2));
+  color: var(--toast-color, #4299e1);
+}
+
+/* 不同类型的Toast样式 - 保留类名用于布局，但颜色通过JS注入 */
+.success {}
+.error {}
+.warning {}
+.info {}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+} 

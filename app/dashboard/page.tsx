@@ -7,18 +7,18 @@ import { ArrowLeft } from 'lucide-react'
 
 // 导入自定义钩子
 import { useProfile, usePassword, UserProfile, UserProfileInput } from '@/app/hooks'
-import { useToast } from './components/Toaster'
+import { useToast } from '@/app/components/features/dashboard/Toaster'
 import { useValidation } from './hooks/useValidation'
 // 导入主题服务
 import { applyTheme as applyThemeService } from '@/app/shared/themes'
 
 // 导入组件
-import Modal from '@/app/dashboard/components/Modal'
-import ProfileHeader from '@/app/dashboard/components/ProfileHeader'
-import ProfileContent from '@/app/dashboard/components/ProfileContent'
-import EditProfileForm from '@/app/dashboard/components/EditProfileForm'
-import PasswordForm from '@/app/dashboard/components/PasswordForm'
-import ProfileCompleteness from '@/app/dashboard/components/ProfileCompleteness'
+import Modal from '@/app/components/features/dashboard/Modal'
+import ProfileHeader from '@/app/components/features/dashboard/ProfileHeader'
+import ProfileContent from '@/app/components/features/dashboard/ProfileContent'
+import EditProfileForm from '@/app/components/features/dashboard/EditProfileForm'
+import PasswordForm from '@/app/components/features/dashboard/PasswordForm'
+import ProfileCompleteness from '@/app/components/features/dashboard/ProfileCompleteness'
 
 // 创建兼容旧组件的UserInfo接口
 export interface UserInfo {
@@ -321,7 +321,7 @@ export default function DashboardPage() {
       <div className={styles.profile}>
         {/* 返回按钮 */}
         <button 
-          onClick={() => router.push('/file_management/main')}
+          onClick={() => router.push('/file-management/main')}
           className={styles.backButton}
           title="返回文件管理"
         >

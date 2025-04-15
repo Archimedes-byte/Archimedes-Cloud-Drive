@@ -63,11 +63,11 @@ const RegisterForm: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess('注册成功！正在跳转到文件管理页面...');
+        setSuccess('注册成功，正在跳转...');
         setError('');
         setTimeout(() => {
-          router.push('/file_management/main');
-        }, 1500);
+          router.push('/file-management/main');
+        }, 1000);
       } else {
         setError(data.error || '注册失败');
         setSuccess('');

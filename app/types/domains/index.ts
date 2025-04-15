@@ -28,7 +28,7 @@ export type { FileInfo } from './fileTypes';
 export type { FileSortOptions } from './fileTypes';
 
 // 导出原有类型以保持兼容性
-export * from './fileManagement';
+export * from './file-management';
 export * from './permissions';
 export * from './search';
-export * from './userProfile'; 
+export * from './user-profile'; 

@@ -11,6 +11,6 @@ export const config = {
     "/api/storage/:path*",
     "/api/shares/:path*",
     "/api/users/:path*",
-    "/file_management/:path*",
+    "/file-management/:path*",
   ],
 }; 

@@ -187,7 +187,7 @@ export const authOptions: NextAuthOptions = {
       console.log('基础 URL:', baseUrl);
       
       // 始终重定向到文件管理页面
-      return `${baseUrl}/file_management/main`;
+      return `${baseUrl}/file-management/main`;
     }
   },
   pages: {

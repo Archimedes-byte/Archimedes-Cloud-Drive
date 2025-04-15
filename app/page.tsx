@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useRef } from 'react';
-import Header from './home/components/Header';
-import Hero from './home/components/Hero';
-import Features from './home/components/Features';
-import CTA from './home/components/CTA';
-import Footer from './home/components/Footer';
+import Header from '@/app/components/features/home/header';
+import Hero from '@/app/components/features/home/hero';
+import Features from '@/app/components/features/home/features';
+import CTA from '@/app/components/features/home/cta';
+import Footer from '@/app/components/features/home/footer';
 import styles from './home/Home.module.css';
 
 export default function HomePage() {

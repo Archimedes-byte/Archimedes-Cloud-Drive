@@ -47,7 +47,7 @@ export const useLogin = () => {
         email: credentials.email,
         password: credentials.password,
         redirect: false,
-        callbackUrl: '/file_management/main'
+        callbackUrl: '/file-management/main'
       });
 
       if (result?.error) {
@@ -56,7 +56,7 @@ export const useLogin = () => {
       } else if (result?.ok) {
         setSuccess('登录成功，正在跳转...');
         setTimeout(() => {
-          router.push('/file_management/main');
+          router.push('/file-management/main');
         }, 1000);
       }
     } catch (error) {
@@ -75,7 +75,7 @@ export const useLogin = () => {
       
       const result = await signIn('github', {
         redirect: false,
-        callbackUrl: '/file_management/main'
+        callbackUrl: '/file-management/main'
       });
 
       if (result?.error) {
@@ -83,7 +83,7 @@ export const useLogin = () => {
       } else if (result?.ok) {
         setSuccess('登录成功，正在跳转...');
         setTimeout(() => {
-          router.push('/file_management/main');
+          router.push('/file-management/main');
         }, 1000);
       }
     } catch (error) {
@@ -102,7 +102,7 @@ export const useLogin = () => {
       const result = await signIn('google', {
         credential: response.credential,
         redirect: false,
-        callbackUrl: '/file_management/main'
+        callbackUrl: '/file-management/main'
       });
 
       if (result?.error) {
@@ -110,7 +110,7 @@ export const useLogin = () => {
       } else if (result?.ok) {
         setSuccess('登录成功，正在跳转...');
         // 使用 window.location 进行硬跳转
-        window.location.href = '/file_management/main';
+        window.location.href = '/file-management/main';
       }
     } catch (error) {
       setError(typeof error === 'string' ? error : '登录失败，请重试');

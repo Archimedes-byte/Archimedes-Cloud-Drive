@@ -64,7 +64,7 @@ export type {
   FileContextType,
   FileState,
   ExtendedFile
-} from './domains/fileManagement';
+} from './domains/file-management';
 
 // 导出Hook相关类型 - 从新位置导出以避免冲突
 export * from './hooks';

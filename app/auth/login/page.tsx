@@ -36,12 +36,12 @@ export default function Login() {
 
   return (
     <div className={styles.container}>
-      {/* 背景效果 - 保留但简化 */}
+      {/* 背景效果 */}
       <div className={styles.backgroundEffects}>
         <div className={`${styles.bgCircle} ${styles.bgCircle1}`}></div>
         <div className={`${styles.bgCircle} ${styles.bgCircle2}`}></div>
         <div className={`${styles.bgCircle} ${styles.bgCircle3}`}></div>
-        {/* 移除bgGradient以避免重复的半透明层 */}
+        <div className={styles.bgGradient}></div>
       </div>
 
       <header className={styles.header}>
@@ -62,17 +62,18 @@ export default function Login() {
           {/* 登录表单组件 */}
           <LoginForm />
           
-          {/* 视觉元素 - 简化结构避免重叠效果 */}
+          {/* 视觉元素 */}
           <div className={styles.loginVisual}>
             <div className={styles.abstractGraphic}>
-              {/* 保留必要的图形元素 */}
+              {/* 图形元素 */}
               <div className={styles.graphicElement} data-index="1"></div>
               <div className={styles.graphicElement} data-index="2"></div>
               <div className={styles.graphicElement} data-index="3"></div>
               <div className={styles.graphicElement} data-index="4"></div>
               <div className={styles.graphicElement} data-index="5"></div>
               
-              {/* 移除多余的阴影效果 */}
+              {/* 阴影效果 */}
+              <div className={styles.graphicShadow}></div>
               
               {/* 连接线条 */}
               <div className={styles.graphicLines}>

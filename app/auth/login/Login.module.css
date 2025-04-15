@@ -18,6 +18,16 @@
   background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(240,247,255,0.7) 100%);
 }
 
+.bgGradient {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0) 50%),
+              radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.1) 0%, rgba(124, 58, 237, 0) 50%);
+  opacity: 0.8;
+  z-index: -1;
+}
+
 .bgCircle {
   position: absolute;
   border-radius: 50%;
@@ -612,4 +622,18 @@
   50% {
     transform: translateY(-50%) translateX(-8px);
   }
+}
+
+.graphicShadow {
+  position: absolute;
+  width: 300px;
+  height: 60px;
+  background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0) 70%);
+  bottom: -30px;
+  border-radius: 50%;
+  filter: blur(8px);
+  transform: scaleX(1.5);
+  opacity: 0.7;
+  z-index: -1;
+  animation: floatMain 8s ease-in-out infinite;
 } 
