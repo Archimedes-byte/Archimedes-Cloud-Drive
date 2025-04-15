@@ -1,7 +1,7 @@
-// 导出userProfile目录下的所有组件
+// 导出user-profile目录下的所有组件
 export * from './avatar';
-export * from './profileHeader';
-export * from './profileContent';
+export * from './profile-header';
+// export * from './profile-content'; // 此目录当前为空
 export * from './completeness';
-export * from './passwordForm';
-export * from './editForm'; 
+export * from './password-form';
+export * from './edit-form'; 

@@ -6,7 +6,7 @@ import Hero from '@/app/components/features/home/hero';
 import Features from '@/app/components/features/home/features';
 import CTA from '@/app/components/features/home/cta';
 import Footer from '@/app/components/features/home/footer';
-import styles from './home/Home.module.css';
+import styles from './home/home.module.css';
 
 export default function HomePage() {
   const featuresRef = useRef<HTMLDivElement>(null);

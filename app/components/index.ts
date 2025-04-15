@@ -14,9 +14,9 @@
  * 
  * - features/: 业务功能组件
  *   - dashboard/: 仪表盘相关组件
- *   - fileManagement/: 文件管理组件
+ *   - file-management/: 文件管理组件
  *   - home/: 首页相关组件
- *   - userProfile/: 用户资料组件
+ *   - user-profile/: 用户资料组件
  * 
  * 为保持向后兼容性，所有组件可以从根路径直接导入
  */
@@ -26,28 +26,28 @@
 export * from './ui';
 
 // 导航组件
-export { default as Navbar } from './features/dashboard/navigation/Navbar';
+export { default as Navbar } from './features/dashboard/navigation/navbar';
 
 // 文件管理组件
-export { default as UploadModal } from './features/file-management/upload/UploadModal';
-export { default as FileUpload } from './features/file-management/upload/FileUpload';
-export { default as TopActionBar } from './features/file-management/actionBar/TopActionBar';
-export { default as SortDropdown } from './features/file-management/actionBar/SortDropdown';
-export { default as NewFolderForm } from './features/file-management/folderManagement/NewFolderForm';
-export { default as Toolbar } from './features/file-management/toolbar/Toolbar';
+export { default as UploadModal } from './features/file-management/upload/upload-modal';
+export { default as FileUpload } from './features/file-management/upload/file-upload';
+export { default as TopActionBar } from './features/file-management/action-bar/top-action-bar';
+export { default as SortDropdown } from './features/file-management/action-bar/sort-dropdown';
+export { default as NewFolderForm } from './features/file-management/folder-management/new-folder-form';
+export { default as Toolbar } from './features/file-management/toolbar/toolbar';
 
 // 分析组件
-export { default as StorageUsage } from './features/dashboard/analytics/StorageUsage';
+export { default as StorageUsage } from './features/dashboard/analytics/storage-usage';
 
 // 媒体组件
-export { default as AudioVisualizer } from './common/media/AudioVisualizer';
+export { default as AudioVisualizer } from './common/media/audio-visualizer';
 
 // 用户资料组件
-export { default as ProfileHeader } from './features/userProfile/profileHeader';
-export { default as ProfileCompleteness } from './features/userProfile/completeness';
-export { default as PasswordForm } from './features/userProfile/passwordForm';
-export { default as EditProfileForm } from './features/userProfile/editForm';
-export * from './features/userProfile/avatar';
+export { default as ProfileHeader } from './features/user-profile/profile-header';
+export { default as ProfileCompleteness } from './features/user-profile/completeness';
+export { default as PasswordForm } from './features/user-profile/password-form';
+export { default as EditProfileForm } from './features/user-profile/edit-form';
+export * from './features/user-profile/avatar';
 
 // 表单组件
 export * from './common/form';

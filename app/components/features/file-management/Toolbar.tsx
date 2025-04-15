@@ -1,14 +1,14 @@
 /**
  * @deprecated 此组件已迁移到新的组件架构中。
- * 请使用 @/app/components/features/fileManagement/toolbar/Toolbar 组件。
+ * 请使用 @/app/components/features/file-management/toolbar/Toolbar 组件。
  */
 
 import React, { useRef, useState } from 'react';
-import { useFileContext } from '../context/FileContext';
+import { useFileContext } from '@/app/context/FileContext';
 import { X, Download, Edit, Move } from 'lucide-react';
 import { message } from 'antd';
 import styles from './Toolbar.module.css';
-import commonStyles from '../styles/common.module.css';
+import commonStyles from '@/app/styles/common.module.css';
 
 interface ToolbarProps {
   onUploadClick: () => void;
@@ -36,7 +36,7 @@ export function Toolbar({ onUploadClick, onFolderUploadClick, onCreateFolderClic
       message.warning('请选择一个文件进行重命名');
       return;
     }
-    const selectedFile = files.find(file => file.id === selectedFiles[0]);
+    const selectedFile = files.find((file: any) => file.id === selectedFiles[0]);
     if (selectedFile) {
       // TODO: 实现重命名功能
       message.info('重命名功能开发中');

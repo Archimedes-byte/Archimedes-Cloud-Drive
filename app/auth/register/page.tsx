@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { CloudIcon } from 'lucide-react';
-import RegisterForm from './components/RegisterForm';
-import styles from '../login/Login.module.css';
+import RegisterForm from './components/register-form';
+import styles from '../login/Page.module.css';
 
 export default function Register() {
   return (

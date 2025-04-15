@@ -1,15 +1,15 @@
 /**
  * @deprecated 此组件已迁移到新的组件架构中。
- * 请使用 @/app/components/features/fileManagement/actionBar/TopActionBar 组件。
+ * 请使用 @/app/components/features/file-management/actionBar/TopActionBar 组件。
  */
 
 import React from 'react';
 import { 
   X, Download, Edit, Move, Trash2, FolderUp, Image as ImageIcon, FileText, Video, Music, File 
 } from 'lucide-react';
-import styles from '../styles/shared.module.css';
+import styles from '@/app/file-management/styles/shared.module.css';
 import SortDropdown from './SortDropdown';
-import { UploadButton } from '../components/shared';
+import { UploadButton } from '@/app/components/features/file-management/upload/UploadButton';
 import { FileSortInterface } from '@/app/types';
 
 interface TopActionBarProps {

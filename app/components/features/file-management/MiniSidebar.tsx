@@ -1,6 +1,6 @@
 /**
  * @deprecated 此组件已迁移到新的组件架构中。
- * 请使用 @/app/components/features/fileManagement/navigation/MiniSidebar 组件。
+ * 请使用 @/app/components/features/file-management/navigation/MiniSidebar 组件。
  */
 
 import React from 'react';

@@ -8,21 +8,21 @@ import { message, Spin } from 'antd';
 import Head from 'next/head';
 
 // 引入共享组件
-import { Sidebar } from '@/app/components/features/file-management/navigation/Sidebar';
-import { Breadcrumb } from '@/app/components/features/file-management/navigation/Breadcrumb';
-import { FileList } from '@/app/components/features/file-management/fileList/FileList';
-import { SkeletonPageLayout } from '@/app/components/features/file-management/shared/Skeleton';
-import { ErrorDisplay } from '@/app/components/features/file-management/shared/ErrorDisplay';
-import UploadModal from '@/app/components/features/file-management/upload/UploadModal';
-import { FilePreview } from '@/app/components/features/file-management/filePreview/FilePreview';
-import { RenameModal } from '@/app/components/features/file-management/fileOperations/RenameModal';
+import { Sidebar } from '@/app/components/features/file-management/navigation/sidebar';
+import { Breadcrumb } from '@/app/components/features/file-management/navigation/breadcrumb';
+import { FileList } from '@/app/components/features/file-management/file-list/file-list';
+import { SkeletonPageLayout } from '@/app/components/features/file-management/shared/skeleton';
+import { ErrorDisplay } from '@/app/components/features/file-management/shared/error-display';
+import UploadModal from '@/app/components/features/file-management/upload/upload-modal';
+import { FilePreview } from '@/app/components/features/file-management/file-preview/file-preview';
+import { RenameModal } from '@/app/components/features/file-management/file-operations/rename-modal';
 import ThemePanel from '@/app/shared/themes/components/ThemePanel';
 
 // 导入自定义组件
-import MiniSidebar from '@/app/components/features/file-management/navigation/MiniSidebar';
-import { TopActionBar } from '@/app/components/features/file-management/actionBar/TopActionBar';
-import NewFolderForm from '@/app/components/features/file-management/folderManagement/NewFolderForm';
-import { SearchView } from '@/app/components/features/file-management/SearchView';
+import MiniSidebar from '@/app/components/features/file-management/navigation/mini-sidebar';
+import { TopActionBar } from '@/app/components/features/file-management/action-bar/top-action-bar';
+import NewFolderForm from '@/app/components/features/file-management/folder-management/new-folder-form';
+import { SearchView } from '@/app/components/features/file-management/search-view';
 
 // 导入自定义 hooks
 import { 

@@ -1,0 +1,315 @@
+/* 文件预览组件样式 */
+
+.previewOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(3px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.previewContainer {
+  position: relative;
+  width: 90%;
+  height: 90%;
+  max-width: 1200px;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.previewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.fileName {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+  color: #1f2328;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #57606a;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+  background-color: #e6ebf1;
+  color: #1f2328;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #57606a;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #e6ebf1;
+  color: #1f2328;
+}
+
+.previewContent {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 加载状态 */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.loadingText {
+  margin-top: 16px;
+  color: #57606a;
+  font-size: 14px;
+}
+
+/* 错误状态 */
+.errorContainer {
+  text-align: center;
+  padding: 32px;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.errorMessage {
+  margin-top: 16px;
+  color: #cf222e;
+  background-color: #ffebe9;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  border: 1px solid #ffc1ba;
+}
+
+.fileIcon {
+  color: #57606a;
+  margin-bottom: 16px;
+}
+
+.debugInfo {
+  margin-top: 16px;
+  text-align: left;
+  width: 100%;
+  font-size: 12px;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  background-color: #f6f8fa;
+}
+
+.debugInfo summary {
+  padding: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.debugInfo pre {
+  padding: 8px;
+  overflow: auto;
+  max-height: 200px;
+  margin: 0;
+}
+
+/* 图片预览 */
+.imagePreviewContainer {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imagePreview {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* 视频预览 */
+.videoPreviewContainer {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videoPreview {
+  max-height: 100%;
+  max-width: 100%;
+  background-color: #000;
+  border-radius: 4px;
+}
+
+/* 音频预览 */
+.audioPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.audioPreview {
+  margin-top: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* PDF预览 */
+.pdfPreviewContainer {
+  height: 100%;
+  width: 100%;
+}
+
+.pdfPreview {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Office文档预览 */
+.officePreviewContainer {
+  height: 100%;
+  width: 100%;
+}
+
+.officePreview {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* 通用文件预览 */
+.genericPreviewContainer {
+  text-align: center;
+  padding: 32px;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fileInfo {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #57606a;
+  font-size: 14px;
+}
+
+.fileType, .fileSize {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 深色主题适配 */
+:global(.dark-theme) .previewContainer {
+  background-color: #161b22;
+}
+
+:global(.dark-theme) .previewHeader {
+  background-color: #21262d;
+  border-bottom-color: #30363d;
+}
+
+:global(.dark-theme) .fileName {
+  color: #f0f6fc;
+}
+
+:global(.dark-theme) .actionButton,
+:global(.dark-theme) .closeButton {
+  color: #8b949e;
+}
+
+:global(.dark-theme) .actionButton:hover,
+:global(.dark-theme) .closeButton:hover {
+  background-color: #30363d;
+  color: #f0f6fc;
+}
+
+:global(.dark-theme) .loadingText {
+  color: #8b949e;
+}
+
+:global(.dark-theme) .errorMessage {
+  background-color: rgba(207, 34, 46, 0.1);
+  border-color: rgba(207, 34, 46, 0.3);
+}
+
+:global(.dark-theme) .fileIcon {
+  color: #8b949e;
+}
+
+:global(.dark-theme) .debugInfo {
+  background-color: #21262d;
+  border-color: #30363d;
+} 

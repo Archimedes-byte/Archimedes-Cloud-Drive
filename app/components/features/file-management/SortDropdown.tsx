@@ -1,6 +1,6 @@
 /**
  * @deprecated 此组件已迁移到新的组件架构中。
- * 请使用 @/app/components/features/fileManagement/actionBar/SortDropdown 组件。
+ * 请使用 @/app/components/features/file-management/actionBar/SortDropdown 组件。
  */
 
 import React, { useState, useRef, useEffect } from 'react';

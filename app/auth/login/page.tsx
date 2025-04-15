@@ -3,8 +3,8 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { CloudIcon } from 'lucide-react';
-import LoginForm from './components/LoginForm';
-import styles from './Login.module.css';
+import LoginForm from './components/login-form';
+import styles from './Page.module.css';
 
 // 为Google对象声明全局类型
 declare global {
