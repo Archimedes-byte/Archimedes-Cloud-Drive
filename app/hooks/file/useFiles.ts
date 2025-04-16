@@ -122,9 +122,15 @@ export const useFiles = () => {
 
   /**
    * 加载文件列表
+   * @param skipPathLoad 是否跳过路径加载（用于手动控制面包屑）
    */
-  const loadFiles = useCallback(async (folderId: string | null = null, type: FileTypeEnum | null = selectedFileType, forceRefresh: boolean = false) => {
-    console.log('loadFiles被调用', {folderId, type, isLoading, forceRefresh});
+  const loadFiles = useCallback(async (
+    folderId: string | null = null, 
+    type: FileTypeEnum | null = selectedFileType, 
+    forceRefresh: boolean = false,
+    skipPathLoad: boolean = false
+  ) => {
+    console.log('loadFiles被调用', {folderId, type, isLoading, forceRefresh, skipPathLoad});
     
     // 如果已经在加载中，不要重复请求
     if (isLoading) {
@@ -148,20 +154,38 @@ export const useFiles = () => {
       setIsLoading(true);
       setError(null);
       
+      // 如果是强制刷新，增加一个小延迟，确保后端数据已更新
+      if (forceRefresh) {
+        console.log('强制刷新，增加延迟以确保获取最新数据');
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
       // 优先使用传入的type，如果没有传入则使用状态中的selectedFileType
       const effectiveFileType = type !== undefined ? type : selectedFileType;
       
       // 更新当前文件夹ID，仅在非文件类型筛选模式下
       if (effectiveFileType === null) {
-        setCurrentFolderId(folderId);
-        // 加载文件夹路径
-        loadFolderPath(folderId);
+        // 如果文件夹ID相同且不是初始加载，则不要重置当前文件夹ID
+        const isSameFolderId = folderId === currentFolderId;
+        if (!isSameFolderId || currentFolderId === null) {
+          setCurrentFolderId(folderId);
+        }
+        
+        // 加载文件夹路径逻辑增强
+        // 1. 明确要求跳过时不加载
+        // 2. 如果是相同文件夹的刷新，也跳过路径加载以保持当前面包屑
+        if (!skipPathLoad && !isSameFolderId) {
+          loadFolderPath(folderId);
+        }
       }
 
       console.log('加载文件列表，参数:', { 
         folderId, 
         之前文件夹ID: currentFolderId,
-        文件类型: effectiveFileType
+        文件类型: effectiveFileType,
+        强制刷新: forceRefresh,
+        跳过路径加载: skipPathLoad,
+        当前面包屑: folderPath
       });
 
       // 判断是否为按类型过滤模式
@@ -173,7 +197,9 @@ export const useFiles = () => {
           folderId,
           type: effectiveFileType || undefined,
           // 在文件类型过滤模式下启用递归查询
-          ...(effectiveFileType ? { recursive: true } : {})
+          ...(effectiveFileType ? { recursive: true } : {}),
+          // 添加一个时间戳参数以防止缓存 (强制刷新时)
+          ...(forceRefresh ? { _t: Date.now() } : {})
         });
         
         // 在前端执行额外过滤（确保筛选结果的准确性）
@@ -206,7 +232,7 @@ export const useFiles = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, selectedFileType, sortOrder, handleSort, currentFolderId, loadFolderPath]);
+  }, [isLoading, selectedFileType, sortOrder, handleSort, currentFolderId, loadFolderPath, folderPath]);
 
   /**
    * 选择或取消选择单个文件
@@ -266,21 +292,40 @@ export const useFiles = () => {
    * 刷新当前文件夹
    */
   const refreshCurrentFolder = useCallback(() => {
-    loadFiles(currentFolderId, selectedFileType, true);
-  }, [currentFolderId, selectedFileType, loadFiles]);
+    // 刷新当前文件夹时始终跳过路径加载，保留现有面包屑
+    console.log('刷新当前文件夹，保留面包屑路径:', folderPath);
+    loadFiles(currentFolderId, selectedFileType, true, true);
+  }, [currentFolderId, selectedFileType, loadFiles, folderPath]);
 
   /**
    * 处理点击文件/文件夹
    */
   const handleFileClick = useCallback((file: FileWithSize) => {
     if (file.isFolder) {
+      console.log('点击文件夹，更新面包屑:', file.name);
+
       // 设置当前文件夹ID
       setCurrentFolderId(file.id);
-      // 加载文件夹内容
-      loadFiles(file.id, null);
+      
+      // 更新面包屑路径
+      setFolderPath(prevPath => {
+        // 创建新的文件夹路径项
+        const newPathItem: FolderPathItem = {
+          id: file.id,
+          name: file.name
+        };
+        
+        // 将新路径项添加到当前路径末尾
+        const newPath = [...prevPath, newPathItem];
+        console.log('更新后的面包屑路径:', newPath);
+        return newPath;
+      });
+      
+      // 加载文件夹内容，但阻止自动加载路径
+      loadFiles(file.id, null, false, true);
     }
     // 如果是文件，不做特殊处理，由调用者处理
-  }, [setCurrentFolderId, loadFiles]);
+  }, [setCurrentFolderId, setFolderPath, loadFiles]);
 
   /**
    * 处理返回上一级

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import { Modal, Button, Tag, Input, Progress } from 'antd';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Modal, Button, Tag, Input, Progress, message } from 'antd';
 import { InboxOutlined, TagOutlined } from '@ant-design/icons';
 import { UploadModalProps } from '@/app/types/domains/file-management';
+import { API_PATHS } from '@/app/lib/api/paths';
 import styles from './uploadModal.module.css';
 
 // 定义扩展的文件类型
@@ -15,6 +16,39 @@ interface ExtendedUploadFile {
   webkitRelativePath?: string;
   originFileObj?: File;
 }
+
+/**
+ * 格式化文件大小，自动选择合适的单位
+ * @param bytes 文件大小（字节）
+ * @returns 格式化后的文件大小字符串，带单位
+ */
+const formatFileSize = (bytes?: number): string => {
+  if (bytes === undefined || bytes === null) return '0 B';
+  if (bytes === 0) return '0 B';
+  
+  // 定义单位数组，支持中英文单位
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  
+  // 计算应该使用的单位索引
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  
+  // 防止索引超出范围
+  const unitIndex = Math.min(i, units.length - 1);
+  
+  // 如果文件小于1KB，使用B为单位不需要小数点
+  if (unitIndex === 0) {
+    return `${bytes} ${units[unitIndex]}`;
+  }
+  
+  // 计算转换后的值
+  const size = bytes / Math.pow(1024, unitIndex);
+  
+  // 根据大小决定保留的小数位数
+  // 如果大于100，只保留1位小数；否则保留2位小数
+  const decimalPlaces = size >= 100 ? 1 : 2;
+  
+  return `${size.toFixed(decimalPlaces)} ${units[unitIndex]}`;
+};
 
 /**
  * 文件上传模态框组件
@@ -35,10 +69,14 @@ const UploadModal: React.FC<UploadModalProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [tagList, setTagList] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedBytes, setUploadedBytes] = useState<number>(0);
+  const [totalBytes, setTotalBytes] = useState<number>(0);
   
   // 引用
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<any>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
   // 处理上传成功
   const handleUploadSuccess = useCallback((data?: any) => {
@@ -55,6 +93,9 @@ const UploadModal: React.FC<UploadModalProps> = ({
     setTagList([]);
     setTagInput('');
     setUploadProgress(0);
+    setUploadError(null);
+    setUploadedBytes(0);
+    setTotalBytes(0);
   }, []);
 
   // 关闭模态窗
@@ -127,28 +168,169 @@ const UploadModal: React.FC<UploadModalProps> = ({
   
   // 处理上传
   const handleUpload = useCallback(() => {
-    if (fileList.length === 0) return;
+    if (fileList.length === 0) {
+      message.warning('请选择要上传的文件');
+      return;
+    }
+    
+    // 取消之前的上传请求（如果存在）
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
     
     setUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
     
-    // 模拟上传进度
-    const timer = setInterval(() => {
-      setUploadProgress(prev => {
-        const newProgress = prev + Math.floor(Math.random() * 10);
-        if (newProgress >= 100) {
-          clearInterval(timer);
-          setTimeout(() => {
-            setUploading(false);
-            handleUploadSuccess(fileList);
-            handleClose();
-          }, 500);
-          return 100;
+    // 创建FormData对象用于上传
+    const formData = new FormData();
+    
+    // 添加所有文件到表单
+    fileList.forEach(fileItem => {
+      if (fileItem.originFileObj) {
+        formData.append('file', fileItem.originFileObj);
+        
+        // 处理文件夹上传的路径信息
+        if (isFolderUpload && fileItem.webkitRelativePath) {
+          const index = fileList.indexOf(fileItem);
+          formData.append(`paths_${index}`, fileItem.webkitRelativePath);
         }
-        return newProgress;
-      });
-    }, 300);
-  }, [fileList, handleUploadSuccess, handleClose]);
+      }
+    });
+    
+    // 添加目标文件夹ID（如果有）
+    if (currentFolderId) {
+      formData.append('folderId', currentFolderId);
+    }
+    
+    // 添加是否为文件夹上传标志
+    if (isFolderUpload) {
+      formData.append('isFolderUpload', 'true');
+    }
+    
+    // 添加标签
+    formData.append('tags', JSON.stringify(tagList));
+    
+    // 添加时间戳以避免缓存问题
+    formData.append('_t', Date.now().toString());
+    
+    // 创建请求
+    const xhr = new XMLHttpRequest();
+    xhrRef.current = xhr;
+    
+    // 监听上传进度
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(progress);
+        setUploadedBytes(event.loaded);
+        setTotalBytes(event.total);
+      }
+    });
+    
+    // 设置请求完成处理
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          
+          if (response.success) {
+            setUploadProgress(100);
+            message.success(`成功上传 ${fileList.length} 个文件`);
+            
+            // 延迟关闭模态框并调用成功回调
+            setTimeout(() => {
+              handleUploadSuccess(response.data);
+              handleClose();
+              xhrRef.current = null; // 清理XHR引用
+            }, 500);
+          } else {
+            setUploadError(response.error || '上传失败');
+            message.error(response.error || '上传失败');
+            setUploading(false);
+            // 上传失败时也要清理XHR引用
+            xhrRef.current = null;
+          }
+        } catch (error) {
+          const errorMessage = '解析服务器响应失败';
+          setUploadError(errorMessage);
+          message.error(errorMessage);
+          setUploading(false);
+          xhrRef.current = null; // 清理XHR引用
+        }
+      } else {
+        const errorMessage = `上传失败，服务器返回状态码: ${xhr.status}`;
+        setUploadError(errorMessage);
+        message.error(errorMessage);
+        setUploading(false);
+        xhrRef.current = null; // 清理XHR引用
+      }
+    };
+    
+    // 处理请求错误
+    xhr.onerror = () => {
+      const errorMessage = '网络错误，上传失败';
+      setUploadError(errorMessage);
+      message.error(errorMessage);
+      setUploading(false);
+      xhrRef.current = null; // 清理XHR引用
+    };
+    
+    // 处理请求取消
+    xhr.onabort = () => {
+      const errorMessage = '上传已取消';
+      setUploadError(errorMessage);
+      message.info(errorMessage);
+      setUploading(false);
+      xhrRef.current = null; // 清理XHR引用
+    };
+    
+    // 设置超时处理
+    xhr.timeout = 300000; // 5分钟超时
+    xhr.ontimeout = () => {
+      const errorMessage = '上传超时，请检查网络或文件大小';
+      setUploadError(errorMessage);
+      message.error(errorMessage);
+      setUploading(false);
+      xhrRef.current = null; // 清理XHR引用
+    };
+    
+    // 发送请求
+    xhr.open('POST', API_PATHS.STORAGE.FILES.UPLOAD);
+    xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    xhr.setRequestHeader('Pragma', 'no-cache');
+    xhr.setRequestHeader('Expires', '0');
+    xhr.send(formData);
+  }, [fileList, handleUploadSuccess, handleClose, currentFolderId, tagList, isFolderUpload]);
+
+  // 添加取消上传功能
+  const cancelUpload = useCallback(() => {
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
+    message.info('已取消上传');
+    setUploading(false);
+    setUploadProgress(0);
+    setUploadError(null);
+    setUploadedBytes(0);
+    setTotalBytes(0);
+  }, []);
+
+  // isOpen状态变化时重置组件状态
+  useEffect(() => {
+    if (isOpen) {
+      // 模态框打开时，确保状态被重置
+      resetState();
+      
+      // 如果存在旧的XMLHttpRequest，取消它
+      if (xhrRef.current) {
+        xhrRef.current.abort();
+        xhrRef.current = null;
+      }
+    }
+  }, [isOpen, resetState]);
 
   return (
     <Modal
@@ -164,8 +346,48 @@ const UploadModal: React.FC<UploadModalProps> = ({
       {uploading ? (
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div style={{ margin: '16px 0' }}>
-            <Progress percent={uploadProgress} status="active" />
-            <div style={{ marginTop: '8px' }}>{`上传中...${uploadProgress}%`}</div>
+            <Progress percent={uploadProgress} status={uploadError ? "exception" : "active"} />
+            <div style={{ marginTop: '8px' }}>
+              {uploadError ? 
+                <span style={{ color: 'red' }}>{uploadError}</span> : 
+                <>
+                  <div>{`上传中...${uploadProgress}%`}</div>
+                  {totalBytes > 0 && (
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      {`${formatFileSize(uploadedBytes)} / ${formatFileSize(totalBytes)}`}
+                    </div>
+                  )}
+                </>
+              }
+            </div>
+            
+            {/* 添加错误状态下的操作按钮 */}
+            {uploadError && (
+              <div style={{ marginTop: '16px' }}>
+                <Button 
+                  type="primary" 
+                  onClick={handleUpload}
+                  style={{ marginRight: '10px' }}
+                >
+                  重试上传
+                </Button>
+                <Button onClick={handleClose}>
+                  关闭
+                </Button>
+              </div>
+            )}
+            
+            {/* 添加上传中的取消按钮 */}
+            {!uploadError && uploadProgress < 100 && (
+              <div style={{ marginTop: '16px' }}>
+                <Button 
+                  danger
+                  onClick={cancelUpload}
+                >
+                  取消上传
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -227,7 +449,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                           (路径: {file.webkitRelativePath.split('/').slice(0, -1).join('/')})
                         </span>
                       )}
-                      ({((file.size || 0) / 1024).toFixed(2)} KB)
+                      ({formatFileSize(file.size)})
                     </span>
                     <Button 
                       type="text" 

@@ -230,11 +230,36 @@ export default function FileManagementPage() {
     // 开始刷新加载状态
     startLoading(true);
     
-    // 刷新文件列表，保持当前文件类型过滤，并强制刷新
-    loadFiles(currentFolderId, selectedFileType, true).finally(() => {
-      finishLoading();
-    });
-  }, [currentFolderId, loadFiles, selectedFileType, startLoading, finishLoading]);
+    console.log('文件上传成功，准备刷新文件列表');
+    
+    // 增加延迟时间，确保后端数据处理完成
+    setTimeout(() => {
+      console.log('开始刷新文件列表', {
+        currentFolderId,
+        selectedFileType,
+        forceRefresh: true,
+        timestamp: Date.now()  // 添加时间戳，用于排查问题
+      });
+      
+      // 刷新文件列表，保持当前文件类型过滤，并强制刷新
+      loadFiles(currentFolderId, selectedFileType, true)
+        .then(() => {
+          console.log('文件列表刷新成功，获取到文件数量:', files.length);
+          // 再次检查，如果文件列表还是空的，尝试再次刷新
+          if (files.length === 0) {
+            console.log('文件列表为空，再次尝试刷新');
+            setTimeout(() => loadFiles(currentFolderId, selectedFileType, true), 1000);
+          }
+          finishLoading();
+        })
+        .catch(error => {
+          console.error('文件列表刷新失败:', error);
+          // 尝试再次刷新
+          setTimeout(() => loadFiles(currentFolderId, selectedFileType, true), 1000);
+          finishLoading();
+        });
+    }, 1000); // 增加到1秒的延迟
+  }, [currentFolderId, selectedFileType, loadFiles, startLoading, finishLoading, files.length]);
 
   // 处理创建文件夹按钮点击
   const handleCreateFolderClick = useCallback(() => {

@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
     const pageSize = searchParams.has('pageSize') ? parseInt(searchParams.get('pageSize')!) : 50;
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
+    
+    // 检查是否强制刷新
+    const hasTimestamp = searchParams.has('_t');
 
     // 获取文件列表
     const result = await storageService.getFiles(
@@ -62,9 +65,16 @@ export async function GET(request: NextRequest) {
       sortOrder
     );
 
+    // 添加防缓存响应头
     return NextResponse.json({
       success: true,
       data: result
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error: any) {
     console.error('获取文件列表失败:', error);

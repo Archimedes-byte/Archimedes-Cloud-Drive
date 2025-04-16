@@ -323,37 +323,57 @@ export class StorageService {
     tags: string[] = [],
     originalFileName?: string
   ): Promise<FileInfo> {
+    console.log(`[存储服务] 开始处理文件上传：${originalFileName || file.name}`);
+    const startTime = Date.now();
+    
     try {
       // 确保上传目录存在
       if (!existsSync(UPLOAD_DIR)) {
+        console.log(`[存储服务] 上传目录不存在，创建目录: ${UPLOAD_DIR}`);
         await mkdir(UPLOAD_DIR, { recursive: true });
       }
 
       // 使用提供的原始文件名或默认的文件名
       const fileName = originalFileName || file.name;
+      console.log(`[存储服务] 使用文件名: ${fileName}`);
       
       // 清理文件名
       const originalName = sanitizeFilename(fileName);
+      console.log(`[存储服务] 清理后的文件名: ${originalName}`);
       
       // 获取文件扩展名
       const extension = extname(originalName).substring(1);
+      console.log(`[存储服务] 文件扩展名: ${extension || '无'}`);
       
       // 生成唯一文件名
       const uniqueFilename = generateUniqueFilename(originalName);
+      console.log(`[存储服务] 生成唯一文件名: ${uniqueFilename}`);
       
       // 完整的文件存储路径
       const filePath = join(UPLOAD_DIR, uniqueFilename);
+      console.log(`[存储服务] 文件将保存到: ${filePath}`);
       
       // 写入文件
+      console.log(`[存储服务] 开始读取文件内容缓冲区, 文件大小: ${(file.size / 1024).toFixed(2)} KB`);
+      console.time('[存储服务] 文件缓冲区读取时间');
       const buffer = await file.arrayBuffer();
+      console.timeEnd('[存储服务] 文件缓冲区读取时间');
+      
+      console.log(`[存储服务] 开始写入文件`);
+      console.time('[存储服务] 文件写入时间');
       await writeFile(filePath, Buffer.from(buffer));
+      console.timeEnd('[存储服务] 文件写入时间');
+      console.log(`[存储服务] 文件写入完成`);
 
       // 获取文件类别
       const fileCategory = getFileCategory(file.type, extension);
+      console.log(`[存储服务] 文件类别: ${fileCategory}, MIME类型: ${file.type}`);
 
       // 如果有父文件夹，验证其存在性和所有权
       let parentFolder = null;
       if (folderId) {
+        console.log(`[存储服务] 验证父文件夹: ${folderId}`);
+        
         parentFolder = await prisma.file.findFirst({
           where: {
             id: folderId,
@@ -364,24 +384,37 @@ export class StorageService {
         });
 
         if (!parentFolder) {
+          console.error(`[存储服务] 父文件夹不存在或无权限访问: ${folderId}`);
           // 删除已上传的文件
-          await unlink(filePath).catch(() => {});
+          console.log(`[存储服务] 清理已上传的文件: ${filePath}`);
+          await unlink(filePath).catch((err) => {
+            console.error(`[存储服务] 清理文件失败: ${err.message}`);
+          });
           throw new Error('父文件夹不存在或无权限访问');
         }
+        
+        console.log(`[存储服务] 父文件夹验证成功，路径: ${parentFolder.path}`);
       }
 
       // 处理标签 - 去除重复标签
+      console.log(`[存储服务] 处理文件标签，原始标签数: ${tags.length}`);
       const uniqueTags = Array.isArray(tags)
         ? [...new Set(tags.filter(tag => tag && typeof tag === 'string' && tag.trim() !== ''))]
         : [];
+      console.log(`[存储服务] 处理后的标签: ${uniqueTags.join(', ') || '无'}`);
 
       // 构建文件URL
       const fileUrl = `/api/storage/files/serve/${uniqueFilename}`;
+      console.log(`[存储服务] 文件URL: ${fileUrl}`);
 
       // 保存文件记录到数据库
+      console.log('[存储服务] 开始保存文件记录到数据库');
+      console.time('[存储服务] 数据库记录创建时间');
+      
+      const fileId = uuidv4();
       const fileRecord = await prisma.file.create({
         data: {
-          id: uuidv4(),
+          id: fileId,
           name: originalName,
           filename: uniqueFilename,
           type: fileCategory,
@@ -394,12 +427,37 @@ export class StorageService {
           url: fileUrl,
           updatedAt: new Date(),
         },
+      }).catch((err) => {
+        console.error(`[存储服务] 创建数据库记录失败:`, err);
+        // 删除已上传的文件
+        unlink(filePath).catch((unlinkErr) => {
+          console.error(`[存储服务] 清理文件失败: ${unlinkErr.message}`);
+        });
+        throw err;
       });
+      
+      console.timeEnd('[存储服务] 数据库记录创建时间');
+      console.log(`[存储服务] 文件记录已保存，文件ID: ${fileRecord.id}`);
 
-      return mapFileEntityToFileInfo(fileRecord);
-    } catch (error) {
-      console.error('上传文件失败:', error);
-      throw error;
+      const fileInfo = mapFileEntityToFileInfo(fileRecord);
+      
+      const elapsed = Date.now() - startTime;
+      console.log(`[存储服务] 文件上传处理完成，总耗时: ${elapsed}ms`);
+      
+      return fileInfo;
+    } catch (error: any) {
+      const elapsed = Date.now() - startTime;
+      console.error(`[存储服务] 上传文件失败，耗时: ${elapsed}ms, 错误:`, error);
+      console.error('[存储服务] 错误详情:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code,
+        fileName: originalFileName || file.name
+      });
+      
+      // 重新抛出错误，添加更多上下文
+      throw new Error(`上传文件 ${originalFileName || file.name} 失败: ${error.message || '未知错误'}`);
     }
   }
 

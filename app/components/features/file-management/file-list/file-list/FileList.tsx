@@ -18,6 +18,7 @@ import styles from '@/app/file-management/styles/shared.module.css';
 import { getFileType as getFileTypeDisplay } from '@/app/utils/file/type';
 import { getFileNameAndExtension } from '@/app/utils/file/path';
 import { FileInfo } from '@/app/types';
+import { formatFileSize } from '@/app/utils/file/format';
 
 interface FileListProps {
   files: FileInfo[];
@@ -415,7 +416,7 @@ export function FileList({
                     )}
                   </td>
                   <td>{file.isFolder ? '文件夹' : getFileTypeDisplay(file.type, file.extension)}</td>
-                  <td>{file.isFolder ? '-' : (file.size ? file.size : '-')}</td>
+                  <td>{file.isFolder ? '-' : (file.size ? formatFileSize(file.size) : '-')}</td>
                   <td className={styles.tagsCell}>{renderTags(file)}</td>
                   <td>{file.createdAt ? new Date(file.createdAt).toLocaleString() : '-'}</td>
                   <td className={styles.actionsCell}>

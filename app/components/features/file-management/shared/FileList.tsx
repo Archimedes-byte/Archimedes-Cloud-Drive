@@ -23,6 +23,7 @@ import styles from '../../styles/shared.module.css';
 import { getFileType as getFileTypeDisplay } from '@/app/utils/file/type';
 import { getFileNameAndExtension } from '@/app/utils/file/path';
 import { FileInfo } from '@/app/types';
+import { formatFileSize } from '@/app/utils/file/format';
 
 interface FileListProps {
   files: FileInfo[];
@@ -448,7 +449,7 @@ export function FileList({
                   <td>{file.isFolder ? '文件夹' : 
                      file.type === 'document' ? '文档' : 
                      getFileTypeDisplay(file.type || null, file.extension)}</td>
-                  <td>{file.size ? `${Math.round(file.size / 1024)} KB` : '-'}</td>
+                  <td>{file.size ? formatFileSize(file.size) : '-'}</td>
                   <td className={styles.tagsCell}>{renderTags(file)}</td>
                   <td>
                     {file.createdAt 

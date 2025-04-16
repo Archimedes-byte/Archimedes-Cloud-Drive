@@ -28,6 +28,7 @@ export interface FileListRequest {
   sortOrder?: string;
   recursive?: boolean;
   signal?: AbortSignal;
+  _t?: number;
 }
 
 /**
@@ -118,15 +119,40 @@ export const fileApi = {
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
     
+    // 始终添加时间戳参数以防止缓存问题
+    const timestamp = params._t || Date.now();
+    queryParams.append('_t', timestamp.toString());
+
+    console.log('获取文件列表，请求参数:', {
+      ...params,
+      _t: timestamp,
+      url: `${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`
+    });
+    
     // 提取signal参数，其他参数保留
     const { signal, ...otherParams } = params;
 
     // 使用新的API路径
     const response = await fetch(`${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`, {
       signal, // 使用AbortSignal进行超时控制
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      // 添加额外的选项以绕过缓存
+      cache: 'no-store'
     });
     
-    return handleResponse<PaginatedResponse<FileInfo>>(response);
+    const result = await handleResponse<PaginatedResponse<FileInfo>>(response);
+    console.log('获取文件列表响应:', {
+      items: result.items.length,
+      total: result.total,
+      timestamp
+    });
+    
+    return result;
   },
 
   // 搜索文件
