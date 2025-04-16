@@ -10,7 +10,7 @@ import { useProfile, usePassword, UserProfileInput } from '@/app/hooks'
 import { useToast } from '@/app/components/features/dashboard/Toaster'
 import { useValidation } from './hooks/useValidation'
 // 导入主题服务
-import { applyTheme as applyThemeService } from '@/app/shared/themes'
+import { applyTheme as applyThemeService } from '@/app/components/ui/themes';
 
 // 导入组件
 import Modal from '@/app/components/features/dashboard/modal'

@@ -31,7 +31,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         error: '未授权访问' 
-      }, { status: 401 });
+      }, { 
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     }
     
     // 获取用户信息
@@ -48,7 +53,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         error: '用户不存在' 
-      }, { status: 404 });
+      }, { 
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     }
     
     const formData = await request.formData();
@@ -72,7 +82,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         error: '未提供文件' 
-      }, { status: 400 });
+      }, { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     }
 
     // 获取文件路径信息（用于文件夹上传）
@@ -197,6 +212,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         data: results 
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
     }
     
@@ -207,6 +226,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         data: result 
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
     }
     
@@ -226,6 +249,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       data: results 
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
   } catch (error: any) {
     console.error('文件上传失败:', error);
@@ -233,6 +260,11 @@ export async function POST(request: NextRequest) {
       success: false, 
       error: '文件上传失败', 
       message: error.message || '未知错误' 
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 } 

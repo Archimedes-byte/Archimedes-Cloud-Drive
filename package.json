@@ -33,6 +33,7 @@
     "google-auth-library": "^9.15.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.483.0",
+    "nanoid": "^5.1.5",
     "next": "14.1.0",
     "next-auth": "^4.24.11",
     "postcss": "^8.4.35",

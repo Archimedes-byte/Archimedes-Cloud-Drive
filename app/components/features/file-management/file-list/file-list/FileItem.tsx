@@ -82,7 +82,7 @@ const FileItem: React.FC<FileItemProps> = ({ file, onClick, onSelect, isSelected
               <span className={styles.fileDivider}>•</span>
             </>
           )}
-          <span className={styles.fileDate}>{formatDate(file.updatedAt.toString())}</span>
+          <span className={styles.fileDate}>{formatDate(file.createdAt.toString())}</span>
         </div>
       </div>
     </div>

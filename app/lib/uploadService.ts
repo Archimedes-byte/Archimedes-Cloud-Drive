@@ -83,10 +83,34 @@ export function uploadFile(file: File, options: UploadOptions = {}) {
         const response = JSON.parse(xhr.responseText);
         onSuccess(response);
       } catch (error) {
-        onError(new Error('响应解析失败'));
+        console.error('响应解析失败:', error, '原始响应:', xhr.responseText);
+        
+        // 尝试确定是否有任何可用数据
+        let errorMessage = '响应解析失败';
+        try {
+          // 如果响应文本长度超过一定值，可能是有效负载但JSON格式不正确
+          if (xhr.responseText && xhr.responseText.length > 0) {
+            // 尝试使用宽松的方式解析JSON
+            const cleanedText = xhr.responseText.trim().replace(/[\r\n]+/g, ' ');
+            // 如果是简单的文本消息，可以直接使用
+            if (!cleanedText.startsWith('{') && !cleanedText.startsWith('[')) {
+              errorMessage = `服务器响应: ${cleanedText}`;
+            }
+          }
+        } catch (secondError) {
+          // 忽略二次解析错误
+        }
+        
+        onError(new Error(errorMessage));
       }
     } else {
-      const error = xhr.responseText ? JSON.parse(xhr.responseText) : { message: '上传失败' };
+      let error;
+      try {
+        error = xhr.responseText ? JSON.parse(xhr.responseText) : { message: '上传失败' };
+      } catch (parseError) {
+        console.error('解析错误响应失败:', parseError);
+        error = { message: '上传失败 (无法解析错误详情)' };
+      }
       onError(new Error(error.message || '上传失败'));
     }
   };

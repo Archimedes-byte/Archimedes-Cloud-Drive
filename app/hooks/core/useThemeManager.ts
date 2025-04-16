@@ -6,7 +6,7 @@ import {
   getAllThemes,
   getThemesByCategory,
   ThemeStyle
-} from '@/app/shared/themes';
+} from '@/app/components/ui/themes';
 
 /**
  * 主题管理Hook接口

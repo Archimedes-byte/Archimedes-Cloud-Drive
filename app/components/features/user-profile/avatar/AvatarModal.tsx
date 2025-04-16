@@ -1,17 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, DragEvent } from 'react';
-import Image from 'next/image';
-import { Camera, Upload, Trash2, X, ArrowLeft, FolderUp } from 'lucide-react';
+import { Camera, Upload, Trash2, X, ArrowLeft, FolderUp, RotateCw, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import styles from './AvatarCropper.module.css';
 import AvatarCropper from './AvatarCropper';
-
-// 定义可能的视图状态
-const VIEWS = {
-  MAIN: 'main',       // 主视图 - 显示当前头像和操作按钮
-  SELECT: 'select',   // 选择图片视图
-  CROP: 'crop'        // 裁剪视图
-};
 
 interface AvatarModalProps {
   isOpen: boolean;
@@ -28,20 +20,20 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
   userDisplayName = '', 
   onAvatarChange 
 }) => {
-  const [currentView, setCurrentView] = useState(VIEWS.MAIN);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 获取用于头像占位符的首字母
   const nameInitial = userDisplayName[0]?.toUpperCase() || '?';
 
-  // 重置视图和状态
+  // 重置状态
   useEffect(() => {
     if (!isOpen) {
-      setCurrentView(VIEWS.MAIN);
       setSelectedFile(null);
       setUploading(false);
+      setIsEditing(false);
     }
   }, [isOpen]);
 
@@ -72,7 +64,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
     }
 
     setSelectedFile(file);
-    setCurrentView(VIEWS.CROP);
+    setIsEditing(true);
   };
 
   // 处理头像上传
@@ -188,7 +180,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
       }
       
       setSelectedFile(file);
-      setCurrentView(VIEWS.CROP);
+      setIsEditing(true);
     }
   };
 
@@ -199,150 +191,123 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       // 如果正在上传或者在裁剪状态，不允许通过点击背景关闭
-      if (!uploading && currentView !== VIEWS.CROP) {
+      if (!uploading && !isEditing) {
         onClose();
       }
     }
   };
 
-  // 渲染主视图 - 显示当前头像和操作按钮
-  const renderMainView = () => (
-    <div className={styles.avatarModal}>
-      <div className={styles.modalHeader}>
-        <h2 className={styles.modalTitle}>管理头像</h2>
-        <button className={styles.closeButton} onClick={onClose} disabled={uploading}>
-          <X size={24} />
-        </button>
-      </div>
-
-      <div className={styles.avatarPreview}>
-        {currentAvatarUrl ? (
-          <img 
-            className={styles.currentAvatar}
-            src={currentAvatarUrl}
-            alt="当前头像"
-          />
-        ) : (
-          <div className={styles.avatarFallback}>
-            <span>{nameInitial}</span>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.actionButtons}>
-        <button 
-          className={styles.uploadButton}
-          onClick={() => setCurrentView(VIEWS.SELECT)}
-          disabled={uploading}
-        >
-          <Upload size={18} />
-          上传新头像
-        </button>
-        {currentAvatarUrl && (
-          <button 
-            className={styles.deleteButton}
-            onClick={handleDeleteAvatar}
-            disabled={uploading}
-          >
-            <Trash2 size={18} />
-            删除当前头像
-          </button>
-        )}
-      </div>
-
-      <div className={styles.modalFooter}>
-        <button 
-          className={styles.closeModalButton}
-          onClick={onClose}
-          disabled={uploading}
-        >
-          关闭
-        </button>
-      </div>
-    </div>
-  );
-
-  // 渲染选择图片视图
-  const renderSelectView = () => (
-    <div className={styles.avatarModal}>
-      <div className={styles.modalHeader}>
-        <button 
-          className={styles.backButton}
-          onClick={() => setCurrentView(VIEWS.MAIN)}
-          disabled={uploading}
-        >
-          <ArrowLeft size={16} />
-          返回
-        </button>
-        <button className={styles.closeButton} onClick={onClose} disabled={uploading}>
-          <X size={24} />
-        </button>
-      </div>
-
-      <h2 className={styles.modalTitle}>选择图片</h2>
-      
-      <div 
-        className={styles.dropArea}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        <FolderUp size={48} color="#2563eb" />
-        <p>拖放图片文件到这里，或点击下方按钮选择</p>
-      </div>
-
-      <div className={styles.fileInputContainer}>
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          onChange={handleFileSelected}
-          style={{ display: 'none' }}
-        />
-        <button 
-          className={styles.browseButton}
-          onClick={openFileSelector}
-          disabled={uploading}
-        >
-          <Upload size={18} />
-          浏览文件
-        </button>
-      </div>
-
-      <div className={styles.modalFooter}>
-        <button 
-          className={styles.closeModalButton}
-          onClick={() => setCurrentView(VIEWS.MAIN)}
-          disabled={uploading}
-        >
-          取消
-        </button>
-      </div>
-    </div>
-  );
-
-  // 渲染裁剪视图
-  const renderCropView = () => (
-    <div className={styles.avatarModal} style={{ padding: 0, overflow: 'visible' }}>
-      {selectedFile && (
-        <AvatarCropper 
-          image={selectedFile} 
-          onClose={() => {
-            setCurrentView(VIEWS.SELECT);
-            setSelectedFile(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-          }}
-          onCropComplete={handleCropComplete}
-          inModal={true}
-        />
-      )}
-    </div>
-  );
-
   return (
-    <div className={styles.overlay} onClick={handleOverlayClick}>
-      {currentView === VIEWS.MAIN && renderMainView()}
-      {currentView === VIEWS.SELECT && renderSelectView()}
-      {currentView === VIEWS.CROP && renderCropView()}
+    <div className={styles.modalOverlay} onClick={handleOverlayClick}>
+      <div className={styles.avatarModalNew}>
+        {isEditing && selectedFile ? (
+          <>
+            <div className={styles.modalHeader}>
+              <button 
+                className={styles.backButton}
+                onClick={() => setIsEditing(false)}
+                disabled={uploading}
+              >
+                <ArrowLeft size={20} />
+                返回
+              </button>
+              <button 
+                className={styles.closeButton} 
+                onClick={onClose} 
+                disabled={uploading}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className={styles.modalContent}>
+              <AvatarCropper 
+                image={selectedFile} 
+                onClose={() => setIsEditing(false)}
+                onCropComplete={handleCropComplete}
+                inModal={true}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>上传头像</h2>
+              <button 
+                className={styles.closeButton} 
+                onClick={onClose} 
+                disabled={uploading}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className={styles.modalContent}>
+              <div className={styles.avatarPreviewSection}>
+                <div className={styles.currentAvatarWrapper}>
+                  {currentAvatarUrl ? (
+                    <img 
+                      className={styles.currentAvatar}
+                      src={currentAvatarUrl}
+                      alt="当前头像"
+                    />
+                  ) : (
+                    <div className={styles.avatarFallback}>
+                      <span>{nameInitial}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className={styles.uploadOptions}>
+                  <div 
+                    className={styles.dropArea}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
+                    <FolderUp size={32} className={styles.dropIcon} />
+                    <p className={styles.dropText}>拖放图片到此处</p>
+                  </div>
+                  
+                  <div className={styles.uploadButtons}>
+                    <button 
+                      className={styles.uploadButton}
+                      onClick={openFileSelector}
+                      disabled={uploading}
+                    >
+                      <Upload size={18} />
+                      选择图片
+                    </button>
+                    
+                    {currentAvatarUrl && (
+                      <button 
+                        className={styles.deleteButton}
+                        onClick={handleDeleteAvatar}
+                        disabled={uploading}
+                      >
+                        <Trash2 size={18} />
+                        删除头像
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className={styles.uploadInstructions}>
+                <p>支持JPG、PNG、GIF和WEBP格式，最大2MB</p>
+                <p>上传后可以调整和裁剪图片</p>
+              </div>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleFileSelected}
+                style={{ display: 'none' }}
+              />
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

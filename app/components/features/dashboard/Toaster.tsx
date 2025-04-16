@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import styles from './Toaster.module.css';
-import { addThemeChangeListener, ThemeStyle } from '@/app/shared/themes';
+import { addThemeChangeListener, ThemeStyle } from '@/app/components/ui/themes';
 
 // 定义Toast类型
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

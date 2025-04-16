@@ -26,6 +26,8 @@ export interface FileListRequest {
   pageSize?: number;
   sortBy?: string;
   sortOrder?: string;
+  recursive?: boolean;
+  signal?: AbortSignal;
 }
 
 /**
@@ -115,9 +117,14 @@ export const fileApi = {
     if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    
+    // 提取signal参数，其他参数保留
+    const { signal, ...otherParams } = params;
 
     // 使用新的API路径
-    const response = await fetch(`${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`);
+    const response = await fetch(`${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`, {
+      signal, // 使用AbortSignal进行超时控制
+    });
     
     return handleResponse<PaginatedResponse<FileInfo>>(response);
   },

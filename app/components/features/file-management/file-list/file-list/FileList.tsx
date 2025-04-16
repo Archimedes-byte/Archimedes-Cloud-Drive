@@ -365,7 +365,7 @@ export function FileList({
               <th>类型</th>
               <th>大小</th>
               <th>标签</th>
-              <th>修改日期</th>
+              <th>上传日期</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -417,7 +417,7 @@ export function FileList({
                   <td>{file.isFolder ? '文件夹' : getFileTypeDisplay(file.type, file.extension)}</td>
                   <td>{file.isFolder ? '-' : (file.size ? file.size : '-')}</td>
                   <td className={styles.tagsCell}>{renderTags(file)}</td>
-                  <td>{file.updatedAt ? new Date(file.updatedAt).toLocaleString() : '-'}</td>
+                  <td>{file.createdAt ? new Date(file.createdAt).toLocaleString() : '-'}</td>
                   <td className={styles.actionsCell}>
                     {!isEditing && (
                       <button 

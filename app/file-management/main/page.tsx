@@ -16,7 +16,7 @@ import { ErrorDisplay } from '@/app/components/features/file-management/shared/e
 import UploadModal from '@/app/components/features/file-management/upload/upload-modal';
 import { FilePreview } from '@/app/components/features/file-management/file-preview/file-preview';
 import { RenameModal } from '@/app/components/features/file-management/file-operations/rename-modal';
-import ThemePanel from '@/app/shared/themes/components/ThemePanel';
+import { ThemePanel } from '@/app/components/ui/themes';
 
 // 导入自定义组件
 import MiniSidebar from '@/app/components/features/file-management/navigation/mini-sidebar';
@@ -303,18 +303,55 @@ export default function FileManagementPage() {
       .finally(() => finishLoading());
   }, [setShowSearchView, setSelectedFileType, setCurrentFolderId, setFolderPath, startLoading, loadFiles, finishLoading]);
 
-  // 处理根目录点击 - 移到这里
-  const handleRootClick = useCallback(() => {
-    setCurrentFolderId(null);
-    setFolderPath([]);
-    
-    // 开始刷新加载状态
-    startLoading(true);
-    
-    // 保持当前选中的文件类型，并强制刷新
-    loadFiles(null, selectedFileType, true)
-      .finally(() => finishLoading());
-  }, [setCurrentFolderId, setFolderPath, startLoading, loadFiles, selectedFileType, finishLoading]);
+  // 使用useCallback优化面包屑导航处理函数
+  const handleBreadcrumbPathClick = useCallback((folderId: string | null) => {
+    if (folderId === null) {
+      setCurrentFolderId(null);
+      setFolderPath([]);
+      
+      // 开始刷新加载状态
+      startLoading(true);
+      
+      // 加载根目录文件，使用Promise.then代替finally以提高性能
+      loadFiles(null, selectedFileType)
+        .then(() => finishLoading())
+        .catch((error) => {
+          console.error('加载根目录文件出错:', error);
+          finishLoading();
+        });
+    } else {
+      // 查找用户点击的路径索引
+      const index = folderPath.findIndex(p => p.id === folderId);
+      if (index !== -1) {
+        // 切断索引之后的部分
+        const newPath = folderPath.slice(0, index + 1);
+        
+        // 优先更新UI状态，提升响应速度
+        setFolderPath(newPath);
+        setCurrentFolderId(folderId);
+        
+        // 开始加载状态
+        startLoading(true);
+        
+        // 使用requestAnimationFrame确保UI更新后再加载文件
+        requestAnimationFrame(() => {
+          loadFiles(folderId, selectedFileType)
+            .then(() => finishLoading())
+            .catch((error) => {
+              console.error('加载文件夹内容出错:', error);
+              finishLoading();
+            });
+        });
+      }
+    }
+  }, [folderPath, selectedFileType, loadFiles, startLoading, finishLoading]);
+  
+  // 使用useCallback优化后退按钮处理函数
+  const handleBreadcrumbBackClick = useCallback(() => {
+    if (folderPath.length > 0) {
+      handleBackClick();
+    }
+  }, [folderPath, handleBackClick]);
 
   // 重定向逻辑优化
   useEffect(() => {
@@ -511,7 +548,7 @@ export default function FileManagementPage() {
           avatarUrl={effectiveAvatarUrl}
           userName={userProfile?.name}
           userEmail={userProfile?.email}
-          onHomeClick={handleRootClick}
+          onHomeClick={handleBreadcrumbPathClick}
           onLogoutClick={handleSignOut}
           onAvatarClick={() => {
             router.push('/dashboard');
@@ -626,38 +663,8 @@ export default function FileManagementPage() {
               <Breadcrumb 
                 folderPath={folderPath} 
                 showHome={true}
-                onPathClick={(folderId) => {
-                  if (folderId === null) {
-                    setCurrentFolderId(null);
-                    setFolderPath([]);
-                    
-                    // 开始刷新加载状态
-                    startLoading(true);
-                    
-                    loadFiles(null, selectedFileType)
-                      .finally(() => finishLoading());
-                  } else {
-                    // 查找用户点击的路径索引
-                    const index = folderPath.findIndex(p => p.id === folderId);
-                    if (index !== -1) {
-                      // 切断索引之后的部分
-                      const newPath = folderPath.slice(0, index + 1);
-                      setFolderPath(newPath);
-                      setCurrentFolderId(folderId);
-                      
-                      // 开始刷新加载状态
-                      startLoading(true);
-                      
-                      loadFiles(folderId, selectedFileType)
-                        .finally(() => finishLoading());
-                    }
-                  }
-                }}
-                onBackClick={() => {
-                  if (folderPath.length > 0) {
-                    handleBackClick();
-                  }
-                }}
+                onPathClick={handleBreadcrumbPathClick}
+                onBackClick={handleBreadcrumbBackClick}
               />
             </div>
 

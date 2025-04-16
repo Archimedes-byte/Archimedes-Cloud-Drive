@@ -3,7 +3,8 @@ import { useRouter } from 'next/navigation';
 import { getFileTypeByExtension } from '@/app/utils/file/type';
 import { 
   File, X, Download, FileText, Folder,
-  Image as ImageIcon, Video, Music, Archive, Code 
+  Image as ImageIcon, Video, Music, Archive, Code,
+  ArrowLeft, Share2
 } from 'lucide-react';
 import { ExtendedFile, FileInfo } from '@/app/types';
 import styles from './FilePreview.module.css';
@@ -381,30 +382,90 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     );
   };
 
+  // 渲染文件信息面板
+  const renderFileInfo = () => {
+    if (!file) return null;
+    
+    return (
+      <div className={styles.fileInfoPanel}>
+        <h3 className={styles.fileInfoTitle}>文件信息</h3>
+        <div className={styles.fileInfoContent}>
+          <div className={styles.fileInfoItem}>
+            <span className={styles.fileInfoLabel}>文件名</span>
+            <span className={styles.fileInfoValue}>{fileName}</span>
+          </div>
+          {file.type && (
+            <div className={styles.fileInfoItem}>
+              <span className={styles.fileInfoLabel}>类型</span>
+              <span className={styles.fileInfoValue}>{getFileTypeByExtension(extension)}</span>
+            </div>
+          )}
+          {file.size && (
+            <div className={styles.fileInfoItem}>
+              <span className={styles.fileInfoLabel}>大小</span>
+              <span className={styles.fileInfoValue}>{formatFileSize(file.size)}</span>
+            </div>
+          )}
+          {file.updatedAt && (
+            <div className={styles.fileInfoItem}>
+              <span className={styles.fileInfoLabel}>修改时间</span>
+              <span className={styles.fileInfoValue}>{formatDate(file.updatedAt.toString())}</span>
+            </div>
+          )}
+          {file.createdAt && (
+            <div className={styles.fileInfoItem}>
+              <span className={styles.fileInfoLabel}>创建时间</span>
+              <span className={styles.fileInfoValue}>{formatDate(file.createdAt.toString())}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className={styles.filePreviewOverlay}>
+    <div className={styles.previewOverlay}>
       <div className={styles.filePreviewModal}>
         <div className={styles.previewHeader}>
-          <h2 className={styles.previewTitle}>文件预览</h2>
+          <h2 className={styles.previewTitle}>
+            <button 
+              className={styles.backButton}
+              onClick={onClose}
+              title="返回"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <IconComponent size={24} />
+            {fileName}
+          </h2>
           <div className={styles.previewActions}>
             <button 
               className={styles.actionButton}
               onClick={() => onDownload(file)}
               title="下载文件"
             >
-              <Download size={18} />
+              <Download size={20} />
+            </button>
+            <button 
+              className={styles.actionButton}
+              title="分享文件"
+            >
+              <Share2 size={20} />
             </button>
             <button 
               className={styles.actionButton}
               onClick={onClose}
               title="关闭预览"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
         </div>
-        <div className={styles.previewContent}>
-          {renderPreviewContent()}
+        <div className={styles.previewContainer}>
+          <div className={styles.previewContent}>
+            {renderPreviewContent()}
+          </div>
+          {renderFileInfo()}
         </div>
       </div>
     </div>

@@ -1,0 +1,59 @@
+/* 拖放上传区域样式 */
+.dropzone {
+  border: 2px dashed #d9d9d9;
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 16px;
+}
+
+.dropzone:hover {
+  border-color: #40a9ff;
+  background-color: rgba(64, 169, 255, 0.05);
+}
+
+/* 标签容器样式 */
+.tagsContainer {
+  min-height: 60px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.tagsInputWrapper {
+  margin-bottom: 8px;
+}
+
+.tagsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interactiveTag {
+  cursor: pointer;
+  transition: all 0.3s;
+  user-select: none;
+}
+
+.interactiveTag:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.emptyTagsHint {
+  color: #bfbfbf;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* 上传容器 */
+.uploadContainer {
+  max-height: 70vh;
+  overflow-y: auto;
+} 

@@ -99,7 +99,8 @@ export interface FileListProps {
 export interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadSuccess: () => void;
+  onUploadSuccess: (data?: any) => void;
+  onSuccess?: (data?: any) => void;
   isFolderUpload: boolean;
   withTags: boolean;
   currentFolderId?: string | null;

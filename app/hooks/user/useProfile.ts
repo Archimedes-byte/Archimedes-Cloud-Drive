@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from 'sonner'
-import { applyTheme as applyThemeService } from "@/app/shared/themes"
+import { applyTheme as applyThemeService } from '@/app/components/ui/themes';
 
 /**
  * 用户资料接口

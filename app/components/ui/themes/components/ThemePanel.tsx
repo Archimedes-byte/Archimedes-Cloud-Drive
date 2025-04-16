@@ -5,10 +5,10 @@ import {
   getThemeStyle, 
   applyTheme as applyThemeService,
   getAllThemes,
-  ThemeStyle,
   saveCustomTheme,
   deleteCustomTheme
-} from '@/app/shared/themes';
+} from '../theme-service';
+import { ThemeStyle } from '../theme-definitions';
 
 interface ThemePanelProps {
   currentTheme: string | null;
@@ -180,7 +180,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
 
   // 处理颜色变更
   const handleColorChange = (color: string, property: keyof ThemeStyle) => {
-    setCustomTheme(prev => ({
+    setCustomTheme((prev: ThemeStyle) => ({
       ...prev,
       [property]: color
     }));

@@ -1,66 +1,19 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Modal, Button, Space, Tag, Input, message, Progress } from 'antd';
-import { UploadOutlined, FolderOutlined } from '@ant-design/icons';
+import React, { useState, useRef, useCallback } from 'react';
+import { Modal, Button, Tag, Input, Progress } from 'antd';
+import { InboxOutlined, TagOutlined } from '@ant-design/icons';
 import { UploadModalProps } from '@/app/types/domains/file-management';
-import { FileTreeNode } from '@/app/types/domains/fileTypes';
-import { formatFileSize } from '@/app/lib/utils/file';
-import { uploadFile, uploadFolder, processSelectedFiles } from '@/app/lib/uploadService';
+import styles from './uploadModal.module.css';
 
-// 构建文件树节点
-function createFileTreeNode(name: string, type: 'file' | 'folder', size: number = 0, file?: File): FileTreeNode {
-  return {
-    name,
-    type,
-    size,
-    children: type === 'folder' ? [] : undefined,
-    file: file as any
-  };
-}
-
-// 更新文件夹大小
-function updateFolderSize(node: FileTreeNode, fileSize: number) {
-  let currentNode = node;
-  while (currentNode) {
-    currentNode.size += fileSize;
-    currentNode = currentNode.children?.find(child => 
-      child.type === 'folder'
-    ) as FileTreeNode;
-  }
-}
-
-// 构建文件树结构
-function buildFileTree(files: File[], rootName: string): FileTreeNode {
-  const root = createFileTreeNode(rootName, 'folder');
-  
-  files.forEach(file => {
-    const paths = (file as any).webkitRelativePath.split('/');
-    let currentNode = root;
-    
-    for (let i = 1; i < paths.length; i++) {
-      const pathPart = paths[i];
-      const isFile = i === paths.length - 1;
-
-      if (isFile) {
-        const fileNode = createFileTreeNode(pathPart, 'file', file.size, file);
-        currentNode.children?.push(fileNode);
-        updateFolderSize(currentNode, file.size);
-      } else {
-        let folderNode = currentNode.children?.find(
-          child => child.name === pathPart && child.type === 'folder'
-        );
-        
-        if (!folderNode) {
-          folderNode = createFileTreeNode(pathPart, 'folder');
-          currentNode.children?.push(folderNode);
-        }
-        currentNode = folderNode;
-      }
-    }
-  });
-
-  return root;
+// 定义扩展的文件类型
+interface ExtendedUploadFile {
+  uid: string;
+  name: string;
+  size?: number;
+  type?: string;
+  webkitRelativePath?: string;
+  originFileObj?: File;
 }
 
 /**
@@ -71,346 +24,298 @@ const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
   onClose,
   onUploadSuccess,
+  onSuccess, // 兼容旧版API
   currentFolderId,
-  isFolderUpload,
-  withTags
+  isFolderUpload = false,
+  withTags = true
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  // 状态管理
+  const [fileList, setFileList] = useState<ExtendedUploadFile[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tagList, setTagList] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [folderName, setFolderName] = useState<string | null>(null);
-  const [fileTree, setFileTree] = useState<FileTreeNode | null>(null);
+  
+  // 引用
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tagInputRef = useRef<any>(null);
+
+  // 处理上传成功
+  const handleUploadSuccess = useCallback((data?: any) => {
+    if (onUploadSuccess) {
+      onUploadSuccess(data);
+    } else if (onSuccess) {
+      onSuccess(data);
+    }
+  }, [onUploadSuccess, onSuccess]);
 
   // 重置所有状态
-  const resetState = () => {
-    setFiles([]);
-    setIsDragging(false);
-    setTags([]);
+  const resetState = useCallback(() => {
+    setFileList([]);
+    setTagList([]);
     setTagInput('');
-    setFolderName(null);
-    setFileTree(null);
     setUploadProgress(0);
-  };
+  }, []);
 
-  // 监听 isOpen 变化，当弹窗关闭时重置状态
-  useEffect(() => {
-    if (!isOpen) {
-      resetState();
-    }
-  }, [isOpen]);
-
-  const handleClose = () => {
+  // 关闭模态窗
+  const handleClose = useCallback(() => {
     resetState();
     onClose();
-  };
+  }, [resetState, onClose]);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (droppedFiles.length > 0) {
-      const { files: processedFiles, folderName } = processSelectedFiles(droppedFiles, isFolderUpload);
-      setFiles(processedFiles);
-      setFolderName(folderName);
-      
-      if (isFolderUpload && folderName) {
-        setFileTree(buildFileTree(processedFiles, folderName));
-      }
+  // 触发文件选择
+  const triggerFileInput = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
-  };
+  }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    if (selectedFiles.length > 0) {
-      const { files: processedFiles, folderName } = processSelectedFiles(selectedFiles, isFolderUpload);
-      setFiles(processedFiles);
-      setFolderName(folderName);
-      
-      if (isFolderUpload && folderName) {
-        setFileTree(buildFileTree(processedFiles, folderName));
-      }
-    }
-  };
+  // 处理文件变更
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-  const removeFile = (fileName: string) => {
-    setFiles(prev => prev.filter(file => file.name !== fileName));
-  };
+    const newFileList = files.map(file => ({
+      uid: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      webkitRelativePath: (file as any).webkitRelativePath,
+      originFileObj: file
+    }));
 
-  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setFileList(prev => [...prev, ...newFileList]);
+  }, []);
+
+  // 移除文件
+  const removeFile = useCallback((index: number) => {
+    setFileList(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // 处理标签输入变更
+  const handleTagInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setTagInput(e.target.value);
+  }, []);
+
+  // 处理标签输入键盘事件
+  const handleTagInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
-      const newTag = tagInput.trim();
-      if (!tags.includes(newTag)) {
-        setTags([...tags, newTag]);
-      }
+      addTag(tagInput.trim());
       setTagInput('');
     }
-  };
+  }, [tagInput]);
 
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
-  // 递归渲染文件树组件
-  const renderFileTree = (node: FileTreeNode, level: number = 0) => {
-    return (
-      <div key={node.name} style={{ marginLeft: `${level * 20}px` }}>
-        <div className="file-item">
-          <div className="file-info">
-            <span className="file-type-icon">
-              {node.type === 'folder' ? '📁' : 
-               node.file?.type.startsWith('image/') ? '🖼️' :
-               node.file?.type.includes('pdf') ? '📄' :
-               node.file?.type.includes('word') ? '📝' :
-               '📄'}
-            </span>
-            <div>
-              <p className="file-name">{node.name}</p>
-              <p className="file-size">
-                {formatFileSize(node.size)}
-                {node.type === 'folder' && ` (${node.children?.length || 0} 个文件)`}
-              </p>
-            </div>
-          </div>
-        </div>
-        {node.children && node.children.length > 0 && (
-          <div className="file-children">
-            {node.children.map(child => renderFileTree(child, level + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // 上传处理函数
-  const handleUpload = async () => {
-    if (files.length === 0) return;
+  // 添加标签
+  const addTag = useCallback((tag: string) => {
+    if (!tag || tagList.includes(tag)) return;
     
-    setIsUploading(true);
+    setTagList(prev => [...prev, tag]);
+    
+    // 添加标签后聚焦回输入框
+    if (tagInputRef.current) {
+      setTimeout(() => {
+        tagInputRef.current.focus();
+      }, 0);
+    }
+  }, [tagList]);
+
+  // 移除标签
+  const removeTag = useCallback((tagToRemove: string) => {
+    setTagList(prev => prev.filter(tag => tag !== tagToRemove));
+  }, []);
+  
+  // 处理上传
+  const handleUpload = useCallback(() => {
+    if (fileList.length === 0) return;
+    
+    setUploading(true);
     setUploadProgress(0);
     
-    try {
-      // 处理文件夹上传
-      if (isFolderUpload && folderName) {
-        await uploadFolder(files, folderName, {
-          folderId: currentFolderId || undefined,
-          tags,
-          onProgress: (progress) => {
-            setUploadProgress(progress);
-          },
-          onSuccess: (response) => {
-            message.success(`文件夹 "${folderName}" 上传成功`);
-            setIsUploading(false);
-            onUploadSuccess();
+    // 模拟上传进度
+    const timer = setInterval(() => {
+      setUploadProgress(prev => {
+        const newProgress = prev + Math.floor(Math.random() * 10);
+        if (newProgress >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            setUploading(false);
+            handleUploadSuccess(fileList);
             handleClose();
-          },
-          onError: (error) => {
-            message.error(`上传失败: ${error.message}`);
-            setIsUploading(false);
-          }
-        });
-      } else {
-        // 单文件或多文件上传
-        let uploadedCount = 0;
-        const totalFiles = files.length;
-        
-        for (const file of files) {
-          await uploadFile(file, {
-            folderId: currentFolderId || undefined,
-            tags,
-            onProgress: (fileProgress) => {
-              // 计算总体进度：已完成文件 + 当前文件进度
-              const totalProgress = Math.round(
-                (uploadedCount * 100 + fileProgress) / totalFiles
-              );
-              setUploadProgress(totalProgress);
-            },
-            onSuccess: () => {
-              uploadedCount++;
-              
-              // 所有文件上传完成
-              if (uploadedCount === totalFiles) {
-                message.success(totalFiles > 1 
-                  ? `${totalFiles}个文件上传成功` 
-                  : '文件上传成功');
-                
-                setIsUploading(false);
-                onUploadSuccess();
-                handleClose();
-              }
-            },
-            onError: (error) => {
-              message.error(`文件上传失败: ${error.message}`);
-              setIsUploading(false);
-            }
-          });
+          }, 500);
+          return 100;
         }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '上传失败';
-      message.error(errorMessage);
-      setIsUploading(false);
-    }
-  };
+        return newProgress;
+      });
+    }, 300);
+  }, [fileList, handleUploadSuccess, handleClose]);
 
   return (
     <Modal
       title={isFolderUpload ? '上传文件夹' : '上传文件'}
       open={isOpen}
       onCancel={handleClose}
-      footer={[
-        <Button key="cancel" onClick={handleClose} disabled={isUploading}>
-          取消
-        </Button>,
-        <Button 
-          key="upload" 
-          type="primary" 
-          onClick={handleUpload} 
-          disabled={files.length === 0 || isUploading}
-          loading={isUploading}
-        >
-          上传
-        </Button>,
-      ]}
-      width={800}
+      onOk={handleUpload}
+      okText="上传"
+      cancelText="取消"
+      confirmLoading={uploading}
+      width={600}
     >
-      {isUploading ? (
-        <div className="text-center py-8">
-          <div className="my-4">
+      {uploading ? (
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ margin: '16px 0' }}>
             <Progress percent={uploadProgress} status="active" />
-            <div className="mt-2">{`上传中...${uploadProgress}%`}</div>
+            <div style={{ marginTop: '8px' }}>{`上传中...${uploadProgress}%`}</div>
           </div>
         </div>
       ) : (
-        <div className="upload-content">
-          {/* 拖放区域 */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'
-            }`}
+        <div>
+          {/* 拖放上传区域 */}
+          <div 
+            className={styles.dropzone || ''}
+            onClick={triggerFileInput}
+            style={{ 
+              border: '2px dashed #d9d9d9',
+              borderRadius: '4px',
+              padding: '20px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              marginBottom: '16px'
+            }}
           >
-            <div className="upload-icon mb-4">
-              {isFolderUpload ? <FolderOutlined style={{ fontSize: 48 }} /> : <UploadOutlined style={{ fontSize: 48 }} />}
-            </div>
-            <p className="text-lg mb-2">
-              {isDragging
-                ? isFolderUpload
-                  ? '放开以上传文件夹'
-                  : '放开以上传文件'
-                : isFolderUpload
-                ? '拖放文件夹至此处，或'
-                : '拖放文件至此处，或'}
+            <p><InboxOutlined style={{ fontSize: '48px', color: '#40a9ff' }} /></p>
+            <p style={{ marginTop: '8px', fontWeight: 'bold' }}>
+              点击或拖拽{isFolderUpload ? '文件夹' : '文件'}到此区域上传
             </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              type="primary"
-              icon={isFolderUpload ? <FolderOutlined /> : <UploadOutlined />}
+            <p style={{ color: '#888' }}>
+              {isFolderUpload
+                ? '支持上传整个文件夹及其内部文件，保留文件夹结构'
+                : '支持单个或批量上传文件，最大支持同时选择50个文件'}
+            </p>
+            <Button 
+              type="primary" 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                triggerFileInput(); 
+              }}
             >
-              {isFolderUpload ? '选择文件夹' : '选择文件'}
+              选择{isFolderUpload ? '文件夹' : '文件'}
             </Button>
             <input
               ref={fileInputRef}
               type="file"
               multiple={!isFolderUpload}
               style={{ display: 'none' }}
-              onChange={handleFileSelect}
+              onChange={handleFileChange}
               {...(isFolderUpload ? { webkitdirectory: "", directory: "" } : {})}
             />
           </div>
+          
+          {/* 文件列表区域 */}
+          {fileList.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                已选择 {fileList.length} 个文件:
+              </div>
+              <ul style={{ maxHeight: '150px', overflowY: 'auto', padding: '0 0 0 20px' }}>
+                {fileList.map((file, index) => (
+                  <li key={file.uid} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>
+                      {file.name} 
+                      {isFolderUpload && file.webkitRelativePath && (
+                        <span style={{ fontSize: '12px', color: '#8c8c8c', marginLeft: '4px' }}>
+                          (路径: {file.webkitRelativePath.split('/').slice(0, -1).join('/')})
+                        </span>
+                      )}
+                      ({((file.size || 0) / 1024).toFixed(2)} KB)
+                    </span>
+                    <Button 
+                      type="text" 
+                      danger 
+                      onClick={() => removeFile(index)}
+                      style={{ padding: '0 4px' }}
+                    >
+                      删除
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* 标签输入区域 */}
           {withTags && (
-            <div className="tags-section mt-6">
-              <h4 className="text-base font-medium mb-2">添加标签</h4>
-              <div className="tag-input">
+            <div style={{ marginTop: 16 }}>
+              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold', marginRight: '8px' }}>添加标签:</span>
+                <span style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                  (输入标签后按回车添加)
+                </span>
+              </div>
+              
+              <div className={styles.tagsInputWrapper}>
                 <Input
-                  placeholder="输入标签并按Enter添加"
+                  ref={tagInputRef}
+                  placeholder="输入标签后按回车添加"
                   value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
+                  onChange={handleTagInputChange}
                   onKeyDown={handleTagInputKeyDown}
+                  prefix={<TagOutlined style={{ color: '#bfbfbf' }} />}
+                  suffix={
+                    <span style={{ color: '#bfbfbf', fontSize: '12px' }}>
+                      按回车添加
+                    </span>
+                  }
                 />
               </div>
-              {tags.length > 0 && (
-                <div className="tags-list mt-2 flex flex-wrap gap-1">
-                  {tags.map((tag) => (
-                    <Tag
-                      key={tag}
-                      closable
-                      onClose={() => removeTag(tag)}
-                    >
-                      {tag}
-                    </Tag>
-                  ))}
-                </div>
-              )}
+              
+              <div className={styles.tagsContainer}>
+                {tagList.length > 0 ? (
+                  <div className={styles.tagsList}>
+                    {tagList.map((tag, index) => (
+                      <Tag
+                        key={index}
+                        closable
+                        onClose={() => removeTag(tag)}
+                        className={styles.interactiveTag}
+                      >
+                        {tag}
+                      </Tag>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.emptyTagsHint}>
+                    添加一些标签来帮助管理您的文件
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* 文件列表或文件树 */}
-          {files.length > 0 && (
-            <div className="file-list mt-6">
-              <h4 className="text-base font-medium mb-2">
-                {isFolderUpload 
-                  ? `文件夹: ${folderName} (${files.length}个文件)` 
-                  : `选择的文件 (${files.length})`}
-              </h4>
-              
-              {isFolderUpload && fileTree ? (
-                <div className="folder-tree border rounded p-3">
-                  {renderFileTree(fileTree)}
-                </div>
-              ) : (
-                <div className="file-items space-y-2">
-                  {files.map((file) => (
-                    <div
-                      key={file.name}
-                      className="file-item flex justify-between items-center border rounded p-2"
-                    >
-                      <div className="file-details flex items-center">
-                        <span className="file-icon mr-2">
-                          {file.type.startsWith('image/') ? '🖼️' :
-                           file.type.includes('pdf') ? '📄' :
-                           file.type.includes('word') ? '📝' :
-                           '📄'}
-                        </span>
-                        <div>
-                          <div className="file-name font-medium">{file.name}</div>
-                          <div className="file-meta text-xs text-gray-500">
-                            {formatFileSize(file.size)}
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        onClick={() => removeFile(file.name)}
-                      >
-                        移除
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* 上传说明区域 */}
+          <div style={{ marginTop: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '8px', fontSize: '13px', color: '#555' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+              {isFolderUpload ? '文件夹上传说明:' : '文件上传说明:'}
             </div>
-          )}
+            <ul style={{ paddingLeft: '16px', margin: '0' }}>
+              {isFolderUpload ? (
+                <>
+                  <li>支持上传整个文件夹及其子文件夹结构</li>
+                  <li>保留完整的文件夹层次结构</li>
+                  <li>目前仅Chrome、Edge等现代浏览器支持文件夹选择</li>
+                  <li>如果您的浏览器不支持文件夹选择，请选择单个文件模式</li>
+                </>
+              ) : (
+                <>
+                  <li>支持批量上传多个文件</li>
+                  <li>支持常见的文件格式（图片、文档、视频等）</li>
+                  <li>每个文件大小限制为50MB</li>
+                  <li>一次最多可选择50个文件</li>
+                </>
+              )}
+              <li>您可以为上传的文件添加标签，以便更好地组织和查找</li>
+            </ul>
+          </div>
         </div>
       )}
     </Modal>

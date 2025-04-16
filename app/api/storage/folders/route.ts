@@ -1,70 +1,106 @@
-/**
- * 文件夹API路由
- * 处理文件夹相关请求
- */
-import { NextRequest } from 'next/server';
-import { 
-  withAuth, 
-  AuthenticatedRequest, 
-  createApiResponse, 
-  createApiErrorResponse,
-  ApiResponse
-} from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
-import { FileInfo } from '@/app/types';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/app/lib/database';
+import { withAuth, AuthenticatedRequest, createApiResponse, createApiErrorResponse } from '@/app/middleware/auth';
+import { v4 as uuidv4 } from 'uuid';
+import { customAlphabet } from 'nanoid';
 
-const storageService = new StorageService();
+// 创建一个自定义的nanoid实例，使用更安全的字符集
+const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 20);
+
+// 文件夹名称中不允许包含的字符
+const INVALID_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
+const MAX_FOLDER_NAME_LENGTH = 255;
 
 /**
  * 创建文件夹
+ * POST /api/storage/folders
  */
-export const POST = withAuth<FileInfo>(async (req: AuthenticatedRequest) => {
+export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    // 获取请求体数据
-    const { name, parentId, tags = [] } = await req.json();
-
-    if (!name?.trim()) {
+    const { name, parentId } = await req.json();
+    
+    // 文件夹名称验证
+    if (!name || typeof name !== 'string') {
       return createApiErrorResponse('文件夹名称不能为空', 400);
     }
-
-    // 创建文件夹
-    const folder = await storageService.createFolder(req.user.id, name, parentId, tags);
     
-    // 确保返回正确的响应格式
-    return createApiResponse(folder);
+    // 清理文件夹名称中的非法字符
+    const cleanName = name.replace(INVALID_CHARS, '').trim();
+    
+    if (cleanName.length === 0) {
+      return createApiErrorResponse('文件夹名称包含无效字符', 400);
+    }
+    
+    if (cleanName.length > MAX_FOLDER_NAME_LENGTH) {
+      return createApiErrorResponse(`文件夹名称不能超过${MAX_FOLDER_NAME_LENGTH}个字符`, 400);
+    }
+    
+    // 检查是否存在重名文件夹
+    const existingFolder = await prisma.file.findFirst({
+      where: {
+        name: cleanName,
+        parentId: parentId || null,
+        uploaderId: req.user.id,
+        isFolder: true,
+        isDeleted: false
+      }
+    });
+    
+    if (existingFolder) {
+      return createApiErrorResponse('同一目录下已存在相同名称的文件夹', 409);
+    }
+    
+    // 检查父文件夹是否存在（如果提供了parentId）
+    let parentPath = '';
+    
+    if (parentId) {
+      const parentFolder = await prisma.file.findUnique({
+        where: {
+          id: parentId,
+          uploaderId: req.user.id,
+          isFolder: true,
+          isDeleted: false
+        }
+      });
+      
+      if (!parentFolder) {
+        return createApiErrorResponse('父文件夹不存在或无权访问', 404);
+      }
+      
+      parentPath = parentFolder.path;
+    }
+    
+    // 生成唯一ID
+    const folderId = nanoid();
+    
+    // 构建文件夹路径
+    const folderPath = parentPath 
+      ? `${parentPath === '/' ? '' : parentPath}/${folderId}` 
+      : `/${folderId}`;
+    
+    // 创建文件夹
+    const folder = await prisma.file.create({
+      data: {
+        id: folderId,           // 提供唯一ID
+        name: cleanName,        // 使用清理后的名称
+        parentId,
+        isFolder: true,
+        uploaderId: req.user.id,
+        size: 0,
+        type: 'folder',
+        filename: cleanName,    // 必须为filename提供值
+        path: folderPath,       // 使用处理后的路径
+        updatedAt: new Date()   // 提供更新时间
+      }
+    });
+    
+    return createApiResponse({
+      success: true,
+      message: '文件夹创建成功',
+      folder
+    });
   } catch (error: any) {
     console.error('创建文件夹失败:', error);
     return createApiErrorResponse(error.message || '创建文件夹失败', 500);
   }
-});
-
-/**
- * 获取文件夹列表
- */
-export const GET = withAuth<{ items: FileInfo[]; total: number; page: number; pageSize: number }>(
-  async (req: AuthenticatedRequest) => {
-    try {
-      // 获取查询参数
-      const { searchParams } = new URL(req.url);
-      const parentId = searchParams.get('parentId');
-      const page = searchParams.has('page') ? parseInt(searchParams.get('page')!) : 1;
-      const pageSize = searchParams.has('pageSize') ? parseInt(searchParams.get('pageSize')!) : 50;
-      
-      // 设置文件夹查询的特殊条件
-      const result = await storageService.getFiles(
-        req.user.id,
-        parentId,
-        'folder', // 只获取文件夹
-        page,
-        pageSize,
-        'name', // 按名称排序
-        'asc'    // 升序
-      );
-      
-      return createApiResponse(result);
-    } catch (error: any) {
-      console.error('获取文件夹列表失败:', error);
-      return createApiErrorResponse(error.message || '获取文件夹列表失败', 500);
-    }
-  }
-); 
+}); 

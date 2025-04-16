@@ -370,7 +370,7 @@ export function FileList({
               <th>类型</th>
               <th>大小</th>
               <th>标签</th>
-              <th>修改日期</th>
+              <th>上传日期</th>
               <th>操作</th>
             </tr>
           </thead>

@@ -9,9 +9,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    // 延长NEXT_FETCH_TIMEOUT (默认5秒, 更改为15秒)
-    // 仅在开发环境生效
-    NEXT_FETCH_TIMEOUT: 15000, 
+    // NEXT_FETCH_TIMEOUT配置已移除，使用其他方式处理超时
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

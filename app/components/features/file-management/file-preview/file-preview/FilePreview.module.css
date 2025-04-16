@@ -6,13 +6,14 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: #fff;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(var(--theme-secondary-rgb, 79, 70, 229), 0.03) 0%, transparent 20%);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   z-index: 1000;
   animation: fadeIn 0.3s ease;
-  backdrop-filter: blur(3px);
 }
 
 @keyframes fadeIn {
@@ -24,91 +25,124 @@
   }
 }
 
-.previewContainer {
-  position: relative;
-  width: 90%;
-  height: 90%;
-  max-width: 1200px;
-  background-color: #fff;
-  border-radius: 8px;
-  overflow: hidden;
+/* 不再需要容器样式，因为已经是全屏 */
+.filePreviewModal {
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  overflow: hidden;
 }
 
 .previewHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background-color: #f6f8fa;
-  border-bottom: 1px solid #e1e4e8;
+  padding: 16px 24px;
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.04);
+  border-bottom: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+  position: relative;
+  backdrop-filter: blur(10px);
 }
 
-.fileName {
-  font-size: 16px;
+.previewHeader::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, 
+    var(--theme-primary, #3b82f6), 
+    var(--theme-secondary, #4f46e5), 
+    var(--theme-accent, #ec4899));
+}
+
+.previewTitle {
+  font-size: 18px;
   font-weight: 600;
-  margin: 0;
-  padding: 0;
   color: #1f2328;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 12px;
 }
 
-.actionButtons {
+.previewActions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .actionButton {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #57606a;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.actionButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 8px;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.actionButton:hover::before {
+  transform: scale(1);
 }
 
 .actionButton:hover {
-  background-color: #e6ebf1;
-  color: #1f2328;
+  color: var(--theme-primary, #3b82f6);
 }
 
 .closeButton {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #57606a;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .closeButton:hover {
-  background-color: #e6ebf1;
-  color: #1f2328;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .previewContent {
   flex: 1;
   overflow: auto;
-  padding: 16px;
+  padding: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(250, 250, 250, 0.8);
+  background-image: 
+    linear-gradient(135deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.02) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.02) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.02) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.02) 25%, transparent 25%);
+  background-size: 20px 20px;
+  position: relative;
+  min-height: 0; /* 解决Flex布局中的溢出问题 */
 }
 
 /* 加载状态 */
@@ -271,29 +305,192 @@
   gap: 4px;
 }
 
+/* 预览容器布局改为水平 */
+.previewContainer {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 64px); /* 预留头部高度 */
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.03) inset;
+}
+
+/* 文件信息面板 */
+.fileInfoPanel {
+  width: 280px;
+  background-color: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(5px);
+  border-left: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+  padding: 20px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.fileInfoPanel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, 
+    var(--theme-primary, #3b82f6), 
+    var(--theme-secondary, #4f46e5));
+  opacity: 0.5;
+}
+
+.fileInfoTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2328;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+}
+
+.fileInfoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fileInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s;
+}
+
+.fileInfoItem:hover {
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05);
+  transform: translateX(2px);
+}
+
+.fileInfoLabel {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.fileInfoValue {
+  font-size: 14px;
+  color: #1f2328;
+  word-break: break-word;
+}
+
+/* 返回按钮样式 */
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #57606a;
+  transition: all 0.3s;
+  margin-right: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.backButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 8px;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.backButton:hover::before {
+  transform: scale(1);
+}
+
+.backButton:hover {
+  color: var(--theme-primary, #3b82f6);
+  transform: translateX(-2px);
+}
+
 /* 深色主题适配 */
-:global(.dark-theme) .previewContainer {
-  background-color: #161b22;
+:global(.dark-theme) .previewOverlay {
+  background-color: #0d1117;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(var(--theme-secondary-rgb, 79, 70, 229), 0.05) 0%, transparent 20%);
+}
+
+:global(.dark-theme) .filePreviewModal {
+  background-color: transparent;
 }
 
 :global(.dark-theme) .previewHeader {
-  background-color: #21262d;
-  border-bottom-color: #30363d;
+  background-color: rgba(30, 41, 59, 0.7);
+  border-bottom-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.2);
 }
 
-:global(.dark-theme) .fileName {
+:global(.dark-theme) .previewTitle {
   color: #f0f6fc;
 }
 
 :global(.dark-theme) .actionButton,
-:global(.dark-theme) .closeButton {
+:global(.dark-theme) .closeButton,
+:global(.dark-theme) .backButton {
   color: #8b949e;
 }
 
-:global(.dark-theme) .actionButton:hover,
+:global(.dark-theme) .actionButton:hover {
+  color: var(--theme-primary, #3b82f6);
+}
+
 :global(.dark-theme) .closeButton:hover {
-  background-color: #30363d;
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+:global(.dark-theme) .previewContent {
+  background-color: rgba(13, 17, 23, 0.8);
+  background-image: 
+    linear-gradient(135deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%);
+}
+
+:global(.dark-theme) .fileInfoPanel {
+  background-color: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(5px);
+  border-left-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.2);
+}
+
+:global(.dark-theme) .fileInfoTitle {
   color: #f0f6fc;
+  border-bottom-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.2);
+}
+
+:global(.dark-theme) .fileInfoItem {
+  background-color: rgba(30, 41, 59, 0.4);
+}
+
+:global(.dark-theme) .fileInfoItem:hover {
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+}
+
+:global(.dark-theme) .fileInfoLabel {
+  color: #8b949e;
+}
+
+:global(.dark-theme) .fileInfoValue {
+  color: #c9d1d9;
 }
 
 :global(.dark-theme) .loadingText {
@@ -312,4 +509,35 @@
 :global(.dark-theme) .debugInfo {
   background-color: #21262d;
   border-color: #30363d;
+}
+
+/* 在小屏幕上的响应式设计 */
+@media (max-width: 768px) {
+  .previewContainer {
+    flex-direction: column;
+  }
+  
+  .fileInfoPanel {
+    width: 100%;
+    height: auto;
+    border-left: none;
+    border-top: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+    padding: 16px;
+  }
+  
+  .fileInfoPanel::before {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to right, 
+      var(--theme-primary, #3b82f6), 
+      var(--theme-secondary, #4f46e5));
+  }
+  
+  .previewContent {
+    height: 60vh;
+  }
 } 

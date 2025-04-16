@@ -83,11 +83,27 @@ export const useFiles = () => {
     }
 
     try {
-      const response = await fetch(`${API_PATHS.STORAGE.FOLDERS.GET(folderId)}/path`);
+      // 修改路径构建方式，使用id替代folderId，避免路由参数不一致问题
+      const folderPath = `${API_PATHS.STORAGE.FOLDERS.GET(folderId).replace('/folders/', '/folders/')}`;
+      const response = await fetch(`${folderPath}/path`);
+      
+      // 检查内容类型
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
       
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '加载文件夹路径失败');
+        if (isJson) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `加载文件夹路径失败: ${response.status}`);
+        } else {
+          throw new Error(`加载文件夹路径失败: ${response.status} ${response.statusText}`);
+        }
+      }
+      
+      // 确保响应是JSON格式
+      if (!isJson) {
+        console.error('服务器返回了非JSON格式的响应:', contentType);
+        throw new Error('服务器返回了非JSON格式的响应');
       }
       
       const data = await response.json();
@@ -96,6 +112,7 @@ export const useFiles = () => {
         setFolderPath(data.path || []);
       } else {
         console.error('加载文件夹路径失败:', data.error);
+        throw new Error(data.error || '加载文件夹路径失败');
       }
     } catch (error) {
       console.error('获取文件夹路径错误:', error);
@@ -163,7 +180,7 @@ export const useFiles = () => {
         let filteredFiles = result.items;
         if (effectiveFileType) {
           // 使用统一的工具函数过滤文件
-          filteredFiles = filterFilesByType(filteredFiles as any, effectiveFileType);
+          filteredFiles = filterFilesByType(filteredFiles as any, effectiveFileType) as FileInfo[];
           console.log(`前端过滤 - 类型 "${effectiveFileType}": 过滤前 ${result.items.length} 项, 过滤后 ${filteredFiles.length} 项`);
         }
         

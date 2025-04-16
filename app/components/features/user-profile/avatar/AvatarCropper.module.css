@@ -435,4 +435,318 @@
     margin-top: 12px;
     padding-top: 8px;
   }
+}
+
+/* 新的头像上传弹窗样式 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.avatarModalNew {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eaeef2;
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03), transparent);
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #64748b;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: #64748b;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.modalContent {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: auto;
+  gap: 20px;
+}
+
+.avatarPreviewSection {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.currentAvatarWrapper {
+  flex-shrink: 0;
+}
+
+.currentAvatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb, 59, 130, 246), 0.15);
+  border: 2px solid white;
+}
+
+.avatarFallback {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.3), rgba(var(--theme-secondary-rgb, 79, 70, 229), 0.3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb, 59, 130, 246), 0.15);
+}
+
+.uploadOptions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dropArea {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03);
+  min-height: 100px;
+}
+
+.dropArea:hover {
+  border-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.5);
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05);
+}
+
+.dropIcon {
+  color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.7);
+}
+
+.dropText {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.uploadButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.uploadButton {
+  background-color: var(--theme-primary, #3b82f6);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.uploadButton:hover {
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.9);
+  transform: translateY(-1px);
+}
+
+.deleteButton {
+  background-color: #fff;
+  color: #f43f5e;
+  border: 1px solid #f43f5e;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background-color: rgba(244, 63, 94, 0.05);
+  transform: translateY(-1px);
+}
+
+.uploadInstructions {
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.uploadInstructions p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* 深色主题适配 */
+:global(.dark-theme) .avatarModalNew {
+  background-color: #111827;
+  border: 1px solid #1f2937;
+}
+
+:global(.dark-theme) .modalHeader {
+  border-bottom-color: #1f2937;
+  background: linear-gradient(to right, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1), rgba(26, 32, 44, 0));
+}
+
+:global(.dark-theme) .modalTitle {
+  color: #f1f5f9;
+}
+
+:global(.dark-theme) .closeButton,
+:global(.dark-theme) .backButton {
+  color: #94a3b8;
+}
+
+:global(.dark-theme) .closeButton:hover,
+:global(.dark-theme) .backButton:hover {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+:global(.dark-theme) .currentAvatar {
+  border-color: #111827;
+}
+
+:global(.dark-theme) .dropArea {
+  border-color: #374151;
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05);
+}
+
+:global(.dark-theme) .dropArea:hover {
+  border-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.6);
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+}
+
+:global(.dark-theme) .dropText {
+  color: #94a3b8;
+}
+
+:global(.dark-theme) .uploadButton:hover {
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.85);
+}
+
+:global(.dark-theme) .deleteButton {
+  color: #fb7185;
+  border-color: #fb7185;
+}
+
+:global(.dark-theme) .deleteButton:hover {
+  background-color: rgba(251, 113, 133, 0.1);
+}
+
+:global(.dark-theme) .uploadInstructions {
+  background-color: #1e293b;
+  border-color: #374151;
+}
+
+:global(.dark-theme) .uploadInstructions p {
+  color: #94a3b8;
+}
+
+/* 响应式适配 */
+@media (max-width: 640px) {
+  .avatarPreviewSection {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .avatarModalNew {
+    width: 95%;
+    max-height: 95vh;
+  }
 } 
