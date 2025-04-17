@@ -1,0 +1,11 @@
+// 移动文件
+async moveFiles(fileIds: string[], targetFolderId: string): Promise<{ movedCount: number }> {
+  // 使用新的API路径
+  const response = await fetch(API_PATHS.STORAGE.FILES.MOVE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileIds, targetFolderId }),
+  });
+
+  return handleResponse<{ movedCount: number }>(response);
+} 

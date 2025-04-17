@@ -23,6 +23,7 @@ import MiniSidebar from '@/app/components/features/file-management/navigation/mi
 import { TopActionBar } from '@/app/components/features/file-management/action-bar/top-action-bar';
 import NewFolderForm from '@/app/components/features/file-management/folder-management/new-folder-form';
 import { SearchView } from '@/app/components/features/file-management/search-view';
+import FolderSelectModal from '@/app/components/features/file-management/folder-select/FolderSelectModal';
 
 // 导入自定义 hooks
 import { 
@@ -42,6 +43,9 @@ import { convertFilesForDisplay } from '@/app/utils/file/converter';
 
 // 导入样式
 import styles from '../styles/shared.module.css';
+
+// 引入fileApi
+import { fileApi } from '@/app/lib/api/file-api';
 
 export default function FileManagementPage() {
   const router = useRouter();
@@ -179,6 +183,31 @@ export default function FileManagementPage() {
   const [editingTags, setEditingTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
+
+  // 添加以下状态
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [disabledFolderIds, setDisabledFolderIds] = useState<string[]>([]);
+  const [isMoveLoading, setIsMoveLoading] = useState(false);
+  
+  // 添加刷新函数 - 移到这里与其他hooks一起声明
+  const handleRefreshFiles = useCallback(() => {
+    // 开始刷新加载状态
+    startLoading(true);
+    console.log('手动刷新文件列表');
+    
+    // 刷新当前文件夹内容
+    loadFiles(currentFolderId, selectedFileType, true)
+      .then(() => {
+        console.log('手动刷新完成');
+      })
+      .catch(error => {
+        console.error('手动刷新失败:', error);
+        message.error('刷新失败，请稍后再试');
+      })
+      .finally(() => {
+        finishLoading();
+      });
+  }, [currentFolderId, selectedFileType, loadFiles, startLoading, finishLoading]);
 
   // 文件上下文菜单处理 - 移至hooks声明区域
   const handleFileContextMenu = useCallback((e, file, setSelectedFile, setSelectedFiles) => {
@@ -590,6 +619,114 @@ export default function FileManagementPage() {
     return <SkeletonPageLayout />;
   }
 
+  /**
+   * 处理文件移动按钮点击
+   */
+  const handleMoveButtonClick = () => {
+    if (selectedFiles.length === 0) {
+      message.warning('请先选择要移动的文件');
+      return;
+    }
+    
+    // 检查是否选中了文件夹并设置禁用的文件夹列表
+    const selectedFolders = files.filter(file => file.isFolder && selectedFiles.includes(file.id));
+    if (selectedFolders.length > 0) {
+      // 如果选中了文件夹，则需要禁用这些文件夹作为目标选择
+      // 这是为了避免将文件夹移动到自己内部造成循环引用
+      setDisabledFolderIds(selectedFolders.map(folder => folder.id));
+    } else {
+      setDisabledFolderIds([]);
+    }
+    
+    // 打开移动弹窗
+    setIsMoveModalOpen(true);
+  };
+  
+  /**
+   * 处理文件移动
+   * @param targetFolderId 目标文件夹ID
+   */
+  const handleMove = async (targetFolderId: string) => {
+    if (selectedFiles.length === 0) {
+      message.warning('请选择要移动的文件');
+      return;
+    }
+    
+    try {
+      setIsMoveLoading(true);
+      
+      // 记录移动前的状态和参数
+      console.log('开始移动文件:', {
+        selectedFiles,
+        targetFolderId,
+        currentFolderId,
+        selectedFileType
+      });
+      
+      // 调用文件操作API移动文件
+      const result = await fileApi.moveFiles(selectedFiles, targetFolderId);
+      
+      console.log('文件移动成功，结果:', result);
+      
+      // 成功提示
+      message.success(`成功移动 ${result?.movedCount || selectedFiles.length} 个文件`);
+      
+      // 清除选择 - 先清除选择，避免刷新时选中状态干扰
+      setSelectedFiles([]);
+      
+      // 开始刷新加载状态
+      startLoading(true);
+      
+      try {
+        console.log('开始刷新文件列表', {
+          currentFolderId,
+          selectedFileType,
+          timestamp: Date.now()
+        });
+        
+        // 这里使用await确保在关闭弹窗前刷新完成
+        await loadFiles(currentFolderId, selectedFileType, true);
+        
+        console.log('文件列表刷新完成');
+        
+        // 成功刷新后关闭弹窗
+        setIsMoveModalOpen(false);
+      } catch (refreshError) {
+        console.error('刷新文件列表失败:', refreshError);
+        message.warning('文件已移动，但刷新列表失败，请手动刷新');
+        
+        // 即使刷新失败也关闭弹窗，但保留移动成功状态，显示刷新按钮
+        setIsMoveModalOpen(false);
+      } finally {
+        finishLoading();
+      }
+    } catch (error) {
+      console.error('移动文件失败:', error);
+      
+      // 提取并显示详细错误信息
+      let errorMessage = '移动文件失败';
+      
+      // 处理API错误
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // 针对常见错误提供更友好的提示
+        if (error.message.includes('已存在') || error.message.includes('同名')) {
+          errorMessage = '目标文件夹中已存在同名文件或文件夹，无法移动';
+        } else if (error.message.includes('权限') || error.message.includes('access denied')) {
+          errorMessage = '您没有权限将文件移动到此文件夹';
+        } else if (error.message.includes('not found') || error.message.includes('不存在')) {
+          errorMessage = '目标文件夹不存在或已被删除';
+        }
+      }
+      
+      // 显示错误信息
+      message.error(errorMessage);
+    } finally {
+      setIsMoveLoading(false);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -703,7 +840,7 @@ export default function FileManagementPage() {
                   message.warning('请先选择要重命名的文件');
                 }
               }}
-              onMove={() => {}}
+              onMove={handleMoveButtonClick}
               onDelete={handleDelete}
               onClearFilter={handleClearFilter}
               onCreateFolder={handleCreateFolderClick}
@@ -915,6 +1052,17 @@ export default function FileManagementPage() {
           onDownload={handleDownload}
         />
       )}
+
+      {/* 添加文件夹选择弹窗 */}
+      <FolderSelectModal 
+        isOpen={isMoveModalOpen}
+        onClose={() => setIsMoveModalOpen(false)}
+        onConfirm={handleMove}
+        currentFolderId={currentFolderId}
+        disabledFolderIds={disabledFolderIds}
+        isLoading={isMoveLoading}
+        onRefresh={handleRefreshFiles}
+      />
     </>
   );
 }

@@ -12,6 +12,53 @@ const INVALID_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
 const MAX_FOLDER_NAME_LENGTH = 255;
 
 /**
+ * 获取文件夹列表
+ * GET /api/storage/folders
+ */
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
+  try {
+    const { searchParams } = new URL(req.url);
+    const parentId = searchParams.get('parentId');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = parseInt(searchParams.get('pageSize') || '50', 10);
+    
+    // 计算分页查询的参数
+    const skip = (page - 1) * pageSize;
+    
+    // 查询条件
+    const where = {
+      uploaderId: req.user.id,
+      isFolder: true,
+      isDeleted: false,
+      parentId: parentId || null,
+    };
+    
+    // 查询文件夹列表
+    const items = await prisma.file.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: {
+        name: 'asc'
+      }
+    });
+    
+    // 获取总数
+    const total = await prisma.file.count({ where });
+    
+    return createApiResponse({
+      items,
+      total,
+      page,
+      pageSize
+    });
+  } catch (error: any) {
+    console.error('获取文件夹列表失败:', error);
+    return createApiErrorResponse(error.message || '获取文件夹列表失败', 500);
+  }
+});
+
+/**
  * 创建文件夹
  * POST /api/storage/folders
  */

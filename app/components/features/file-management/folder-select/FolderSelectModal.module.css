@@ -1,0 +1,246 @@
+.folderSelectModal :global(.ant-modal-content) {
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.folderSelectModal :global(.ant-modal-header) {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #f9fbfe;
+}
+
+.folderSelectModal :global(.ant-modal-footer) {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+  background-color: #f9fbfe;
+}
+
+.folderSelectModal :global(.ant-modal-body) {
+  padding: 0;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #222;
+}
+
+.loadingText {
+  margin-left: 12px;
+  font-size: 14px;
+  color: #1677ff;
+  font-weight: normal;
+}
+
+.actionBar {
+  display: flex;
+  padding: 12px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fff;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.homeButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #555;
+  padding: 4px 10px;
+}
+
+.homeButton:hover {
+  color: #1677ff;
+}
+
+.searchContainer {
+  width: 300px;
+}
+
+.searchInput {
+  border-radius: 20px;
+  padding-left: 8px;
+}
+
+.searchIcon {
+  color: #aaa;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.breadcrumbItem {
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumbItem:hover {
+  background-color: rgba(22, 119, 255, 0.1);
+  text-decoration: underline;
+}
+
+.breadcrumbActive {
+  color: #222;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.breadcrumbSeparator {
+  margin: 0 4px;
+  color: #ccc;
+  flex-shrink: 0;
+}
+
+.folderListContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  background-color: #fff;
+  position: relative;
+  min-height: 300px;
+}
+
+.folderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.folderItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.folderItem:hover {
+  background-color: #f0f7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.folderSelected {
+  background-color: #e6f4ff;
+  border: 1px solid #91caff;
+}
+
+.folderSelected:hover {
+  background-color: #bae0ff;
+}
+
+.folderDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.folderDisabled:hover {
+  background-color: inherit;
+  transform: none;
+  box-shadow: none;
+}
+
+.folderIcon {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.folderName {
+  font-size: 13px;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-width: 100%;
+  line-height: 1.4;
+  color: #333;
+}
+
+.selectedIndicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #1677ff;
+  border-radius: 50%;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  padding: 20px;
+}
+
+.errorMessage {
+  color: #ff4d4f;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.retryButton {
+  padding: 5px 16px;
+}
+
+.emptyState {
+  margin: 40px 0;
+}
+
+.modalFooterHint {
+  margin: 0;
+  padding: 12px 24px;
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+  background-color: #fcfcfc;
+  border-top: 1px solid #f0f0f0;
+}
+
+.hintIcon {
+  margin-right: 6px;
+  display: inline-block;
+} 

@@ -1,0 +1,19 @@
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    let errorMessage = '请求失败';
+    let errorCode;
+    
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorData.message || errorMessage;
+      errorCode = errorData.code;
+    } catch (e) {
+      // 解析错误响应失败，使用默认错误信息
+      console.error('解析API错误响应失败:', e);
+    }
+    
+    throw new ApiError(errorMessage, response.status, errorCode);
+  }
+
+  // 处理成功响应...
+} 
