@@ -96,11 +96,32 @@ const UploadModal: React.FC<UploadModalProps> = ({
     setUploadError(null);
     setUploadedBytes(0);
     setTotalBytes(0);
+    setUploading(false);
   }, []);
 
   // 关闭模态窗
   const handleClose = useCallback(() => {
+    // 重置文件列表和标签
     resetState();
+    
+    // 确保上传状态被重置
+    setUploading(false);
+    setUploadProgress(0);
+    setUploadError(null);
+    setUploadedBytes(0);
+    setTotalBytes(0);
+    
+    // 清理XHR引用
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
+    
+    // 清空文件输入框的值
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
     onClose();
   }, [resetState, onClose]);
 
@@ -316,6 +337,11 @@ const UploadModal: React.FC<UploadModalProps> = ({
     setUploadError(null);
     setUploadedBytes(0);
     setTotalBytes(0);
+    
+    // 清空文件输入框的值，允许再次选择相同文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }, []);
 
   // isOpen状态变化时重置组件状态
@@ -328,6 +354,18 @@ const UploadModal: React.FC<UploadModalProps> = ({
       if (xhrRef.current) {
         xhrRef.current.abort();
         xhrRef.current = null;
+      }
+      
+      // 确保上传状态被重置为初始值
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadError(null);
+      setUploadedBytes(0);
+      setTotalBytes(0);
+      
+      // 确保文件输入框值被清空
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
   }, [isOpen, resetState]);

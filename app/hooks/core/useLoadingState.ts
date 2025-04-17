@@ -41,20 +41,16 @@ export const useLoadingState = ({
   // 错误信息
   const [error, setError] = useState<string | null>(null);
   
-  // 保存计时器和开始时间的引用
+  // 引用值 - 不触发重渲染
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // 标记是否为第一次加载
   const isFirstLoadRef = useRef<boolean>(true);
 
   /**
-   * 开始加载
-   * @param isRefresh 是否为刷新模式（而非初始加载）
+   * 清除所有定时器
    */
-  const startLoading = useCallback((isRefresh = false) => {
-    // 清除之前的计时器
+  const clearTimers = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -64,6 +60,15 @@ export const useLoadingState = ({
       clearTimeout(errorTimerRef.current);
       errorTimerRef.current = null;
     }
+  }, []);
+
+  /**
+   * 开始加载
+   * @param isRefresh 是否为刷新模式（而非初始加载）
+   */
+  const startLoading = useCallback((isRefresh = false) => {
+    // 清除之前的计时器
+    clearTimers();
     
     // 记录开始时间
     startTimeRef.current = Date.now();
@@ -76,13 +81,7 @@ export const useLoadingState = ({
       setLoadingState('error');
       setError('加载超时，请检查网络连接或重试');
     }, errorTimeout);
-    
-    return () => {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-      }
-    };
-  }, [errorTimeout]);
+  }, [errorTimeout, clearTimers]);
 
   /**
    * 完成加载
@@ -91,45 +90,34 @@ export const useLoadingState = ({
    */
   const finishLoading = useCallback((hasError = false, errorMessage?: string) => {
     // 清除错误超时
-    if (errorTimerRef.current) {
-      clearTimeout(errorTimerRef.current);
-      errorTimerRef.current = null;
-    }
+    clearTimers();
     
-    // 计算已经过的时间
-    const elapsedTime = Date.now() - startTimeRef.current;
-    
-    // 如果发生错误或已达到最小加载时间，直接设置状态
+    // 如果发生错误，直接设置错误状态
     if (hasError) {
       setLoadingState('error');
       setError(errorMessage || '加载失败，请重试');
       return;
     }
     
+    // 计算已经过的时间
+    const elapsedTime = Date.now() - startTimeRef.current;
+    
+    // 处理最小加载时间
+    const completeLoading = () => {
+      setLoadingState('success');
+      setError(null);
+      isFirstLoadRef.current = false;
+    };
+    
     // 如果经过的时间小于最小加载时间，延迟设置加载完成
     if (elapsedTime < minLoadingTime) {
       const remainingTime = minLoadingTime - elapsedTime;
-      
-      timerRef.current = setTimeout(() => {
-        setLoadingState('success');
-        setError(null);
-        // 首次加载完成后，更新标记
-        isFirstLoadRef.current = false;
-      }, remainingTime);
-      
-      return () => {
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
-        }
-      };
+      timerRef.current = setTimeout(completeLoading, remainingTime);
     } else {
       // 直接设置加载完成
-      setLoadingState('success');
-      setError(null);
-      // 首次加载完成后，更新标记
-      isFirstLoadRef.current = false;
+      completeLoading();
     }
-  }, [minLoadingTime]);
+  }, [minLoadingTime, clearTimers]);
 
   /**
    * 重置加载状态
@@ -137,29 +125,13 @@ export const useLoadingState = ({
   const resetLoadingState = useCallback(() => {
     setLoadingState('idle');
     setError(null);
-    
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    if (errorTimerRef.current) {
-      clearTimeout(errorTimerRef.current);
-      errorTimerRef.current = null;
-    }
-  }, []);
+    clearTimers();
+  }, [clearTimers]);
 
   // 清理定时器
   useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-      }
-    };
-  }, []);
+    return clearTimers;
+  }, [clearTimers]);
 
   // 初始加载
   useEffect(() => {

@@ -152,7 +152,8 @@ export const GET = withAuth<FileInfo[]>(async (req: AuthenticatedRequest) => {
         select: {
           id: true,
           name: true,
-          path: true
+          path: true,
+          parentId: true
         }
       });
       
@@ -165,11 +166,13 @@ export const GET = withAuth<FileInfo[]>(async (req: AuthenticatedRequest) => {
     // 增强处理父文件夹路径
     const processedFiles = files.map(file => {
       let pathInfo = '/';
+      let parentName = null;
       
       // 如果文件有父级，从parentMap中获取父级信息
       if (file.parentId && parentMap.has(file.parentId)) {
         const parent = parentMap.get(file.parentId);
         pathInfo = parent.path || parent.name || '/';
+        parentName = parent.name;
         
         // 确保路径格式一致，以/开头
         if (pathInfo !== '/' && !pathInfo.startsWith('/')) {
@@ -187,6 +190,7 @@ export const GET = withAuth<FileInfo[]>(async (req: AuthenticatedRequest) => {
         createdAt: file.createdAt.toISOString(),
         updatedAt: file.updatedAt.toISOString(),
         parentId: file.parentId,
+        parentName: parentName, // 添加父文件夹名称
         tags: file.tags || [],
         isFolder: file.isFolder,
         path: pathInfo, // 使用处理后的路径

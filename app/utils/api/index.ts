@@ -1,9 +1,17 @@
 /**
  * API请求工具函数
  * 提供统一的API请求接口，支持类型安全、错误处理和缓存
+ * 
+ * 本模块包含两套API工具:
+ * 1. 增强版API工具（推荐）: ApiClient, ApiServiceFactory 等
+ * 2. 简单API工具（向后兼容）: apiRequest, apiGet 等
  */
 
 import { ApiResponse, ApiDataResponse } from '@/app/types/api';
+
+// 导出增强版API工具（推荐使用）
+export * from './api-client';
+export * from './api-factory';
 
 /**
  * 请求配置接口

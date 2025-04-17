@@ -2,20 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { FileInfo } from '@/app/types';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { fileApi } from '@/app/lib/api/file-api';
-
-/**
- * 防抖函数
- * @param fn 要防抖的函数
- * @param ms 延迟时间（毫秒）
- * @returns 防抖处理后的函数
- */
-const debounce = <T extends (...args: any[]) => any>(fn: T, ms = 300) => {
-  let timeoutId: ReturnType<typeof setTimeout>;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), ms);
-  };
-};
+import { createTrackableDebounce, TrackableDebounce } from '@/app/utils/function/debounce';
 
 /**
  * 搜索类型
@@ -115,13 +102,16 @@ export const useFileSearch = ({
   const [enableRealTimeSearch, setEnableRealTimeSearch] = useState(initialRealTimeSearch);
   const [debounceDelay, setDebounceDelay] = useState(initialDebounceDelay);
 
-  // 创建一个防抖搜索函数的引用
-  const debouncedSearchRef = useRef<(query: string, type: SearchType) => void>(() => {});
+  // 创建一个防抖搜索函数的引用，使用可跟踪的防抖
+  const debouncedSearchRef = useRef<TrackableDebounce<(query: string, type: SearchType) => void> | undefined>(undefined);
 
   /**
    * 实际执行搜索的函数
    */
   const executeSearch = useCallback(async (query: string, type: SearchType = 'name') => {
+    // 获取当前搜索的调用ID，用于处理竞态条件
+    const callId = debouncedSearchRef.current?.getCallId() || 0;
+    
     // 如果查询为空，清空结果但不显示错误
     if (!query.trim()) {
       setSearchResults([]);
@@ -132,13 +122,19 @@ export const useFileSearch = ({
     try {
       setIsLoading(true);
       setError(null);
-      console.log(`正在执行搜索，查询: ${query}, 类型: ${type}`);
+      console.log(`正在执行搜索，查询: ${query}, 类型: ${type}, 调用ID: ${callId}`);
       
       // 使用fileApi客户端执行搜索
       const results = await fileApi.searchFiles({
         query: query.trim(),
         type
       });
+      
+      // 如果这不是最新的搜索调用，丢弃结果
+      if (callId !== (debouncedSearchRef.current?.getCallId() || 0)) {
+        console.log(`搜索结果已过时(ID:${callId})，丢弃结果`);
+        return;
+      }
       
       setSearchResults(results);
       
@@ -161,30 +157,48 @@ export const useFileSearch = ({
         });
       }
     } catch (error) {
+      // 如果这不是最新的搜索调用，忽略错误
+      if (callId !== (debouncedSearchRef.current?.getCallId() || 0)) {
+        return;
+      }
+      
       console.error('搜索错误:', error);
       setError(error instanceof Error ? error.message : '搜索失败，请稍后重试');
       setSearchResults([]);
     } finally {
-      setIsLoading(false);
+      // 如果这是最新的搜索调用，才更新加载状态
+      if (callId === (debouncedSearchRef.current?.getCallId() || 0)) {
+        setIsLoading(false);
+      }
     }
   }, [maxHistoryItems]);
 
   // 更新防抖搜索函数
   useEffect(() => {
-    debouncedSearchRef.current = debounce(
+    // 初始化可跟踪的防抖函数
+    debouncedSearchRef.current = createTrackableDebounce(
       (query: string, type: SearchType) => {
         executeSearch(query, type);
-      }, 
+      },
       debounceDelay
     );
   }, [debounceDelay, executeSearch]);
 
   // 当搜索查询或类型变化时触发实时搜索
   useEffect(() => {
-    if (enableRealTimeSearch && searchQuery.trim().length > 0) {
-      debouncedSearchRef.current(searchQuery, searchType);
+    if (enableRealTimeSearch && searchQuery.trim().length > 0 && debouncedSearchRef.current) {
+      debouncedSearchRef.current.debouncedFn(searchQuery, searchType);
     }
   }, [searchQuery, searchType, enableRealTimeSearch]);
+
+  // 组件卸载时取消所有待处理的搜索
+  useEffect(() => {
+    return () => {
+      if (debouncedSearchRef.current) {
+        debouncedSearchRef.current.cancel();
+      }
+    };
+  }, []);
 
   /**
    * 设置搜索查询并更新状态

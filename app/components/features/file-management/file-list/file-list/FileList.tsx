@@ -12,13 +12,17 @@ import {
   Filter,
   Check,
   X,
-  Plus
+  Plus,
+  CheckCircle,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import styles from '@/app/file-management/styles/shared.module.css';
 import { getFileType as getFileTypeDisplay } from '@/app/utils/file/type';
 import { getFileNameAndExtension } from '@/app/utils/file/path';
 import { FileInfo } from '@/app/types';
 import { formatFileSize } from '@/app/utils/file/format';
+import { createCancelableDebounce } from '@/app/utils/function/debounce';
 
 interface FileListProps {
   files: FileInfo[];
@@ -116,6 +120,9 @@ export function FileList({
   const editNameInputRef = useRef<HTMLInputElement>(null);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
+  const focusNameInputRef = useRef<((args?: any) => void) | undefined>(undefined);
+  const focusTagInputRef = useRef<((args?: any) => void) | undefined>(undefined);
+
   useEffect(() => {
     if (actualEditingFileId && providedEditingName === undefined) {
       const file = files.find(f => f.id === actualEditingFileId);
@@ -126,12 +133,17 @@ export function FileList({
     }
     
     if (actualEditingFileId) {
-      setTimeout(() => {
+      const { debouncedFn, cancel } = createCancelableDebounce(() => {
         if (editNameInputRef.current) {
           editNameInputRef.current.focus();
           editNameInputRef.current.select();
         }
       }, 0);
+      
+      focusNameInputRef.current = debouncedFn;
+      debouncedFn();
+      
+      return () => cancel();
     }
   }, [actualEditingFileId, files, providedEditingName]);
 
@@ -157,11 +169,19 @@ export function FileList({
       }
       setNewTag('');
       
-      setTimeout(() => {
-        if (newTagInputRef.current) {
-          newTagInputRef.current.focus();
-        }
-      }, 0);
+      if (!focusTagInputRef.current) {
+        const { debouncedFn } = createCancelableDebounce(() => {
+          if (newTagInputRef.current) {
+            newTagInputRef.current.focus();
+          }
+        }, 0);
+        
+        focusTagInputRef.current = debouncedFn;
+      }
+      
+      if (focusTagInputRef.current) {
+        focusTagInputRef.current();
+      }
     }
   };
 

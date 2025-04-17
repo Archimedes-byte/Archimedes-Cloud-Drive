@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ExtendedFile } from '@/app/types';
 import { getFileIcon } from '@/app/utils/file/type';
 import { Home, Folder, Image as ImageIcon, FileText, Video, Music, File, Search, AlertCircle, Calendar, Tag, Database, Settings } from 'lucide-react';
 import styles from './SearchView.module.css';
+import { createCancelableDebounce } from '@/app/utils/function/debounce';
 
-interface SearchViewProps {
+export interface SearchViewProps {
   searchType: 'name' | 'tag';
   setSearchType: (type: 'name' | 'tag') => void;
   searchQuery: string;
@@ -18,6 +19,8 @@ interface SearchViewProps {
   setEnableRealTimeSearch?: (enable: boolean) => void;
   debounceDelay?: number;
   setDebounceDelay?: (delay: number) => void;
+  handlePreviewFile?: (file: ExtendedFile) => void;
+  onExitSearchView?: () => void;
 }
 
 export const SearchView: React.FC<SearchViewProps> = ({
@@ -33,10 +36,26 @@ export const SearchView: React.FC<SearchViewProps> = ({
   enableRealTimeSearch = true,
   setEnableRealTimeSearch,
   debounceDelay = 300,
-  setDebounceDelay
+  setDebounceDelay,
+  handlePreviewFile,
+  onExitSearchView
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
   const [showInputTip, setShowInputTip] = React.useState(false);
+
+  // 使用可取消的防抖工具创建隐藏提示的函数
+  const { debouncedFn: hideInputTipDebounced, cancel: cancelHideInputTip } = React.useMemo(
+    () => createCancelableDebounce(() => setShowInputTip(false), 3000),
+    []
+  );
+
+  // 在组件卸载时清理
+  useEffect(() => {
+    return () => {
+      // 清理防抖函数
+      cancelHideInputTip();
+    };
+  }, [cancelHideInputTip]);
 
   // 处理搜索输入变化
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,8 +65,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
     // 如果输入的长度为1且刚开始输入，显示提示
     if (value.length === 1 && !showInputTip) {
       setShowInputTip(true);
-      // 3秒后自动隐藏提示
-      setTimeout(() => setShowInputTip(false), 3000);
+      // 使用防抖函数3秒后隐藏提示
+      hideInputTipDebounced();
     } else if (value.length === 0) {
       setShowInputTip(false);
     }
@@ -57,30 +76,105 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const formatFilePath = (file: ExtendedFile) => {
     // 如果没有路径信息或为空字符串，显示为根目录
     if (!file.path || file.path.trim() === '') {
-      return '/';
+      return '根目录';
     }
 
     // 如果是根目录文件
     if (file.path === '/' || file.path === '.') {
-      return '/';
+      return '根目录';
     }
 
-    // 确保路径以/开头
+    // 检查路径是否看起来像UUID或系统ID路径（以/hZGX开头的路径）
+    if (file.path.match(/^\/[a-zA-Z0-9]{8,}/)) {
+      // 如果有parentId，尝试提取父文件夹名称
+      if (file.parentId) {
+        // 尝试从路径或其他数据中获取父文件夹名称
+        // 这里我们没有直接的parentFolderName，所以使用替代方案
+        return '文件夹';
+      }
+      return '根目录';
+    }
+    
+    // 尝试从路径中提取用户友好的部分
     let displayPath = file.path;
-    if (!displayPath.startsWith('/')) {
-      displayPath = `/${displayPath}`;
-    }
     
-    // 如果路径是文件名，则显示为根目录
-    if (displayPath === `/${file.name}`) {
-      return '/';
-    }
-    
-    // 处理路径中的特殊字符和结尾斜杠
+    // 清理路径
     displayPath = displayPath.replace(/\/+/g, '/'); // 移除多余的斜杠
     
-    // 添加悬停显示完整路径的功能
-    return displayPath;
+    // 如果路径的最后部分与文件名相同，则显示前面部分（父目录）
+    const pathParts = displayPath.split('/').filter(Boolean);
+    if (pathParts.length > 0 && pathParts[pathParts.length - 1] === file.name) {
+      // 移除最后的文件名部分，只显示目录
+      pathParts.pop();
+    }
+    
+    // 如果还有路径部分，则显示为目录格式
+    if (pathParts.length > 0) {
+      return pathParts.join('/');
+    }
+    
+    // 默认返回根目录
+    return '根目录';
+  };
+
+  // 尝试获取文件的父文件夹名称
+  const getParentFolderName = (file: ExtendedFile): string => {
+    // 如果文件中已经有parentName属性，优先使用
+    if ('parentName' in file && file.parentName) {
+      return file.parentName as string;
+    }
+    
+    // 如果没有父ID，返回根目录
+    if (!file.parentId) {
+      return '根目录';
+    }
+    
+    // 如果文件路径是UUID格式，尝试从父ID或其他信息推断
+    if (file.path && file.path.match(/^\/[a-zA-Z0-9]{8,}/)) {
+      // 这里我们无法直接获取父文件夹的实际名称，因为缺少API调用
+      // 在实际应用中，可能需要通过API获取父文件夹信息
+      return '文件夹';
+    }
+    
+    // 尝试从路径中提取父文件夹名称
+    if (file.path) {
+      const pathParts = file.path.split('/').filter(Boolean);
+      if (pathParts.length > 0) {
+        // 假设最后一部分是当前文件名，倒数第二部分是父文件夹名
+        if (pathParts.length > 1) {
+          return pathParts[pathParts.length - 2];
+        }
+        return pathParts[0];
+      }
+    }
+    
+    // 默认返回一个通用名称
+    return '文件夹';
+  };
+
+  // 生成可点击的文件路径导航元素
+  const getNavigablePath = (file: ExtendedFile) => {
+    // 确保有正确的路径和父ID
+    if (!file.path || file.path === '/' || file.path === '.') {
+      return { name: '根目录', id: null };
+    }
+    
+    // 获取父文件夹ID
+    const parentId = file.parentId;
+    
+    // 如果没有父ID，则返回根目录
+    if (!parentId) {
+      return { name: '根目录', id: null };
+    }
+    
+    // 获取父文件夹名称
+    const parentName = getParentFolderName(file);
+    
+    // 使用文件的parentId进行导航，显示父文件夹名称
+    return { 
+      name: parentName, 
+      id: parentId
+    };
   };
 
   const renderFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean | undefined) => {
@@ -128,6 +222,76 @@ export const SearchView: React.FC<SearchViewProps> = ({
     } catch (error) {
       console.error('日期格式化错误:', error);
       return '-';
+    }
+  };
+
+  // 文件行点击处理函数
+  const handleRowClick = (file: ExtendedFile, event: React.MouseEvent) => {
+    // 防止冒泡，避免触发父元素的点击事件
+    event.stopPropagation();
+    
+    // 根据文件类型选择处理方式
+    if (file.isFolder) {
+      // 如果是文件夹，调用导航处理函数
+      handleFileClick(file);
+    } else if (handlePreviewFile) {
+      // 如果是文件并且提供了预览函数，调用预览处理函数
+      handlePreviewFile(file);
+    } else {
+      // 如果没有提供预览函数，默认使用文件点击处理
+      handleFileClick(file);
+    }
+  };
+
+  // 目录点击处理函数
+  const handleDirectoryClick = (file: ExtendedFile, event: React.MouseEvent) => {
+    event.stopPropagation(); // 阻止事件冒泡，避免触发行点击事件
+    
+    // 创建父文件夹对象
+    let parentFolder: ExtendedFile;
+    
+    if (!file.parentId) {
+      // 如果没有父ID，则导航到根目录
+      parentFolder = {
+        id: null as any, // 使用any类型避免类型错误
+        name: '根目录',
+        isFolder: true,
+        path: '/',
+        // 添加必要的其他属性以满足ExtendedFile类型要求
+        size: 0,
+        createdAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
+        updatedAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
+        type: 'folder',
+        tags: []
+      } as ExtendedFile;
+    } else {
+      // 获取父文件夹名称
+      const parentName = 'parentName' in file && file.parentName 
+        ? file.parentName as string
+        : getParentFolderName(file);
+      
+      // 创建一个导航用的文件夹对象
+      parentFolder = {
+        id: file.parentId,
+        name: parentName,
+        isFolder: true,
+        path: file.path ? file.path.substring(0, file.path.lastIndexOf('/')) || '/' : '/',
+        // 添加必要的其他属性以满足ExtendedFile类型要求
+        size: 0,
+        createdAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
+        updatedAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
+        type: 'folder',
+        tags: []
+      } as ExtendedFile;
+    }
+    
+    // 导航到父文件夹
+    handleFileClick(parentFolder);
+    
+    // 退出搜索视图，显示文件列表
+    if (onExitSearchView) {
+      console.log('退出搜索视图，显示文件列表');
+      onExitSearchView();
     }
   };
 
@@ -245,8 +409,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 {searchResults.map((file) => (
                   <tr
                     key={file.id}
-                    className={styles['file-row']}
-                    onClick={() => handleFileClick(file)}
+                    className={`${styles['file-row']} ${handlePreviewFile ? styles['clickable-row'] : ''}`}
+                    onClick={(e) => handleRowClick(file, e)}
                   >
                     <td className={styles['file-name-cell']}>
                       <div className={styles['file-info']}>
@@ -274,14 +438,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     </td>
                     <td className={styles['size-cell']}>{formatFileSize(file.size)}</td>
                     <td className={styles['location-cell']}>
-                      <div className={styles['location-info']}>
-                        <Folder size={14} className={styles['location-icon']} />
+                      <div 
+                        className={styles['location-info']} 
+                        onClick={(e) => handleDirectoryClick(file, e)}
+                      >
+                        <Folder size={14} className={`${styles['location-icon']} ${styles['clickable-icon']}`} />
                         <span 
-                          className={styles['location-text']} 
+                          className={`${styles['location-text']} ${styles['clickable-text']}`}
                           title={file.path || '/'}
                           data-filepath={file.path}
                         >
-                          {formatFilePath(file)}
+                          {getParentFolderName(file)}
                         </span>
                       </div>
                     </td>

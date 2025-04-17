@@ -15,7 +15,18 @@ export * from './format';
 export * from './file';
 
 // 导出错误处理工具
-export * from './error';
+// 类型导出
+export type { ErrorType, ErrorInfo } from './error';
+// 值导出
+export { 
+  AppError, NetworkError, ApiError, ValidationError, 
+  PermissionError, NotFoundError, TimeoutError, 
+  FileError, createFileError, isAppError, 
+  formatError, handleError, 
+  // 显式导出withRetry以消除歧义
+  withRetry as errorWithRetry,
+  safeAsync 
+} from './error';
 
 // 导出日期处理工具
 export * from './date';
@@ -24,4 +35,7 @@ export * from './date';
 export * from './validation';
 
 // 导出安全工具
-export * from './security'; 
+export * from './security';
+
+// 导出函数工具（防抖、节流等）
+export * from './function'; 

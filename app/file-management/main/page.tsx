@@ -147,7 +147,8 @@ export default function FileManagementPage() {
     debounceDelay,
     setDebounceDelay,
     handleSearch,
-    updateFileInResults
+    updateFileInResults,
+    clearSearchHistory
   } = useFileSearch();
 
   // 文件预览和重命名 - 传入selectedFileType参数
@@ -280,23 +281,47 @@ export default function FileManagementPage() {
   }, []);
 
   // Sidebar中"搜索文件"点击处理函数
-  const handleSearchClick = useCallback(() => {
+  const handleSearchClick = useCallback((searchTypeParam?: string) => {
+    // 如果传入了搜索类型参数，设置对应的搜索类型
+    if (searchTypeParam === 'tag') {
+      setSearchType('tag');
+    } else {
+      // 如果没有指定类型，默认设置为按文件名搜索
+      setSearchType('name');
+    }
+    
+    // 重置搜索条件
+    setSearchQuery('');
+    
+    // 清除文件类型过滤
+    setSelectedFileType(null);
+    
+    // 显示搜索视图
     setShowSearchView(true);
-  }, [setShowSearchView]);
+  }, [setShowSearchView, setSearchType, setSearchQuery, setSelectedFileType]);
 
   // 处理文件点击
   const handleFileItemClick = useCallback((file) => {
-    const localFile = files.find(f => f.id === file.id);
-    if (!localFile) return;
-
-    if (localFile.isFolder) {
-      // 如果是文件夹，继续使用原有的导航逻辑
-      handleFileClick(localFile);
+    console.log('文件点击:', file);
+    
+    // 检查是否需要关闭搜索视图
+    const isInSearch = showSearchView;
+    
+    if (file.isFolder) {
+      // 如果是文件夹，使用导航逻辑
+      handleFileClick(file);
+      
+      // 如果当前在搜索视图，则关闭搜索视图
+      if (isInSearch) {
+        console.log('从搜索结果点击文件夹，关闭搜索视图');
+        setShowSearchView(false);
+      }
     } else {
-      // 如果是文件，打开预览
+      // 如果是文件，查找本地文件并打开预览
+      const localFile = files.find(f => f.id === file.id) || file;
       handlePreviewFile(localFile);
     }
-  }, [files, handleFileClick, handlePreviewFile]);
+  }, [files, handleFileClick, handlePreviewFile, showSearchView, setShowSearchView]);
 
   // 处理全选文件
   const onSelectAllFiles = useCallback(() => {
@@ -320,13 +345,17 @@ export default function FileManagementPage() {
     setCurrentFolderId(null);
     setFolderPath([]);
     
+    // 清除搜索内容和历史记录
+    setSearchQuery('');
+    clearSearchHistory();
+    
     // 开始刷新加载状态
     startLoading(true);
     
     // 传递null类型参数以确保清除过滤，并强制刷新
     loadFiles(null, null, true)
       .finally(() => finishLoading());
-  }, [setShowSearchView, setSelectedFileType, setCurrentFolderId, setFolderPath, startLoading, loadFiles, finishLoading]);
+  }, [setShowSearchView, setSelectedFileType, setCurrentFolderId, setFolderPath, startLoading, loadFiles, finishLoading, setSearchQuery, clearSearchHistory]);
 
   // 使用useCallback优化面包屑导航处理函数
   const handleBreadcrumbPathClick = useCallback((folderId: string | null) => {
@@ -608,6 +637,13 @@ export default function FileManagementPage() {
                 setCurrentFolderId(null);
                 setFolderPath([]);
                 
+                // 关闭搜索视图，确保显示文件列表
+                setShowSearchView(false);
+                
+                // 清除搜索内容和历史记录
+                setSearchQuery('');
+                clearSearchHistory();
+                
                 // 使用新的参数传递方式，直接传入点击的类型
                 loadFiles(null, type)
                   .finally(() => finishLoading());
@@ -711,6 +747,26 @@ export default function FileManagementPage() {
                     setEnableRealTimeSearch={setEnableRealTimeSearch}
                     debounceDelay={debounceDelay}
                     setDebounceDelay={setDebounceDelay}
+                    handlePreviewFile={handlePreviewFile}
+                    onExitSearchView={() => {
+                      // 清除搜索输入框和搜索记录
+                      setSearchQuery('');
+                      // 清空搜索结果
+                      if (searchResults.length > 0) {
+                        console.log('清除搜索结果');
+                      }
+                      
+                      // 清空搜索历史记录
+                      clearSearchHistory();
+                      
+                      // 关闭搜索视图
+                      setShowSearchView(false);
+                      
+                      // 刷新文件列表，确保显示的是最新内容
+                      startLoading(true);
+                      loadFiles(currentFolderId, selectedFileType, true)
+                        .finally(() => finishLoading());
+                    }}
                   />
                 </div>
               ) : (

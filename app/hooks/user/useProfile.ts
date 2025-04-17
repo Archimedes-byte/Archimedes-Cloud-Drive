@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from 'sonner'
 import { applyTheme as applyThemeService } from '@/app/components/ui/themes';
+import { createCancelableDebounce } from '@/app/utils/function/debounce';
 
 /**
  * 用户资料接口
@@ -299,15 +300,18 @@ export function useProfile() {
       setConsecutiveErrors(0)
     }
     
-    // 延迟获取用户资料，避免在会话初始化过程中频繁请求
-    const timeoutId = setTimeout(() => {
+    // 创建可取消的防抖函数
+    const { debouncedFn, cancel } = createCancelableDebounce(() => {
       // 确保在会话状态未变更的情况下执行
       if (sessionChangeRef.current === currentSessionChange) {
         fetchUserProfile()
       }
-    }, 100)
+    }, 100);
     
-    return () => clearTimeout(timeoutId)
+    // 延迟获取用户资料，避免在会话初始化过程中频繁请求
+    debouncedFn();
+    
+    return () => cancel();
   }, [session, fetchUserProfile])
 
   /**

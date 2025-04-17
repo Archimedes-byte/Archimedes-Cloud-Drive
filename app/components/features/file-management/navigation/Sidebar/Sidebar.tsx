@@ -12,7 +12,7 @@ export type FileType = 'image' | 'document' | 'video' | 'audio' | 'other' | null
 interface SidebarProps {
   selectedFileType: FileType;
   onTypeClick: (type: FileType) => void;
-  onSearchClick?: () => void;
+  onSearchClick?: (query?: string) => void;
 }
 
 export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: SidebarProps) {
@@ -38,6 +38,14 @@ export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: Sideba
     // 直接调用回调，不需要任何额外逻辑
     console.log('Sidebar直接点击类型:', type);
     onTypeClick(type);
+  };
+
+  // 添加按标签搜索处理函数
+  const handleTagSearchClick = () => {
+    // 通过onSearchClick回调传递'tag'参数，表示要打开按标签搜索
+    if (onSearchClick) {
+      onSearchClick('tag');
+    }
   };
 
   return (
@@ -109,24 +117,36 @@ export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: Sideba
           <div className={styles.sidebarSubmenu}>
             <div 
               className={styles.sidebarItem}
-              onClick={onSearchClick}
+              onClick={() => onSearchClick && onSearchClick()}
             >
               <Search className={styles.icon} />
               搜索文件
             </div>
-            <div className={styles.sidebarItem}>
+            <div 
+              className={styles.sidebarItem}
+              onClick={() => onSearchClick && onSearchClick()}
+            >
               <Star className={styles.icon} />
               收藏文件
             </div>
-            <div className={styles.sidebarItem}>
+            <div 
+              className={styles.sidebarItem}
+              onClick={() => onSearchClick && onSearchClick()}
+            >
               <Clock className={styles.icon} />
               最近访问
             </div>
-            <div className={styles.sidebarItem}>
+            <div 
+              className={styles.sidebarItem}
+              onClick={handleTagSearchClick}
+            >
               <Tag className={styles.icon} />
               按标签查找
             </div>
-            <div className={styles.sidebarItem}>
+            <div 
+              className={styles.sidebarItem}
+              onClick={() => onSearchClick && onSearchClick()}
+            >
               <Download className={styles.icon} />
               下载记录
             </div>
