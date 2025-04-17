@@ -93,22 +93,88 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       setIsLoading(true);
       setError(null);
 
-      // 处理单文件下载
-      if (fileIds.length === 1) {
-        window.open(`${API_PATHS.STORAGE.FILES.DOWNLOAD}?fileId=${fileIds[0]}`, '_blank');
-        return true;
+      // 记录请求开始时间（用于调试性能问题）
+      const startTime = Date.now();
+      console.log(`开始下载文件: ${fileIds.join(', ')}`);
+
+      // 使用POST方法处理下载
+      const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileIds }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '下载失败');
       }
 
-      // 处理多文件下载 (压缩包)
-      const queryParams = new URLSearchParams();
-      fileIds.forEach(id => queryParams.append('fileIds', id));
+      // 获取文件Blob
+      const blob = await response.blob();
+      console.log(`文件下载响应接收完成，大小: ${(blob.size / 1024).toFixed(2)} KB, 耗时: ${Date.now() - startTime}ms`);
       
-      window.open(`${API_PATHS.STORAGE.FILES.DOWNLOAD}-batch?${queryParams.toString()}`, '_blank');
+      // 检查blob是否为空
+      if (blob.size === 0) {
+        throw new Error('下载的文件为空，请重试');
+      }
+      
+      // 从响应头获取文件名和内容类型
+      const contentDisposition = response.headers.get('Content-Disposition') || '';
+      const contentType = response.headers.get('Content-Type') || 'application/octet-stream';
+      let fileName = '下载文件';
+      
+      // 尝试从响应头中提取文件名
+      const filenameMatch = contentDisposition.match(/filename="?(.+?)"?(?:;|$)/);
+      if (filenameMatch && filenameMatch[1]) {
+        fileName = decodeURIComponent(filenameMatch[1]);
+      } else if (fileIds.length === 1) {
+        // 如果是单个文件且无法从响应头获取文件名，尝试从文件信息中获取
+        try {
+          const fileInfo = await fileApi.getFile(fileIds[0]);
+          if (fileInfo && fileInfo.name) {
+            fileName = fileInfo.name;
+          }
+        } catch (e) {
+          console.warn('获取文件名称失败，使用默认文件名', e);
+        }
+      } else {
+        // 多文件下载默认使用zip扩展名
+        fileName = '下载文件.zip';
+      }
+
+      // 确保文件名有扩展名
+      if (!fileName.includes('.') && contentType && contentType !== 'application/octet-stream') {
+        const extension = contentType.split('/')[1];
+        if (extension && !['octet-stream', 'unknown'].includes(extension)) {
+          fileName = `${fileName}.${extension}`;
+        }
+      }
+
+      console.log(`准备下载文件: ${fileName}, 类型: ${contentType}`);
+
+      // 创建下载链接 - 使用更安全可靠的方式
+      const url = URL.createObjectURL(new Blob([blob], { type: contentType }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.style.display = 'none';
+      
+      // 触发下载
+      document.body.appendChild(link);
+      link.click();
+      
+      // 清理 - 使用更可靠的方式
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log(`文件下载过程完成: ${fileName}`);
+      }, 200);
+      
       return true;
     } catch (error) {
       console.error('下载文件失败:', error);
       setError(error instanceof Error ? error.message : '下载失败');
-      message.error('下载文件失败，请重试');
+      message.error('下载文件失败，请重试: ' + (error instanceof Error ? error.message : '未知错误'));
       return false;
     } finally {
       setIsLoading(false);

@@ -1,0 +1,63 @@
+.menuButton {
+  /* 菜单内按钮样式 */
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.inlineButton {
+  /* 内联按钮样式，用于右键菜单等 */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.toolbarButton {
+  /* 工具栏按钮样式，继承现有工具栏按钮风格 */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconWrapper {
+  /* 图标包装器 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+/* 悬停效果 */
+.menuButton:hover {
+  color: var(--theme-primary, #1677ff);
+}
+
+.toolbarButton:hover {
+  color: var(--theme-primary, #1677ff);
+}
+
+/* 加载状态 */
+.loadingIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+} 

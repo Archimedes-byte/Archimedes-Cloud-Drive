@@ -5,10 +5,11 @@ import {
 import styles from '@/app/file-management/styles/shared.module.css';
 import { SortDropdown } from '@/app/components/features/file-management/action-bar/sort-dropdown';
 import { UploadButton } from '@/app/components/features/file-management/upload/upload-button';
-import { FileSortInterface } from '@/app/types';
+import { FileInfo, FileSortInterface, FileTypeEnum, SortDirectionEnum } from '@/app/types';
+import { FolderDownloadButton } from '@/app/components/features/file-management/download/FolderDownloadButton';
 
-interface TopActionBarProps {
-  selectedFiles: string[];
+export interface TopActionBarProps {
+  selectedFiles: FileInfo[];
   onClearSelection: () => void;
   onDownload: () => void;
   onRename: () => void;
@@ -16,7 +17,7 @@ interface TopActionBarProps {
   onDelete: () => void;
   onClearFilter: () => void;
   onCreateFolder: () => void;
-  selectedFileType: string | null;
+  selectedFileType: FileTypeEnum | null;
   showSearchView: boolean;
   isInRootFolder: boolean;
   sortOrder: FileSortInterface;
@@ -48,6 +49,9 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
   setIsFolderUploadModalOpen,
   uploadDropdownRef
 }) => {
+  // 检查是否只选择了一个文件夹
+  const selectedFolder = selectedFiles.length === 1 && selectedFiles[0].isFolder ? selectedFiles[0] : null;
+  
   return (
     <div className={styles.topBar}>
       <div className={styles.buttonGroup}>
@@ -57,10 +61,24 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
               <X className="w-4 h-4" />
               取消选择
             </button>
-            <button className={styles.topButton} onClick={onDownload}>
-              <Download className="w-4 h-4" />
-              下载
-            </button>
+            
+            {selectedFolder ? (
+              // 如果选择的是单个文件夹，使用增强下载组件
+              <FolderDownloadButton
+                folderId={selectedFolder.id}
+                folderName={selectedFolder.name}
+                buttonText="下载"
+                showIcon={true}
+                className={styles.topButton}
+              />
+            ) : (
+              // 否则使用常规下载按钮
+              <button className={styles.topButton} onClick={onDownload}>
+                <Download className="w-4 h-4" />
+                下载
+              </button>
+            )}
+            
             <button 
               className={styles.topButton}
               onClick={onRename}
@@ -77,7 +95,7 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
               删除
             </button>
           </>
-        ) : (
+        ) :
           <>
             <button 
               className={styles.topButton}
@@ -93,20 +111,19 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
               <div className={styles.topButton} style={{ cursor: 'default', background: '#f0f7ff', borderColor: '#60a5fa' }}>
                 {(() => {
                   switch(selectedFileType) {
-                    case 'image': return <ImageIcon className="w-4 h-4 mr-2" />;
-                    case 'document': return <FileText className="w-4 h-4 mr-2" />;
-                    case 'video': return <Video className="w-4 h-4 mr-2" />;
-                    case 'audio': return <Music className="w-4 h-4 mr-2" />;
-                    case 'other': return <File className="w-4 h-4 mr-2" />;
-                    default: return null;
+                    case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" />;
+                    case FileTypeEnum.DOCUMENT: return <FileText className="w-4 h-4 mr-2" />;
+                    case FileTypeEnum.VIDEO: return <Video className="w-4 h-4 mr-2" />;
+                    case FileTypeEnum.AUDIO: return <Music className="w-4 h-4 mr-2" />;
+                    default: return <File className="w-4 h-4 mr-2" />;
                   }
                 })()}
                 当前浏览：
-                {selectedFileType === 'image' && '仅图片'}
-                {selectedFileType === 'document' && '仅文档'}
-                {selectedFileType === 'video' && '仅视频'}
-                {selectedFileType === 'audio' && '仅音频'}
-                {selectedFileType === 'other' && '其他文件'}
+                {selectedFileType === FileTypeEnum.IMAGE && '仅图片'}
+                {selectedFileType === FileTypeEnum.DOCUMENT && '仅文档'}
+                {selectedFileType === FileTypeEnum.VIDEO && '仅视频'}
+                {selectedFileType === FileTypeEnum.AUDIO && '仅音频'}
+                {selectedFileType === FileTypeEnum.UNKNOWN && '其他文件'}
               </div>
             )}
 
@@ -125,15 +142,13 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
               uploadDropdownRef={uploadDropdownRef}
             />
             
-            <button 
-              className={styles.folderButton} 
-              onClick={onCreateFolder}
-            >
-              <FolderUp className="w-4 h-4 mr-2" />
+            {/* 新建文件夹按钮 */}
+            <button className={styles.topButton} onClick={onCreateFolder}>
+              <span>📁</span>
               新建文件夹
             </button>
           </>
-        )}
+        }
       </div>
     </div>
   );

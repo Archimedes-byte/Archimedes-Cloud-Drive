@@ -815,7 +815,7 @@ export default function FileManagementPage() {
             <TopActionBar 
               selectedFiles={selectedFiles}
               onClearSelection={() => setSelectedFiles([])}
-              onDownload={handleDownload}
+              onDownload={() => handleDownload(selectedFiles)}
               onRename={() => {
                 // 如果选中了多个文件，提示用户一次只能重命名一个文件
                 if (selectedFiles.length > 1) {
@@ -1049,7 +1049,13 @@ export default function FileManagementPage() {
         <FilePreview
           file={previewFile}
           onClose={handleClosePreview}
-          onDownload={handleDownload}
+          onDownload={(file) => {
+            if (file && file.id) {
+              handleDownload([file.id]);
+            } else {
+              message.warning('无法下载此文件，文件ID不存在');
+            }
+          }}
         />
       )}
 
