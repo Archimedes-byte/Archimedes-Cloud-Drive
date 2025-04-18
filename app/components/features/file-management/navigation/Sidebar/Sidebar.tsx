@@ -3,7 +3,7 @@ import {
   Folder, Files, Image as ImageIcon, FileText, 
   Video, Music, File, Search, ChevronDown, 
   Star, Clock, Tag, Download, Settings,
-  CheckCircle
+  CheckCircle, Share2
 } from 'lucide-react';
 import styles from '@/app/file-management/styles/shared.module.css';
 
@@ -46,6 +46,11 @@ export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: Sideba
     if (onSearchClick) {
       onSearchClick('tag');
     }
+  };
+
+  // 添加处理我的分享点击事件的函数
+  const handleMySharesClick = () => {
+    window.location.href = '/file-management/my-shares';
   };
 
   return (
@@ -149,6 +154,13 @@ export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: Sideba
             >
               <Download className={styles.icon} />
               下载记录
+            </div>
+            <div 
+              className={styles.sidebarItem}
+              onClick={handleMySharesClick}
+            >
+              <Share2 className={styles.icon} />
+              我的分享
             </div>
           </div>
         )}

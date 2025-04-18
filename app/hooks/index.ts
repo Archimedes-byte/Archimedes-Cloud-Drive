@@ -21,3 +21,6 @@ export * from './file/useFilePreview';
 
 // 认证相关hooks
 // export * from './auth/useAuth'; 
+
+// 导出文件分享Hook
+export { useFileShare } from './useFileShare'; 

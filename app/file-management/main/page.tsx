@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { message, Spin } from 'antd';
+import { message, Spin, Input, Modal } from 'antd';
 import Head from 'next/head';
 
 // 引入共享组件
@@ -24,6 +24,7 @@ import { TopActionBar } from '@/app/components/features/file-management/action-b
 import NewFolderForm from '@/app/components/features/file-management/folder-management/new-folder-form';
 import { SearchView } from '@/app/components/features/file-management/search-view';
 import FolderSelectModal from '@/app/components/features/file-management/folder-select/FolderSelectModal';
+import MySharesContent from '@/app/components/features/file-management/my-shares/MySharesContent';
 
 // 导入自定义 hooks
 import { 
@@ -35,7 +36,8 @@ import {
   useLoadingState, 
   useUIState, 
   useThemeManager, 
-  useProfile 
+  useProfile,
+  useFileShare
 } from '@/app/hooks';
 // 导入类型和工具函数
 import { SortOrder, FileInfo } from '@/app/types';
@@ -47,6 +49,10 @@ import styles from '../styles/shared.module.css';
 // 引入fileApi
 import { fileApi } from '@/app/lib/api/file-api';
 
+// 在import部分添加ShareModal组件导入
+import { ShareModal } from '@/app/components/features/file-management/sharing';
+
+// 在组件内部添加分享相关状态和功能
 export default function FileManagementPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -174,6 +180,22 @@ export default function FileManagementPage() {
     selectedFileType  // 传入当前选择的文件类型
   });
 
+  // 文件分享钩子
+  const {
+    isShareModalOpen,
+    setIsShareModalOpen,
+    selectedFilesForShare,
+    shareFiles,
+    openShareModal,
+    closeShareModal
+  } = useFileShare();
+
+  // 链接输入框状态
+  const [isLinkInputVisible, setIsLinkInputVisible] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [shareLinkPassword, setShareLinkPassword] = useState('');
+  const linkInputRef = useRef<Input>(null);
+
   // 添加创建文件夹相关状态
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -209,7 +231,41 @@ export default function FileManagementPage() {
       });
   }, [currentFolderId, selectedFileType, loadFiles, startLoading, finishLoading]);
 
-  // 文件上下文菜单处理 - 移至hooks声明区域
+  // 添加键盘快捷键监听 - 确保所有钩子在组件顶层声明
+  useEffect(() => {
+    // 快捷键处理函数
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+L: 显示链接输入框
+      if (event.ctrlKey && event.key === 'l') {
+        event.preventDefault();
+        setIsLinkInputVisible(true);
+      }
+      
+      // Esc: 关闭链接输入框
+      if (event.key === 'Escape' && isLinkInputVisible) {
+        setIsLinkInputVisible(false);
+      }
+    };
+    
+    // 添加事件监听器
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // 组件卸载时移除事件监听器
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLinkInputVisible]);
+
+  // 焦点到链接输入框 - 确保所有钩子在组件顶层声明
+  useEffect(() => {
+    if (isLinkInputVisible && linkInputRef.current) {
+      setTimeout(() => {
+        linkInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isLinkInputVisible]);
+
+  // 文件上下文菜单处理
   const handleFileContextMenu = useCallback((e, file, setSelectedFile, setSelectedFiles) => {
     // 阻止默认右键菜单
     e?.preventDefault();
@@ -549,6 +605,9 @@ export default function FileManagementPage() {
   // 计算所有文件是否全部选中
   const areAllFilesSelected = files.length > 0 && selectedFiles.length === files.length;
 
+  // 添加状态变量来跟踪是否显示分享页面内容
+  const [showMySharesContent, setShowMySharesContent] = useState(true);
+
   // 使用初始化加载状态显示骨架屏
   if (isInitialLoading) {
     console.log('显示骨架屏加载状态');
@@ -727,6 +786,193 @@ export default function FileManagementPage() {
     }
   };
 
+  // 处理分享按钮点击
+  const handleShareButtonClick = () => {
+    if (selectedFiles.length === 0) {
+      message.warning('请先选择要分享的文件');
+      return;
+    }
+    
+    // 打开分享模态窗口
+    openShareModal(selectedFiles);
+  };
+
+  // 处理链接输入框提交
+  const handleLinkSubmit = () => {
+    if (!shareLink) {
+      message.warning('请输入分享链接');
+      return;
+    }
+    
+    // 提取分享码
+    const shareCodeMatch = shareLink.match(/\/s\/([a-zA-Z0-9]+)/);
+    if (!shareCodeMatch) {
+      message.error('无效的分享链接格式');
+      return;
+    }
+    
+    const shareCode = shareCodeMatch[1];
+    
+    // 提取提取码（如果在URL中）
+    let extractCode = '';
+    const extractCodeMatch = shareLink.match(/code=([a-zA-Z0-9]+)/);
+    if (extractCodeMatch) {
+      extractCode = extractCodeMatch[1];
+    } else {
+      extractCode = shareLinkPassword;
+    }
+    
+    if (!extractCode) {
+      message.warning('请输入提取码');
+      return;
+    }
+    
+    // 关闭输入框
+    setIsLinkInputVisible(false);
+    
+    // 重定向到分享页面
+    const url = `/s/${shareCode}?code=${extractCode}`;
+    window.open(url, '_blank');
+  };
+
+  // 在分享操作成功后处理
+  const handleShareSuccess = (result: { shareLink: string, extractCode: string }) => {
+    // 关闭分享模态窗口
+    closeShareModal();
+    
+    // 可以在这里添加其他处理，比如显示分享成功提示等
+  };
+
+  // 在文件管理页面中，添加一个路由判断
+  const contentToRender = () => {
+    // 判断当前路径是否是分享页面
+    const pathName = window.location.pathname;
+    const isMySharesPage = pathName.includes('/file-management/my-shares');
+    
+    // 如果当前路径是分享页面，且用户没有通过侧边栏选择查看其他内容
+    if (isMySharesPage && showMySharesContent) {
+      // 临时确保folderPath为空数组而不是undefined
+      if (!folderPath || !Array.isArray(folderPath)) {
+        setFolderPath([]);
+      }
+      return <MySharesContent onNavigateBack={() => setShowMySharesContent(false)} />;  // 渲染分享内容组件
+    }
+    
+    // 如果当前显示搜索视图，则渲染搜索组件
+    if (showSearchView) {
+      return (
+        <SearchView 
+          query={searchQuery}
+          setQuery={setSearchQuery}
+          searchResults={searchResults}
+          isLoading={searchLoading}
+          error={searchError}
+          searchType={searchType}
+          setSearchType={setSearchType}
+          enableRealTimeSearch={enableRealTimeSearch}
+          setEnableRealTimeSearch={setEnableRealTimeSearch}
+          debounceDelay={debounceDelay}
+          setDebounceDelay={setDebounceDelay}
+          onClose={() => setShowSearchView(false)}
+          onFilesSelect={(selectedFileIds) => {
+            setSelectedFiles(selectedFileIds || []);
+          }}
+          onSearch={handleSearch}
+          onFileClick={handleFileItemClick}
+          onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
+          onSelectAll={onSelectAllFiles}
+          onDeselectAll={onDeselectAllFiles}
+          onFileContextMenu={handleFileContextMenu}
+          selectedFiles={selectedFiles}
+          onClearHistory={clearSearchHistory}
+        />
+      );
+    }
+    
+    // 否则渲染正常的文件列表
+    return (
+      <>
+        <TopActionBar 
+          selectedFiles={selectedFiles}
+          onClearSelection={() => setSelectedFiles([])}
+          onDownload={() => handleDownload(selectedFiles)}
+          onShare={handleShareButtonClick}
+          onDelete={() => {
+            if (selectedFiles.length === 0) {
+              message.warning('请选择要删除的文件');
+              return;
+            }
+            handleDelete(selectedFiles)
+              .then(success => {
+                if (success) {
+                  message.success('删除成功');
+                  setSelectedFiles([]);
+                }
+              });
+          }}
+          onCreateFolder={handleCreateFolderClick}
+          onMove={handleMoveButtonClick}
+          onRename={() => {
+            // 检查是否选中了单个文件
+            if (selectedFiles.length !== 1) {
+              message.warning('请选择一个文件进行重命名');
+              return;
+            }
+            
+            // 查找选中的文件对象
+            const selectedFile = files.find(file => file.id === selectedFiles[0]);
+            if (selectedFile) {
+              // 打开重命名对话框
+              handleRenameButtonClick(selectedFile);
+            }
+          }}
+          onRefresh={handleRefreshFiles}
+          sortOrder={sortOrder}
+          onSortChange={changeSort}
+          isRefreshing={isRefreshing}
+          onUploadClick={() => setIsUploadModalOpen(true)}
+          onFolderUploadClick={() => setIsFolderUploadModalOpen(true)}
+        />
+
+        <div className={styles.breadcrumbContainer}>
+          <Breadcrumb
+            path={folderPath}
+            onPathClick={handleBreadcrumbPathClick}
+            onBackClick={handleBreadcrumbBackClick}
+            onClearFilter={handleClearFilter}
+          />
+        </div>
+
+        <div className={styles.fileContainer}>
+          <FileList 
+            files={convertFilesForDisplay(files)}
+            onFileClick={handleFileItemClick}
+            onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
+            onSelectAll={onSelectAllFiles}
+            onDeselectAll={onDeselectAllFiles}
+            selectedFiles={selectedFiles}
+            onFileContextMenu={(e, file) => handleFileContextMenu(e, file, setSelectedFile, setSelectedFiles)}
+            onBackClick={folderPath.length > 0 ? handleBackClick : undefined}
+            isLoading={filesLoading}
+            error={filesError}
+            editingFile={editingFile}
+            editingName={editingName}
+            editingTags={editingTags}
+            onEditNameChange={setEditingName}
+            onConfirmEdit={handleConfirmEdit}
+            onCancelEdit={() => setEditingFile(null)}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            newTag={newTag}
+            onNewTagChange={setNewTag}
+            showCheckboxes={true}
+            areAllSelected={areAllFilesSelected}
+          />
+        </div>
+      </>
+    );
+  };
+
   return (
     <>
       <Head>
@@ -739,7 +985,13 @@ export default function FileManagementPage() {
           avatarUrl={effectiveAvatarUrl}
           userName={userProfile?.name}
           userEmail={userProfile?.email}
-          onHomeClick={handleBreadcrumbPathClick}
+          onHomeClick={() => {
+            // 关闭分享内容视图
+            setShowMySharesContent(false);
+            
+            // 调用原有函数
+            handleBreadcrumbPathClick(null);
+          }}
           onLogoutClick={handleSignOut}
           onAvatarClick={() => {
             router.push('/dashboard');
@@ -766,6 +1018,9 @@ export default function FileManagementPage() {
               onTypeClick={(type) => {
                 console.log('侧边栏类型点击:', type);
                 
+                // 关闭分享内容视图
+                setShowMySharesContent(false);
+                
                 // 开始刷新加载状态
                 startLoading(true);
                 
@@ -785,211 +1040,21 @@ export default function FileManagementPage() {
                 loadFiles(null, type)
                   .finally(() => finishLoading());
               }}
-              onSearchClick={handleSearchClick}
-            />
-          </div>
-        )}
-
-        {/* 根据视图状态显示不同内容 */}
-        {showThemePanel ? (
-          /* 主题设置视图 */
-          <ThemePanel 
-            currentTheme={currentTheme}
-            onThemeChange={async (themeId) => {
-              const success = await updateTheme(themeId);
-              return success;
-            }}
-            onClose={() => setShowThemePanel(false)}
-          />
-        ) : (
-          /* 文件管理视图 */
-          <div className={styles.mainContent}>
-            {/* 当内容刷新加载时显示局部加载状态 */}
-            {isRefreshing && (
-              <div className={styles.refreshingOverlay}>
-                <Spin tip="正在刷新..." />
-              </div>
-            )}
-            
-            {/* 顶部操作栏 */}
-            <TopActionBar 
-              selectedFiles={selectedFiles}
-              onClearSelection={() => setSelectedFiles([])}
-              onDownload={() => handleDownload(selectedFiles)}
-              onRename={() => {
-                // 如果选中了多个文件，提示用户一次只能重命名一个文件
-                if (selectedFiles.length > 1) {
-                  message.warning('一次只能重命名一个文件');
-                  return;
-                }
+              onSearchClick={(searchTypeParam) => {
+                // 关闭分享内容视图
+                setShowMySharesContent(false);
                 
-                // 如果选中了一个文件，找到该文件并打开重命名对话框
-                if (selectedFiles.length === 1) {
-                  const selectedFile = files.find(file => file.id === selectedFiles[0]);
-                  if (selectedFile) {
-                    console.log('打开重命名对话框，文件:', {
-                      id: selectedFile.id,
-                      name: selectedFile.name,
-                      isFolder: selectedFile.isFolder
-                    });
-                    handleRenameButtonClick(selectedFile);
-                  } else {
-                    message.warning('未找到选中的文件');
-                  }
-                } else {
-                  message.warning('请先选择要重命名的文件');
-                }
+                // 调用原有的搜索点击处理函数
+                handleSearchClick(searchTypeParam);
               }}
-              onMove={handleMoveButtonClick}
-              onDelete={handleDelete}
-              onClearFilter={handleClearFilter}
-              onCreateFolder={handleCreateFolderClick}
-              selectedFileType={selectedFileType}
-              showSearchView={showSearchView}
-              isInRootFolder={!currentFolderId && !selectedFileType && !showSearchView}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-              showUploadDropdown={showUploadDropdown}
-              setShowUploadDropdown={setShowUploadDropdown}
-              setIsUploadModalOpen={setIsUploadModalOpen}
-              setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
-              uploadDropdownRef={uploadDropdownRef}
             />
-            
-            {/* 面包屑导航栏 */}
-            <div className={styles.breadcrumbBar}>
-              <Breadcrumb 
-                folderPath={folderPath} 
-                showHome={true}
-                onPathClick={handleBreadcrumbPathClick}
-                onBackClick={handleBreadcrumbBackClick}
-              />
-            </div>
-
-            {/* 搜索视图或文件列表视图 */}
-            <div className={styles.fileListWrapper}>
-              {showSearchView ? (
-                <div className="search-view-container">
-                  <SearchView 
-                    searchType={searchType}
-                    setSearchType={setSearchType}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    searchResults={searchResults}
-                    isLoading={searchLoading}
-                    error={searchError}
-                    handleSearch={handleSearch}
-                    handleFileClick={handleFileItemClick}
-                    enableRealTimeSearch={enableRealTimeSearch}
-                    setEnableRealTimeSearch={setEnableRealTimeSearch}
-                    debounceDelay={debounceDelay}
-                    setDebounceDelay={setDebounceDelay}
-                    handlePreviewFile={handlePreviewFile}
-                    onExitSearchView={() => {
-                      // 清除搜索输入框和搜索记录
-                      setSearchQuery('');
-                      // 清空搜索结果
-                      if (searchResults.length > 0) {
-                        console.log('清除搜索结果');
-                      }
-                      
-                      // 清空搜索历史记录
-                      clearSearchHistory();
-                      
-                      // 关闭搜索视图
-                      setShowSearchView(false);
-                      
-                      // 刷新文件列表，确保显示的是最新内容
-                      startLoading(true);
-                      loadFiles(currentFolderId, selectedFileType, true)
-                        .finally(() => finishLoading());
-                    }}
-                  />
-                </div>
-              ) : (
-                // 文件列表
-                <>
-                  {isCreatingFolder && (
-                    <NewFolderForm 
-                      folderName={newFolderName}
-                      setFolderName={setNewFolderName}
-                      folderTags={newFolderTags}
-                      setFolderTags={setNewFolderTags}
-                      onCreateFolder={() => {
-                        // 先判断文件夹名称是否为空
-                        if (!newFolderName || !newFolderName.trim()) {
-                          return; // 如果为空，直接返回
-                        }
-                        
-                        console.log('开始创建文件夹:', newFolderName);
-                        
-                        // 确保传递名称和标签
-                        handleCreateFolder(newFolderName, currentFolderId, newFolderTags)
-                          .then(folderId => {
-                            console.log('文件夹创建返回ID:', folderId);
-                            
-                            // 只要返回值不是null，就认为是成功的
-                            if (folderId !== null) {
-                              console.log('文件夹创建成功，准备刷新');
-                              // 创建成功，关闭表单并刷新
-                              setIsCreatingFolder(false);
-                              setNewFolderName('');
-                              setNewFolderTags([]);
-                              
-                              // 刷新当前文件夹
-                              loadFiles(currentFolderId, selectedFileType, true)
-                                .then(() => {
-                                  console.log('文件列表刷新完成');
-                                })
-                                .catch(err => {
-                                  console.error('刷新文件列表失败:', err);
-                                });
-                            } else {
-                              console.error('创建文件夹失败，API返回null');
-                            }
-                          })
-                          .catch(error => {
-                            console.error('创建文件夹请求出错:', error);
-                          });
-                      }}
-                      onCancel={() => {
-                        setIsCreatingFolder(false);
-                        setNewFolderName('');
-                        setNewFolderTags([]);
-                      }}
-                    />
-                  )}
-
-                  {/* 文件列表组件 */}
-                  <FileList 
-                    files={convertFilesForDisplay(files)}
-                    onFileClick={handleFileItemClick}
-                    onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
-                    onSelectAll={onSelectAllFiles}
-                    onDeselectAll={onDeselectAllFiles}
-                    selectedFiles={selectedFiles}
-                    onFileContextMenu={(e, file) => handleFileContextMenu(e, file, setSelectedFile, setSelectedFiles)}
-                    onBackClick={folderPath.length > 0 ? handleBackClick : undefined}
-                    isLoading={filesLoading}
-                    error={filesError}
-                    editingFile={editingFile}
-                    editingName={editingName}
-                    editingTags={editingTags}
-                    onEditNameChange={setEditingName}
-                    onConfirmEdit={handleConfirmEdit}
-                    onCancelEdit={() => setEditingFile(null)}
-                    onAddTag={handleAddTag}
-                    onRemoveTag={handleRemoveTag}
-                    newTag={newTag}
-                    onNewTagChange={setNewTag}
-                    showCheckboxes={true}
-                    areAllSelected={areAllFilesSelected}
-                  />
-                </>
-              )}
-            </div>
           </div>
         )}
+
+        {/* 主内容区域 - 根据路由动态变化 */}
+        <div className={styles.mainContent}>
+          {contentToRender()}
+        </div>
       </div>
       
       {/* 上传模态窗口 */}
@@ -1069,6 +1134,44 @@ export default function FileManagementPage() {
         isLoading={isMoveLoading}
         onRefresh={handleRefreshFiles}
       />
+
+      {/* 分享模态窗口 */}
+      <ShareModal 
+        isOpen={isShareModalOpen}
+        onClose={closeShareModal}
+        selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
+        onShare={shareFiles}
+      />
+      
+      {/* 链接输入模态窗口 */}
+      <Modal
+        title="打开分享链接"
+        open={isLinkInputVisible}
+        onCancel={() => setIsLinkInputVisible(false)}
+        onOk={handleLinkSubmit}
+        okText="打开"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>分享链接:</div>
+          <Input
+            ref={linkInputRef}
+            value={shareLink}
+            onChange={(e) => setShareLink(e.target.value)}
+            placeholder="输入分享链接，例如: https://example.com/s/abcdef"
+            onPressEnter={handleLinkSubmit}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 8 }}>提取码:</div>
+          <Input
+            value={shareLinkPassword}
+            onChange={(e) => setShareLinkPassword(e.target.value)}
+            placeholder="输入提取码（如果链接中已包含则无需输入）"
+            onPressEnter={handleLinkSubmit}
+          />
+        </div>
+      </Modal>
     </>
   );
 }

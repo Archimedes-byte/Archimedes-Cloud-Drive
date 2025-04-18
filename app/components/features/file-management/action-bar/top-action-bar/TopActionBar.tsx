@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  X, Download, Edit, Move, Trash2, FolderUp, Image as ImageIcon, FileText, Video, Music, File 
+  X, Download, Edit, Move, Trash2, FolderUp, Image as ImageIcon, FileText, Video, Music, File, Share2 
 } from 'lucide-react';
 import styles from '@/app/file-management/styles/shared.module.css';
 import { SortDropdown } from '@/app/components/features/file-management/action-bar/sort-dropdown';
@@ -15,6 +15,7 @@ export interface TopActionBarProps {
   onRename: () => void;
   onMove: () => void;
   onDelete: () => void;
+  onShare: () => void;
   onClearFilter: () => void;
   onCreateFolder: () => void;
   selectedFileType: FileTypeEnum | null;
@@ -36,6 +37,7 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
   onRename,
   onMove,
   onDelete,
+  onShare,
   onClearFilter,
   onCreateFolder,
   selectedFileType,
@@ -78,6 +80,11 @@ export const TopActionBar: React.FC<TopActionBarProps> = ({
                 下载
               </button>
             )}
+            
+            <button className={styles.topButton} onClick={onShare}>
+              <Share2 className="w-4 h-4" />
+              分享
+            </button>
             
             <button 
               className={styles.topButton}

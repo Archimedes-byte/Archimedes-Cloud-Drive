@@ -60,6 +60,13 @@ export const API_PATHS = {
       LIST: `${STORAGE_BASE}/tags`,
       CREATE: `${STORAGE_BASE}/tags`,
       DELETE: `${STORAGE_BASE}/tags/delete`,
-    }
+    },
+    
+    // 分享相关
+    SHARE: {
+      ROOT: `${STORAGE_BASE}/share`,
+      VERIFY: `${STORAGE_BASE}/share/verify`,
+      DOWNLOAD: `${STORAGE_BASE}/share/download`,
+    },
   }
 }; 

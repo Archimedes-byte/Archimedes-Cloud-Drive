@@ -12,7 +12,7 @@ interface BreadcrumbProps {
 }
 
 export const Breadcrumb = memo(function Breadcrumb({ 
-  folderPath, 
+  folderPath = [],
   showHome = true, 
   onNavigate, 
   onPathClick,
@@ -20,6 +20,9 @@ export const Breadcrumb = memo(function Breadcrumb({
 }: BreadcrumbProps) {
   // 向下兼容：如果有onNavigate但没有onPathClick，就使用onNavigate
   const handlePathClick = onPathClick || onNavigate;
+
+  // 确保folderPath是数组
+  const safeFolderPath = Array.isArray(folderPath) ? folderPath : [];
 
   // 使用useCallback优化点击事件处理函数，避免不必要的重新渲染
   const handleHomeClick = useCallback(() => {
@@ -41,7 +44,7 @@ export const Breadcrumb = memo(function Breadcrumb({
 
   return (
     <div className={styles.breadcrumb}>
-      {onBackClick && folderPath.length > 0 && (
+      {onBackClick && safeFolderPath.length > 0 && (
         <button 
           className={styles.breadcrumbBackButton}
           onClick={handleBackButtonClick}
@@ -65,7 +68,7 @@ export const Breadcrumb = memo(function Breadcrumb({
         </div>
       )}
       
-      {folderPath.map((folder) => (
+      {safeFolderPath.map((folder) => (
         <React.Fragment key={folder.id}>
           <span className={styles.breadcrumbSeparator}>
             <ChevronRight size={14} />

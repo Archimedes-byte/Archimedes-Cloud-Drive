@@ -373,5 +373,39 @@ export const fileApi = {
     const response = await fetch(`${API_PATHS.STORAGE.FAVORITES.LIST}?${queryParams.toString()}`);
     
     return handleResponse<PaginatedResponse<FileInfo>>(response);
+  },
+
+  // 分享文件
+  async shareFiles(options: {
+    fileIds: string[];
+    expiryDays: number;
+    extractCode?: string;
+    accessLimit?: number | null;
+    autoRefreshCode?: boolean;
+  }): Promise<{ shareLink: string; extractCode: string }> {
+    const response = await fetch(API_PATHS.STORAGE.SHARE.ROOT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options),
+    });
+
+    return handleResponse<{ shareLink: string; extractCode: string }>(response);
+  },
+
+  // 获取分享列表
+  async getSharedFiles(): Promise<any[]> {
+    const response = await fetch(API_PATHS.STORAGE.SHARE.ROOT);
+    return handleResponse<any[]>(response);
+  },
+
+  // 删除分享
+  async deleteShares(shareIds: string[]): Promise<{ deletedCount: number }> {
+    const response = await fetch(API_PATHS.STORAGE.SHARE.ROOT, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shareIds }),
+    });
+
+    return handleResponse<{ deletedCount: number }>(response);
   }
 }; 

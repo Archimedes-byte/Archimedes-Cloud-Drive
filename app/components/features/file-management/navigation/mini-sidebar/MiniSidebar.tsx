@@ -34,7 +34,7 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
         >
           {avatarUrl ? (
             <Image
-              src={`${avatarUrl}?t=${Date.now()}`}
+              src={avatarUrl}
               alt="用户头像"
               width={38}
               height={38}

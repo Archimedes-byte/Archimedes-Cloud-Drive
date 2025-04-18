@@ -77,7 +77,7 @@ const ProfileHeader = ({
           {effectiveAvatarUrl && !avatarError ? (
             <Image
               key={avatarKey}
-              src={`${effectiveAvatarUrl}?t=${refreshKey}`}
+              src={effectiveAvatarUrl}
               alt="用户头像"
               width={160}
               height={160}

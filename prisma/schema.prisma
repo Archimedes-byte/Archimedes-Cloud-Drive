@@ -24,6 +24,7 @@ model User {
   profile       UserProfile?
   accounts      Account[]
   sessions      Session[]
+  fileShares    FileShare[]
 }
 
 model Share {
@@ -38,6 +39,34 @@ model Share {
   file       File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
   sharedBy   User      @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
   sharedTo   User?     @relation("SharedTo", fields: [sharedToId], references: [id])
+}
+
+model FileShare {
+  id            String          @id @default(cuid())
+  shareCode     String          @unique
+  extractCode   String
+  expiresAt     DateTime?       // 过期时间，null表示永不过期
+  accessLimit   Int?            // 访问次数限制，null表示不限制
+  accessCount   Int             @default(0) // 已访问次数
+  autoFillCode  Boolean         @default(false) // 是否自动填充提取码
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  userId        String          // 分享者ID
+  files         FileShareFile[] // 关联的文件
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 文件与分享的多对多关联表
+model FileShareFile {
+  id         String    @id @default(cuid())
+  shareId    String
+  fileId     String
+  createdAt  DateTime  @default(now())
+  share      FileShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  file       File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([shareId])
+  @@index([fileId])
 }
 
 model Folder {
@@ -73,6 +102,7 @@ model File {
   other_File File[]    @relation("FileToFile")
   User       User      @relation(fields: [uploaderId], references: [id])
   shares     Share[]
+  fileShares  FileShareFile[] // 添加文件分享关联
 
   @@index([parentId])
   @@index([uploaderId])
