@@ -1,0 +1,16 @@
+1. 修改主文件管理页面(FileManagementPage)：
+   - 将showMySharesContent默认设为false而非true
+   - 移除了根据URL路径判断是否显示分享内容的逻辑
+   - 添加了initialShowShares属性支持
+   - 增加了对全局"view-my-shares"事件的监听
+
+2. 修改侧边栏组件(Sidebar)：
+   - 添加onSharesClick回调属性
+   - 修改handleMySharesClick方法，优先使用回调而非页面跳转
+
+3. 修改分享内容组件(MySharesContent)：
+   - 更新handleNavigateToMain方法，优先使用回调而非页面跳转
+
+4. 更新分享页面(my-shares/page.tsx)：
+   - 使用动态导入FileManagementPage组件
+   - A通过路由跳转+事件触发的方式保持对直接URL访问的支持 

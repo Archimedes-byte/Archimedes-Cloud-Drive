@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import styles from '@/app/file-management/my-shares/my-shares.module.css';
+import styles from './my-shares.module.css';
 
 const { Title, Text } = Typography;
 
@@ -280,10 +280,11 @@ export default function MySharesContent({ onNavigateBack }: MySharesContentProps
     // 如果提供了回调函数，则调用它
     if (onNavigateBack) {
       onNavigateBack();
+    } else {
+      // 只有在没有回调函数的情况下才进行页面跳转
+      // 这种情况主要是为了兼容直接访问/file-management/my-shares路径的情况
+      router.push('/file-management/main');
     }
-    
-    // 导航到主页面
-    router.push('/file-management/main');
   };
 
   return (

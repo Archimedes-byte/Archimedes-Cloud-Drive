@@ -13,9 +13,11 @@ interface SidebarProps {
   selectedFileType: FileType;
   onTypeClick: (type: FileType) => void;
   onSearchClick?: (query?: string) => void;
+  onSharesClick?: () => void;
+  onFavoritesClick?: () => void;
 }
 
-export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: SidebarProps) {
+export function Sidebar({ selectedFileType, onTypeClick, onSearchClick, onSharesClick, onFavoritesClick }: SidebarProps) {
   const fileTypes: { type: FileType; label: string; icon: React.ElementType }[] = [
     { type: null, label: '全部文件', icon: Files },
     { type: 'image', label: '图片', icon: ImageIcon },
@@ -48,9 +50,23 @@ export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: Sideba
     }
   };
 
-  // 添加处理我的分享点击事件的函数
+  // 修改处理我的分享点击事件的函数
   const handleMySharesClick = () => {
-    window.location.href = '/file-management/my-shares';
+    if (onSharesClick) {
+      // 如果提供了回调函数，就调用它
+      onSharesClick();
+    } else {
+      // 作为备选方案，如果没有提供回调，则使用传统的页面跳转
+      window.location.href = '/file-management/my-shares';
+    }
+  };
+
+  // 添加处理收藏点击事件的函数
+  const handleFavoritesClick = () => {
+    if (onFavoritesClick) {
+      // 如果提供了回调函数，就调用它
+      onFavoritesClick();
+    }
   };
 
   return (
@@ -129,10 +145,10 @@ export function Sidebar({ selectedFileType, onTypeClick, onSearchClick }: Sideba
             </div>
             <div 
               className={styles.sidebarItem}
-              onClick={() => onSearchClick && onSearchClick()}
+              onClick={handleFavoritesClick}
             >
               <Star className={styles.icon} />
-              收藏文件
+              我的收藏
             </div>
             <div 
               className={styles.sidebarItem}

@@ -25,6 +25,7 @@ import NewFolderForm from '@/app/components/features/file-management/folder-mana
 import { SearchView } from '@/app/components/features/file-management/search-view';
 import FolderSelectModal from '@/app/components/features/file-management/folder-select/FolderSelectModal';
 import MySharesContent from '@/app/components/features/file-management/my-shares/MySharesContent';
+import FavoritesContent from '@/app/components/features/file-management/favorites/FavoritesContent';
 
 // 导入自定义 hooks
 import { 
@@ -53,7 +54,11 @@ import { fileApi } from '@/app/lib/api/file-api';
 import { ShareModal } from '@/app/components/features/file-management/sharing';
 
 // 在组件内部添加分享相关状态和功能
-export default function FileManagementPage() {
+interface FileManagementPageProps {
+  initialShowShares?: boolean;
+}
+
+export default function FileManagementPage({ initialShowShares = false }: FileManagementPageProps = {}) {
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -605,8 +610,24 @@ export default function FileManagementPage() {
   // 计算所有文件是否全部选中
   const areAllFilesSelected = files.length > 0 && selectedFiles.length === files.length;
 
-  // 添加状态变量来跟踪是否显示分享页面内容
-  const [showMySharesContent, setShowMySharesContent] = useState(true);
+  // 添加状态变量来跟踪是否显示分享和收藏页面内容
+  const [showMySharesContent, setShowMySharesContent] = useState(initialShowShares);
+  const [showFavoritesContent, setShowFavoritesContent] = useState(false);
+
+  // 监听全局事件，从分享页面URL访问的情况
+  useEffect(() => {
+    // 监听事件
+    const handleViewMyShares = () => {
+      setShowMySharesContent(true);
+    };
+    
+    window.addEventListener('view-my-shares', handleViewMyShares);
+    
+    // 清理事件监听器
+    return () => {
+      window.removeEventListener('view-my-shares', handleViewMyShares);
+    };
+  }, []);
 
   // 使用初始化加载状态显示骨架屏
   if (isInitialLoading) {
@@ -845,17 +866,43 @@ export default function FileManagementPage() {
 
   // 在文件管理页面中，添加一个路由判断
   const contentToRender = () => {
-    // 判断当前路径是否是分享页面
-    const pathName = window.location.pathname;
-    const isMySharesPage = pathName.includes('/file-management/my-shares');
+    // 如果当前显示收藏内容，渲染收藏内容组件
+    if (showFavoritesContent) {
+      return (
+        <FavoritesContent 
+          onNavigateBack={() => setShowFavoritesContent(false)}
+          onOpenFile={(file) => {
+            // 关闭收藏视图
+            setShowFavoritesContent(false);
+            
+            // 如果是文件夹，导航到该文件夹
+            if (file.isFolder && file.id) {
+              // 开始加载状态
+              startLoading(true);
+              
+              // 先设置当前文件夹ID
+              setCurrentFolderId(file.id);
+              
+              // 加载文件夹内容
+              loadFiles(file.id, selectedFileType)
+                .finally(() => finishLoading());
+            } else {
+              // 如果是文件，查找并打开预览
+              const localFile = files.find(f => f.id === file.id) || file;
+              handlePreviewFile(localFile);
+            }
+          }}
+        />
+      );
+    }
     
-    // 如果当前路径是分享页面，且用户没有通过侧边栏选择查看其他内容
-    if (isMySharesPage && showMySharesContent) {
+    // 如果当前显示我的分享内容，渲染分享内容组件
+    if (showMySharesContent) {
       // 临时确保folderPath为空数组而不是undefined
       if (!folderPath || !Array.isArray(folderPath)) {
         setFolderPath([]);
       }
-      return <MySharesContent onNavigateBack={() => setShowMySharesContent(false)} />;  // 渲染分享内容组件
+      return <MySharesContent onNavigateBack={() => setShowMySharesContent(false)} />;
     }
     
     // 如果当前显示搜索视图，则渲染搜索组件
@@ -1041,11 +1088,30 @@ export default function FileManagementPage() {
                   .finally(() => finishLoading());
               }}
               onSearchClick={(searchTypeParam) => {
-                // 关闭分享内容视图
+                // 关闭其他视图
                 setShowMySharesContent(false);
+                setShowFavoritesContent(false);
                 
                 // 调用原有的搜索点击处理函数
                 handleSearchClick(searchTypeParam);
+              }}
+              onSharesClick={() => {
+                // 关闭其他视图
+                setShowSearchView(false);
+                setSelectedFileType(null);
+                setShowFavoritesContent(false);
+                
+                // 显示分享内容
+                setShowMySharesContent(true);
+              }}
+              onFavoritesClick={() => {
+                // 关闭其他视图
+                setShowSearchView(false);
+                setSelectedFileType(null);
+                setShowMySharesContent(false);
+                
+                // 显示收藏内容
+                setShowFavoritesContent(true);
               }}
             />
           </div>
@@ -1053,7 +1119,20 @@ export default function FileManagementPage() {
 
         {/* 主内容区域 - 根据路由动态变化 */}
         <div className={styles.mainContent}>
-          {contentToRender()}
+          {/* 根据视图状态显示不同内容 */}
+          {showThemePanel ? (
+            /* 主题设置视图 */
+            <ThemePanel 
+              currentTheme={currentTheme}
+              onThemeChange={async (themeId) => {
+                const success = await updateTheme(themeId);
+                return success;
+              }}
+              onClose={() => setShowThemePanel(false)}
+            />
+          ) : (
+            contentToRender()
+          )}
         </div>
       </div>
       
