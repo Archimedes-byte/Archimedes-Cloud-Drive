@@ -25,8 +25,8 @@
 // UI组件
 export * from './ui';
 
-// 导航组件
-export { default as Navbar } from './features/dashboard/navigation/navbar';
+// 导航组件 - 已迁移到file-management/navigation目录
+// export { default as Navbar } from './features/dashboard/navigation/navbar';
 
 // 文件管理组件
 export { default as UploadModal } from './features/file-management/upload/upload-modal';
@@ -34,7 +34,7 @@ export { default as FileUpload } from './features/file-management/upload/file-up
 export { default as TopActionBar } from './features/file-management/action-bar/top-action-bar';
 export { default as SortDropdown } from './features/file-management/action-bar/sort-dropdown';
 export { default as NewFolderForm } from './features/file-management/folder-management/new-folder-form';
-export { default as Toolbar } from './features/file-management/toolbar/toolbar';
+export { TopActionBar as Toolbar } from './features/file-management/action-bar/top-action-bar';
 
 // 分析组件
 export { default as StorageUsage } from './features/dashboard/analytics/storage-usage';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   File as FileIcon, 
   Folder, 
@@ -96,6 +96,8 @@ export function FileList({
   const editName = providedEditingName !== undefined ? providedEditingName : localEditName;
   const editTags = providedEditingTags !== undefined ? providedEditingTags : localEditTags;
   const newTagValue = providedNewTag !== undefined ? providedNewTag : localNewTag;
+  
+  const filesMemoized = useMemo(() => files, [files.map(f => f.id).join(',')]);
   
   const setEditName = (value: string) => {
     if (onEditNameChange) {
@@ -367,121 +369,119 @@ export function FileList({
   }
 
   return (
-    <div className={styles.fileListWrapper}>
-      <div className={styles.fileListContainer}>
-        <table className={styles.fileTable}>
-          <thead>
-            <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  onChange={isAllSelected ? 
-                    () => handleDeselectAll && handleDeselectAll() : 
-                    () => handleSelectAll && handleSelectAll()}
-                  disabled={!showCheckboxes}
-                />
-              </th>
-              <th>名称</th>
-              <th>类型</th>
-              <th>大小</th>
-              <th>标签</th>
-              <th>上传日期</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {files.map((file) => {
-              const isSelected = selectedFiles.includes(file.id);
-              const isEditing = actualEditingFileId === file.id;
-              
-              return (
-                <tr
-                  key={file.id}
-                  className={`${styles.fileRow} ${isSelected ? styles.selectedRow : ''} ${isEditing ? styles.editingRow : ''}`}
-                  onClick={() => !isEditing && onFileClick(file)}
-                  onDoubleClick={() => !isEditing && onFileDoubleClick && onFileDoubleClick(file)}
-                  onContextMenu={(e) => {
-                    if (onFileContextMenu) {
-                      e.preventDefault();
-                      onFileContextMenu(e, file);
-                    }
-                  }}
-                >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <input 
-                      type="checkbox" 
-                      checked={isSelected}
-                      onChange={(e) => handleFileCheckboxChange(file, e.target.checked)}
-                      disabled={!showCheckboxes}
-                    />
-                  </td>
-                  <td className={styles.fileNameCell}>
-                    {isEditing ? (
-                      <div className={styles.editNameWrapper}>
-                        <input 
-                          ref={editNameInputRef}
-                          type="text" 
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => handleEditKeyDown(e, file.id)}
-                          className={styles.editNameInput}
-                        />
-                      </div>
-                    ) : (
-                      <div className={styles.fileNameWrapper}>
-                        {renderFileIcon(file.type, file.extension, file.isFolder)}
-                        <span className={styles.fileName}>{file.name}</span>
-                      </div>
-                    )}
-                  </td>
-                  <td>{file.isFolder ? '文件夹' : getFileTypeDisplay(file.type, file.extension)}</td>
-                  <td>{file.isFolder ? '-' : (file.size ? formatFileSize(file.size) : '-')}</td>
-                  <td className={styles.tagsCell}>{renderTags(file)}</td>
-                  <td>{file.createdAt ? new Date(file.createdAt).toLocaleString() : '-'}</td>
-                  <td className={styles.actionsCell}>
-                    {!isEditing && (
+    <div className={styles.fileListContainer}>
+      <table className={styles.fileTable}>
+        <thead>
+          <tr>
+            <th>
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={isAllSelected ? 
+                  () => handleDeselectAll && handleDeselectAll() : 
+                  () => handleSelectAll && handleSelectAll()}
+                disabled={!showCheckboxes}
+              />
+            </th>
+            <th>名称</th>
+            <th>类型</th>
+            <th>大小</th>
+            <th>标签</th>
+            <th>上传日期</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filesMemoized.map((file) => {
+            const isSelected = selectedFiles.includes(file.id);
+            const isEditing = actualEditingFileId === file.id;
+            
+            return (
+              <tr
+                key={file.id}
+                className={`${styles.fileRow} ${isSelected ? styles.selectedRow : ''} ${isEditing ? styles.editingRow : ''}`}
+                onClick={() => !isEditing && onFileClick(file)}
+                onDoubleClick={() => !isEditing && onFileDoubleClick && onFileDoubleClick(file)}
+                onContextMenu={(e) => {
+                  if (onFileContextMenu) {
+                    e.preventDefault();
+                    onFileContextMenu(e, file);
+                  }
+                }}
+              >
+                <td onClick={(e) => e.stopPropagation()}>
+                  <input 
+                    type="checkbox" 
+                    checked={isSelected}
+                    onChange={(e) => handleFileCheckboxChange(file, e.target.checked)}
+                    disabled={!showCheckboxes}
+                  />
+                </td>
+                <td className={styles.fileNameCell}>
+                  {isEditing ? (
+                    <div className={styles.editNameWrapper}>
+                      <input 
+                        ref={editNameInputRef}
+                        type="text" 
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => handleEditKeyDown(e, file.id)}
+                        className={styles.editNameInput}
+                      />
+                    </div>
+                  ) : (
+                    <div className={styles.fileNameWrapper}>
+                      {renderFileIcon(file.type, file.extension, file.isFolder)}
+                      <span className={styles.fileName}>{file.name}</span>
+                    </div>
+                  )}
+                </td>
+                <td>{file.isFolder ? '文件夹' : getFileTypeDisplay(file.type, file.extension)}</td>
+                <td>{file.isFolder ? '-' : (file.size ? formatFileSize(file.size) : '-')}</td>
+                <td className={styles.tagsCell}>{renderTags(file)}</td>
+                <td>{file.createdAt ? new Date(file.createdAt).toLocaleString() : '-'}</td>
+                <td className={styles.actionsCell}>
+                  {!isEditing && (
+                    <button 
+                      className={styles.actionButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onFileContextMenu) {
+                          onFileContextMenu(e as unknown as React.MouseEvent, file);
+                        }
+                      }}
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  )}
+                  {isEditing && (
+                    <div className={styles.editActions}>
                       <button 
-                        className={styles.actionButton}
+                        className={`${styles.editActionButton} ${styles.saveButton}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (onFileContextMenu) {
-                            onFileContextMenu(e as unknown as React.MouseEvent, file);
-                          }
+                          onConfirmEdit && onConfirmEdit(file.id, editName, editTags);
                         }}
                       >
-                        <MoreVertical size={16} />
+                        <Check size={16} />
                       </button>
-                    )}
-                    {isEditing && (
-                      <div className={styles.editActions}>
-                        <button 
-                          className={`${styles.editActionButton} ${styles.saveButton}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onConfirmEdit && onConfirmEdit(file.id, editName, editTags);
-                          }}
-                        >
-                          <Check size={16} />
-                        </button>
-                        <button 
-                          className={`${styles.editActionButton} ${styles.cancelButton}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCancelEdit && onCancelEdit();
-                          }}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                      <button 
+                        className={`${styles.editActionButton} ${styles.cancelButton}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCancelEdit && onCancelEdit();
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

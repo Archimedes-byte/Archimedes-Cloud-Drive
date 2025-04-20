@@ -1,4 +1,4 @@
-import React, { useCallback, memo } from 'react';
+import React, { useCallback, memo, useEffect } from 'react';
 import { Home, ChevronRight, ChevronLeft } from 'lucide-react';
 import styles from '@/app/file-management/styles/shared.module.css';
 import { FolderPathItem } from '@/app/types';
@@ -9,6 +9,7 @@ interface BreadcrumbProps {
   onNavigate?: (folderId: string | null) => void;
   onPathClick: (folderId: string | null) => void;
   onBackClick?: () => void;
+  onClearFilter?: () => void;
 }
 
 export const Breadcrumb = memo(function Breadcrumb({ 
@@ -16,13 +17,22 @@ export const Breadcrumb = memo(function Breadcrumb({
   showHome = true, 
   onNavigate, 
   onPathClick,
-  onBackClick
+  onBackClick,
+  onClearFilter
 }: BreadcrumbProps) {
   // 向下兼容：如果有onNavigate但没有onPathClick，就使用onNavigate
   const handlePathClick = onPathClick || onNavigate;
 
   // 确保folderPath是数组
   const safeFolderPath = Array.isArray(folderPath) ? folderPath : [];
+
+  // 监听folderPath变化，便于调试
+  useEffect(() => {
+    // 仅在开发环境打印，减少生产环境的日志
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Breadcrumb路径已更新:', safeFolderPath);
+    }
+  }, [safeFolderPath]);
 
   // 使用useCallback优化点击事件处理函数，避免不必要的重新渲染
   const handleHomeClick = useCallback(() => {
@@ -43,7 +53,7 @@ export const Breadcrumb = memo(function Breadcrumb({
   }
 
   return (
-    <div className={styles.breadcrumb}>
+    <div className={styles.breadcrumb} data-path-length={safeFolderPath.length}>
       {onBackClick && safeFolderPath.length > 0 && (
         <button 
           className={styles.breadcrumbBackButton}
@@ -68,8 +78,8 @@ export const Breadcrumb = memo(function Breadcrumb({
         </div>
       )}
       
-      {safeFolderPath.map((folder) => (
-        <React.Fragment key={folder.id}>
+      {safeFolderPath.map((folder, index) => (
+        <React.Fragment key={`folder-${folder.id}-${index}`}>
           <span className={styles.breadcrumbSeparator}>
             <ChevronRight size={14} />
           </span>
@@ -78,6 +88,7 @@ export const Breadcrumb = memo(function Breadcrumb({
               className={styles.breadcrumbLink}
               onClick={() => handleFolderClick(folder.id)}
               aria-label={`导航到${folder.name}`}
+              title={folder.name}
             >
               {folder.name}
             </button>

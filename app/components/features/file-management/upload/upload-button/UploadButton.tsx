@@ -8,6 +8,8 @@ interface UploadButtonProps {
   setIsModalOpen: (open: boolean) => void;
   setIsFolderModalOpen: (open: boolean) => void;
   uploadDropdownRef: React.RefObject<HTMLDivElement>;
+  onUploadClick?: () => void;
+  onFolderUploadClick?: () => void;
 }
 
 export function UploadButton({ 
@@ -15,16 +17,31 @@ export function UploadButton({
   setShowDropdown, 
   setIsModalOpen, 
   setIsFolderModalOpen,
-  uploadDropdownRef 
+  uploadDropdownRef,
+  onUploadClick,
+  onFolderUploadClick
 }: UploadButtonProps) {
   
   // 处理上传按钮点击
   const handleUploadClick = (type: 'file' | 'folder') => {
     if (type === 'file') {
-      setIsModalOpen(true);
+      // 如果提供了自定义回调函数，则使用它
+      if (onUploadClick) {
+        onUploadClick();
+      } else {
+        // 否则使用默认行为
+        setIsModalOpen(true);
+      }
     } else {
-      setIsFolderModalOpen(true);
+      // 如果提供了自定义回调函数，则使用它
+      if (onFolderUploadClick) {
+        onFolderUploadClick();
+      } else {
+        // 否则使用默认行为
+        setIsFolderModalOpen(true);
+      }
     }
+    // 无论哪种情况，都关闭下拉菜单
     setShowDropdown(false);
   };
 

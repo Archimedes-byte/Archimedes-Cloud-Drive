@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
-    "db:reset": "ts-node scripts/reset-db.ts"
+    "db:reset": "ts-node prisma/reset-db.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
@@ -45,7 +45,7 @@
     "postcss": "^8.4.35",
     "prisma": "^5.10.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react-dom": "^18.3.1",
     "react-dropzone": "^14.3.8",
     "react-icons": "^5.5.0",
     "react-image-crop": "^11.0.7",

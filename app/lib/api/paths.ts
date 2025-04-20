@@ -29,6 +29,7 @@ export const API_PATHS = {
       PREVIEW: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/preview`,
       CONTENT: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/content`,
       RENAME: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/rename`,
+      CHECK_NAME_CONFLICTS: `${STORAGE_BASE}/files/check-name-conflicts`,
     },
     
     // 文件夹操作

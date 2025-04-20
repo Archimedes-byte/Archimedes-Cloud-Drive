@@ -384,35 +384,32 @@
 
 .dropdownMenu {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 5px);
   right: 0;
-  z-index: 10;
-  min-width: 180px;
+  z-index: 1000;
+  min-width: 150px;
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #eaeaea;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  margin-top: 8px;
-  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px;
   animation: slideDown 0.2s ease-in-out;
+  overflow: visible;
 }
 
 .dropdownItem {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
+  padding: 10px 12px;
   font-size: 14px;
   color: #333;
+  cursor: pointer;
+  border-radius: 4px;
   transition: background 0.2s;
+  user-select: none;
 }
 
 .dropdownItem:hover {
   background: #f5f5f5;
+  color: var(--theme-primary, #3182ce);
 }
 
 .actionButtons {
@@ -976,76 +973,83 @@
 .breadcrumb {
   display: flex;
   align-items: center;
-  padding: 6px 0;
-  background-color: transparent;
-  border-radius: 0;
-  margin-bottom: 0;
-  box-shadow: none;
-  overflow-x: auto;
-  white-space: nowrap;
-  flex-shrink: 0;
-  width: 100%;
-}
-
-.breadcrumbBackButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-right: 8px;
-  border: none;
-  background-color: #f7fafc;
-  color: #4a5568;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.breadcrumbBackButton:hover {
-  background-color: #edf2f7;
-  color: var(--theme-primary, #3182ce);
-  transform: translateX(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-.breadcrumbBackButton:active {
-  transform: scale(0.95);
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  min-height: 44px;
+  transition: all 0.2s ease-in-out;
+  will-change: contents;
 }
 
 .breadcrumbItem {
   display: flex;
   align-items: center;
+  max-width: 200px;
+  transition: all 0.2s ease-in-out;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
-.breadcrumbSeparator {
-  margin: 0 10px;
-  color: #a0aec0;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .breadcrumbLink {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  color: #4a5568;
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #333;
   font-size: 14px;
   font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .breadcrumbLink:hover {
-  background-color: #edf2f7;
-  color: var(--theme-primary, #2b6cb0);
+  background: rgba(0, 120, 212, 0.1);
+  color: #0078d4;
+}
+
+.breadcrumbSeparator {
+  color: #999;
+  margin: 0 4px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease-in-out;
 }
 
 .breadcrumbIcon {
+  margin-right: 4px;
+}
+
+.breadcrumbBackButton {
   margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.breadcrumbBackButton:hover {
+  background: rgba(0, 120, 212, 0.1);
+  color: #0078d4;
 }
 
 /* ===== 图标样式 ===== */
@@ -1769,17 +1773,50 @@
   display: flex;
   align-items: center;
   height: 38px; /* 与其他按钮保持一致的高度 */
+  z-index: 100; /* 确保容器有足够的z-index */
 }
 
 /* 下拉图标样式 */
 .dropdownIcon {
-  margin-left: 6px;
+  margin-left: 0;
   transition: transform 0.3s ease;
 }
 
 /* 下拉图标旋转效果 */
 .activeButton .dropdownIcon {
   transform: rotate(180deg);
+}
+
+/* 下拉菜单样式 */
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 1000;
+  min-width: 150px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  animation: slideDown 0.2s ease-in-out;
+  overflow: visible;
+}
+
+/* 下拉菜单选项 */
+.dropdownItem {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+  user-select: none;
+}
+
+.dropdownItem:hover {
+  background: #f5f5f5;
+  color: var(--theme-primary, #3182ce);
 }
 
 /* 按钮图标统一样式 */
@@ -1856,4 +1893,55 @@
   to {
     opacity: 1;
   }
+}
+
+.rotating {
+  animation: rotate 1.5s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.refreshing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.fileContainer {
+  flex: 1;
+  overflow: auto;
+  padding: 0 16px 16px 16px;
+  transition: all 0.2s ease-in-out;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  user-select: none;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  animation: fadeInUp 0.2s ease-in-out;
+  will-change: transform, opacity;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 } 

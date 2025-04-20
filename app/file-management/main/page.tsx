@@ -6,13 +6,14 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { message, Spin, Input, Modal } from 'antd';
 import Head from 'next/head';
+import { FolderUp } from 'lucide-react';
 
 // 引入共享组件
 import { Sidebar } from '@/app/components/features/file-management/navigation/sidebar';
 import { Breadcrumb } from '@/app/components/features/file-management/navigation/breadcrumb';
 import { FileList } from '@/app/components/features/file-management/file-list/file-list';
-import { SkeletonPageLayout } from '@/app/components/features/file-management/shared/skeleton';
-import { ErrorDisplay } from '@/app/components/features/file-management/shared/error-display';
+import { SkeletonPageLayout } from '@/app/components/features/file-management/shared/skeleton/Skeleton';
+import { ErrorDisplay } from '@/app/components/features/file-management/shared/error-display/ErrorDisplay';
 import UploadModal from '@/app/components/features/file-management/upload/upload-modal';
 import { FilePreview } from '@/app/components/features/file-management/file-preview/file-preview';
 import { RenameModal } from '@/app/components/features/file-management/file-operations/rename-modal';
@@ -57,6 +58,9 @@ import { ShareModal } from '@/app/components/features/file-management/sharing';
 interface FileManagementPageProps {
   initialShowShares?: boolean;
 }
+
+// 添加文件名冲突检查API
+import { checkFileNameConflicts } from '@/app/lib/api/file-service';
 
 export default function FileManagementPage({ initialShowShares = false }: FileManagementPageProps = {}) {
   const router = useRouter();
@@ -392,20 +396,16 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理文件点击
   const handleFileItemClick = useCallback((file) => {
-    console.log('文件点击:', file);
-    
-    // 检查是否需要关闭搜索视图
-    const isInSearch = showSearchView;
-    
+    // 减少不必要的日志输出
     if (file.isFolder) {
       // 如果是文件夹，使用导航逻辑
-      handleFileClick(file);
-      
       // 如果当前在搜索视图，则关闭搜索视图
-      if (isInSearch) {
-        console.log('从搜索结果点击文件夹，关闭搜索视图');
+      if (showSearchView) {
         setShowSearchView(false);
       }
+
+      // 使用文件夹导航函数，该函数内部会更新面包屑路径
+      handleFileClick(file);
     } else {
       // 如果是文件，查找本地文件并打开预览
       const localFile = files.find(f => f.id === file.id) || file;
@@ -430,9 +430,18 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理返回根目录/清除过滤器 - 移到这里
   const handleClearFilter = useCallback(() => {
+    console.log('处理根目录按钮点击，准备清除过滤器和导航到根目录');
+    
+    // 先关闭搜索视图
     setShowSearchView(false);
+    
+    // 清除文件类型过滤
     setSelectedFileType(null);
+    
+    // 清除当前文件夹ID，导航到根目录
     setCurrentFolderId(null);
+    
+    // 清除文件夹路径数组
     setFolderPath([]);
     
     // 清除搜索内容和历史记录
@@ -441,10 +450,20 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     
     // 开始刷新加载状态
     startLoading(true);
+    console.log('开始加载根目录文件');
     
     // 传递null类型参数以确保清除过滤，并强制刷新
     loadFiles(null, null, true)
-      .finally(() => finishLoading());
+      .then(() => {
+        console.log('根目录文件加载成功');
+      })
+      .catch(error => {
+        console.error('根目录文件加载失败', error);
+      })
+      .finally(() => {
+        console.log('根目录文件加载完成');
+        finishLoading();
+      });
   }, [setShowSearchView, setSelectedFileType, setCurrentFolderId, setFolderPath, startLoading, loadFiles, finishLoading, setSearchQuery, clearSearchHistory]);
 
   // 使用useCallback优化面包屑导航处理函数
@@ -866,6 +885,20 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 在文件管理页面中，添加一个路由判断
   const contentToRender = () => {
+    // 公共渲染的面包屑组件
+    const renderBreadcrumb = () => (
+      <div className={styles.breadcrumbContainer}>
+        {console.log('当前渲染面包屑，路径数据:', folderPath)}
+        <Breadcrumb
+          folderPath={folderPath}
+          onPathClick={handleBreadcrumbPathClick}
+          onBackClick={handleBreadcrumbBackClick}
+          onClearFilter={handleClearFilter}
+          key={`breadcrumb-${folderPath.length}-${folderPath.length > 0 ? folderPath[folderPath.length-1].id : 'root'}`}
+        />
+      </div>
+    );
+
     // 如果当前显示收藏内容，渲染收藏内容组件
     if (showFavoritesContent) {
       return (
@@ -908,39 +941,49 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     // 如果当前显示搜索视图，则渲染搜索组件
     if (showSearchView) {
       return (
-        <SearchView 
-          query={searchQuery}
-          setQuery={setSearchQuery}
-          searchResults={searchResults}
-          isLoading={searchLoading}
-          error={searchError}
-          searchType={searchType}
-          setSearchType={setSearchType}
-          enableRealTimeSearch={enableRealTimeSearch}
-          setEnableRealTimeSearch={setEnableRealTimeSearch}
-          debounceDelay={debounceDelay}
-          setDebounceDelay={setDebounceDelay}
-          onClose={() => setShowSearchView(false)}
-          onFilesSelect={(selectedFileIds) => {
-            setSelectedFiles(selectedFileIds || []);
-          }}
-          onSearch={handleSearch}
-          onFileClick={handleFileItemClick}
-          onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
-          onSelectAll={onSelectAllFiles}
-          onDeselectAll={onDeselectAllFiles}
-          onFileContextMenu={handleFileContextMenu}
-          selectedFiles={selectedFiles}
-          onClearHistory={clearSearchHistory}
-        />
+        <>
+          {renderBreadcrumb()}
+          <SearchView 
+            query={searchQuery}
+            setQuery={setSearchQuery}
+            searchResults={searchResults}
+            isLoading={searchLoading}
+            error={searchError}
+            searchType={searchType}
+            setSearchType={setSearchType}
+            enableRealTimeSearch={enableRealTimeSearch}
+            setEnableRealTimeSearch={setEnableRealTimeSearch}
+            debounceDelay={debounceDelay}
+            setDebounceDelay={setDebounceDelay}
+            onClose={() => setShowSearchView(false)}
+            onFilesSelect={(selectedFileIds) => {
+              setSelectedFiles(selectedFileIds || []);
+            }}
+            onSearch={handleSearch}
+            onFileClick={handleFileItemClick}
+            onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
+            onSelectAll={onSelectAllFiles}
+            onDeselectAll={onDeselectAllFiles}
+            onFileContextMenu={handleFileContextMenu}
+            selectedFiles={selectedFiles}
+            onClearHistory={clearSearchHistory}
+          />
+        </>
       );
     }
     
     // 否则渲染正常的文件列表
     return (
       <>
+        {console.log('TopActionBar状态：', {
+          currentFolderId,
+          folderPathLength: folderPath.length,
+          selectedFileType,
+          showSearchView,
+          isInRootFolder: currentFolderId === null && folderPath.length === 0 && selectedFileType === null && !showSearchView
+        })}
         <TopActionBar 
-          selectedFiles={selectedFiles}
+          selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
           onClearSelection={() => setSelectedFiles([])}
           onDownload={() => handleDownload(selectedFiles)}
           onShare={handleShareButtonClick}
@@ -974,23 +1017,86 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             }
           }}
           onRefresh={handleRefreshFiles}
+          onClearFilter={handleClearFilter}
           sortOrder={sortOrder}
-          onSortChange={changeSort}
+          onSortChange={(newSortOrder) => {
+            // 更新排序状态
+            setSortOrder(newSortOrder);
+            // 使用新排序状态重新排序文件
+            changeSort(newSortOrder.field, newSortOrder.direction);
+          }}
           isRefreshing={isRefreshing}
           onUploadClick={() => setIsUploadModalOpen(true)}
           onFolderUploadClick={() => setIsFolderUploadModalOpen(true)}
+          selectedFileType={selectedFileType}
+          showSearchView={showSearchView}
+          isInRootFolder={currentFolderId === null && folderPath.length === 0 && selectedFileType === null && !showSearchView}
+          showUploadDropdown={showUploadDropdown}
+          setShowUploadDropdown={setShowUploadDropdown}
+          setIsUploadModalOpen={setIsUploadModalOpen}
+          setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
+          uploadDropdownRef={uploadDropdownRef}
         />
 
-        <div className={styles.breadcrumbContainer}>
-          <Breadcrumb
-            path={folderPath}
-            onPathClick={handleBreadcrumbPathClick}
-            onBackClick={handleBreadcrumbBackClick}
-            onClearFilter={handleClearFilter}
-          />
-        </div>
+        {renderBreadcrumb()}
 
         <div className={styles.fileContainer}>
+          {isCreatingFolder && (
+            <NewFolderForm 
+              folderName={newFolderName}
+              setFolderName={setNewFolderName}
+              folderTags={newFolderTags}
+              setFolderTags={setNewFolderTags}
+              onCreateFolder={async () => {
+                if (!newFolderName.trim()) {
+                  message.warning('文件夹名称不能为空');
+                  return;
+                }
+                
+                // 开始加载状态
+                startLoading(true);
+                
+                try {
+                  // 创建文件夹并刷新
+                  const folderId = await handleCreateFolder(
+                    newFolderName.trim(), 
+                    currentFolderId, 
+                    newFolderTags
+                  );
+                  
+                  if (folderId) {
+                    // 只有在成功创建文件夹后才清除表单并刷新
+                    setIsCreatingFolder(false);
+                    setNewFolderName('');
+                    setNewFolderTags([]);
+                    
+                    // 刷新当前目录文件列表
+                    await loadFiles(currentFolderId, selectedFileType, true);
+                    message.success('文件夹创建成功');
+                  } else {
+                    // 创建失败但没有抛出异常，保持表单开启
+                    message.error('创建文件夹失败，请检查文件夹名称或重试');
+                  }
+                } catch (error) {
+                  // 捕获异常，显示错误信息并保持表单开启
+                  const errorMessage = error instanceof Error ? error.message : '创建文件夹时发生错误';
+                  
+                  if (errorMessage.includes('已存在') || errorMessage.includes('同名')) {
+                    message.warning('文件夹名称已存在，请使用其他名称');
+                  } else {
+                    message.error(errorMessage);
+                  }
+                } finally {
+                  finishLoading();
+                }
+              }}
+              onCancel={() => {
+                setIsCreatingFolder(false);
+                setNewFolderName('');
+                setNewFolderTags([]);
+              }}
+            />
+          )}
           <FileList 
             files={convertFilesForDisplay(files)}
             onFileClick={handleFileItemClick}

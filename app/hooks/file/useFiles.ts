@@ -83,8 +83,9 @@ export const useFiles = () => {
     }
 
     try {
-      // 修改路径构建方式，使用id替代folderId，避免路由参数不一致问题
-      const folderPath = `${API_PATHS.STORAGE.FOLDERS.GET(folderId).replace('/folders/', '/folders/')}`;
+      // 修复路径构建问题 - 使用正确的API路径
+      const folderPath = `/api/storage/folders/${folderId}`;
+      console.log('加载文件夹路径:', folderPath);
       const response = await fetch(`${folderPath}/path`);
       
       // 检查内容类型
@@ -109,6 +110,7 @@ export const useFiles = () => {
       const data = await response.json();
       
       if (data.success) {
+        console.log('加载文件夹路径成功:', data.path);
         setFolderPath(data.path || []);
       } else {
         console.error('加载文件夹路径失败:', data.error);
@@ -130,7 +132,7 @@ export const useFiles = () => {
     forceRefresh: boolean = false,
     skipPathLoad: boolean = false
   ) => {
-    console.log('loadFiles被调用', {folderId, type, isLoading, forceRefresh, skipPathLoad});
+    console.log('loadFiles被调用', {folderId, type, skipPathLoad});
     
     // 如果已经在加载中，不要重复请求
     if (isLoading) {
@@ -154,11 +156,7 @@ export const useFiles = () => {
       setIsLoading(true);
       setError(null);
       
-      // 如果是强制刷新，增加一个小延迟，确保后端数据已更新
-      if (forceRefresh) {
-        console.log('强制刷新，增加延迟以确保获取最新数据');
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+      // 移除延迟，提高响应速度
       
       // 优先使用传入的type，如果没有传入则使用状态中的selectedFileType
       const effectiveFileType = type !== undefined ? type : selectedFileType;
@@ -171,26 +169,10 @@ export const useFiles = () => {
           setCurrentFolderId(folderId);
         }
         
-        // 加载文件夹路径逻辑增强
-        // 1. 明确要求跳过时不加载
-        // 2. 如果是相同文件夹的刷新，也跳过路径加载以保持当前面包屑
-        if (!skipPathLoad && !isSameFolderId) {
-          loadFolderPath(folderId);
-        }
+        // 不再依赖API获取路径，使用skipPathLoad控制是否重置路径
+        // 当skipPathLoad为true时，保持当前路径不变（由handleFileClick维护）
       }
 
-      console.log('加载文件列表，参数:', { 
-        folderId, 
-        之前文件夹ID: currentFolderId,
-        文件类型: effectiveFileType,
-        强制刷新: forceRefresh,
-        跳过路径加载: skipPathLoad,
-        当前面包屑: folderPath
-      });
-
-      // 判断是否为按类型过滤模式
-      const isTypeFilterMode = !!effectiveFileType;
-      
       // 使用fileApi获取文件列表
       try {
         const result = await fileApi.getFiles({
@@ -207,7 +189,6 @@ export const useFiles = () => {
         if (effectiveFileType) {
           // 使用统一的工具函数过滤文件
           filteredFiles = filterFilesByType(filteredFiles as any, effectiveFileType) as FileInfo[];
-          console.log(`前端过滤 - 类型 "${effectiveFileType}": 过滤前 ${result.items.length} 项, 过滤后 ${filteredFiles.length} 项`);
         }
         
         // 将结果映射为FileWithSize类型
@@ -232,7 +213,7 @@ export const useFiles = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, selectedFileType, sortOrder, handleSort, currentFolderId, loadFolderPath, folderPath]);
+  }, [isLoading, selectedFileType, sortOrder, handleSort, currentFolderId]);
 
   /**
    * 选择或取消选择单个文件
@@ -263,12 +244,21 @@ export const useFiles = () => {
    * 更改排序
    */
   const changeSort = useCallback((field: SortField, direction: SortDirectionEnum) => {
+    console.log('useFiles hook: changeSort被调用', { field, direction });
+    
+    // 更新排序状态
     setSortOrder({ field, direction });
+    console.log('排序状态已更新');
     
     // 重新应用排序
-    const sortedFiles = handleSort(files);
+    console.log('应用排序到文件列表, 文件数量:', files.length);
+    const sortedFiles = handleSort([...files]); // 创建副本以确保状态更新
+    console.log('排序后的文件列表, 文件数量:', sortedFiles.length);
+    
+    // 强制更新文件列表
     setFiles(sortedFiles);
     setLastSortApplied(`${field}-${direction}`);
+    console.log('文件列表已更新，排序标记:', `${field}-${direction}`);
   }, [files, handleSort]);
 
   /**
@@ -307,7 +297,7 @@ export const useFiles = () => {
       // 设置当前文件夹ID
       setCurrentFolderId(file.id);
       
-      // 更新面包屑路径
+      // 更新面包屑路径（纯前端实现，不依赖API）
       setFolderPath(prevPath => {
         // 创建新的文件夹路径项
         const newPathItem: FolderPathItem = {
@@ -321,7 +311,8 @@ export const useFiles = () => {
         return newPath;
       });
       
-      // 加载文件夹内容，但阻止自动加载路径
+      // 加载文件夹内容，但不触发路径加载
+      // 移除强制刷新，提高性能
       loadFiles(file.id, null, false, true);
     }
     // 如果是文件，不做特殊处理，由调用者处理
@@ -338,10 +329,12 @@ export const useFiles = () => {
       
       // 设置当前文件夹ID为上一级
       setCurrentFolderId(parentId);
-      // 裁剪路径
+      
+      // 裁剪路径 - 纯前端实现，不依赖API
       setFolderPath(prev => prev.slice(0, prev.length - 1));
-      // 加载上一级文件夹内容
-      loadFiles(parentId, null);
+      
+      // 加载上一级文件夹内容，不重新获取路径
+      loadFiles(parentId, null, false, true);
     }
   }, [folderPath, setCurrentFolderId, setFolderPath, loadFiles]);
 

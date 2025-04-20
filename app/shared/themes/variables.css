@@ -1,0 +1,127 @@
+/**
+ * 集中的主题变量系统
+ * 
+ * 该文件定义了应用中使用的所有主题变量，
+ * 分为默认主题和暗黑主题两种模式。
+ * 
+ * 使用方法：
+ * 1. 在组件中通过 var(--theme-*) 使用变量
+ * 2. 使用 Tailwind 的 theme.extend.colors 中定义的变量
+ * 3. 使用自定义组件类（.btn-primary 等）
+ */
+
+:root {
+  /* ===== 基础系统变量 ===== */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  
+  /* ===== 主题颜色变量 ===== */
+  --theme-primary: #3b82f6;         /* 主色调 */
+  --theme-primary-light: #60a5fa;   /* 主色调亮色版 */
+  --theme-primary-dark: #2563eb;    /* 主色调暗色版 */
+  
+  --theme-secondary: #2c5282;       /* 辅助色调 */
+  --theme-secondary-light: #4299e1; /* 辅助色调亮色版 */
+  --theme-secondary-dark: #1e40af;  /* 辅助色调暗色版 */
+  
+  --theme-accent: #60a5fa;          /* 强调色 */
+  
+  /* 功能色彩 */
+  --theme-success: #10b981;         /* 成功 */
+  --theme-success-light: #34d399;   /* 成功亮色版 */
+  --theme-success-dark: #059669;    /* 成功暗色版 */
+  
+  --theme-warning: #f59e0b;         /* 警告 */
+  --theme-warning-light: #fbbf24;   /* 警告亮色版 */
+  --theme-warning-dark: #d97706;    /* 警告暗色版 */
+  
+  --theme-error: #ef4444;           /* 错误 */
+  --theme-error-light: #f87171;     /* 错误亮色版 */
+  --theme-error-dark: #dc2626;      /* 错误暗色版 */
+  
+  --theme-info: #3b82f6;            /* 信息 */
+  --theme-info-light: #60a5fa;      /* 信息亮色版 */
+  --theme-info-dark: #2563eb;       /* 信息暗色版 */
+  
+  /* ===== 背景和界面变量 ===== */
+  --theme-background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%);
+  --theme-card: rgba(255, 255, 255, 0.9);
+  --theme-border: #e2e8f0;
+  --theme-text: #1a202c;
+  --theme-text-secondary: #64748b;
+  
+  /* ===== 阴影变量 ===== */
+  --theme-card-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+  --theme-button-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  --theme-button-hover-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+  --theme-dropdown-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  
+  /* ===== 辅助变量 ===== */
+  --background-start-rgb: 240, 247, 255;
+  --background-end-rgb: 230, 240, 253;
+  --foreground-rgb: 24, 24, 27;
+  
+  /* ===== 过渡和动画 ===== */
+  --transition-speed: 0.3s;
+  --transition-function: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-duration: 0.3s;
+  
+  /* ===== 间距和尺寸 ===== */
+  --theme-border-radius: 0.5rem;
+  --theme-input-height: 2.5rem;
+  --theme-button-height: 2.5rem;
+}
+
+/* ===== 暗黑模式支持 ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 基础系统变量 */
+    --background: 20 14.3% 4.1%;
+    --foreground: 0 0% 95%;
+    
+    /* 颜色变量 */
+    --theme-primary: #60a5fa;
+    --theme-primary-light: #93c5fd;
+    --theme-primary-dark: #3b82f6;
+    
+    --theme-secondary: #3b82f6;
+    --theme-secondary-light: #60a5fa;
+    --theme-secondary-dark: #2563eb;
+    
+    --theme-accent: #93c5fd;
+    
+    /* 功能色彩 */
+    --theme-success: #34d399;
+    --theme-success-light: #6ee7b7;
+    --theme-success-dark: #10b981;
+    
+    --theme-warning: #fbbf24;
+    --theme-warning-light: #fcd34d;
+    --theme-warning-dark: #f59e0b;
+    
+    --theme-error: #f87171;
+    --theme-error-light: #fca5a5;
+    --theme-error-dark: #ef4444;
+    
+    --theme-info: #60a5fa;
+    --theme-info-light: #93c5fd;
+    --theme-info-dark: #3b82f6;
+    
+    /* 背景和界面变量 */
+    --theme-background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    --theme-card: rgba(30, 41, 59, 0.9);
+    --theme-border: #334155;
+    --theme-text: #f1f5f9;
+    --theme-text-secondary: #94a3b8;
+    
+    /* 阴影变量 */
+    --theme-card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --theme-button-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --theme-button-hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    
+    /* 辅助变量 */
+    --background-start-rgb: 15, 23, 42;
+    --background-end-rgb: 30, 41, 59;
+    --foreground-rgb: 241, 245, 249;
+  }
+} 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Folder } from 'lucide-react';
 import { Button, message, Modal, Spin } from 'antd';
-import { downloadFolderFallback } from '@/app/debug/download-fallback';
+import { downloadFolder } from '@/app/lib/download-utils';
 import { useFileOperations } from '@/app/hooks/file/useFileOperations';
 
 interface FolderDownloadButtonProps {
@@ -58,7 +58,7 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
       
       // 如果标准方法失败，使用备用方法
       console.log('标准下载方法失败，尝试备用方法...');
-      const fallbackSuccess = await downloadFolderFallback(folderId, `${folderName}.zip`);
+      const fallbackSuccess = await downloadFolder(folderId, `${folderName}.zip`);
       
       if (fallbackSuccess) {
         message.success(`"${folderName}" 文件夹下载已开始`);

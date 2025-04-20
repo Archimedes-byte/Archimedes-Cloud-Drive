@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Modal, Button, Tag, Input, Progress, message } from 'antd';
-import { InboxOutlined, TagOutlined } from '@ant-design/icons';
+import { InboxOutlined, TagOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { UploadModalProps } from '@/app/types/domains/file-management';
 import { API_PATHS } from '@/app/lib/api/paths';
 import styles from './uploadModal.module.css';
@@ -15,6 +15,7 @@ interface ExtendedUploadFile {
   type?: string;
   webkitRelativePath?: string;
   originFileObj?: File;
+  originalName?: string;
 }
 
 /**
@@ -72,6 +73,11 @@ const UploadModal: React.FC<UploadModalProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedBytes, setUploadedBytes] = useState<number>(0);
   const [totalBytes, setTotalBytes] = useState<number>(0);
+  // 添加文件名编辑状态
+  const [editingFileIndex, setEditingFileIndex] = useState<number | null>(null);
+  const [editingFileName, setEditingFileName] = useState<string>('');
+  // 用于显示同名文件冲突警告
+  const [nameConflictError, setNameConflictError] = useState<string | null>(null);
   
   // 引用
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +103,9 @@ const UploadModal: React.FC<UploadModalProps> = ({
     setUploadedBytes(0);
     setTotalBytes(0);
     setUploading(false);
+    setEditingFileIndex(null);
+    setEditingFileName('');
+    setNameConflictError(null);
   }, []);
 
   // 关闭模态窗
@@ -152,7 +161,116 @@ const UploadModal: React.FC<UploadModalProps> = ({
   // 移除文件
   const removeFile = useCallback((index: number) => {
     setFileList(prev => prev.filter((_, i) => i !== index));
+    // 如果正在编辑的文件被移除，重置编辑状态
+    if (editingFileIndex === index) {
+      setEditingFileIndex(null);
+      setEditingFileName('');
+    }
+  }, [editingFileIndex]);
+
+  // 开始编辑文件名
+  const startEditFileName = useCallback((index: number) => {
+    const file = fileList[index];
+    setEditingFileIndex(index);
+    setEditingFileName(file.name);
+  }, [fileList]);
+
+  // 保存编辑后的文件名
+  const saveEditFileName = useCallback(() => {
+    if (editingFileIndex === null || !editingFileName.trim()) return;
+    
+    setFileList(prev => 
+      prev.map((file, index) => 
+        index === editingFileIndex 
+          ? { 
+              ...file, 
+              name: editingFileName.trim(),
+              // 保持文件原始名称供上传时使用
+              originalName: file.originalName || file.name
+            } 
+          : file
+      )
+    );
+    
+    setEditingFileIndex(null);
+    setEditingFileName('');
+    setNameConflictError(null);
+  }, [editingFileIndex, editingFileName]);
+
+  // 取消编辑文件名
+  const cancelEditFileName = useCallback(() => {
+    setEditingFileIndex(null);
+    setEditingFileName('');
   }, []);
+
+  // 处理编辑文件名输入变化
+  const handleEditFileNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingFileName(e.target.value);
+  }, []);
+
+  // 处理编辑文件名键盘事件
+  const handleEditFileNameKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEditFileName();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditFileName();
+    }
+  }, [saveEditFileName, cancelEditFileName]);
+
+  // 检查服务器是否存在同名文件
+  const checkFileNameConflicts = useCallback(async () => {
+    if (fileList.length === 0) return false;
+    
+    try {
+      // 构造请求体，包含当前目录ID和文件名列表
+      const requestBody = {
+        folderId: currentFolderId || 'root',
+        fileNames: fileList.map(file => file.name)
+      };
+      
+      // 发送请求检查文件名冲突
+      const response = await fetch(API_PATHS.STORAGE.FILES.CHECK_NAME_CONFLICTS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        throw new Error('检查文件名冲突失败');
+      }
+      
+      const result = await response.json();
+      
+      // 如果存在冲突的文件名
+      if (result.conflicts && result.conflicts.length > 0) {
+        const conflictNames = result.conflicts.join(', ');
+        setNameConflictError(`发现同名文件/文件夹: ${conflictNames}，请修改名称后重试`);
+        
+        // 将有冲突的文件设置为编辑状态
+        const firstConflictIndex = fileList.findIndex(file => 
+          result.conflicts.includes(file.name)
+        );
+        
+        if (firstConflictIndex !== -1) {
+          startEditFileName(firstConflictIndex);
+        }
+        
+        return true; // 存在冲突
+      }
+      
+      setNameConflictError(null);
+      return false; // 不存在冲突
+      
+    } catch (error) {
+      console.error('检查文件名冲突出错:', error);
+      // 出错时不阻止上传，但记录错误
+      return false;
+    }
+  }, [fileList, currentFolderId, startEditFileName]);
 
   // 处理标签输入变更
   const handleTagInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,9 +306,17 @@ const UploadModal: React.FC<UploadModalProps> = ({
   }, []);
   
   // 处理上传
-  const handleUpload = useCallback(() => {
+  const handleUpload = useCallback(async () => {
     if (fileList.length === 0) {
       message.warning('请选择要上传的文件');
+      return;
+    }
+    
+    // 先检查文件名冲突
+    const hasConflicts = await checkFileNameConflicts();
+    
+    // 如果有冲突，停止上传过程
+    if (hasConflicts) {
       return;
     }
     
@@ -207,14 +333,28 @@ const UploadModal: React.FC<UploadModalProps> = ({
     // 创建FormData对象用于上传
     const formData = new FormData();
     
-    // 添加所有文件到表单
-    fileList.forEach(fileItem => {
+    // 添加所有文件到表单，包括可能被重命名的文件
+    fileList.forEach((fileItem, index) => {
       if (fileItem.originFileObj) {
-        formData.append('file', fileItem.originFileObj);
+        const file = fileItem.originFileObj;
+        
+        // 如果文件名被修改，使用新的文件名
+        if (fileItem.originalName && fileItem.originalName !== fileItem.name) {
+          // 创建新的File对象或Blob以保留原始文件但更改名称
+          // 由于File构造函数在某些浏览器可能不完全支持，这里使用Blob
+          const blob = new Blob([file], { type: file.type });
+          formData.append('file', blob, fileItem.name);
+          
+          // 添加原始文件名和新文件名的映射
+          formData.append(`originalName_${index}`, fileItem.originalName);
+          formData.append(`newName_${index}`, fileItem.name);
+        } else {
+          // 使用原始文件
+          formData.append('file', file);
+        }
         
         // 处理文件夹上传的路径信息
         if (isFolderUpload && fileItem.webkitRelativePath) {
-          const index = fileList.indexOf(fileItem);
           formData.append(`paths_${index}`, fileItem.webkitRelativePath);
         }
       }
@@ -477,26 +617,107 @@ const UploadModal: React.FC<UploadModalProps> = ({
               <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
                 已选择 {fileList.length} 个文件:
               </div>
+              
+              {/* 添加名称冲突警告 */}
+              {nameConflictError && (
+                <div style={{ 
+                  color: 'red',
+                  padding: '8px 12px',
+                  background: '#fff2f0',
+                  border: '1px solid #ffccc7',
+                  borderRadius: '4px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>警告:</div>
+                  <div>{nameConflictError}</div>
+                  <div style={{ marginTop: '8px', fontSize: '13px' }}>
+                    请点击文件名进行编辑，修改后再尝试上传
+                  </div>
+                </div>
+              )}
+              
               <ul style={{ maxHeight: '150px', overflowY: 'auto', padding: '0 0 0 20px' }}>
                 {fileList.map((file, index) => (
-                  <li key={file.uid} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>
-                      {file.name} 
-                      {isFolderUpload && file.webkitRelativePath && (
-                        <span style={{ fontSize: '12px', color: '#8c8c8c', marginLeft: '4px' }}>
-                          (路径: {file.webkitRelativePath.split('/').slice(0, -1).join('/')})
+                  <li key={file.uid} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                    {editingFileIndex === index ? (
+                      // 编辑文件名模式
+                      <div style={{ display: 'flex', flexGrow: 1, marginRight: '10px' }}>
+                        <Input
+                          value={editingFileName}
+                          onChange={handleEditFileNameChange}
+                          onKeyDown={handleEditFileNameKeyDown}
+                          autoFocus
+                          style={{ marginRight: '8px' }}
+                        />
+                        <Button 
+                          type="primary" 
+                          size="small" 
+                          onClick={saveEditFileName}
+                          style={{ marginRight: '4px' }}
+                        >
+                          保存
+                        </Button>
+                        <Button 
+                          size="small" 
+                          onClick={cancelEditFileName}
+                        >
+                          取消
+                        </Button>
+                      </div>
+                    ) : (
+                      // 显示文件名模式
+                      <span 
+                        style={{ 
+                          cursor: 'pointer',
+                          flex: 1,
+                          padding: '4px',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onClick={() => startEditFileName(index)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f5f5f5';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <span style={{ fontWeight: file.originalName ? 'bold' : 'normal' }}>
+                          {file.name}
+                          {file.originalName && file.originalName !== file.name && (
+                            <span style={{ fontSize: '12px', color: '#1890ff', marginLeft: '8px' }}>
+                              (已重命名)
+                            </span>
+                          )}
                         </span>
-                      )}
-                      ({formatFileSize(file.size)})
-                    </span>
-                    <Button 
-                      type="text" 
-                      danger 
-                      onClick={() => removeFile(index)}
-                      style={{ padding: '0 4px' }}
-                    >
-                      删除
-                    </Button>
+                        {isFolderUpload && file.webkitRelativePath && (
+                          <span style={{ fontSize: '12px', color: '#8c8c8c', marginLeft: '4px', display: 'block' }}>
+                            (路径: {file.webkitRelativePath.split('/').slice(0, -1).join('/')})
+                          </span>
+                        )}
+                        <span style={{ fontSize: '12px', color: '#999', display: 'block' }}>
+                          ({formatFileSize(file.size)})
+                        </span>
+                      </span>
+                    )}
+                    
+                    <div>
+                      <Button 
+                        type="text" 
+                        onClick={() => startEditFileName(index)}
+                        style={{ padding: '0 8px', marginRight: '4px' }}
+                      >
+                        <EditOutlined style={{ fontSize: '16px' }} />
+                      </Button>
+                      <Button 
+                        type="text" 
+                        danger 
+                        onClick={() => removeFile(index)}
+                        style={{ padding: '0 8px' }}
+                      >
+                        <DeleteOutlined style={{ fontSize: '16px' }} />
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styles from '@/app/file-management/styles/SortDropdown.module.css';
-import { FileSortInterface, SortDirectionEnum } from '@/app/types';
+import { FileSortInterface, SortDirectionEnum, FileSortEnum, SortField } from '@/app/types';
 
 interface SortDropdownProps {
   sortOrder: FileSortInterface;
@@ -35,6 +35,31 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
     }
   };
 
+  // 选择特定排序选项时的处理函数
+  const handleSortClick = useCallback(
+    (field: SortField, direction: SortDirectionEnum) => {
+      console.log('排序选项被点击:', { field, direction });
+      
+      // 关闭排序下拉菜单
+      setShowDropdown(false);
+      
+      // 创建新的排序选项
+      const newSortOrder: FileSortInterface = {
+        field,
+        direction,
+      };
+      
+      // 调用排序变更回调函数
+      if (typeof onSortChange === 'function') {
+        console.log('调用onSortChange函数:', newSortOrder);
+        onSortChange(newSortOrder);
+      } else {
+        console.warn('SortDropdown: onSortChange is not a function');
+      }
+    },
+    [onSortChange]
+  );
+
   return (
     <div className={styles.sortDropdown} ref={dropdownRef}>
       <button 
@@ -50,16 +75,9 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
       </button>
       {showDropdown && (
         <div className={styles.dropdownMenu}>
-          <button 
+          <div 
             className={styles.dropdownItem}
-            onClick={() => {
-              const newSortOrder: FileSortInterface = {
-                field: 'name',
-                direction: sortOrder.field === 'name' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC
-              };
-              onSortChange(newSortOrder);
-              setShowDropdown(false);
-            }}
+            onClick={() => handleSortClick('name', sortOrder.field === 'name' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
             style={{ 
               fontWeight: sortOrder.field === 'name' ? 'bold' : 'normal',
               background: sortOrder.field === 'name' ? '#f0f7ff' : 'transparent'
@@ -67,17 +85,10 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
           >
             <span>📝</span>
             按文件名{sortOrder.field === 'name' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
-          </button>
-          <button 
+          </div>
+          <div 
             className={styles.dropdownItem}
-            onClick={() => {
-              const newSortOrder: FileSortInterface = {
-                field: 'size',
-                direction: sortOrder.field === 'size' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC
-              };
-              onSortChange(newSortOrder);
-              setShowDropdown(false);
-            }}
+            onClick={() => handleSortClick('size', sortOrder.field === 'size' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
             style={{ 
               fontWeight: sortOrder.field === 'size' ? 'bold' : 'normal',
               background: sortOrder.field === 'size' ? '#f0f7ff' : 'transparent'
@@ -85,17 +96,10 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
           >
             <span>📊</span>
             按大小{sortOrder.field === 'size' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
-          </button>
-          <button 
+          </div>
+          <div 
             className={styles.dropdownItem}
-            onClick={() => {
-              const newSortOrder: FileSortInterface = {
-                field: 'createdAt',
-                direction: sortOrder.field === 'createdAt' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC
-              };
-              onSortChange(newSortOrder);
-              setShowDropdown(false);
-            }}
+            onClick={() => handleSortClick('createdAt', sortOrder.field === 'createdAt' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
             style={{ 
               fontWeight: sortOrder.field === 'createdAt' ? 'bold' : 'normal',
               background: sortOrder.field === 'createdAt' ? '#f0f7ff' : 'transparent'
@@ -103,7 +107,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
           >
             <span>🕒</span>
             按时间{sortOrder.field === 'createdAt' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
-          </button>
+          </div>
         </div>
       )}
     </div>
