@@ -1,10 +1,10 @@
 // @ts-nocheck
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { message, Spin, Input, Modal } from 'antd';
+import { message, Spin, Input, Modal, Button } from 'antd';
 import Head from 'next/head';
 import { FolderUp } from 'lucide-react';
 
@@ -13,7 +13,7 @@ import { Sidebar } from '@/app/components/features/file-management/navigation/si
 import { Breadcrumb } from '@/app/components/features/file-management/navigation/breadcrumb';
 import { FileList } from '@/app/components/features/file-management/file-list/file-list';
 import { SkeletonPageLayout } from '@/app/components/features/file-management/shared/skeleton/Skeleton';
-import { ErrorDisplay } from '@/app/components/features/file-management/shared/error-display/ErrorDisplay';
+import { ErrorDisplay } from '@/app/components/features/file-management/shared/error-display';
 import UploadModal from '@/app/components/features/file-management/upload/upload-modal';
 import { FilePreview } from '@/app/components/features/file-management/file-preview/file-preview';
 import { RenameModal } from '@/app/components/features/file-management/file-operations/rename-modal';
@@ -25,8 +25,9 @@ import { TopActionBar } from '@/app/components/features/file-management/action-b
 import NewFolderForm from '@/app/components/features/file-management/folder-management/new-folder-form';
 import { SearchView } from '@/app/components/features/file-management/search-view';
 import FolderSelectModal from '@/app/components/features/file-management/folder-select/FolderSelectModal';
-import MySharesContent from '@/app/components/features/file-management/my-shares/MySharesContent';
-import FavoritesContent from '@/app/components/features/file-management/favorites/FavoritesContent';
+import { FavoritesContent } from '@/app/components/features/file-management/favorites';
+import { MySharesContent } from '@/app/components/features/file-management/share';
+import { CreateFavoriteModal } from '@/app/components/features/file-management/favorite';
 
 // 导入自定义 hooks
 import { 
@@ -220,11 +221,38 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   const [disabledFolderIds, setDisabledFolderIds] = useState<string[]>([]);
   const [isMoveLoading, setIsMoveLoading] = useState(false);
   
+  // 添加收藏文件IDs状态
+  const [favoritedFileIds, setFavoritedFileIds] = useState<string[]>([]);
+  
+  // 最近访问文件相关状态
+  const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
+  const [loadingRecentFiles, setLoadingRecentFiles] = useState(false);
+  const [showRecentFilesContent, setShowRecentFilesContent] = useState(false);
+  
+  // 最近下载文件相关状态
+  const [recentDownloads, setRecentDownloads] = useState<FileInfo[]>([]);
+  const [loadingRecentDownloads, setLoadingRecentDownloads] = useState(false);
+  const [showRecentDownloadsContent, setShowRecentDownloadsContent] = useState(false);
+  
+  // 添加获取收藏状态的函数
+  const fetchFavorites = useCallback(async () => {
+    try {
+      const response = await fileApi.getFavorites(1, 1000);
+      const favoriteFiles = response.items || [];
+      setFavoritedFileIds(favoriteFiles.map(file => file.id));
+    } catch (error) {
+      console.error('获取收藏列表失败:', error);
+    }
+  }, []);
+  
   // 添加刷新函数 - 移到这里与其他hooks一起声明
   const handleRefreshFiles = useCallback(() => {
     // 开始刷新加载状态
     startLoading(true);
     console.log('手动刷新文件列表');
+    
+    // 刷新收藏列表
+    fetchFavorites();
     
     // 刷新当前文件夹内容
     loadFiles(currentFolderId, selectedFileType, true)
@@ -238,7 +266,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
       .finally(() => {
         finishLoading();
       });
-  }, [currentFolderId, selectedFileType, loadFiles, startLoading, finishLoading]);
+  }, [currentFolderId, selectedFileType, loadFiles, startLoading, finishLoading, fetchFavorites]);
 
   // 添加键盘快捷键监听 - 确保所有钩子在组件顶层声明
   useEffect(() => {
@@ -363,6 +391,15 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   const handleSignOut = useCallback(async () => {
     try {
+      // 清除用户相关的本地存储数据
+      localStorage.removeItem('user-id');
+      
+      // 导入清除自定义主题的函数
+      const { clearCustomThemes } = await import('@/app/components/ui/themes/theme-service');
+      // 清除所有自定义主题
+      clearCustomThemes();
+      
+      // 执行登出操作
       await signOut({ 
         callbackUrl: '/',
         redirect: true 
@@ -632,6 +669,9 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   // 添加状态变量来跟踪是否显示分享和收藏页面内容
   const [showMySharesContent, setShowMySharesContent] = useState(initialShowShares);
   const [showFavoritesContent, setShowFavoritesContent] = useState(false);
+  const [selectedFavoriteFolderId, setSelectedFavoriteFolderId] = useState<string | undefined>();
+  const [isCreateFavoriteModalOpen, setIsCreateFavoriteModalOpen] = useState(false);
+  const [favoriteFoldersRefreshTrigger, setFavoriteFoldersRefreshTrigger] = useState(0);
 
   // 监听全局事件，从分享页面URL访问的情况
   useEffect(() => {
@@ -647,6 +687,116 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
       window.removeEventListener('view-my-shares', handleViewMyShares);
     };
   }, []);
+
+  // 添加处理收藏和取消收藏的函数
+  const handleToggleFavorite = useCallback(async (file: FileInfo, isFavorite: boolean) => {
+    try {
+      if (isFavorite) {
+        // 注意：现在我们使用收藏夹弹窗来选择收藏夹，这里不需要直接调用API
+        // 收藏操作由FavoriteModal组件处理，这里只需处理收藏夹弹窗返回的状态
+        // (已通过调用setFavoritedFileIds来更新UI状态)
+        setFavoritedFileIds(prev => [...prev, file.id]);
+        message.success(`已将"${file.name}"添加到收藏`);
+      } else {
+        // 从收藏中移除
+        const response = await fetch('/api/storage/favorites', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fileIds: [file.id] }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '未知错误');
+          throw new Error(`服务器错误 (${response.status}): ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          message.success(`已将"${file.name}"从收藏中移除`);
+          setFavoritedFileIds(prev => prev.filter(id => id !== file.id));
+          // 刷新收藏列表
+          if (fetchFavorites) {
+            fetchFavorites();
+          }
+        } else {
+          throw new Error(data.error || '移除收藏失败');
+        }
+      }
+    } catch (error) {
+      console.error('处理收藏操作失败:', error);
+      message.error('操作失败，请稍后重试');
+    }
+  }, [fetchFavorites]);
+  
+  // 初始加载收藏状态
+  useEffect(() => {
+    if (session) {
+      fetchFavorites();
+    }
+  }, [session, fetchFavorites]);
+
+  // 获取最近访问的文件
+  const fetchRecentFiles = async () => {
+    try {
+      setLoadingRecentFiles(true);
+      const recentFilesData = await fileApi.getRecentFiles(20); // 获取前20个最近访问的文件
+      setRecentFiles(recentFilesData);
+    } catch (error) {
+      console.error('获取最近访问文件失败:', error);
+      message.error('获取最近访问文件失败');
+    } finally {
+      setLoadingRecentFiles(false);
+    }
+  };
+  
+  // 获取最近下载的文件
+  const fetchRecentDownloads = async () => {
+    try {
+      setLoadingRecentDownloads(true);
+      const recentDownloadsData = await fileApi.getRecentDownloads(20); // 获取前20个最近下载的文件
+      setRecentDownloads(recentDownloadsData);
+    } catch (error) {
+      console.error('获取最近下载文件失败:', error);
+      message.error('获取最近下载文件失败');
+    } finally {
+      setLoadingRecentDownloads(false);
+    }
+  };
+
+  // 处理最近访问点击
+  const handleRecentClick = () => {
+    // 关闭其他视图
+    setShowSearchView(false);
+    setSelectedFileType(null);
+    setShowMySharesContent(false);
+    setShowFavoritesContent(false);
+    setShowRecentDownloadsContent(false);
+    
+    // 获取最近访问文件
+    fetchRecentFiles();
+    
+    // 显示最近访问内容
+    setShowRecentFilesContent(true);
+  };
+  
+  // 处理最近下载点击
+  const handleRecentDownloadsClick = () => {
+    // 关闭其他视图
+    setShowSearchView(false);
+    setSelectedFileType(null);
+    setShowMySharesContent(false);
+    setShowFavoritesContent(false);
+    setShowRecentFilesContent(false);
+    
+    // 获取最近下载文件
+    fetchRecentDownloads();
+    
+    // 显示最近下载内容
+    setShowRecentDownloadsContent(true);
+  };
 
   // 使用初始化加载状态显示骨架屏
   if (isInitialLoading) {
@@ -902,30 +1052,145 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     // 如果当前显示收藏内容，渲染收藏内容组件
     if (showFavoritesContent) {
       return (
-        <FavoritesContent 
+        <FavoritesContent
           onNavigateBack={() => setShowFavoritesContent(false)}
+          selectedFolderId={selectedFavoriteFolderId}
           onOpenFile={(file) => {
             // 关闭收藏视图
             setShowFavoritesContent(false);
             
-            // 如果是文件夹，导航到该文件夹
-            if (file.isFolder && file.id) {
-              // 开始加载状态
-              startLoading(true);
-              
-              // 先设置当前文件夹ID
-              setCurrentFolderId(file.id);
-              
-              // 加载文件夹内容
-              loadFiles(file.id, selectedFileType)
-                .finally(() => finishLoading());
+            // 根据文件类型执行不同的操作
+            if (file.isFolder) {
+              // 如果是文件夹，导航到该文件夹
+              handleFileClick(file);
             } else {
-              // 如果是文件，查找并打开预览
-              const localFile = files.find(f => f.id === file.id) || file;
-              handlePreviewFile(localFile);
+              // 如果是文件，预览该文件
+              handlePreviewFile(file);
             }
           }}
         />
+      );
+    }
+    
+    // 如果当前显示最近访问内容，渲染最近访问列表
+    if (showRecentFilesContent) {
+      return (
+        <div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '16px 0' 
+          }}>
+            <h2 style={{ margin: 0 }}>最近访问的文件</h2>
+            <Button 
+              type="primary" 
+              onClick={() => setShowRecentFilesContent(false)}
+              icon={<FolderUp size={16} />}
+            >
+              返回文件列表
+            </Button>
+          </div>
+          
+          {loadingRecentFiles ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin />
+              <p>加载最近访问文件...</p>
+            </div>
+          ) : recentFiles.length > 0 ? (
+            <FileList 
+              files={recentFiles}
+              selectedFiles={selectedFiles}
+              onFileClick={(file) => {
+                // 根据文件类型执行不同的操作
+                if (file.isFolder) {
+                  // 如果是文件夹，关闭最近访问视图并导航到该文件夹
+                  setShowRecentFilesContent(false);
+                  handleFileClick(file);
+                } else {
+                  // 如果是文件，预览该文件
+                  handlePreviewFile(file);
+                }
+              }}
+              onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
+              onSelectAll={onSelectAllFiles}
+              onDeselectAll={onDeselectAllFiles}
+              areAllSelected={false}
+              showCheckboxes={true}
+              favoritedFileIds={favoritedFileIds}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px 0',
+              color: '#888'
+            }}>
+              <p>暂无最近访问的文件记录</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // 如果当前显示最近下载内容，渲染最近下载列表
+    if (showRecentDownloadsContent) {
+      return (
+        <div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '16px 0' 
+          }}>
+            <h2 style={{ margin: 0 }}>最近下载的文件</h2>
+            <Button 
+              type="primary" 
+              onClick={() => setShowRecentDownloadsContent(false)}
+              icon={<FolderUp size={16} />}
+            >
+              返回文件列表
+            </Button>
+          </div>
+          
+          {loadingRecentDownloads ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin />
+              <p>加载最近下载文件...</p>
+            </div>
+          ) : recentDownloads.length > 0 ? (
+            <FileList 
+              files={recentDownloads}
+              selectedFiles={selectedFiles}
+              onFileClick={(file) => {
+                // 根据文件类型执行不同的操作
+                if (file.isFolder) {
+                  // 如果是文件夹，关闭最近下载视图并导航到该文件夹
+                  setShowRecentDownloadsContent(false);
+                  handleFileClick(file);
+                } else {
+                  // 如果是文件，预览该文件
+                  handlePreviewFile(file);
+                }
+              }}
+              onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
+              onSelectAll={onSelectAllFiles}
+              onDeselectAll={onDeselectAllFiles}
+              areAllSelected={false}
+              showCheckboxes={true}
+              favoritedFileIds={favoritedFileIds}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px 0',
+              color: '#888'
+            }}>
+              <p>暂无最近下载的文件记录</p>
+            </div>
+          )}
+        </div>
       );
     }
     
@@ -944,8 +1209,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         <>
           {renderBreadcrumb()}
           <SearchView 
-            query={searchQuery}
-            setQuery={setSearchQuery}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
             searchResults={searchResults}
             isLoading={searchLoading}
             error={searchError}
@@ -1120,10 +1385,23 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             onNewTagChange={setNewTag}
             showCheckboxes={true}
             areAllSelected={areAllFilesSelected}
+            favoritedFileIds={favoritedFileIds}
+            onToggleFavorite={handleToggleFavorite}
           />
         </div>
       </>
     );
+  };
+
+  // 处理创建收藏夹按钮点击
+  const handleCreateFavoriteFolder = () => {
+    setIsCreateFavoriteModalOpen(true);
+  };
+
+  // 处理收藏夹创建成功
+  const handleFavoriteCreateSuccess = () => {
+    // 递增刷新触发器，强制侧边栏刷新收藏夹列表
+    setFavoriteFoldersRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -1210,15 +1488,29 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
                 // 显示分享内容
                 setShowMySharesContent(true);
               }}
-              onFavoritesClick={() => {
+              onFavoritesClick={(folderId) => {
                 // 关闭其他视图
                 setShowSearchView(false);
                 setSelectedFileType(null);
                 setShowMySharesContent(false);
                 
+                // 设置选中的收藏夹ID
+                setSelectedFavoriteFolderId(folderId);
+                
+                // 记录日志以便调试
+                if (folderId === undefined) {
+                  console.log('显示全部收藏内容');
+                } else {
+                  console.log('显示特定收藏夹内容:', folderId);
+                }
+                
                 // 显示收藏内容
                 setShowFavoritesContent(true);
               }}
+              onCreateFavoriteFolder={handleCreateFavoriteFolder}
+              refreshTrigger={favoriteFoldersRefreshTrigger}
+              onRecentClick={handleRecentClick}
+              onRecentDownloadsClick={handleRecentDownloadsClick}
             />
           </div>
         )}
@@ -1357,6 +1649,13 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           />
         </div>
       </Modal>
+
+      {/* 创建收藏夹模态窗口 */}
+      <CreateFavoriteModal 
+        visible={isCreateFavoriteModalOpen}
+        onClose={() => setIsCreateFavoriteModalOpen(false)}
+        onSuccess={handleFavoriteCreateSuccess}
+      />
     </>
   );
 }

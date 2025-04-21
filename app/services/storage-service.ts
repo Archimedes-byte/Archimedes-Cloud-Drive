@@ -11,6 +11,7 @@ import {
   mapFileEntityToFileInfo
 } from './storage';
 import { FileInfo } from '@/app/types';
+import { FavoriteService, FavoriteFolderInfo } from './storage/favorite-service';
 
 /**
  * 存储服务类
@@ -22,11 +23,13 @@ export class StorageService {
   private uploadService: FileUploadService;
   private managementService: FileManagementService;
   private statsService: FileStatsService;
+  private favoriteService: FavoriteService;
 
   constructor() {
     this.uploadService = new FileUploadService();
     this.managementService = new FileManagementService();
     this.statsService = new FileStatsService();
+    this.favoriteService = new FavoriteService();
   }
 
   /**
@@ -143,28 +146,125 @@ export class StorageService {
   }
 
   /**
-   * 添加到收藏夹
+   * 获取收藏夹列表
+   */
+  async getFavoriteFolders(userId: string): Promise<FavoriteFolderInfo[]> {
+    return this.favoriteService.getFavoriteFolders(userId);
+  }
+
+  /**
+   * 创建收藏夹
+   */
+  async createFavoriteFolder(
+    userId: string, 
+    name: string, 
+    description?: string, 
+    isDefault = false
+  ): Promise<FavoriteFolderInfo> {
+    return this.favoriteService.createFavoriteFolder(userId, name, description, isDefault);
+  }
+
+  /**
+   * 更新收藏夹信息
+   */
+  async updateFavoriteFolder(
+    userId: string,
+    folderId: string,
+    data: {
+      name?: string;
+      description?: string;
+      isDefault?: boolean;
+    }
+  ): Promise<FavoriteFolderInfo> {
+    return this.favoriteService.updateFavoriteFolder(userId, folderId, data);
+  }
+
+  /**
+   * 删除收藏夹
+   */
+  async deleteFavoriteFolder(userId: string, folderId: string): Promise<boolean> {
+    return this.favoriteService.deleteFavoriteFolder(userId, folderId);
+  }
+
+  /**
+   * 将文件添加到指定收藏夹
+   */
+  async addToFavoriteFolder(
+    userId: string,
+    fileId: string,
+    folderId?: string
+  ): Promise<boolean> {
+    return this.favoriteService.addToFolder(userId, fileId, folderId);
+  }
+
+  /**
+   * 批量添加文件到收藏夹
+   */
+  async addBatchToFavoriteFolder(
+    userId: string,
+    fileIds: string[],
+    folderId?: string
+  ): Promise<number> {
+    return this.favoriteService.addBatchToFolder(userId, fileIds, folderId);
+  }
+
+  /**
+   * 从收藏夹中移除文件
+   */
+  async removeFromFavoriteFolder(
+    userId: string,
+    fileId: string,
+    folderId?: string
+  ): Promise<boolean> {
+    return this.favoriteService.removeFromFolder(userId, fileId, folderId);
+  }
+
+  /**
+   * 批量从收藏夹中移除文件
+   */
+  async removeBatchFromFavoriteFolder(
+    userId: string,
+    fileIds: string[],
+    folderId?: string
+  ): Promise<number> {
+    return this.favoriteService.removeBatchFromFolder(userId, fileIds, folderId);
+  }
+
+  /**
+   * 获取收藏夹中的文件列表
+   */
+  async getFavoriteFilesInFolder(
+    userId: string,
+    folderId: string,
+    page = 1,
+    pageSize = 50
+  ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
+    return this.favoriteService.getFolderFiles(userId, folderId, page, pageSize);
+  }
+
+  /**
+   * 添加到收藏夹（兼容原有实现）
    */
   async addToFavorites(userId: string, fileIds: string[]): Promise<number> {
-    return this.statsService.addToFavorites(userId, fileIds);
+    return this.favoriteService.addToFavorites(userId, fileIds);
   }
 
   /**
-   * 从收藏夹移除
+   * 从收藏夹移除（兼容原有实现）
    */
   async removeFromFavorites(userId: string, fileIds: string[]): Promise<number> {
-    return this.statsService.removeFromFavorites(userId, fileIds);
+    return this.favoriteService.removeFromFavorites(userId, fileIds);
   }
 
   /**
-   * 获取收藏文件
+   * 获取收藏文件（兼容原有实现）
    */
   async getFavorites(
     userId: string,
     page = 1,
     pageSize = 50
   ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
-    return this.statsService.getFavorites(userId, page, pageSize);
+    return this.favoriteService.getFavorites(userId, page, pageSize);
   }
 
   /**

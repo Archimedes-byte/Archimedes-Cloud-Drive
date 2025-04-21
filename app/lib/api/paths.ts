@@ -16,7 +16,7 @@ const STORAGE_BASE = `${API_BASE}/storage`;
 export const API_PATHS = {
   // 存储相关API (统一文件和文件夹操作)
   STORAGE: {
-    // 文件操作
+    ROOT: `${API_BASE}/storage`,
     FILES: {
       LIST: `${STORAGE_BASE}/files`,
       GET: (fileId: string) => `${STORAGE_BASE}/files/${fileId}`,
@@ -26,9 +26,9 @@ export const API_PATHS = {
       MOVE: `${STORAGE_BASE}/files/move`,
       UPDATE: (fileId: string) => `${STORAGE_BASE}/files/${fileId}`,
       DOWNLOAD: `${STORAGE_BASE}/files/download`,
-      PREVIEW: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/preview`,
-      CONTENT: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/content`,
-      RENAME: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/rename`,
+      PREVIEW: (fileId: string) => `${STORAGE_BASE}/files/preview/${fileId}`,
+      CONTENT: (fileId: string) => `${STORAGE_BASE}/files/content/${fileId}`,
+      RENAME: (fileId: string) => `${STORAGE_BASE}/files/rename/${fileId}`,
       CHECK_NAME_CONFLICTS: `${STORAGE_BASE}/files/check-name-conflicts`,
     },
     
@@ -36,7 +36,7 @@ export const API_PATHS = {
     FOLDERS: {
       LIST: `${STORAGE_BASE}/folders`,
       GET: (folderId: string) => `${STORAGE_BASE}/folders/${folderId}`,
-      CREATE: `${STORAGE_BASE}/folders`,
+      CREATE: `${STORAGE_BASE}/folders/create`,
       DELETE: `${STORAGE_BASE}/folders/delete`,
       UPDATE: (folderId: string) => `${STORAGE_BASE}/folders/${folderId}`,
       CHILDREN: (folderId: string) => `${STORAGE_BASE}/folders/${folderId}/children`,
@@ -47,13 +47,27 @@ export const API_PATHS = {
     INFO: `${STORAGE_BASE}/info`,
     QUOTA: `${STORAGE_BASE}/quota`,
     RECENT: `${STORAGE_BASE}/recent`,
-    STATS: `${STORAGE_BASE}/stats`,
+    STATS: {
+      USAGE: `${STORAGE_BASE}/stats/usage`,
+    },
+    // 记录访问历史
+    RECORD_ACCESS: `${STORAGE_BASE}/recent/record`,
     
     // 收藏相关
     FAVORITES: {
-      LIST: `${STORAGE_BASE}/favorites`,
+      ROOT: `${STORAGE_BASE}/favorites`,
+      LIST: `${STORAGE_BASE}/favorites/list`,
       ADD: `${STORAGE_BASE}/favorites/add`,
       REMOVE: `${STORAGE_BASE}/favorites/remove`,
+      FOLDERS: {
+        LIST: `${STORAGE_BASE}/favorites/folders`,
+        CREATE: `${STORAGE_BASE}/favorites/folders`,
+        UPDATE: (id: string) => `${STORAGE_BASE}/favorites/folders/${id}`,
+        DELETE: (id: string) => `${STORAGE_BASE}/favorites/folders/${id}`,
+        FILES: `${STORAGE_BASE}/favorites/folders/files`,
+      },
+      ADD_TO_FOLDER: `${STORAGE_BASE}/favorites/add-to-folder`,
+      REMOVE_FROM_FOLDER: `${STORAGE_BASE}/favorites/remove-from-folder`,
     },
     
     // 标签相关
@@ -68,6 +82,14 @@ export const API_PATHS = {
       ROOT: `${STORAGE_BASE}/share`,
       VERIFY: `${STORAGE_BASE}/share/verify`,
       DOWNLOAD: `${STORAGE_BASE}/share/download`,
+    },
+    
+    // 下载相关
+    DOWNLOADS: {
+      // 记录下载历史
+      RECORD: `${STORAGE_BASE}/downloads/record`,
+      // 获取最近下载记录
+      RECENT: `${STORAGE_BASE}/downloads/recent`,
     },
   }
 }; 

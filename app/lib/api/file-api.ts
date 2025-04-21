@@ -6,6 +6,20 @@ import { ExtendedFile, FileInfo } from '@/app/types';
 import { API_PATHS } from '@/app/lib/api/paths';
 
 /**
+ * 定义收藏夹类型
+ */
+export interface FavoriteFolderInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+  fileCount?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+}
+
+/**
  * API响应接口
  */
 export interface ApiResponse<T> {
@@ -13,51 +27,16 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   error?: string;
-  code?: string;
 }
 
 /**
- * 文件列表请求参数
- */
-export interface FileListRequest {
-  folderId?: string | null;
-  type?: string | null;
-  page?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortOrder?: string;
-  recursive?: boolean;
-  signal?: AbortSignal;
-  _t?: number;
-}
-
-/**
- * 文件搜索请求参数
- */
-export interface FileSearchRequest {
-  query: string;
-  type?: string;
-  tags?: string[];
-}
-
-/**
- * 分页响应
- */
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-/**
- * 自定义API错误类
+ * API错误类
  */
 class ApiError extends Error {
   constructor(
-    message: string,
-    public statusCode: number,
-    public code?: string
+    message: string, 
+    public status: number,
+    public code?: string 
   ) {
     super(message);
     this.name = 'ApiError';
@@ -103,6 +82,40 @@ async function handleResponse<T>(response: Response): Promise<T> {
   
   // 返回数据 - 确保处理标准API响应格式
   return (data.data !== undefined ? data.data : data) as T;
+}
+
+/**
+ * 文件列表请求参数
+ */
+export interface FileListRequest {
+  folderId?: string | null;
+  type?: string | null;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: string;
+  recursive?: boolean;
+  signal?: AbortSignal;
+  _t?: number;
+}
+
+/**
+ * 文件搜索请求参数
+ */
+export interface FileSearchRequest {
+  query: string;
+  type?: string;
+  tags?: string[];
+}
+
+/**
+ * 分页响应
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 /**
@@ -331,17 +344,31 @@ export const fileApi = {
   // 获取最近访问的文件
   async getRecentFiles(limit = 10): Promise<FileInfo[]> {
     const queryParams = new URLSearchParams();
-    queryParams.append('limit', limit.toString());
+    queryParams.set('limit', limit.toString());
     
-    // 使用新的API路径
-    const response = await fetch(`${API_PATHS.STORAGE.RECENT}?${queryParams.toString()}`);
+    const response = await fetch(`${API_PATHS.STORAGE.RECENT}?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    return handleResponse<FileInfo[]>(response);
+  },
+  
+  // 获取最近下载的文件
+  async getRecentDownloads(limit = 10): Promise<FileInfo[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.set('limit', limit.toString());
+    
+    const response = await fetch(`${API_PATHS.STORAGE.DOWNLOADS.RECENT}?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
     
     return handleResponse<FileInfo[]>(response);
   },
   
   // 添加到收藏
   async addToFavorites(fileIds: string[]): Promise<{ count: number }> {
-    // 使用新的API路径
     const response = await fetch(API_PATHS.STORAGE.FAVORITES.ADD, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -353,7 +380,6 @@ export const fileApi = {
   
   // 从收藏中移除
   async removeFromFavorites(fileIds: string[]): Promise<{ count: number }> {
-    // 使用新的API路径
     const response = await fetch(API_PATHS.STORAGE.FAVORITES.REMOVE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -362,17 +388,129 @@ export const fileApi = {
     
     return handleResponse<{ count: number }>(response);
   },
+
+  // 获取收藏夹列表
+  async getFavoriteFolders(): Promise<{ folders: FavoriteFolderInfo[] }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.LIST);
+    return handleResponse<{ folders: FavoriteFolderInfo[] }>(response);
+  },
   
-  // 获取收藏列表
-  async getFavorites(page = 1, pageSize = 50): Promise<PaginatedResponse<FileInfo>> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('page', page.toString());
-    queryParams.append('pageSize', pageSize.toString());
+  // 创建收藏夹
+  async createFavoriteFolder(
+    name: string, 
+    description?: string, 
+    isDefault?: boolean
+  ): Promise<{ folder: FavoriteFolderInfo }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.CREATE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, isDefault }),
+    });
     
-    // 使用新的API路径
-    const response = await fetch(`${API_PATHS.STORAGE.FAVORITES.LIST}?${queryParams.toString()}`);
+    return handleResponse<{ folder: FavoriteFolderInfo }>(response);
+  },
+  
+  // 更新收藏夹
+  async updateFavoriteFolder(
+    folderId: string,
+    data: {
+      name?: string;
+      description?: string;
+      isDefault?: boolean;
+    }
+  ): Promise<{ folder: FavoriteFolderInfo }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.UPDATE(folderId), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
     
-    return handleResponse<PaginatedResponse<FileInfo>>(response);
+    return handleResponse<{ folder: FavoriteFolderInfo }>(response);
+  },
+  
+  // 删除收藏夹
+  async deleteFavoriteFolder(folderId: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.DELETE(folderId), {
+      method: 'DELETE',
+    });
+    
+    return handleResponse<{ success: boolean; message: string }>(response);
+  },
+  
+  // 添加文件到收藏夹
+  async addToFavoriteFolder(
+    fileId: string, 
+    folderId?: string
+  ): Promise<{ success: boolean }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.ADD_TO_FOLDER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId, folderId }),
+    });
+    
+    return handleResponse<{ success: boolean }>(response);
+  },
+  
+  // 批量添加文件到收藏夹
+  async addBatchToFavoriteFolder(
+    fileIds: string[], 
+    folderId?: string
+  ): Promise<{ count: number }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.ADD_TO_FOLDER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileIds, folderId }),
+    });
+    
+    return handleResponse<{ count: number }>(response);
+  },
+  
+  // 从收藏夹中移除文件
+  async removeFromFavoriteFolder(
+    fileId: string, 
+    folderId?: string
+  ): Promise<{ success: boolean }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.REMOVE_FROM_FOLDER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId, folderId }),
+    });
+    
+    return handleResponse<{ success: boolean }>(response);
+  },
+  
+  // 批量从收藏夹中移除文件
+  async removeBatchFromFavoriteFolder(
+    fileIds: string[], 
+    folderId?: string
+  ): Promise<{ count: number }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.REMOVE_FROM_FOLDER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileIds, folderId }),
+    });
+    
+    return handleResponse<{ count: number }>(response);
+  },
+  
+  // 获取收藏夹中的文件列表
+  async getFolderFiles(
+    folderId: string,
+    page = 1,
+    pageSize = 50
+  ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
+    const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.FILES, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderId, page, pageSize }),
+    });
+    
+    return handleResponse<{
+      items: FileInfo[];
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(response);
   },
 
   // 分享文件
@@ -407,5 +545,39 @@ export const fileApi = {
     });
 
     return handleResponse<{ deletedCount: number }>(response);
+  },
+
+  // 记录文件访问历史
+  async recordFileAccess(fileId: string): Promise<{ success: boolean }> {
+    try {
+      const response = await fetch(API_PATHS.STORAGE.RECORD_ACCESS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      });
+      
+      return handleResponse<{ success: boolean }>(response);
+    } catch (error) {
+      console.error('记录文件访问历史失败:', error);
+      // 即使失败也不影响用户体验，返回成功
+      return { success: false };
+    }
+  },
+  
+  // 记录文件下载历史
+  async recordFileDownload(fileId: string): Promise<{ success: boolean }> {
+    try {
+      const response = await fetch(API_PATHS.STORAGE.DOWNLOADS.RECORD, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      });
+      
+      return handleResponse<{ success: boolean }>(response);
+    } catch (error) {
+      console.error('记录文件下载历史失败:', error);
+      // 即使失败也不影响用户体验，返回成功
+      return { success: false };
+    }
   }
 }; 

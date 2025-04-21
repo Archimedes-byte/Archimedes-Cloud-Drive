@@ -54,6 +54,11 @@ export const useLogin = () => {
         setError(result.error);
         setSuccess('');
       } else if (result?.ok) {
+        // 登录成功，为用户设置唯一标识符，用于主题隔离
+        // 使用邮箱的哈希作为用户唯一标识
+        const userId = btoa(credentials.email).replace(/[^a-zA-Z0-9]/g, '');
+        localStorage.setItem('user-id', userId);
+        
         setSuccess('登录成功，正在跳转...');
         setTimeout(() => {
           router.push('/file-management/main');
@@ -108,6 +113,24 @@ export const useLogin = () => {
       if (result?.error) {
         setError('Google登录失败：' + result.error);
       } else if (result?.ok) {
+        // 尝试从JWT中解码用户信息
+        try {
+          const base64Url = response.credential.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const payload = JSON.parse(atob(base64));
+          
+          // 使用邮箱生成唯一标识符
+          if (payload.email) {
+            const userId = btoa(payload.email).replace(/[^a-zA-Z0-9]/g, '');
+            localStorage.setItem('user-id', userId);
+            console.log('已设置Google用户的唯一标识符');
+          }
+        } catch (e) {
+          console.error('无法从Google凭证解析用户ID:', e);
+          // 使用随机ID作为备选方案
+          localStorage.setItem('user-id', `google_${Date.now()}`);
+        }
+        
         setSuccess('登录成功，正在跳转...');
         // 使用 window.location 进行硬跳转
         window.location.href = '/file-management/main';

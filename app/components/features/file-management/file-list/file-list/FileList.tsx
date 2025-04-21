@@ -15,7 +15,8 @@ import {
   Plus,
   CheckCircle,
   CheckSquare,
-  Square
+  Square,
+  Star
 } from 'lucide-react';
 import styles from '@/app/file-management/styles/shared.module.css';
 import { getFileType as getFileTypeDisplay } from '@/app/utils/file/type';
@@ -23,6 +24,7 @@ import { getFileNameAndExtension } from '@/app/utils/file/path';
 import { FileInfo } from '@/app/types';
 import { formatFileSize } from '@/app/utils/file/format';
 import { createCancelableDebounce } from '@/app/utils/function/debounce';
+import FavoriteModal from '../../favorite/FavoriteModal';
 
 interface FileListProps {
   files: FileInfo[];
@@ -54,6 +56,8 @@ interface FileListProps {
   onRemoveTag?: (tag: string) => void;
   showCheckboxes?: boolean;
   areAllSelected?: boolean;
+  favoritedFileIds?: string[];
+  onToggleFavorite?: (file: FileInfo, isFavorite: boolean) => void;
 }
 
 export function FileList({
@@ -85,13 +89,17 @@ export function FileList({
   onAddTag,
   onRemoveTag,
   showCheckboxes = true,
-  areAllSelected
+  areAllSelected,
+  favoritedFileIds = [],
+  onToggleFavorite
 }: FileListProps) {
   const actualEditingFileId = editingFileId || editingFile;
 
   const [localEditName, setLocalEditName] = useState<string>('');
   const [localEditTags, setLocalEditTags] = useState<string[]>([]);
   const [localNewTag, setLocalNewTag] = useState<string>('');
+  const [favoriteModalVisible, setFavoriteModalVisible] = useState(false);
+  const [currentFile, setCurrentFile] = useState<FileInfo | null>(null);
   
   const editName = providedEditingName !== undefined ? providedEditingName : localEditName;
   const editTags = providedEditingTags !== undefined ? providedEditingTags : localEditTags;
@@ -368,6 +376,27 @@ export function FileList({
     );
   }
 
+  const handleFavoriteClick = (e: React.MouseEvent, file: FileInfo) => {
+    e.stopPropagation();
+    
+    if (onToggleFavorite) {
+      const isFavorited = favoritedFileIds.includes(file.id);
+      
+      if (isFavorited) {
+        onToggleFavorite(file, false);
+      } else {
+        setCurrentFile(file);
+        setFavoriteModalVisible(true);
+      }
+    }
+  };
+  
+  const handleFavoriteSuccess = () => {
+    if (currentFile && onToggleFavorite) {
+      onToggleFavorite(currentFile, true);
+    }
+  };
+
   return (
     <div className={styles.fileListContainer}>
       <table className={styles.fileTable}>
@@ -389,12 +418,14 @@ export function FileList({
             <th>标签</th>
             <th>上传日期</th>
             <th>操作</th>
+            <th>收藏</th>
           </tr>
         </thead>
         <tbody>
           {filesMemoized.map((file) => {
             const isSelected = selectedFiles.includes(file.id);
             const isEditing = actualEditingFileId === file.id;
+            const isFavorited = favoritedFileIds.includes(file.id);
             
             return (
               <tr
@@ -477,11 +508,35 @@ export function FileList({
                     </div>
                   )}
                 </td>
+                <td className={styles.favoriteCell} onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className={`${styles.favoriteButton} ${isFavorited ? styles.favorited : ''}`}
+                    onClick={(e) => handleFavoriteClick(e, file)}
+                    title={isFavorited ? "取消收藏" : "收藏"}
+                  >
+                    <Star 
+                      size={16} 
+                      className={styles.favoriteIcon}
+                      fill={isFavorited ? "#f5a623" : "none"}
+                      stroke={isFavorited ? "#f5a623" : "currentColor"}
+                    />
+                  </button>
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      
+      {currentFile && (
+        <FavoriteModal
+          fileId={currentFile.id}
+          fileName={currentFile.name}
+          visible={favoriteModalVisible}
+          onClose={() => setFavoriteModalVisible(false)}
+          onSuccess={handleFavoriteSuccess}
+        />
+      )}
     </div>
   );
 }

@@ -62,22 +62,20 @@ export const useThemeManager = ({
     
     try {
       // 应用主题优先级：
-      // 1. 用户主题（从props传入）
-      // 2. localStorage中的主题
-      // 3. 默认主题
+      // 1. 用户主题（从props传入）- 如果登录用户有主题设置
+      // 2. 默认主题 - 新用户或未设置主题的用户
+      // 不再使用localStorage中的主题，防止继承上一个用户的主题设置
       let themeToApply = defaultTheme;
       
       if (userTheme) {
         console.log('从用户资料应用主题:', userTheme);
         themeToApply = userTheme;
       } else {
-        const cachedTheme = loadThemeFromStorage();
-        if (cachedTheme) {
-          console.log('从localStorage恢复主题:', cachedTheme);
-          themeToApply = cachedTheme;
-        } else {
-          console.log('应用默认主题:', defaultTheme);
+        // 清除本地存储的主题，避免新用户继承前一个用户的主题
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user-theme');
         }
+        console.log('新用户或未设置主题的用户，应用默认主题:', defaultTheme);
       }
       
       // 应用主题并更新状态

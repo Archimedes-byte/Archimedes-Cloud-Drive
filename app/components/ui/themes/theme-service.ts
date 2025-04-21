@@ -46,6 +46,22 @@ let isApplyingTheme = false;
 initCustomThemes();
 
 /**
+ * 获取当前用户的自定义主题存储键
+ * 为每个用户创建独立的自定义主题空间
+ * @returns 用户特定的存储键
+ */
+export function getUserThemeStorageKey(): string {
+  // 尝试从localStorage获取用户唯一标识
+  const userId = localStorage.getItem('user-id');
+  // 如果有用户ID，返回带用户ID的键名
+  if (userId) {
+    return `${CUSTOM_THEMES_STORAGE_KEY}-${userId}`;
+  }
+  // 没有用户ID时，返回默认键名
+  return CUSTOM_THEMES_STORAGE_KEY;
+}
+
+/**
  * 初始化自定义主题
  * 从localStorage加载用户自定义的主题
  */
@@ -53,10 +69,26 @@ function initCustomThemes(): void {
   if (typeof window === 'undefined') return;
   
   try {
-    const storedThemes = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+    // 使用用户特定的存储键
+    const userSpecificKey = getUserThemeStorageKey();
+    const storedThemes = localStorage.getItem(userSpecificKey);
+    
     if (storedThemes) {
       customThemes = JSON.parse(storedThemes);
-      console.log('已加载自定义主题:', Object.keys(customThemes).length);
+      console.log(`已加载用户自定义主题(${userSpecificKey}):`, Object.keys(customThemes).length);
+    } else {
+      // 检查是否存在旧的非用户特定的主题数据，可能是迁移场景
+      const oldStoredThemes = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+      if (oldStoredThemes && userSpecificKey !== CUSTOM_THEMES_STORAGE_KEY) {
+        console.log('发现旧的自定义主题数据，正在迁移到用户特定存储...');
+        customThemes = JSON.parse(oldStoredThemes);
+        // 迁移到新的用户特定存储
+        localStorage.setItem(userSpecificKey, oldStoredThemes);
+        // 清理旧数据
+        localStorage.removeItem(CUSTOM_THEMES_STORAGE_KEY);
+      } else {
+        customThemes = {};
+      }
     }
   } catch (error) {
     console.error('加载自定义主题失败:', error);
@@ -81,8 +113,8 @@ export function saveCustomTheme(themeId: string, themeStyle: ThemeStyle): boolea
       category: '自定义主题' // 确保分类正确
     };
     
-    // 保存到本地存储
-    localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+    // 保存到用户特定的本地存储
+    localStorage.setItem(getUserThemeStorageKey(), JSON.stringify(customThemes));
     
     // 将新的自定义主题添加到themes数组中
     themes.push({
@@ -91,7 +123,7 @@ export function saveCustomTheme(themeId: string, themeStyle: ThemeStyle): boolea
       type: 'custom'
     });
     
-    console.log(`自定义主题 ${validThemeId} 已保存并添加到主题列表`);
+    console.log(`用户自定义主题 ${validThemeId} 已保存并添加到主题列表`);
     return true;
   } catch (error) {
     console.error('保存自定义主题失败:', error);
@@ -108,7 +140,8 @@ export function deleteCustomTheme(themeId: string): boolean {
   try {
     if (customThemes[themeId]) {
       delete customThemes[themeId];
-      localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+      // 使用用户特定的存储键
+      localStorage.setItem(getUserThemeStorageKey(), JSON.stringify(customThemes));
       
       // 从themes数组中移除
       const themeIndex = themes.findIndex(t => t.id === themeId);
@@ -123,6 +156,38 @@ export function deleteCustomTheme(themeId: string): boolean {
   } catch (error) {
     console.error('删除自定义主题失败:', error);
     return false;
+  }
+}
+
+/**
+ * 清除所有自定义主题（用于登出等场景）
+ */
+export function clearCustomThemes(): void {
+  try {
+    // 清空内存中的自定义主题
+    customThemes = {};
+    
+    // 清除用户特定的自定义主题本地存储
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(getUserThemeStorageKey());
+    }
+    
+    // 从themes数组中移除所有自定义主题
+    const customIndices = [];
+    for (let i = 0; i < themes.length; i++) {
+      if (themes[i].id.startsWith('custom_')) {
+        customIndices.push(i);
+      }
+    }
+    
+    // 从后往前删除，避免索引变化问题
+    for (let i = customIndices.length - 1; i >= 0; i--) {
+      themes.splice(customIndices[i], 1);
+    }
+    
+    console.log('已清除所有用户自定义主题');
+  } catch (error) {
+    console.error('清除自定义主题失败:', error);
   }
 }
 

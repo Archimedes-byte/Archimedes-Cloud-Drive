@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   Table, Button, message, Typography, Space, 
-  Tag, Tooltip, Popconfirm, Spin, Empty
+  Tag, Tooltip, Popconfirm, Spin, Empty, Tabs, Select
 } from 'antd';
 import { 
   Star, ExternalLink, Trash2, 
@@ -16,12 +16,21 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import styles from './favorites.module.css';
 import type { SortOrder } from 'antd/es/table/interface';
+import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
+import { FileInfo } from '@/app/types';
 
 const { Title, Text } = Typography;
 
+// 扩展的FileInfo接口，包含收藏夹相关字段
+interface FavoriteFileInfo extends FileInfo {
+  favoriteId?: string;
+  favoriteFolderId?: string;
+  favoriteFolderName?: string;
+}
+
 // 文件类型接口
-interface FavoriteFile {
-  id: string;
+interface FavoriteFile extends Partial<FileInfo> {
+  id: string;  // 这是文件真实ID
   name: string;
   size: number;
   type: string;
@@ -29,21 +38,37 @@ interface FavoriteFile {
   createdAt: string;
   updatedAt: string;
   path?: string;
-  favoriteId: string;
+  favoriteId?: string; // 标记为可选
+  favoriteFolderId?: string;
+  favoriteFolderName?: string;
 }
 
 // 组件属性接口
 interface FavoritesContentProps {
   onNavigateBack?: () => void;
   onOpenFile?: (file: FavoriteFile) => void;
+  selectedFolderId?: string;
 }
 
-export default function FavoritesContent({ onNavigateBack, onOpenFile }: FavoritesContentProps) {
+export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedFolderId }: FavoritesContentProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [folders, setFolders] = useState<FavoriteFolderInfo[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>('all');
+  const [loadingFolders, setLoadingFolders] = useState(false);
+
+  // 初始化时，如果传入了selectedFolderId，则设置为当前选中的文件夹
+  useEffect(() => {
+    if (selectedFolderId) {
+      setSelectedFolder(selectedFolderId);
+    } else {
+      // 如果没有指定文件夹ID，则默认为"全部收藏"
+      setSelectedFolder('all');
+    }
+  }, [selectedFolderId]);
 
   useEffect(() => {
     // 检查用户登录状态
@@ -53,53 +78,392 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile }: Favorit
     }
 
     if (status === 'authenticated') {
-      fetchFavorites();
+      // 加载收藏夹列表
+      fetchFolderList();
     }
   }, [status, router]);
 
-  // 获取收藏列表
-  const fetchFavorites = async () => {
+  // 获取收藏夹列表
+  const fetchFolderList = async () => {
+    setLoadingFolders(true);
+    try {
+      const response = await fileApi.getFavoriteFolders();
+      setFolders(response.folders || []);
+    } catch (error) {
+      console.error('获取收藏夹列表失败:', error);
+      message.error('获取收藏夹列表失败');
+    } finally {
+      setLoadingFolders(false);
+    }
+  };
+
+  // 获取特定收藏夹中的文件
+  const fetchFolderFiles = async (folderId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/storage/favorites');
-      const data = await response.json();
+      console.log(`获取收藏夹 ${folderId} 中的文件`);
       
-      if (data.success) {
-        setFavorites(data.data || []);
+      const response = await fileApi.getFolderFiles(folderId);
+      
+      if (response && response.items) {
+        // 将响应项目转换为 FavoriteFile[]
+        const favoriteFiles: FavoriteFile[] = (response.items as FavoriteFileInfo[]).map((item) => ({
+          id: item.id,
+          name: item.name,
+          size: item.size || 0,
+          type: item.type || '',
+          isFolder: !!item.isFolder,
+          createdAt: typeof item.createdAt === 'string' 
+            ? item.createdAt 
+            : item.createdAt instanceof Date 
+              ? item.createdAt.toISOString() 
+              : new Date().toISOString(),
+          updatedAt: typeof item.updatedAt === 'string' 
+            ? item.updatedAt 
+            : item.updatedAt instanceof Date 
+              ? item.updatedAt.toISOString() 
+              : new Date().toISOString(),
+          path: item.path,
+          // 添加收藏相关字段
+          favoriteId: item.favoriteId,
+          favoriteFolderId: item.favoriteFolderId || folderId, // 使用当前收藏夹ID作为默认值
+          favoriteFolderName: item.favoriteFolderName
+        }));
+        
+        console.log(`成功获取到${favoriteFiles.length}个收藏文件`);
+        setFavorites(favoriteFiles);
       } else {
-        message.error(data.error || '获取收藏列表失败');
+        console.log('收藏夹文件列表为空或格式不正确');
+        setFavorites([]);
       }
     } catch (error) {
-      console.error('获取收藏列表出错:', error);
-      message.error('获取收藏列表出错，请重试');
+      console.error(`获取收藏夹 ${folderId} 文件列表出错:`, error);
+      message.error('获取收藏夹文件列表失败');
     } finally {
       setLoading(false);
     }
   };
 
+  // 获取收藏列表
+  const fetchFavorites = async () => {
+    if (selectedFolder === 'all') {
+      // 获取所有收藏
+      setLoading(true);
+      try {
+        console.log('开始获取所有收藏列表...');
+        const response = await fetch('/api/storage/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        });
+        
+        // 检查响应状态
+        if (!response.ok) {
+          throw new Error(`服务器返回错误状态码: ${response.status} ${response.statusText}`);
+        }
+        
+        // 检查响应内容类型
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('服务器返回的不是JSON格式');
+        }
+        
+        // 如果响应为空，返回空数组
+        const text = await response.text();
+        if (!text.trim()) {
+          console.log('API响应为空，设置空数组');
+          setFavorites([]);
+          return;
+        }
+        
+        // 解析JSON
+        const data = JSON.parse(text);
+        console.log('收到API响应:', data);
+        
+        if (data.success) {
+          // 确保正确提取items数组
+          if (data.data && data.data.items && Array.isArray(data.data.items)) {
+            console.log(`成功获取到${data.data.items.length}个收藏项`);
+            // 使用类型断言并转换为需要的格式
+            const favoriteFiles: FavoriteFile[] = (data.data.items as FavoriteFileInfo[]).map((item) => ({
+              id: item.id,
+              name: item.name,
+              size: item.size || 0,
+              type: item.type || '',
+              isFolder: !!item.isFolder,
+              createdAt: typeof item.createdAt === 'string' 
+                ? item.createdAt 
+                : item.createdAt instanceof Date 
+                  ? item.createdAt.toISOString() 
+                  : new Date().toISOString(),
+              updatedAt: typeof item.updatedAt === 'string' 
+                ? item.updatedAt 
+                : item.updatedAt instanceof Date 
+                  ? item.updatedAt.toISOString() 
+                  : new Date().toISOString(),
+              path: item.path,
+              favoriteId: item.favoriteId,
+              favoriteFolderId: item.favoriteFolderId,
+              favoriteFolderName: item.favoriteFolderName
+            }));
+            setFavorites(favoriteFiles);
+          } else if (data.data && Array.isArray(data.data)) {
+            console.log(`成功获取到${data.data.length}个收藏项`);
+            // 处理服务端可能返回的不同数据结构
+            const favoriteFiles: FavoriteFile[] = (data.data as FavoriteFileInfo[]).map((item) => ({
+              id: item.id,
+              name: item.name,
+              size: item.size || 0,
+              type: item.type || '',
+              isFolder: !!item.isFolder,
+              createdAt: typeof item.createdAt === 'string' 
+                ? item.createdAt 
+                : item.createdAt instanceof Date 
+                  ? item.createdAt.toISOString() 
+                  : new Date().toISOString(),
+              updatedAt: typeof item.updatedAt === 'string' 
+                ? item.updatedAt 
+                : item.updatedAt instanceof Date 
+                  ? item.updatedAt.toISOString() 
+                  : new Date().toISOString(),
+              path: item.path,
+              favoriteId: item.favoriteId,
+              favoriteFolderId: item.favoriteFolderId,
+              favoriteFolderName: item.favoriteFolderName
+            }));
+            setFavorites(favoriteFiles);
+          } else {
+            console.warn('API返回的数据格式不符合预期', data.data);
+            setFavorites([]);
+          }
+        } else {
+          message.error(data.error || '获取收藏列表失败');
+        }
+      } catch (error) {
+        console.error('获取收藏列表出错:', error);
+        message.error(`获取收藏列表出错: ${error instanceof Error ? error.message : '请重试'}`);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // 获取指定收藏夹的文件
+      await fetchFolderFiles(selectedFolder);
+    }
+  };
+
+  useEffect(() => {
+    // 检查用户登录状态
+    if (status === 'unauthenticated') {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (status === 'authenticated') {
+      // 加载收藏夹列表
+      fetchFolderList();
+    }
+  }, [status, router]);
+
+  // 当收藏夹选择或登录状态变化时，加载文件
+  useEffect(() => {
+    if (status === 'authenticated') {
+      console.log('收藏夹选择变化，当前选择:', selectedFolder);
+      fetchFavorites();
+    }
+  }, [status, selectedFolder]);
+
   // 删除收藏
   const removeFavorite = async (favoriteIds: string[]) => {
     try {
+      console.log('开始移除收藏:', favoriteIds);
+      
       const response = await fetch('/api/storage/favorites', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ favoriteIds }),
+        body: JSON.stringify({ fileIds: favoriteIds }),
       });
       
-      const data = await response.json();
+      // 检查HTTP状态
+      if (!response.ok) {
+        console.error(`服务器返回错误状态码: ${response.status} ${response.statusText}`);
+        throw new Error(`服务器返回错误状态码: ${response.status}`);
+      }
+      
+      // 获取响应内容
+      const text = await response.text();
+      if (!text.trim()) {
+        console.warn('服务器返回空响应');
+        throw new Error('服务器返回空响应');
+      }
+      
+      // 解析JSON
+      const data = JSON.parse(text);
+      console.log('收到取消收藏API响应:', data);
       
       if (data.success) {
-        message.success(`成功取消收藏${data.deletedCount || favoriteIds.length}个文件`);
+        message.success(`成功取消收藏${data.data?.deletedCount || favoriteIds.length}个文件`);
         setSelectedRows([]);
         fetchFavorites();
+        // 刷新收藏夹列表，更新文件计数
+        fetchFolderList();
       } else {
         message.error(data.error || '取消收藏失败');
+        console.error('取消收藏失败原因:', data.error);
       }
     } catch (error) {
       console.error('取消收藏出错:', error);
-      message.error('取消收藏出错，请重试');
+      message.error(`取消收藏出错: ${error instanceof Error ? error.message : '请重试'}`);
+    }
+  };
+
+  // 删除收藏夹
+  const handleDeleteFolder = async () => {
+    // 不能删除"all"选项和默认收藏夹
+    if (selectedFolder === 'all') {
+      message.error('不能删除全部收藏视图');
+      return;
+    }
+    
+    const folder = folders.find(f => f.id === selectedFolder);
+    if (!folder) {
+      message.error('收藏夹不存在');
+      return;
+    }
+    
+    if (folder.isDefault) {
+      message.error('不能删除默认收藏夹');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      console.log(`开始删除收藏夹: ${folder.name} (${folder.id})`);
+      
+      // 调用删除收藏夹API
+      const result = await fileApi.deleteFavoriteFolder(folder.id);
+      
+      if (result.success) {
+        message.success(`收藏夹 "${folder.name}" 已删除`);
+        
+        // 重要：先将已删除的收藏夹ID保存，用于后续日志记录
+        const deletedFolderId = folder.id;
+        
+        // 切换到全部收藏视图
+        setSelectedFolder('all');
+        
+        // 重新加载收藏夹列表
+        await fetchFolderList();
+        
+        // 重要：创建一个获取全部收藏的函数，直接获取所有收藏，不依赖于selectedFolder状态
+        const fetchAllFavorites = async () => {
+          setLoading(true);
+          try {
+            console.log('删除收藏夹后获取全部收藏列表...');
+            const response = await fetch('/api/storage/favorites', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({}),
+            });
+            
+            if (!response.ok) {
+              throw new Error(`服务器返回错误状态码: ${response.status} ${response.statusText}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              throw new Error('服务器返回的不是JSON格式');
+            }
+            
+            const text = await response.text();
+            if (!text.trim()) {
+              console.log('API响应为空，设置空数组');
+              setFavorites([]);
+              return;
+            }
+            
+            const data = JSON.parse(text);
+            console.log('收到API响应:', data);
+            
+            if (data.success) {
+              if (data.data && data.data.items && Array.isArray(data.data.items)) {
+                const favoriteFiles = (data.data.items as FavoriteFileInfo[]).map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  size: item.size || 0,
+                  type: item.type || '',
+                  isFolder: !!item.isFolder,
+                  createdAt: typeof item.createdAt === 'string' 
+                    ? item.createdAt 
+                    : item.createdAt instanceof Date 
+                      ? item.createdAt.toISOString() 
+                      : new Date().toISOString(),
+                  updatedAt: typeof item.updatedAt === 'string' 
+                    ? item.updatedAt 
+                    : item.updatedAt instanceof Date 
+                      ? item.updatedAt.toISOString() 
+                      : new Date().toISOString(),
+                  path: item.path,
+                  favoriteId: item.favoriteId,
+                  favoriteFolderId: item.favoriteFolderId,
+                  favoriteFolderName: item.favoriteFolderName
+                }));
+                setFavorites(favoriteFiles);
+              } else if (data.data && Array.isArray(data.data)) {
+                const favoriteFiles = (data.data as FavoriteFileInfo[]).map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  size: item.size || 0,
+                  type: item.type || '',
+                  isFolder: !!item.isFolder,
+                  createdAt: typeof item.createdAt === 'string' 
+                    ? item.createdAt 
+                    : item.createdAt instanceof Date 
+                      ? item.createdAt.toISOString() 
+                      : new Date().toISOString(),
+                  updatedAt: typeof item.updatedAt === 'string' 
+                    ? item.updatedAt 
+                    : item.updatedAt instanceof Date 
+                      ? item.updatedAt.toISOString() 
+                      : new Date().toISOString(),
+                  path: item.path,
+                  favoriteId: item.favoriteId,
+                  favoriteFolderId: item.favoriteFolderId,
+                  favoriteFolderName: item.favoriteFolderName
+                }));
+                setFavorites(favoriteFiles);
+              } else {
+                console.warn('API返回的数据格式不符合预期', data.data);
+                setFavorites([]);
+              }
+            } else {
+              message.error(data.error || '获取收藏列表失败');
+            }
+          } catch (error) {
+            console.error('获取收藏列表出错:', error);
+            message.error(`获取收藏列表出错: ${error instanceof Error ? error.message : '请重试'}`);
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        // 调用新创建的函数，不依赖selectedFolder状态
+        await fetchAllFavorites();
+        
+        console.log(`收藏夹 ${deletedFolderId} 已删除并成功切换到全部收藏视图`);
+      } else {
+        message.error(result.message || '删除收藏夹失败');
+      }
+    } catch (error) {
+      console.error('删除收藏夹失败:', error);
+      message.error(`删除收藏夹失败: ${error instanceof Error ? error.message : '请重试'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -200,7 +564,7 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile }: Favorit
           </Button>
           <Popconfirm
             title="确定要取消收藏这个文件吗?"
-            onConfirm={() => removeFavorite([record.favoriteId])}
+            onConfirm={() => removeFavorite([record.id])}
             okText="确定"
             cancelText="取消"
           >
@@ -274,6 +638,50 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile }: Favorit
         </div>
       </div>
 
+      <div className={styles.filterBar}>
+        <Select
+          className={styles.folderSelect}
+          value={selectedFolder}
+          onChange={(value) => setSelectedFolder(value)}
+          loading={loadingFolders}
+          disabled={loadingFolders}
+          style={{ width: 200 }}
+        >
+          <Select.Option value="all">全部收藏</Select.Option>
+          {folders.map(folder => (
+            <Select.Option key={folder.id} value={folder.id}>
+              {folder.name}
+              {folder.fileCount !== undefined && ` (${folder.fileCount})`}
+              {folder.isDefault && ' [默认]'}
+            </Select.Option>
+          ))}
+        </Select>
+        
+        {/* 删除收藏夹按钮 */}
+        {selectedFolder !== 'all' && (
+          <Popconfirm
+            title="删除收藏夹"
+            description="确定要删除这个收藏夹吗？其中的文件将被移动到默认收藏夹。"
+            onConfirm={handleDeleteFolder}
+            okText="删除"
+            cancelText="取消"
+            placement="bottom"
+            disabled={loading || loadingFolders || folders.find(f => f.id === selectedFolder)?.isDefault}
+          >
+            <Button
+              type="text"
+              danger
+              icon={<Trash2 size={16} />}
+              style={{ marginLeft: 8 }}
+              disabled={loading || loadingFolders || folders.find(f => f.id === selectedFolder)?.isDefault}
+              title={folders.find(f => f.id === selectedFolder)?.isDefault ? "默认收藏夹不能删除" : "删除当前收藏夹"}
+            >
+              删除收藏夹
+            </Button>
+          </Popconfirm>
+        )}
+      </div>
+
       {loading ? (
         <div className={styles.loadingContainer}>
           <Spin size="large" />
@@ -285,7 +693,7 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile }: Favorit
           description={
             <span>
               <AlertCircle size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              您还没有收藏任何文件
+              {selectedFolder === 'all' ? '您还没有收藏任何文件' : '此收藏夹中没有文件'}
             </span>
           }
         >
@@ -293,15 +701,15 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile }: Favorit
             type="primary" 
             onClick={handleNavigateBack}
           >
-            浏览文件
+            返回文件列表
           </Button>
         </Empty>
       ) : (
         <Table
           rowSelection={rowSelection}
           columns={columns}
-          dataSource={favorites}
-          rowKey="favoriteId"
+          dataSource={Array.isArray(favorites) ? favorites : []}
+          rowKey="id"
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

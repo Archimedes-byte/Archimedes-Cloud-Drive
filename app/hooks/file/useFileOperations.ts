@@ -170,6 +170,26 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
         console.log(`文件下载过程完成: ${fileName}`);
       }, 200);
       
+      // 记录下载历史
+      // 如果是单个文件下载
+      if (fileIds.length === 1) {
+        try {
+          await fileApi.recordFileDownload(fileIds[0]);
+        } catch (error) {
+          console.warn('记录下载历史失败:', error);
+          // 但不影响下载成功的状态
+        }
+      } 
+      // 对于多个文件(打包下载)，我们仍然记录每个文件的下载历史
+      else if (fileIds.length > 1) {
+        // 异步记录，不等待完成
+        Promise.all(fileIds.map(fileId => 
+          fileApi.recordFileDownload(fileId).catch(error => 
+            console.warn(`记录文件 ${fileId} 下载历史失败:`, error)
+          )
+        ));
+      }
+      
       return true;
     } catch (error) {
       console.error('下载文件失败:', error);

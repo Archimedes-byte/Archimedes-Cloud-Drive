@@ -21,6 +21,14 @@ export interface SearchViewProps {
   setDebounceDelay?: (delay: number) => void;
   handlePreviewFile?: (file: ExtendedFile) => void;
   onExitSearchView?: () => void;
+  onClose?: () => void;
+  onFilesSelect?: (selectedFileIds: string[]) => void;
+  onFileSelect?: (file: ExtendedFile, checked: boolean) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
+  onFileContextMenu?: (event: React.MouseEvent, file: ExtendedFile) => void;
+  selectedFiles?: string[];
+  onClearHistory?: () => void;
 }
 
 export const SearchView: React.FC<SearchViewProps> = ({
@@ -38,7 +46,15 @@ export const SearchView: React.FC<SearchViewProps> = ({
   debounceDelay = 300,
   setDebounceDelay,
   handlePreviewFile,
-  onExitSearchView
+  onExitSearchView,
+  onClose,
+  onFilesSelect,
+  onFileSelect,
+  onSelectAll,
+  onDeselectAll,
+  onFileContextMenu,
+  selectedFiles,
+  onClearHistory
 }) => {
   const [showSettings, setShowSettings] = React.useState(false);
   const [showInputTip, setShowInputTip] = React.useState(false);

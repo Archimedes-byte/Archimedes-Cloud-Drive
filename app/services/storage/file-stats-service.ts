@@ -153,13 +153,20 @@ export class FileStatsService {
    * 从收藏夹移除
    */
   async removeFromFavorites(userId: string, fileIds: string[]): Promise<number> {
-    if (!fileIds.length) {
+    // 强化参数验证：确保fileIds是有效的非空数组
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      console.log('[文件统计] 移除收藏失败: 无效的文件ID列表');
       return 0;
     }
 
-    console.log(`[文件统计] 从收藏夹移除文件, 数量: ${fileIds.length}`);
+    console.log(`[文件统计] 从收藏夹移除文件, 数量: ${fileIds.length}, IDs: ${fileIds.join(',')}`);
 
     try {
+      // 确保fileIds是一个非空数组
+      if (!fileIds.length) {
+        return 0;
+      }
+      
       // 查找具有favorite标签的文件
       const files = await prisma.file.findMany({
         where: {
@@ -172,6 +179,7 @@ export class FileStatsService {
       });
       
       if (!files.length) {
+        console.log('[文件统计] 未找到要移除收藏的文件');
         return 0;
       }
       

@@ -71,6 +71,20 @@ export const useFilePreview = ({
    */
   const handlePreview = useCallback((file: FileWithSize) => {
     setPreviewFile(file);
+    
+    // 记录文件访问历史（只记录非文件夹）
+    if (file && !file.isFolder && file.id) {
+      try {
+        // 异步记录文件访问，不影响预览功能
+        fileApi.recordFileAccess(file.id).catch(error => {
+          console.error('记录文件访问失败:', error);
+          // 不向用户展示错误，避免影响体验
+        });
+      } catch (error) {
+        // 捕获任何可能的错误，确保不会影响主要功能
+        console.error('记录文件访问发生错误:', error);
+      }
+    }
   }, []);
 
   /**

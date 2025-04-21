@@ -209,8 +209,14 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       fontFamily: selectedFontValue
     };
     
-    // 生成唯一ID - 使用时间戳和随机数组合
-    const customThemeId = `custom_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    // 获取当前用户ID，用于创建用户特定的自定义主题ID
+    let userId = '';
+    if (typeof window !== 'undefined') {
+      userId = localStorage.getItem('user-id') || `user_${Date.now()}`;
+    }
+    
+    // 生成唯一ID - 使用时间戳、用户ID和随机数组合
+    const customThemeId = `custom_${userId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
     try {
       // 保存自定义主题到本地存储
