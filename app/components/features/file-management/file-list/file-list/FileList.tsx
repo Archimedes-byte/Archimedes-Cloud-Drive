@@ -58,6 +58,7 @@ interface FileListProps {
   areAllSelected?: boolean;
   favoritedFileIds?: string[];
   onToggleFavorite?: (file: FileInfo, isFavorite: boolean) => void;
+  fileUpdateTrigger?: number;
 }
 
 export function FileList({
@@ -91,7 +92,8 @@ export function FileList({
   showCheckboxes = true,
   areAllSelected,
   favoritedFileIds = [],
-  onToggleFavorite
+  onToggleFavorite,
+  fileUpdateTrigger = 0
 }: FileListProps) {
   const actualEditingFileId = editingFileId || editingFile;
 
@@ -105,7 +107,11 @@ export function FileList({
   const editTags = providedEditingTags !== undefined ? providedEditingTags : localEditTags;
   const newTagValue = providedNewTag !== undefined ? providedNewTag : localNewTag;
   
-  const filesMemoized = useMemo(() => files, [files.map(f => f.id).join(',')]);
+  const filesMemoized = useMemo(() => files, [
+    files.map(f => f.id).join(','), 
+    files.map(f => f.name).join(','),
+    fileUpdateTrigger
+  ]);
   
   const setEditName = (value: string) => {
     if (onEditNameChange) {

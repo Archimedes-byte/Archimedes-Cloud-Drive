@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFileTypeByExtension } from '@/app/utils/file/type';
 import { 
@@ -21,6 +21,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  
+  // 保存fetchPreviewUrl的引用以便在重试按钮中使用
+  const fetchPreviewUrlRef = useRef<(() => Promise<void>) | null>(null);
 
   // 判断文件类型的辅助函数
   const isImageType = (type?: string, extension?: string): boolean => {
@@ -141,19 +144,47 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
           id: file.id,
           name: file.name,
           type: file.type,
-          extension: extension
+          extension: extension,
+          apiPath: API_PATHS.STORAGE.FILES.PREVIEW(file.id)
         });
 
         // 使用isPreviewableFile辅助函数判断文件是否可预览
         if (isPreviewableFile(file.type, extension)) {
           console.log('文件类型支持预览，正在获取预览URL');
           
+          // 构建请求URL
+          const requestUrl = `${API_PATHS.STORAGE.FILES.PREVIEW(file.id)}?format=json`;
+          console.log('预览请求URL:', requestUrl);
+          
           // 使用新API并添加format=json参数获取JSON格式的预览URL
-          const response = await fetch(`${API_PATHS.STORAGE.FILES.PREVIEW(file.id)}?format=json`);
+          const response = await fetch(requestUrl, {
+            // 添加缓存控制，确保不使用缓存数据
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            },
+            cache: 'no-store'
+          });
           
           // 检查HTTP请求状态
           if (!response.ok) {
-            throw new Error(`预览请求失败: HTTP ${response.status}`);
+            // 保存响应状态用于调试
+            const statusInfo = {
+              status: response.status,
+              statusText: response.statusText,
+              url: response.url
+            };
+            
+            setDebugInfo(statusInfo);
+            
+            // 尝试解析错误消息
+            try {
+              const errorData = await response.json();
+              throw new Error(`预览请求失败: HTTP ${response.status} - ${errorData.error || errorData.message || response.statusText}`);
+            } catch (parseError) {
+              // 如果无法解析JSON，可能是非JSON响应
+              throw new Error(`预览请求失败: HTTP ${response.status} - ${response.statusText}`);
+            }
           }
           
           // 解析JSON响应
@@ -191,11 +222,20 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
       } catch (err) {
         console.error('预览加载失败:', err);
         setError(err instanceof Error ? err.message : '预览加载失败');
+        
+        // 添加重试按钮
+        if (!debugInfo) {
+          setDebugInfo({
+            errorInfo: err instanceof Error ? err.message : String(err),
+            apiPath: API_PATHS.STORAGE.FILES.PREVIEW(file.id)
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
 
+    fetchPreviewUrlRef.current = fetchPreviewUrl;
     fetchPreviewUrl();
   }, [file]);
 
@@ -262,6 +302,20 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
           <IconComponent size={48} className={styles.fileIcon} />
           <h3 className={styles.fileName}>{fileName}</h3>
           <p className={styles.errorMessage}>{error}</p>
+          
+          {/* 添加重试按钮 */}
+          <button 
+            className={styles.retryButton}
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              setPreviewUrl(null);
+              fetchPreviewUrlRef.current?.();
+            }}
+          >
+            重试加载
+          </button>
+          
           {debugInfo && (
             <details className={styles.debugInfo}>
               <summary>调试信息</summary>

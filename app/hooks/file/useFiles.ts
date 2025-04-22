@@ -132,7 +132,7 @@ export const useFiles = () => {
     forceRefresh: boolean = false,
     skipPathLoad: boolean = false
   ) => {
-    console.log('loadFiles被调用', {folderId, type, skipPathLoad});
+    console.log('loadFiles被调用', {folderId, type, skipPathLoad, forceRefresh});
     
     // 如果已经在加载中，不要重复请求
     if (isLoading) {
@@ -140,7 +140,7 @@ export const useFiles = () => {
       return;
     }
 
-    // 检查是否与上次请求参数相同，除非强制刷新
+    // 检查是否与上次请求参数相同，但始终在重命名后强制刷新
     const currentRequest = {folderId, type};
     if (!forceRefresh && lastRequestRef.current && 
         lastRequestRef.current.folderId === currentRequest.folderId && 
@@ -175,13 +175,15 @@ export const useFiles = () => {
 
       // 使用fileApi获取文件列表
       try {
+        // 为每次请求添加时间戳，确保不使用缓存数据
+        const timestamp = Date.now();
         const result = await fileApi.getFiles({
           folderId,
           type: effectiveFileType || undefined,
           // 在文件类型过滤模式下启用递归查询
           ...(effectiveFileType ? { recursive: true } : {}),
-          // 添加一个时间戳参数以防止缓存 (强制刷新时)
-          ...(forceRefresh ? { _t: Date.now() } : {})
+          // 总是添加时间戳参数以防止缓存，而不仅在强制刷新时
+          _t: timestamp
         });
         
         // 在前端执行额外过滤（确保筛选结果的准确性）
@@ -203,6 +205,9 @@ export const useFiles = () => {
         setLastSortApplied(`${sortOrder.field}-${sortOrder.direction}`);
         
         console.log('文件列表加载成功，共获取到', sortedFiles.length, '个文件');
+        
+        // 重置文件更新触发器，强制UI刷新
+        setFileUpdateTrigger(prev => prev + 1);
       } catch (apiError) {
         throw new Error(apiError instanceof Error ? apiError.message : '加载文件列表失败');
       }
@@ -345,12 +350,18 @@ export const useFiles = () => {
   const handleFileUpdate = useCallback((updatedFile: FileInfo) => {
     console.log('处理文件更新:', updatedFile);
     
+    // 检查是否存在强制包含标记
+    const hasForceInclude = (updatedFile as any)._forceInclude === true;
+    
     // 更新文件列表中的对应文件
     setFiles(prevFiles => {
+      // 首先检查文件是否存在于当前列表中
+      const fileExists = prevFiles.some(file => file.id === updatedFile.id);
+      
       // 查找并更新文件
       let updatedFiles = prevFiles.map(file => {
         if (file.id === updatedFile.id) {
-          // 保留原有的size属性，因为它在FileWithSize中可能不一样
+          // 合并更新，保留原有的size属性
           return {
             ...updatedFile,
             size: file.size
@@ -359,74 +370,69 @@ export const useFiles = () => {
         return file;
       });
       
-      // 如果当前有文件类型过滤，重新应用过滤逻辑
-      if (selectedFileType) {
-        // 检查是否有强制包含标记
-        const hasForceInclude = (updatedFile as any)._forceInclude === true;
+      // 如果文件不在当前列表中且有强制包含标记，将其添加到列表
+      if (!fileExists && hasForceInclude) {
+        console.log('文件不在列表中但有强制包含标记，添加到列表:', updatedFile.name);
+        updatedFiles = [
+          ...updatedFiles, 
+          { ...updatedFile, size: updatedFile.size || 0 } as FileWithSize
+        ];
+      }
+      
+      // 如果当前有文件类型过滤，检查文件是否应该在列表中
+      if (selectedFileType && !hasForceInclude) {
+        console.log('应用文件类型过滤:', selectedFileType);
+        // 检查文件是否符合过滤条件
+        const shouldInclude = shouldFileBeIncluded(updatedFile, selectedFileType);
         
-        // 首先检查更新后的文件是否符合当前过滤条件
-        const ext = updatedFile.name.split('.').pop()?.toLowerCase();
-        let shouldInclude = false;
-        
-        // 如果有强制包含标记，直接包含文件
-        if (hasForceInclude) {
-          shouldInclude = true;
-          console.log('文件被标记为强制包含，忽略过滤条件:', updatedFile.name);
-        } 
-        // 否则检查文件扩展名是否符合当前过滤类型
-        else if (selectedFileType === 'folder' && updatedFile.isFolder) {
-          shouldInclude = true;
-        } else if (selectedFileType === 'document' && !updatedFile.isFolder && ext && 
-                  ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext)) {
-          shouldInclude = true;
-        } else if (selectedFileType === 'image' && !updatedFile.isFolder && ext && 
-                  ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext)) {
-          shouldInclude = true;
-        } else if (selectedFileType === 'audio' && !updatedFile.isFolder && ext && 
-                  ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext)) {
-          shouldInclude = true;
-        } else if (selectedFileType === 'video' && !updatedFile.isFolder && ext && 
-                  ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext)) {
-          shouldInclude = true;
-        } else if (selectedFileType === 'code' && !updatedFile.isFolder && ext && 
-                  ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext)) {
-          shouldInclude = true;
-        } else if (selectedFileType === 'archive' && !updatedFile.isFolder && ext && 
-                  ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) {
-          shouldInclude = true;
-        }
-        
-        console.log('文件更新后过滤结果:', {
-          文件名: updatedFile.name,
-          扩展名: ext,
-          当前过滤类型: selectedFileType,
-          是否包含: shouldInclude,
-          强制包含: hasForceInclude
-        });
-        
-        // 根据过滤结果处理文件列表
-        if (shouldInclude) {
-          // 如果文件应该包含在当前视图，但可能不存在于列表中
-          if (!updatedFiles.some(file => file.id === updatedFile.id)) {
-            // 将更新后的文件添加到列表中
-            const fileWithSize = {
-              ...updatedFile,
-              size: updatedFile.size || 0
-            };
-            updatedFiles.push(fileWithSize);
-          }
-        } else {
-          // 如果文件不应该包含在当前视图，将其从列表中移除
+        if (!shouldInclude) {
+          console.log('文件不符合当前过滤条件，从列表中移除:', updatedFile.name);
+          // 从列表中移除不符合过滤条件的文件
           updatedFiles = updatedFiles.filter(file => file.id !== updatedFile.id);
         }
       }
       
-      return updatedFiles;
+      // 重新应用排序
+      console.log('文件更新后重新应用排序');
+      const sortedFiles = handleSort(updatedFiles);
+      
+      // 增加文件更新触发器，确保即使引用相同也会触发渲染
+      setFileUpdateTrigger(prev => prev + 1);
+      
+      return sortedFiles;
     });
+  }, [selectedFileType, handleSort]);
+
+  // 判断文件是否应该包含在特定类型的过滤中
+  const shouldFileBeIncluded = (file: FileInfo, fileType: FileTypeEnum): boolean => {
+    if (fileType === 'folder' && file.isFolder) {
+      return true;
+    }
     
-    // 触发更新计数器增加，可用于通知其他依赖组件
-    setFileUpdateTrigger(prev => prev + 1);
-  }, [selectedFileType]);
+    if (file.isFolder) {
+      return false;  // 非文件夹类型过滤不包含文件夹
+    }
+    
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext) return false;
+    
+    switch (fileType) {
+      case 'document':
+        return ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+      case 'image':
+        return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
+      case 'audio':
+        return ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
+      case 'video':
+        return ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
+      case 'code':
+        return ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext);
+      case 'archive':
+        return ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext);
+      default:
+        return false;
+    }
+  };
 
   // 在排序顺序变更时重新排序文件列表
   useEffect(() => {

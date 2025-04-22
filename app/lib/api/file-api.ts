@@ -48,13 +48,33 @@ class ApiError extends Error {
  */
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let errorMessage = '请求失败';
+    let errorMessage = `请求失败: ${response.status} ${response.statusText}`;
     let errorCode;
     
     try {
-      const errorData = await response.json();
-      errorMessage = errorData.error || errorData.message || errorMessage;
-      errorCode = errorData.code;
+      // 检查内容类型
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        errorCode = errorData.code;
+        
+        // 记录详细的错误信息到控制台
+        console.error('API请求失败，服务器返回:', {
+          status: response.status,
+          errorData,
+          url: response.url
+        });
+      } else {
+        // 非JSON响应
+        const textResponse = await response.text();
+        console.error('API请求失败，非JSON响应:', {
+          status: response.status,
+          text: textResponse.substring(0, 200), // 只记录前200个字符，避免日志过大
+          url: response.url
+        });
+      }
     } catch (e) {
       // 解析错误响应失败，使用默认错误信息
       console.error('解析API错误响应失败:', e);
@@ -63,25 +83,58 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new ApiError(errorMessage, response.status, errorCode);
   }
 
-  let data;
   try {
-    data = await response.json();
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.warn('响应不是JSON格式:', {
+        contentType,
+        url: response.url,
+        status: response.status
+      });
+      
+      // 如果不是JSON但状态码是成功的，返回一个简单的成功对象
+      return { success: true } as unknown as T;
+    }
+    
+    const data = await response.json();
+    
+    // 处理不同的响应格式
+    if (data.success === false) {
+      throw new ApiError(
+        data.error || data.message || '请求失败',
+        response.status,
+        data.code?.toString()
+      );
+    }
+    
+    // 处理嵌套的数据结构
+    let resultData: any;
+    
+    if (data.data !== undefined) {
+      // 标准API响应格式 { success: true, data: ... }
+      resultData = data.data;
+    } else if (data.folder !== undefined) {
+      // 文件夹API响应格式 { folder: ... }
+      resultData = data.folder;
+    } else if (data.file !== undefined) {
+      // 文件API响应格式 { file: ... }
+      resultData = data.file;
+    } else if (data.items !== undefined) {
+      // 列表API响应格式 { items: [...], total: ... }
+      resultData = data;
+    } else {
+      // 其他格式，直接返回数据
+      resultData = data;
+    }
+    
+    return resultData as T;
   } catch (e) {
+    if (e instanceof ApiError) {
+      throw e; // 重新抛出已经创建的API错误
+    }
     console.error('解析API响应JSON失败:', e);
-    throw new ApiError('解析API响应失败', 500);
+    throw new ApiError('解析API响应失败: ' + (e instanceof Error ? e.message : '未知错误'), 500);
   }
-  
-  // 处理不同的响应格式
-  if (data.success === false) {
-    throw new ApiError(
-      data.error || data.message || '请求失败',
-      response.status,
-      data.code?.toString()
-    );
-  }
-  
-  // 返回数据 - 确保处理标准API响应格式
-  return (data.data !== undefined ? data.data : data) as T;
 }
 
 /**
@@ -282,23 +335,94 @@ export const fileApi = {
   // 创建文件夹
   async createFolder(name: string, parentId: string | null = null, tags: string[] = []): Promise<FileInfo> {
     try {
-      console.log('API调用 - 创建文件夹:', { name, parentId, tagsCount: tags.length });
+      console.log('API调用 - 创建文件夹:', { 
+        name, 
+        parentId, 
+        tagsCount: tags.length,
+        apiPath: API_PATHS.STORAGE.FOLDERS.CREATE
+      });
       
-      // 使用新的API路径
+      // 确保请求参数正确
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        throw new Error('文件夹名称不能为空');
+      }
+      
+      // 使用正确的API路径和方法
       const response = await fetch(API_PATHS.STORAGE.FOLDERS.CREATE, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, parentId, tags }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: JSON.stringify({ 
+          name: name.trim(), 
+          parentId, 
+          tags: Array.isArray(tags) ? tags : [] 
+        }),
       });
 
-      console.log('创建文件夹API响应状态:', response.status);
+      console.log('创建文件夹API响应状态:', response.status, response.statusText);
       
-      const result = await handleResponse<FileInfo>(response);
-      console.log('创建文件夹成功，返回数据:', result);
-      return result;
+      // 如果响应不成功，尝试提取更详细的错误信息
+      if (!response.ok) {
+        let errorMessage = '创建文件夹失败：' + response.statusText;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('服务器返回错误:', errorData);
+        } catch (e) {
+          // 如果不是JSON响应，尝试获取文本内容
+          const text = await response.text();
+          console.error('无法解析错误响应 (非JSON):', {
+            status: response.status,
+            text: text.substring(0, 200) // 只记录前200个字符
+          });
+          
+          // 如果响应包含HTML，可能是404页面
+          if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+            errorMessage = `服务器返回HTML页面，可能是路由错误: ${response.status} ${response.statusText}`;
+          }
+        }
+        throw new ApiError(errorMessage, response.status);
+      }
+      
+      // 解析响应
+      const responseData = await response.json();
+      console.log('创建文件夹成功，返回数据:', responseData);
+      
+      // 服务器可能返回不同格式的响应，需要适配
+      let folderData: FileInfo;
+      
+      // 检查响应结构
+      if (responseData.data && responseData.data.folder) {
+        // API返回{ success: true, data: { folder: {...} } }格式
+        folderData = responseData.data.folder;
+      } else if (responseData.folder) {
+        // API返回{ folder: {...} }格式
+        folderData = responseData.folder;
+      } else if (responseData.data) {
+        // API返回{ success: true, data: {...} }格式
+        folderData = responseData.data;
+      } else {
+        // 直接返回响应
+        folderData = responseData;
+      }
+      
+      console.log('处理后的文件夹数据:', folderData);
+      return folderData;
     } catch (error) {
       console.error('创建文件夹API调用失败:', error);
-      throw error;
+      
+      // 重新包装错误，确保提供有用的错误信息
+      if (error instanceof ApiError) {
+        throw error;
+      } else {
+        throw new ApiError(
+          error instanceof Error ? error.message : '创建文件夹失败',
+          500
+        );
+      }
     }
   },
   
@@ -331,7 +455,7 @@ export const fileApi = {
     folderCount: number;
   }> {
     // 使用新的API路径
-    const response = await fetch(API_PATHS.STORAGE.STATS);
+    const response = await fetch(API_PATHS.STORAGE.STATS.USAGE);
     
     return handleResponse<{
       totalSize: number;

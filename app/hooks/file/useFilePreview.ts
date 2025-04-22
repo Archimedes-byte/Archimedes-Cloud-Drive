@@ -154,7 +154,7 @@ export const useFilePreview = ({
         preserveOriginalType: true
       };
       
-      // 使用fileApi直接更新文件信息，传递完整的更新参数对象
+      // 使用fileApi直接更新文件信息
       const updatedFile = await fileApi.updateFile(fileToRename.id, newName.trim(), tags, true);
       
       message.success('重命名成功');
@@ -163,48 +163,30 @@ export const useFilePreview = ({
       setIsRenameModalOpen(false);
       setFileToRename(null);
       
-      // 检查扩展名是否变化且当前有文件类型过滤
+      // 检查扩展名是否变化
       const extensionChanged = oldExt !== newExt;
       
-      // 扩展名变化时可能需要重新加载文件列表
-      if (extensionChanged && selectedFileType) {
-        console.log('文件扩展名已变更，需要刷新文件列表', { oldExt, newExt, selectedFileType });
-        
-        // 如果提供了刷新函数，强制刷新整个文件列表
-        if (onRefresh) {
-          setTimeout(() => {
-            console.log('重新加载文件列表以反映类型变化');
-            onRefresh();
-          }, 300); // 短暂延迟，确保UI正常更新
-          
-          // 扩展名变化情况下，仍然更新当前视图中的对应文件
-          // 这有助于在刷新之前保持UI的连续性
-          if (onFileUpdate) {
-            // 特别添加一个标记，确保前端过滤时考虑这个文件
-            const fileWithType = {
-              ...updatedFile,
-              _forceInclude: true // 添加特殊标记
-            } as any; // 使用类型断言避免类型错误
-            onFileUpdate(fileWithType);
-          }
-        } else {
-          // 如果没有刷新函数，至少更新当前文件
-          if (onFileUpdate) {
-            onFileUpdate(updatedFile);
-          }
-        }
-      } else {
-        // 非扩展名变化情况，只更新相关视图
-        
-        // 1. 更新文件列表 - 如果提供了更新文件函数
-        if (onFileUpdate) {
-          onFileUpdate(updatedFile);
-        }
-        
-        // 2. 更新搜索结果 - 如果提供了更新搜索结果函数
-        if (onSearchResultsUpdate) {
-          onSearchResultsUpdate(updatedFile);
-        }
+      // 无论扩展名是否变化，始终强制刷新整个文件列表
+      if (onRefresh) {
+        console.log('重命名成功后刷新文件列表');
+        setTimeout(() => {
+          onRefresh();
+        }, 100); // 短暂延迟确保UI正常更新
+      }
+      
+      // 同时也更新文件列表中的条目（在刷新之前保持UI连续性）
+      if (onFileUpdate) {
+        // 添加特殊标记，确保在过滤视图中也显示
+        const fileWithMark = {
+          ...updatedFile,
+          _forceInclude: true // 添加标记
+        } as any;
+        onFileUpdate(fileWithMark);
+      }
+      
+      // 如果在搜索结果中也需要更新
+      if (onSearchResultsUpdate) {
+        onSearchResultsUpdate(updatedFile);
       }
       
       return true;

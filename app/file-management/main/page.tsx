@@ -104,6 +104,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     selectedFileType,
     selectedFiles,
     sortOrder,
+    fileUpdateTrigger,
     loadFiles,
     toggleSelectFile: handleSelectFile,
     toggleSelectAll,
@@ -1119,6 +1120,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
               showCheckboxes={true}
               favoritedFileIds={favoritedFileIds}
               onToggleFavorite={handleToggleFavorite}
+              fileUpdateTrigger={fileUpdateTrigger}
             />
           ) : (
             <div style={{ 
@@ -1180,6 +1182,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
               showCheckboxes={true}
               favoritedFileIds={favoritedFileIds}
               onToggleFavorite={handleToggleFavorite}
+              fileUpdateTrigger={fileUpdateTrigger}
             />
           ) : (
             <div style={{ 
@@ -1387,6 +1390,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             areAllSelected={areAllFilesSelected}
             favoritedFileIds={favoritedFileIds}
             onToggleFavorite={handleToggleFavorite}
+            fileUpdateTrigger={fileUpdateTrigger}
           />
         </div>
       </>
