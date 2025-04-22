@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { message, Spin, Input, Modal, Button, Divider, Dropdown, Tag } from 'antd';
 import Head from 'next/head';
-import { FolderUp, UploadCloud, FileUp, FolderPlus, Folder, FileText, Image as ImageIcon, Video, Music, File, Search, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { FolderUp, UploadCloud, FileUp, FolderPlus, Folder, FileText, Image as ImageIcon, Video, Music, File, Search, ChevronUp, ChevronDown, X, Zap, Download, Clock, Share2, Star, Tag as TagIcon } from 'lucide-react';
 
 // 引入共享组件
 import { Sidebar } from '@/app/components/features/file-management/navigation/sidebar';
@@ -122,7 +122,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     setSortOrder
   } = useFiles();
 
-  // UI状态管理
+  // 使用UI状态管理
   const {
     sidebarVisible,
     myFilesExpanded,
@@ -141,6 +141,18 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 添加主题面板状态
   const [showThemePanel, setShowThemePanel] = useState(false);
+  
+  // 添加状态变量来跟踪是否显示特殊视图内容
+  const [showMySharesContent, setShowMySharesContent] = useState(initialShowShares);
+  const [showFavoritesContent, setShowFavoritesContent] = useState(false);
+  const [showRecentFilesContent, setShowRecentFilesContent] = useState(false);
+  const [showRecentDownloadsContent, setShowRecentDownloadsContent] = useState(false);
+  const [currentView, setCurrentView] = useState<string | null>(null);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [tagSearchOpen, setTagSearchOpen] = useState(false);
+  const [selectedFavoriteFolderId, setSelectedFavoriteFolderId] = useState<string | undefined>();
+  const [isCreateFavoriteModalOpen, setIsCreateFavoriteModalOpen] = useState(false);
+  const [favoriteFoldersRefreshTrigger, setFavoriteFoldersRefreshTrigger] = useState(0);
 
   // 文件操作钩子
   const {
@@ -169,7 +181,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     setDebounceDelay,
     handleSearch,
     updateFileInResults,
-    clearSearchHistory
+    clearSearchHistory,
+    searchHistory
   } = useFileSearch();
 
   // 文件预览和重命名 - 传入selectedFileType参数
@@ -228,12 +241,10 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   // 最近访问文件相关状态
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
   const [loadingRecentFiles, setLoadingRecentFiles] = useState(false);
-  const [showRecentFilesContent, setShowRecentFilesContent] = useState(false);
   
   // 最近下载文件相关状态
   const [recentDownloads, setRecentDownloads] = useState<FileInfo[]>([]);
   const [loadingRecentDownloads, setLoadingRecentDownloads] = useState(false);
-  const [showRecentDownloadsContent, setShowRecentDownloadsContent] = useState(false);
   
   // 添加获取收藏状态的函数
   const fetchFavorites = useCallback(async () => {
@@ -392,13 +403,12 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   const handleSignOut = useCallback(async () => {
     try {
-      // 清除用户相关的本地存储数据
+      // 清除用户相关的本地存储数据，但保留主题设置
       localStorage.removeItem('user-id');
       
-      // 导入清除自定义主题的函数
-      const { clearCustomThemes } = await import('@/app/components/ui/themes/theme-service');
-      // 清除所有自定义主题
-      clearCustomThemes();
+      // 不再清除主题设置，以实现主题持久化
+      // const { clearCustomThemes } = await import('@/app/components/ui/themes/theme-service');
+      // clearCustomThemes();
       
       // 执行登出操作
       await signOut({ 
@@ -412,35 +422,62 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     }
   }, []);
 
+  // 在页面顶部，添加一个通用的函数来关闭所有特殊视图
+  const closeAllSpecialViews = useCallback((newView: string | null = null) => {
+    // 重置所有特殊视图的显示状态
+    setShowSearchView(false);
+    setShowMySharesContent(false);
+    setShowFavoritesContent(false);
+    setShowRecentFilesContent(false);
+    setShowRecentDownloadsContent(false);
+    
+    // 重置新增的视图控制状态，如果提供了新视图则设置它
+    setCurrentView(newView);
+    setIsSearchVisible(false);
+    setTagSearchOpen(false);
+  }, [
+    setShowSearchView, 
+    setShowMySharesContent, 
+    setShowFavoritesContent, 
+    setShowRecentFilesContent, 
+    setShowRecentDownloadsContent,
+    setCurrentView,
+    setIsSearchVisible,
+    setTagSearchOpen
+  ]);
+
   // Sidebar中"搜索文件"点击处理函数
-  const handleSearchClick = useCallback((searchTypeParam?: string) => {
-    // 如果传入了搜索类型参数，设置对应的搜索类型
-    if (searchTypeParam === 'tag') {
+  const handleSearchClick = (query?: string) => {
+    if (query === 'tag') {
+      // 标签搜索
+      closeAllSpecialViews('tag');
+      // 确保搜索视图显示
+      setShowSearchView(true);
+      setTagSearchOpen(true);
+      // 设置搜索类型为标签
       setSearchType('tag');
+      // 打开搜索界面并触发搜索
+      setTimeout(() => {
+        handleSearch("", "tag");
+      }, 0);
     } else {
-      // 如果没有指定类型，默认设置为按文件名搜索
+      // 普通搜索，修改为与其他视图一致的实现
+      closeAllSpecialViews('search');
+      // 确保搜索视图显示
+      setShowSearchView(true);
+      setIsSearchVisible(true);
+      // 设置搜索类型为文件名
       setSearchType('name');
     }
-    
-    // 重置搜索条件
-    setSearchQuery('');
-    
-    // 清除文件类型过滤
-    setSelectedFileType(null);
-    
-    // 显示搜索视图
-    setShowSearchView(true);
-  }, [setShowSearchView, setSearchType, setSearchQuery, setSelectedFileType]);
+  };
 
   // 处理文件点击
   const handleFileItemClick = useCallback((file) => {
     // 减少不必要的日志输出
     if (file.isFolder) {
       // 如果是文件夹，使用导航逻辑
-      // 如果当前在搜索视图，则关闭搜索视图
-      if (showSearchView) {
-        setShowSearchView(false);
-      }
+      // 关闭所有特殊视图（搜索、收藏、最近访问等）
+      closeAllSpecialViews();
 
       // 使用文件夹导航函数，该函数内部会更新面包屑路径
       handleFileClick(file);
@@ -449,7 +486,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
       const localFile = files.find(f => f.id === file.id) || file;
       handlePreviewFile(localFile);
     }
-  }, [files, handleFileClick, handlePreviewFile, showSearchView, setShowSearchView]);
+  }, [files, handleFileClick, handlePreviewFile, closeAllSpecialViews]);
 
   // 处理全选文件
   const onSelectAllFiles = useCallback(() => {
@@ -667,25 +704,18 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   // 计算所有文件是否全部选中
   const areAllFilesSelected = files.length > 0 && selectedFiles.length === files.length;
 
-  // 添加状态变量来跟踪是否显示分享和收藏页面内容
-  const [showMySharesContent, setShowMySharesContent] = useState(initialShowShares);
-  const [showFavoritesContent, setShowFavoritesContent] = useState(false);
-  const [selectedFavoriteFolderId, setSelectedFavoriteFolderId] = useState<string | undefined>();
-  const [isCreateFavoriteModalOpen, setIsCreateFavoriteModalOpen] = useState(false);
-  const [favoriteFoldersRefreshTrigger, setFavoriteFoldersRefreshTrigger] = useState(0);
-
   // 监听全局事件，从分享页面URL访问的情况
   useEffect(() => {
     // 监听事件
-    const handleViewMyShares = () => {
+    const handleViewMySharesEvent = () => {
       setShowMySharesContent(true);
     };
     
-    window.addEventListener('view-my-shares', handleViewMyShares);
+    window.addEventListener('view-my-shares', handleViewMySharesEvent);
     
     // 清理事件监听器
     return () => {
-      window.removeEventListener('view-my-shares', handleViewMyShares);
+      window.removeEventListener('view-my-shares', handleViewMySharesEvent);
     };
   }, []);
 
@@ -769,12 +799,9 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理最近访问点击
   const handleRecentClick = () => {
-    // 关闭其他视图
-    setShowSearchView(false);
+    // 关闭其他视图，并设置当前视图为recent
+    closeAllSpecialViews('recent');
     setSelectedFileType(null);
-    setShowMySharesContent(false);
-    setShowFavoritesContent(false);
-    setShowRecentDownloadsContent(false);
     
     // 获取最近访问文件
     fetchRecentFiles();
@@ -785,18 +812,35 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   
   // 处理最近下载点击
   const handleRecentDownloadsClick = () => {
-    // 关闭其他视图
-    setShowSearchView(false);
+    // 关闭其他视图，并设置当前视图为downloads
+    closeAllSpecialViews('downloads');
     setSelectedFileType(null);
-    setShowMySharesContent(false);
-    setShowFavoritesContent(false);
-    setShowRecentFilesContent(false);
     
     // 获取最近下载文件
     fetchRecentDownloads();
     
     // 显示最近下载内容
     setShowRecentDownloadsContent(true);
+  };
+
+  // 处理查看我的分享
+  const handleViewMyShares = () => {
+    // 关闭其他视图，并设置当前视图为shares
+    closeAllSpecialViews('shares');
+    setSelectedFileType(null);
+    
+    // 显示我的分享内容
+    setShowMySharesContent(true);
+  };
+
+  // 处理收藏夹点击
+  const handleFavoritesClick = () => {
+    // 关闭其他视图，并设置当前视图为favorites
+    closeAllSpecialViews('favorites');
+    setSelectedFileType(null);
+    
+    // 显示收藏内容
+    setShowFavoritesContent(true);
   };
 
   // 使用初始化加载状态显示骨架屏
@@ -1034,6 +1078,17 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     // 可以在这里添加其他处理，比如显示分享成功提示等
   };
 
+  // 处理创建收藏夹按钮点击
+  const handleCreateFavoriteFolder = () => {
+    setIsCreateFavoriteModalOpen(true);
+  };
+
+  // 处理收藏夹创建成功
+  const handleFavoriteCreateSuccess = () => {
+    // 递增刷新触发器，强制侧边栏刷新收藏夹列表
+    setFavoriteFoldersRefreshTrigger(prev => prev + 1);
+  };
+
   // 在文件管理页面中，添加一个路由判断
   const contentToRender = () => {
     // 公共渲染的面包屑组件
@@ -1056,9 +1111,10 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         <FavoritesContent
           onNavigateBack={() => setShowFavoritesContent(false)}
           selectedFolderId={selectedFavoriteFolderId}
+          titleIcon={<Star size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />}
           onOpenFile={(file) => {
-            // 关闭收藏视图
-            setShowFavoritesContent(false);
+            // 关闭所有特殊视图
+            closeAllSpecialViews();
             
             // 根据文件类型执行不同的操作
             if (file.isFolder) {
@@ -1083,14 +1139,10 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             alignItems: 'center', 
             padding: '16px 0' 
           }}>
-            <h2 style={{ margin: 0 }}>最近访问的文件</h2>
-            <Button 
-              type="primary" 
-              onClick={() => setShowRecentFilesContent(false)}
-              icon={<FolderUp size={16} />}
-            >
-              返回文件列表
-            </Button>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
+              最近访问的文件
+            </h2>
           </div>
           
           {loadingRecentFiles ? (
@@ -1105,8 +1157,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
               onFileClick={(file) => {
                 // 根据文件类型执行不同的操作
                 if (file.isFolder) {
-                  // 如果是文件夹，关闭最近访问视图并导航到该文件夹
-                  setShowRecentFilesContent(false);
+                  // 如果是文件夹，关闭所有特殊视图并导航到该文件夹
+                  closeAllSpecialViews();
                   handleFileClick(file);
                 } else {
                   // 如果是文件，预览该文件
@@ -1145,14 +1197,10 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             alignItems: 'center', 
             padding: '16px 0' 
           }}>
-            <h2 style={{ margin: 0 }}>最近下载的文件</h2>
-            <Button 
-              type="primary" 
-              onClick={() => setShowRecentDownloadsContent(false)}
-              icon={<FolderUp size={16} />}
-            >
-              返回文件列表
-            </Button>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Download size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
+              最近下载的文件
+            </h2>
           </div>
           
           {loadingRecentDownloads ? (
@@ -1167,8 +1215,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
               onFileClick={(file) => {
                 // 根据文件类型执行不同的操作
                 if (file.isFolder) {
-                  // 如果是文件夹，关闭最近下载视图并导航到该文件夹
-                  setShowRecentDownloadsContent(false);
+                  // 如果是文件夹，关闭所有特殊视图并导航到该文件夹
+                  closeAllSpecialViews();
                   handleFileClick(file);
                 } else {
                   // 如果是文件，预览该文件
@@ -1203,7 +1251,13 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
       if (!folderPath || !Array.isArray(folderPath)) {
         setFolderPath([]);
       }
-      return <MySharesContent onNavigateBack={() => setShowMySharesContent(false)} />;
+      return <MySharesContent 
+        onNavigateBack={() => {
+          // 关闭所有特殊视图，确保完全返回到文件浏览界面
+          closeAllSpecialViews();
+        }} 
+        titleIcon={<Share2 size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />}
+      />;
     }
     
     // 如果当前显示搜索视图，则渲染搜索组件
@@ -1216,41 +1270,295 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             alignItems: 'center', 
             padding: '16px 0' 
           }}>
-            <h2 style={{ margin: 0 }}>{searchType === 'name' ? '搜索文件' : '标签搜索'}</h2>
-            <Button 
-              type="primary" 
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {searchType === 'name' ? (
+                <Search size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
+              ) : (
+                <TagIcon size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
+              )}
+              {searchType === 'name' ? '搜索文件' : '标签搜索'}
+            </h2>
+            <button
               onClick={() => setShowSearchView(false)}
-              icon={<FolderUp size={16} />}
+              style={{
+                backgroundColor: 'rgba(247, 250, 252, 0.9)',
+                border: '1px solid rgba(226, 232, 240, 0.8)',
+                borderRadius: '8px',
+                padding: '8px',
+                cursor: 'pointer',
+                color: '#5e6c84',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              返回文件列表
-            </Button>
+              <X size={18} />
+            </button>
           </div>
           
-          <SearchView 
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            searchResults={searchResults}
-            isLoading={searchLoading}
-            error={searchError}
-            searchType={searchType}
-            setSearchType={setSearchType}
-            enableRealTimeSearch={enableRealTimeSearch}
-            setEnableRealTimeSearch={setEnableRealTimeSearch}
-            debounceDelay={debounceDelay}
-            setDebounceDelay={setDebounceDelay}
-            onClose={() => setShowSearchView(false)}
-            onFilesSelect={(selectedFileIds) => {
-              setSelectedFiles(selectedFileIds || []);
-            }}
-            onSearch={handleSearch}
-            onFileClick={handleFileItemClick}
-            onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
-            onSelectAll={onSelectAllFiles}
-            onDeselectAll={onDeselectAllFiles}
-            onFileContextMenu={handleFileContextMenu}
-            selectedFiles={selectedFiles}
-            onClearHistory={clearSearchHistory}
-          />
+          {/* 搜索输入区域 */}
+          <div style={{
+            marginBottom: '20px',
+            backgroundColor: 'rgba(247, 250, 252, 0.5)',
+            padding: '16px',
+            borderRadius: '12px',
+            border: '1px solid rgba(226, 232, 240, 0.5)',
+          }}>
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <div style={{ 
+                display: 'flex',
+                flexGrow: 1,
+                position: 'relative'
+              }}>
+                <input
+                  type="text"
+                  placeholder={searchType === 'name' ? "输入文件名搜索..." : "输入标签搜索..."}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (enableRealTimeSearch && e.target.value.trim()) {
+                      handleSearch(e.target.value, searchType);
+                    }
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch(searchQuery, searchType);
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 15px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color, #e2e8f0)',
+                    fontSize: '14px',
+                    outline: 'none',
+                  }}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#8c9db5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              
+              {/* 搜索类型切换按钮 */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+              }}>
+                <button
+                  onClick={() => {
+                    setSearchType('name');
+                    setCurrentView('search');
+                  }}
+                  style={{
+                    backgroundColor: searchType === 'name' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: searchType === 'name' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: searchType === 'name' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Search size={14} />
+                  文件名
+                </button>
+                <button
+                  onClick={() => {
+                    setSearchType('tag');
+                    setCurrentView('tag');
+                    setTagSearchOpen(true);
+                  }}
+                  style={{
+                    backgroundColor: searchType === 'tag' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: searchType === 'tag' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: searchType === 'tag' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <TagIcon size={14} />
+                  标签
+                </button>
+              </div>
+            </div>
+            
+            {enableRealTimeSearch && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: '12px',
+                fontSize: '12px',
+                color: '#666',
+                justifyContent: 'space-between',
+              }}>
+                <div>
+                  <Zap size={14} style={{ marginRight: '6px', color: '#3490dc' }} />
+                  实时搜索已启用，输入时自动显示结果
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* 搜索结果区域 */}
+          {searchLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                margin: '0 auto 20px',
+                border: '3px solid rgba(52, 144, 220, 0.2)',
+                borderTop: '3px solid #3490dc',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}></div>
+              <p>正在搜索，请稍候...</p>
+            </div>
+          ) : searchResults.length > 0 ? (
+            <>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '15px',
+              }}>
+                <div style={{
+                  backgroundColor: 'rgba(52, 144, 220, 0.1)',
+                  color: '#3490dc',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                }}>
+                  找到 {searchResults.length} 个结果
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {onSelectAllFiles && onDeselectAllFiles && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={onSelectAllFiles}
+                        style={{
+                          background: 'none',
+                          border: '1px solid rgba(226, 232, 240, 0.8)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          color: '#5e6c84',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Download size={12} />
+                        全选
+                      </button>
+                      <button
+                        onClick={onDeselectAllFiles}
+                        style={{
+                          background: 'none',
+                          border: '1px solid rgba(226, 232, 240, 0.8)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          color: '#5e6c84',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <X size={12} />
+                        取消选择
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <FileList 
+                files={searchResults}
+                selectedFiles={selectedFiles}
+                onFileClick={handleFileItemClick}
+                onFileSelect={(file, checked) => onFileCheckboxChange(file as FileInfo, checked)}
+                onSelectAll={onSelectAllFiles}
+                onDeselectAll={onDeselectAllFiles}
+                areAllSelected={false}
+                showCheckboxes={true}
+                favoritedFileIds={favoritedFileIds}
+                onToggleFavorite={handleToggleFavorite}
+                fileUpdateTrigger={fileUpdateTrigger}
+                onFileContextMenu={handleFileContextMenu}
+              />
+            </>
+          ) : searchQuery && !searchLoading ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px 0',
+              color: '#888',
+              backgroundColor: 'rgba(247, 250, 252, 0.5)',
+              borderRadius: '12px',
+              border: '1px dashed #e2e8f0',
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                lineHeight: '60px',
+                fontSize: '24px',
+                margin: '0 auto 15px',
+                backgroundColor: 'rgba(226, 232, 240, 0.5)',
+                borderRadius: '50%',
+              }}>
+                🔍
+              </div>
+              <p>未找到相关{searchType === 'name' ? '文件' : '标签'}</p>
+              <p style={{ fontSize: '14px', color: '#999', maxWidth: '300px', margin: '10px auto' }}>
+                尝试使用不同的关键词{searchType === 'tag' ? '或检查标签拼写' : '或检查文件名拼写'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px 0',
+              color: '#888',
+              backgroundColor: 'rgba(247, 250, 252, 0.5)',
+              borderRadius: '12px',
+              border: '1px dashed #e2e8f0',
+            }}>
+              <p>请输入关键词开始搜索</p>
+            </div>
+          )}
         </div>
       );
     }
@@ -1258,13 +1566,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     // 否则渲染正常的文件列表
     return (
       <>
-        {console.log('TopActionBar状态：', {
-          currentFolderId,
-          folderPathLength: folderPath.length,
-          selectedFileType,
-          showSearchView,
-          isInRootFolder: currentFolderId === null && folderPath.length === 0 && selectedFileType === null && !showSearchView
-        })}
         <TopActionBar 
           selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
           onClearSelection={() => setSelectedFiles([])}
@@ -1286,16 +1587,13 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           onCreateFolder={handleCreateFolderClick}
           onMove={handleMoveButtonClick}
           onRename={() => {
-            // 检查是否选中了单个文件
             if (selectedFiles.length !== 1) {
               message.warning('请选择一个文件进行重命名');
               return;
             }
             
-            // 查找选中的文件对象
             const selectedFile = files.find(file => file.id === selectedFiles[0]);
             if (selectedFile) {
-              // 打开重命名对话框
               handleRenameButtonClick(selectedFile);
             }
           }}
@@ -1303,9 +1601,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           onClearFilter={handleClearFilter}
           sortOrder={sortOrder}
           onSortChange={(newSortOrder) => {
-            // 更新排序状态
             setSortOrder(newSortOrder);
-            // 使用新排序状态重新排序文件
             changeSort(newSortOrder.field, newSortOrder.direction);
           }}
           isRefreshing={isRefreshing}
@@ -1336,11 +1632,9 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
                   return;
                 }
                 
-                // 开始加载状态
                 startLoading(true);
                 
                 try {
-                  // 创建文件夹并刷新
                   const folderId = await handleCreateFolder(
                     newFolderName.trim(), 
                     currentFolderId, 
@@ -1348,20 +1642,16 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
                   );
                   
                   if (folderId) {
-                    // 只有在成功创建文件夹后才清除表单并刷新
                     setIsCreatingFolder(false);
                     setNewFolderName('');
                     setNewFolderTags([]);
                     
-                    // 刷新当前目录文件列表
                     await loadFiles(currentFolderId, selectedFileType, true);
                     message.success('文件夹创建成功');
                   } else {
-                    // 创建失败但没有抛出异常，保持表单开启
                     message.error('创建文件夹失败，请检查文件夹名称或重试');
                   }
                 } catch (error) {
-                  // 捕获异常，显示错误信息并保持表单开启
                   const errorMessage = error instanceof Error ? error.message : '创建文件夹时发生错误';
                   
                   if (errorMessage.includes('已存在') || errorMessage.includes('同名')) {
@@ -1412,17 +1702,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     );
   };
 
-  // 处理创建收藏夹按钮点击
-  const handleCreateFavoriteFolder = () => {
-    setIsCreateFavoriteModalOpen(true);
-  };
-
-  // 处理收藏夹创建成功
-  const handleFavoriteCreateSuccess = () => {
-    // 递增刷新触发器，强制侧边栏刷新收藏夹列表
-    setFavoriteFoldersRefreshTrigger(prev => prev + 1);
-  };
-
   return (
     <>
       <Head>
@@ -1461,77 +1740,24 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         />
 
         {/* 侧边栏 - 仅在非主题模式下显示 */}
-        {sidebarVisible && !showThemePanel && (
-          <div className={styles.sidebarContainer}>
-            <Sidebar
-              selectedFileType={selectedFileType}
-              onTypeClick={(type) => {
-                console.log('侧边栏类型点击:', type);
-                
-                // 关闭分享内容视图
-                setShowMySharesContent(false);
-                
-                // 开始刷新加载状态
-                startLoading(true);
-                
-                // 先更新状态
-                setSelectedFileType(type);
-                setCurrentFolderId(null);
-                setFolderPath([]);
-                
-                // 关闭搜索视图，确保显示文件列表
-                setShowSearchView(false);
-                
-                // 清除搜索内容和历史记录
-                setSearchQuery('');
-                clearSearchHistory();
-                
-                // 使用新的参数传递方式，直接传入点击的类型
-                loadFiles(null, type)
-                  .finally(() => finishLoading());
-              }}
-              onSearchClick={(searchTypeParam) => {
-                // 关闭其他视图
-                setShowMySharesContent(false);
-                setShowFavoritesContent(false);
-                
-                // 调用原有的搜索点击处理函数
-                handleSearchClick(searchTypeParam);
-              }}
-              onSharesClick={() => {
-                // 关闭其他视图
-                setShowSearchView(false);
-                setSelectedFileType(null);
-                setShowFavoritesContent(false);
-                
-                // 显示分享内容
-                setShowMySharesContent(true);
-              }}
-              onFavoritesClick={(folderId) => {
-                // 关闭其他视图
-                setShowSearchView(false);
-                setSelectedFileType(null);
-                setShowMySharesContent(false);
-                
-                // 设置选中的收藏夹ID
-                setSelectedFavoriteFolderId(folderId);
-                
-                // 记录日志以便调试
-                if (folderId === undefined) {
-                  console.log('显示全部收藏内容');
-                } else {
-                  console.log('显示特定收藏夹内容:', folderId);
-                }
-                
-                // 显示收藏内容
-                setShowFavoritesContent(true);
-              }}
-              onCreateFavoriteFolder={handleCreateFavoriteFolder}
-              refreshTrigger={favoriteFoldersRefreshTrigger}
-              onRecentClick={handleRecentClick}
-              onRecentDownloadsClick={handleRecentDownloadsClick}
-            />
-          </div>
+        {!showThemePanel && (
+          <Sidebar
+            selectedFileType={selectedFileType}
+            onTypeClick={(type) => {
+              // 直接将文件类型传给closeAllSpecialViews，一步同时完成关闭特殊视图和更新currentView
+              closeAllSpecialViews(type);
+              // 然后过滤文件类型
+              filterByFileType(type);
+            }}
+            onSearchClick={handleSearchClick}
+            onSharesClick={handleViewMyShares}
+            onFavoritesClick={handleFavoritesClick}
+            onCreateFavoriteFolder={handleCreateFavoriteFolder}
+            onRecentClick={handleRecentClick}
+            onRecentDownloadsClick={handleRecentDownloadsClick}
+            refreshTrigger={favoriteFoldersRefreshTrigger}
+            activeView={searchType === 'tag' ? 'tag' : currentView}
+          />
         )}
 
         {/* 主内容区域 - 根据路由动态变化 */}
@@ -1675,6 +1901,14 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         onClose={() => setIsCreateFavoriteModalOpen(false)}
         onSuccess={handleFavoriteCreateSuccess}
       />
+
+      {/* 添加加载动画的keyframes */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 }

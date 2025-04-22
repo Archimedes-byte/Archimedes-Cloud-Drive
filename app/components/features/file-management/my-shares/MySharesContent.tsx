@@ -39,9 +39,10 @@ interface ShareItem {
 
 interface MySharesContentProps {
   onNavigateBack?: () => void;
+  titleIcon?: React.ReactNode;
 }
 
-export default function MySharesContent({ onNavigateBack }: MySharesContentProps = {}) {
+export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesContentProps = {}) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [shares, setShares] = useState<ShareItem[]>([]);
@@ -291,7 +292,11 @@ export default function MySharesContent({ onNavigateBack }: MySharesContentProps
     <div className={styles.sharesPage}>
       <div className={styles.header}>
         <Title level={4} className={styles.title}>
-          <Share2 className={styles.titleIcon} />
+          {titleIcon ? (
+            titleIcon
+          ) : (
+            <Share2 className={styles.titleIcon} />
+          )}
           我的分享
         </Title>
         <div className={styles.actions}>

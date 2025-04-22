@@ -269,7 +269,12 @@ export const useFiles = () => {
   /**
    * 选择文件类型进行过滤
    */
-  const filterByFileType = useCallback((type: FileTypeEnum | null) => {
+  const filterByFileType = useCallback((type: FileTypeEnum | null, onClearSpecialViews?: () => void) => {
+    // 如果提供了视图清理函数，先调用它清除特殊视图状态
+    if (onClearSpecialViews) {
+      onClearSpecialViews();
+    }
+    
     setSelectedFileType(type);
     
     // 类型改变时重新加载文件

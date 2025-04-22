@@ -48,9 +48,10 @@ interface FavoritesContentProps {
   onNavigateBack?: () => void;
   onOpenFile?: (file: FavoriteFile) => void;
   selectedFolderId?: string;
+  titleIcon?: React.ReactNode; // 添加标题图标属性
 }
 
-export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedFolderId }: FavoritesContentProps) {
+export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedFolderId, titleIcon }: FavoritesContentProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteFile[]>([]);
@@ -620,16 +621,12 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
     <div className={styles.favoritesPage}>
       <div className={styles.header}>
         <div className={styles.titleWrapper}>
-          <Button
-            type="text"
-            icon={<ArrowLeft size={16} />}
-            onClick={handleNavigateBack}
-            className={styles.backButton}
-          >
-            返回
-          </Button>
           <Title level={4} className={styles.title}>
-            <Star className={styles.titleIcon} />
+            {titleIcon ? (
+              titleIcon
+            ) : (
+              <Star className={styles.titleIcon} style={{ color: 'var(--theme-primary)' }} />
+            )}
             我的收藏
           </Title>
         </div>

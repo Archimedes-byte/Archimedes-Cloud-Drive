@@ -18,6 +18,9 @@ const storageService = new StorageService();
  */
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
+    // 修复可能存在的多个默认收藏夹问题
+    await storageService.fixMultipleDefaultFolders(req.user.id);
+    
     // 获取用户的收藏夹列表
     const folders = await storageService.getFavoriteFolders(req.user.id);
     

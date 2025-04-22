@@ -268,6 +268,13 @@ export class StorageService {
   }
 
   /**
+   * 修复多个默认收藏夹问题
+   */
+  async fixMultipleDefaultFolders(userId: string): Promise<boolean> {
+    return this.favoriteService.fixMultipleDefaultFolders(userId);
+  }
+
+  /**
    * 更新文件信息
    */
   async updateFile(userId: string, fileId: string, updates: { 

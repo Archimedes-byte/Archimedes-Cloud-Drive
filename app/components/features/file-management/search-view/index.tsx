@@ -237,12 +237,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <h2>
             {searchType === 'name' ? (
               <>
-                <Sparkles size={20} style={{ marginRight: '8px', display: 'inline' }} />
+                <Sparkles size={20} style={{ marginRight: '8px', display: 'inline', color: 'var(--theme-primary)' }} />
                 搜索文件
               </>
             ) : (
               <>
-                <Tag size={20} style={{ marginRight: '8px', display: 'inline' }} />
+                <Tag size={20} style={{ marginRight: '8px', display: 'inline', color: 'var(--theme-primary)' }} />
                 标签搜索
               </>
             )}

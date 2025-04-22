@@ -615,4 +615,44 @@ export class FavoriteService {
   ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
     return this.getAllFavoriteFiles(userId, page, pageSize);
   }
+
+  /**
+   * 修复多个默认收藏夹问题
+   * 确保每个用户只有一个默认收藏夹
+   */
+  async fixMultipleDefaultFolders(userId: string): Promise<boolean> {
+    try {
+      // 查找用户的所有默认收藏夹
+      const defaultFolders = await prisma.favoriteFolder.findMany({
+        where: { userId, isDefault: true },
+        orderBy: { createdAt: 'asc' } // 保留最早创建的一个
+      });
+
+      if (defaultFolders.length <= 1) {
+        // 没有多个默认收藏夹，不需要修复
+        return true;
+      }
+
+      console.log(`[收藏夹服务] 用户 ${userId} 有 ${defaultFolders.length} 个默认收藏夹，正在修复...`);
+
+      // 保留第一个默认收藏夹，取消其他收藏夹的默认状态
+      const keepFolderId = defaultFolders[0].id;
+      
+      // 将其他默认收藏夹设置为非默认
+      await prisma.favoriteFolder.updateMany({
+        where: { 
+          userId, 
+          isDefault: true,
+          id: { not: keepFolderId }
+        },
+        data: { isDefault: false }
+      });
+
+      console.log(`[收藏夹服务] 已修复多个默认收藏夹问题，保留了 ID 为 ${keepFolderId} 的收藏夹作为默认`);
+      return true;
+    } catch (error) {
+      console.error('[收藏夹服务] 修复多个默认收藏夹问题失败:', error);
+      return false;
+    }
+  }
 } 
