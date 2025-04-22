@@ -388,6 +388,21 @@ export const fileApi = {
     
     return handleResponse<{ count: number }>(response);
   },
+  
+  // 获取收藏列表
+  async getFavorites(page = 1, pageSize = 50): Promise<PaginatedResponse<FileInfo>> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('pageSize', pageSize.toString());
+    
+    // 添加时间戳防止缓存问题
+    queryParams.append('_t', Date.now().toString());
+    
+    // 使用LIST路径的GET请求
+    const response = await fetch(`${API_PATHS.STORAGE.FAVORITES.LIST}?${queryParams.toString()}`);
+    
+    return handleResponse<PaginatedResponse<FileInfo>>(response);
+  },
 
   // 获取收藏夹列表
   async getFavoriteFolders(): Promise<{ folders: FavoriteFolderInfo[] }> {
@@ -579,5 +594,5 @@ export const fileApi = {
       // 即使失败也不影响用户体验，返回成功
       return { success: false };
     }
-  }
+  },
 }; 
