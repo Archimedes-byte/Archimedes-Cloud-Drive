@@ -4,9 +4,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { message, Spin, Input, Modal, Button } from 'antd';
+import { message, Spin, Input, Modal, Button, Divider, Dropdown, Tag } from 'antd';
 import Head from 'next/head';
-import { FolderUp } from 'lucide-react';
+import { FolderUp, UploadCloud, FileUp, FolderPlus, Folder, FileText, Image as ImageIcon, Video, Music, File, Search, ChevronUp, ChevronDown, X } from 'lucide-react';
 
 // 引入共享组件
 import { Sidebar } from '@/app/components/features/file-management/navigation/sidebar';
@@ -1209,8 +1209,23 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     // 如果当前显示搜索视图，则渲染搜索组件
     if (showSearchView) {
       return (
-        <>
-          {renderBreadcrumb()}
+        <div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            padding: '16px 0' 
+          }}>
+            <h2 style={{ margin: 0 }}>{searchType === 'name' ? '搜索文件' : '标签搜索'}</h2>
+            <Button 
+              type="primary" 
+              onClick={() => setShowSearchView(false)}
+              icon={<FolderUp size={16} />}
+            >
+              返回文件列表
+            </Button>
+          </div>
+          
           <SearchView 
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -1236,7 +1251,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             selectedFiles={selectedFiles}
             onClearHistory={clearSearchHistory}
           />
-        </>
+        </div>
       );
     }
     

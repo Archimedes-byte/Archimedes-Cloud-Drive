@@ -1,7 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExtendedFile } from '@/app/types';
 import { getFileIcon } from '@/app/utils/file/type';
-import { Home, Folder, Image as ImageIcon, FileText, Video, Music, File, Search, AlertCircle, Calendar, Tag, Database, Settings } from 'lucide-react';
+import { 
+  Home, Folder, Image as ImageIcon, FileText, Video, Music, 
+  File, Search, AlertCircle, Calendar, Tag, Database, Settings, 
+  X, Sparkles, Filter, Zap, ArrowDownUp, Upload, Download
+} from 'lucide-react';
 import styles from './SearchView.module.css';
 import { createCancelableDebounce } from '@/app/utils/function/debounce';
 
@@ -29,6 +33,7 @@ export interface SearchViewProps {
   onFileContextMenu?: (event: React.MouseEvent, file: ExtendedFile) => void;
   selectedFiles?: string[];
   onClearHistory?: () => void;
+  onSearch?: (query: string, type: 'name' | 'tag') => void;
 }
 
 export const SearchView: React.FC<SearchViewProps> = ({
@@ -54,10 +59,14 @@ export const SearchView: React.FC<SearchViewProps> = ({
   onDeselectAll,
   onFileContextMenu,
   selectedFiles,
-  onClearHistory
+  onClearHistory,
+  onSearch
 }) => {
-  const [showSettings, setShowSettings] = React.useState(false);
-  const [showInputTip, setShowInputTip] = React.useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showInputTip, setShowInputTip] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
+  const [showFilters, setShowFilters] = useState(false);
 
   // 使用可取消的防抖工具创建隐藏提示的函数
   const { debouncedFn: hideInputTipDebounced, cancel: cancelHideInputTip } = React.useMemo(
@@ -78,6 +87,15 @@ export const SearchView: React.FC<SearchViewProps> = ({
     const value = e.target.value;
     setSearchQuery(value);
 
+    // 如果启用了实时搜索并且有输入值，则触发搜索
+    if (enableRealTimeSearch && value && value.length > 0) {
+      if (onSearch) {
+        onSearch(value, searchType);
+      } else {
+        handleSearch(value, searchType);
+      }
+    }
+
     // 如果输入的长度为1且刚开始输入，显示提示
     if (value.length === 1 && !showInputTip) {
       setShowInputTip(true);
@@ -88,109 +106,19 @@ export const SearchView: React.FC<SearchViewProps> = ({
     }
   };
 
-  // 格式化文件路径函数：优化目录路径显示
-  const formatFilePath = (file: ExtendedFile) => {
-    // 如果没有路径信息或为空字符串，显示为根目录
-    if (!file.path || file.path.trim() === '') {
-      return '根目录';
-    }
-
-    // 如果是根目录文件
-    if (file.path === '/' || file.path === '.') {
-      return '根目录';
-    }
-
-    // 检查路径是否看起来像UUID或系统ID路径（以/hZGX开头的路径）
-    if (file.path.match(/^\/[a-zA-Z0-9]{8,}/)) {
-      // 如果有parentId，尝试提取父文件夹名称
-      if (file.parentId) {
-        // 尝试从路径或其他数据中获取父文件夹名称
-        // 这里我们没有直接的parentFolderName，所以使用替代方案
-        return '文件夹';
-      }
-      return '根目录';
-    }
-    
-    // 尝试从路径中提取用户友好的部分
-    let displayPath = file.path;
-    
-    // 清理路径
-    displayPath = displayPath.replace(/\/+/g, '/'); // 移除多余的斜杠
-    
-    // 如果路径的最后部分与文件名相同，则显示前面部分（父目录）
-    const pathParts = displayPath.split('/').filter(Boolean);
-    if (pathParts.length > 0 && pathParts[pathParts.length - 1] === file.name) {
-      // 移除最后的文件名部分，只显示目录
-      pathParts.pop();
-    }
-    
-    // 如果还有路径部分，则显示为目录格式
-    if (pathParts.length > 0) {
-      return pathParts.join('/');
-    }
-    
-    // 默认返回根目录
-    return '根目录';
-  };
-
-  // 尝试获取文件的父文件夹名称
-  const getParentFolderName = (file: ExtendedFile): string => {
-    // 如果文件中已经有parentName属性，优先使用
-    if ('parentName' in file && file.parentName) {
-      return file.parentName as string;
-    }
-    
-    // 如果没有父ID，返回根目录
-    if (!file.parentId) {
-      return '根目录';
-    }
-    
-    // 如果文件路径是UUID格式，尝试从父ID或其他信息推断
-    if (file.path && file.path.match(/^\/[a-zA-Z0-9]{8,}/)) {
-      // 这里我们无法直接获取父文件夹的实际名称，因为缺少API调用
-      // 在实际应用中，可能需要通过API获取父文件夹信息
-      return '文件夹';
-    }
-    
-    // 尝试从路径中提取父文件夹名称
-    if (file.path) {
-      const pathParts = file.path.split('/').filter(Boolean);
-      if (pathParts.length > 0) {
-        // 假设最后一部分是当前文件名，倒数第二部分是父文件夹名
-        if (pathParts.length > 1) {
-          return pathParts[pathParts.length - 2];
+  // 处理键盘事件
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = searchQuery.trim();
+      if (value) {
+        if (onSearch) {
+          onSearch(value, searchType);
+        } else {
+          handleSearch(value, searchType);
         }
-        return pathParts[0];
       }
     }
-    
-    // 默认返回一个通用名称
-    return '文件夹';
-  };
-
-  // 生成可点击的文件路径导航元素
-  const getNavigablePath = (file: ExtendedFile) => {
-    // 确保有正确的路径和父ID
-    if (!file.path || file.path === '/' || file.path === '.') {
-      return { name: '根目录', id: null };
-    }
-    
-    // 获取父文件夹ID
-    const parentId = file.parentId;
-    
-    // 如果没有父ID，则返回根目录
-    if (!parentId) {
-      return { name: '根目录', id: null };
-    }
-    
-    // 获取父文件夹名称
-    const parentName = getParentFolderName(file);
-    
-    // 使用文件的parentId进行导航，显示父文件夹名称
-    return { 
-      name: parentName, 
-      id: parentId
-    };
   };
 
   const renderFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean | undefined) => {
@@ -259,72 +187,93 @@ export const SearchView: React.FC<SearchViewProps> = ({
     }
   };
 
-  // 目录点击处理函数
-  const handleDirectoryClick = (file: ExtendedFile, event: React.MouseEvent) => {
-    event.stopPropagation(); // 阻止事件冒泡，避免触发行点击事件
-    
-    // 创建父文件夹对象
-    let parentFolder: ExtendedFile;
-    
-    if (!file.parentId) {
-      // 如果没有父ID，则导航到根目录
-      parentFolder = {
-        id: null as any, // 使用any类型避免类型错误
-        name: '根目录',
-        isFolder: true,
-        path: '/',
-        // 添加必要的其他属性以满足ExtendedFile类型要求
-        size: 0,
-        createdAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
-        updatedAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
-        type: 'folder',
-        tags: []
-      } as ExtendedFile;
-    } else {
-      // 获取父文件夹名称
-      const parentName = 'parentName' in file && file.parentName 
-        ? file.parentName as string
-        : getParentFolderName(file);
-      
-      // 创建一个导航用的文件夹对象
-      parentFolder = {
-        id: file.parentId,
-        name: parentName,
-        isFolder: true,
-        path: file.path ? file.path.substring(0, file.path.lastIndexOf('/')) || '/' : '/',
-        // 添加必要的其他属性以满足ExtendedFile类型要求
-        size: 0,
-        createdAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
-        updatedAt: new Date().toISOString(), // 设置为ISO字符串而不是Date对象
-        type: 'folder',
-        tags: []
-      } as ExtendedFile;
-    }
-    
-    // 导航到父文件夹
-    handleFileClick(parentFolder);
-    
-    // 退出搜索视图，显示文件列表
-    if (onExitSearchView) {
-      console.log('退出搜索视图，显示文件列表');
-      onExitSearchView();
+  // 清除搜索
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    if (onClose) {
+      onClose();
     }
   };
+
+  // 切换排序顺序
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  // 设置排序字段
+  const handleSortByChange = (field: 'name' | 'date' | 'size') => {
+    if (sortBy === field) {
+      toggleSortOrder();
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
+  // 排序结果
+  const sortedResults = [...searchResults].sort((a, b) => {
+    const multiplier = sortOrder === 'asc' ? 1 : -1;
+    
+    switch (sortBy) {
+      case 'name':
+        return multiplier * (a.name || '').localeCompare(b.name || '');
+      case 'date':
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return multiplier * (dateA - dateB);
+      case 'size':
+        const sizeA = a.size || 0;
+        const sizeB = b.size || 0;
+        return multiplier * (sizeA - sizeB);
+      default:
+        return 0;
+    }
+  });
 
   return (
     <div className={styles['search-view']}>
       <div className={styles['search-header']}>
         <div className={styles['search-header-title']}>
-          <h2>搜索文件</h2>
-          {setEnableRealTimeSearch && (
+          <h2>
+            {searchType === 'name' ? (
+              <>
+                <Sparkles size={20} style={{ marginRight: '8px', display: 'inline' }} />
+                搜索文件
+              </>
+            ) : (
+              <>
+                <Tag size={20} style={{ marginRight: '8px', display: 'inline' }} />
+                标签搜索
+              </>
+            )}
+          </h2>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button
               className={styles['settings-button']}
-              onClick={() => setShowSettings(!showSettings)}
-              title="搜索设置"
+              onClick={() => setShowFilters(!showFilters)}
+              title="排序与筛选"
             >
-              <Settings size={18} />
+              <Filter size={18} />
             </button>
-          )}
+            {setEnableRealTimeSearch && (
+              <button
+                className={styles['settings-button']}
+                onClick={() => setShowSettings(!showSettings)}
+                title="搜索设置"
+              >
+                <Settings size={18} />
+              </button>
+            )}
+            {onClose && (
+              <button
+                className={styles['settings-button']}
+                onClick={onClose}
+                title="关闭搜索"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {showSettings && setEnableRealTimeSearch && setDebounceDelay && (
@@ -336,12 +285,16 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   checked={enableRealTimeSearch}
                   onChange={(e) => setEnableRealTimeSearch(e.target.checked)}
                 />
+                <Zap size={16} style={{ marginRight: '4px' }} />
                 启用实时搜索
               </label>
             </div>
             <div className={styles['setting-item']}>
               <label>
-                搜索延迟(ms)：
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <Database size={16} style={{ marginRight: '4px' }} />
+                  搜索延迟(ms)：
+                </span>
                 <select
                   value={debounceDelay}
                   onChange={(e) => setDebounceDelay(Number(e.target.value))}
@@ -354,18 +307,141 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 </select>
               </label>
             </div>
+            {onClearHistory && (
+              <div className={styles['setting-item']} style={{ marginTop: '8px' }}>
+                <button
+                  onClick={onClearHistory}
+                  style={{
+                    backgroundColor: 'rgba(255, 86, 48, 0.1)',
+                    color: '#ff5630',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <X size={14} /> 清除搜索历史
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {showFilters && (
+          <div className={styles['search-settings']}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              marginBottom: '10px',
+              paddingBottom: '10px',
+              borderBottom: '1px solid rgba(226, 232, 240, 0.5)'
+            }}>
+              <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                <ArrowDownUp size={16} style={{ marginRight: '8px' }} />
+                排序方式
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => handleSortByChange('name')}
+                  style={{
+                    backgroundColor: sortBy === 'name' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: sortBy === 'name' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: sortBy === 'name' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  文件名 {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+                <button
+                  onClick={() => handleSortByChange('date')}
+                  style={{
+                    backgroundColor: sortBy === 'date' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: sortBy === 'date' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: sortBy === 'date' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  日期 {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+                <button
+                  onClick={() => handleSortByChange('size')}
+                  style={{
+                    backgroundColor: sortBy === 'size' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: sortBy === 'size' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: sortBy === 'size' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  大小 {sortBy === 'size' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                <Filter size={16} style={{ marginRight: '8px' }} />
+                搜索类型
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setSearchType('name')}
+                  style={{
+                    backgroundColor: searchType === 'name' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: searchType === 'name' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: searchType === 'name' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <File size={14} /> 文件名搜索
+                </button>
+                <button
+                  onClick={() => setSearchType('tag')}
+                  style={{
+                    backgroundColor: searchType === 'tag' ? 'rgba(52, 144, 220, 0.1)' : 'transparent',
+                    color: searchType === 'tag' ? '#3490dc' : '#5e6c84',
+                    border: '1px solid',
+                    borderColor: searchType === 'tag' ? '#3490dc' : 'rgba(226, 232, 240, 0.8)',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Tag size={14} /> 标签搜索
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
         <div className={styles['search-controls']}>
-          <select
-            value={searchType}
-            onChange={(e) => setSearchType(e.target.value as 'name' | 'tag')}
-            className={styles['search-type-select']}
-          >
-            <option value="name">按文件名搜索</option>
-            <option value="tag">按标签搜索</option>
-          </select>
           <div className={styles['search-input-group']}>
             <div className={styles['input-wrapper']}>
               <input
@@ -373,16 +449,49 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 placeholder={searchType === 'name' ? "输入文件名搜索..." : "输入标签搜索..."}
                 value={searchQuery}
                 onChange={handleInputChange}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery, searchType)}
+                onKeyPress={handleKeyPress}
                 autoFocus
               />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#8c9db5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px',
+                    borderRadius: '50%'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              )}
               {showInputTip && enableRealTimeSearch && (
                 <div className={styles['input-tip']}>
+                  <Zap size={14} style={{ marginRight: '4px' }} />
                   正在使用实时搜索，输入时自动显示结果
                 </div>
               )}
             </div>
-            <button onClick={() => handleSearch(searchQuery, searchType)} className={styles['search-button']}>
+            <button 
+              onClick={() => {
+                if (onSearch) {
+                  onSearch(searchQuery, searchType);
+                } else {
+                  handleSearch(searchQuery, searchType);
+                }
+              }} 
+              className={styles['search-button']}
+              disabled={!searchQuery.trim()}
+            >
               <Search className={styles['button-icon']} />
               搜索
             </button>
@@ -399,16 +508,61 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
       {isLoading ? (
         <div className={styles['loading']}>
-          <span className={styles['loading-spinner']}>⌛</span>
+          <div className={styles['loading-spinner']}></div>
           <p>正在搜索，请稍候...</p>
         </div>
-      ) : searchResults.length > 0 ? (
+      ) : sortedResults.length > 0 ? (
         <div className={styles['search-results']}>
           <div className={styles['results-header']}>
-            <span className={styles['results-count']}>找到 {searchResults.length} 个结果</span>
-            {enableRealTimeSearch && searchQuery && (
-              <span className={styles['realtime-badge']}>实时搜索结果</span>
-            )}
+            <span className={styles['results-count']}>找到 {sortedResults.length} 个结果</span>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {enableRealTimeSearch && searchQuery && (
+                <span className={styles['realtime-badge']}>
+                  <Zap size={12} style={{ marginRight: '4px' }} />
+                  实时搜索结果
+                </span>
+              )}
+              {onSelectAll && onDeselectAll && selectedFiles && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={onSelectAll}
+                    style={{
+                      background: 'none',
+                      border: '1px solid rgba(226, 232, 240, 0.8)',
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      fontSize: '0.75rem',
+                      color: '#5e6c84',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Download size={12} />
+                    全选
+                  </button>
+                  <button
+                    onClick={onDeselectAll}
+                    style={{
+                      background: 'none',
+                      border: '1px solid rgba(226, 232, 240, 0.8)',
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      fontSize: '0.75rem',
+                      color: '#5e6c84',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <X size={12} />
+                    取消选择
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div className={styles['table-responsive']}>
             <table className={styles['file-table']}>
@@ -416,17 +570,22 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 <tr>
                   <th className={styles['th-filename']}>文件名</th>
                   <th className={styles['th-size']}>大小</th>
-                  <th className={styles['th-location']}>所在目录</th>
                   <th className={styles['th-date']}>上传时间</th>
                   <th className={styles['th-tags']}>标签</th>
                 </tr>
               </thead>
               <tbody>
-                {searchResults.map((file) => (
+                {sortedResults.map((file) => (
                   <tr
                     key={file.id}
                     className={`${styles['file-row']} ${handlePreviewFile ? styles['clickable-row'] : ''}`}
                     onClick={(e) => handleRowClick(file, e)}
+                    onContextMenu={(e) => {
+                      if (onFileContextMenu) {
+                        e.preventDefault();
+                        onFileContextMenu(e, file);
+                      }
+                    }}
                   >
                     <td className={styles['file-name-cell']}>
                       <div className={styles['file-info']}>
@@ -439,12 +598,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
                             <span style={{
                               marginLeft: '5px',
                               fontSize: '11px',
-                              backgroundColor: '#e1f0ff',
-                              color: '#0072CE',
-                              padding: '1px 5px',
-                              borderRadius: '3px',
+                              backgroundColor: 'rgba(52, 144, 220, 0.1)',
+                              color: '#3490dc',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
                               display: 'inline-block',
-                              verticalAlign: 'middle'
+                              verticalAlign: 'middle',
+                              border: '1px solid rgba(52, 144, 220, 0.2)'
                             }}>
                               文件夹
                             </span>
@@ -453,21 +613,6 @@ export const SearchView: React.FC<SearchViewProps> = ({
                       </div>
                     </td>
                     <td className={styles['size-cell']}>{formatFileSize(file.size)}</td>
-                    <td className={styles['location-cell']}>
-                      <div 
-                        className={styles['location-info']} 
-                        onClick={(e) => handleDirectoryClick(file, e)}
-                      >
-                        <Folder size={14} className={`${styles['location-icon']} ${styles['clickable-icon']}`} />
-                        <span 
-                          className={`${styles['location-text']} ${styles['clickable-text']}`}
-                          title={file.path || '/'}
-                          data-filepath={file.path}
-                        >
-                          {getParentFolderName(file)}
-                        </span>
-                      </div>
-                    </td>
                     <td className={styles['date-cell']}>
                       <div className={styles['date-info']}>
                         <Calendar size={14} className={styles['date-icon']} />
@@ -478,7 +623,20 @@ export const SearchView: React.FC<SearchViewProps> = ({
                       {Array.isArray(file.tags) && file.tags.length > 0 ? (
                         <div className={styles['tags-container']}>
                           {file.tags.map((tag: string, index: number) => (
-                            <span key={index} className={styles['tag-badge']}>
+                            <span 
+                              key={index} 
+                              className={styles['tag-badge']}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSearchType('tag');
+                                setSearchQuery(tag);
+                                if (onSearch) {
+                                  onSearch(tag, 'tag');
+                                } else {
+                                  handleSearch(tag, 'tag');
+                                }
+                              }}
+                            >
                               <Tag size={12} className={styles['tag-icon']} />
                               {tag}
                             </span>
@@ -501,9 +659,6 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <p className={styles['empty-hint']}>
             尝试使用不同的关键词{searchType === 'tag' ? '或检查标签拼写' : '或检查文件名拼写'}
           </p>
-          {searchType === 'tag' && (
-            <p className={styles['empty-hint']}>您也可以切换到"按文件名搜索"尝试查找</p>
-          )}
         </div>
       ) : null}
     </div>
