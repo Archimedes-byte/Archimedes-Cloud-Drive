@@ -22,12 +22,12 @@ import { ThemePanel } from '@/app/components/ui/themes';
 // 导入自定义组件
 import MiniSidebar from '@/app/components/features/file-management/navigation/mini-sidebar';
 import { TopActionBar } from '@/app/components/features/file-management/action-bar/top-action-bar';
-import NewFolderForm from '@/app/components/features/file-management/folder-management/new-folder-form';
 import { SearchView } from '@/app/components/features/file-management/search-view';
 import FolderSelectModal from '@/app/components/features/file-management/folder-select/FolderSelectModal';
 import { FavoritesContent } from '@/app/components/features/file-management/favorites';
 import { MySharesContent } from '@/app/components/features/file-management/share';
 import { CreateFavoriteModal } from '@/app/components/features/file-management/favorite';
+import { CreateFolderModal } from '@/app/components/features/file-management/folder-management/create-folder-modal';
 
 // 导入自定义 hooks
 import { 
@@ -221,7 +221,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   const linkInputRef = useRef<Input>(null);
 
   // 添加创建文件夹相关状态
-  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderTags, setNewFolderTags] = useState<string[]>([]);
   const [editingFile, setEditingFile] = useState<any>(null);
@@ -398,8 +398,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理创建文件夹按钮点击
   const handleCreateFolderClick = useCallback(() => {
-    setIsCreatingFolder(true);
-  }, [setIsCreatingFolder]);
+    setIsCreateFolderModalOpen(true);
+  }, []);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -1620,56 +1620,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         {renderBreadcrumb()}
 
         <div className={styles.fileContainer}>
-          {isCreatingFolder && (
-            <NewFolderForm 
-              folderName={newFolderName}
-              setFolderName={setNewFolderName}
-              folderTags={newFolderTags}
-              setFolderTags={setNewFolderTags}
-              onCreateFolder={async () => {
-                if (!newFolderName.trim()) {
-                  message.warning('文件夹名称不能为空');
-                  return;
-                }
-                
-                startLoading(true);
-                
-                try {
-                  const folderId = await handleCreateFolder(
-                    newFolderName.trim(), 
-                    currentFolderId, 
-                    newFolderTags
-                  );
-                  
-                  if (folderId) {
-                    setIsCreatingFolder(false);
-                    setNewFolderName('');
-                    setNewFolderTags([]);
-                    
-                    await loadFiles(currentFolderId, selectedFileType, true);
-                    message.success('文件夹创建成功');
-                  } else {
-                    message.error('创建文件夹失败，请检查文件夹名称或重试');
-                  }
-                } catch (error) {
-                  const errorMessage = error instanceof Error ? error.message : '创建文件夹时发生错误';
-                  
-                  if (errorMessage.includes('已存在') || errorMessage.includes('同名')) {
-                    message.warning('文件夹名称已存在，请使用其他名称');
-                  } else {
-                    message.error(errorMessage);
-                  }
-                } finally {
-                  finishLoading();
-                }
-              }}
-              onCancel={() => {
-                setIsCreatingFolder(false);
-                setNewFolderName('');
-                setNewFolderTags([]);
-              }}
-            />
-          )}
           <FileList 
             files={convertFilesForDisplay(files)}
             onFileClick={handleFileItemClick}
@@ -1900,6 +1850,41 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         visible={isCreateFavoriteModalOpen}
         onClose={() => setIsCreateFavoriteModalOpen(false)}
         onSuccess={handleFavoriteCreateSuccess}
+      />
+
+      {/* 创建文件夹模态窗口 */}
+      <CreateFolderModal
+        isOpen={isCreateFolderModalOpen}
+        onClose={() => setIsCreateFolderModalOpen(false)}
+        onCreateFolder={async (name, tags) => {
+          startLoading(true);
+          
+          try {
+            const folderId = await handleCreateFolder(
+              name,
+              currentFolderId,
+              tags
+            );
+            
+            if (folderId) {
+              await loadFiles(currentFolderId, selectedFileType, true);
+              message.success('文件夹创建成功');
+            } else {
+              message.error('创建文件夹失败，请检查文件夹名称或重试');
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '创建文件夹时发生错误';
+            
+            if (errorMessage.includes('已存在') || errorMessage.includes('同名')) {
+              message.warning('文件夹名称已存在，请使用其他名称');
+            } else {
+              message.error(errorMessage);
+            }
+            throw error; // 重新抛出错误，以便在组件中处理
+          } finally {
+            finishLoading();
+          }
+        }}
       />
 
       {/* 添加加载动画的keyframes */}

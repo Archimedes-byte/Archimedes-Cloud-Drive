@@ -1,0 +1,567 @@
+/* 共享模态窗口样式 - 科技风格版 */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 14px;
+  padding: 0;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 15px rgba(0, 0, 0, 0.1);
+  margin: 0 16px;
+  overflow: hidden;
+  animation: slideDown 0.3s ease;
+  transform-origin: top center;
+  border: 1px solid rgba(200, 200, 200, 0.3);
+  position: relative;
+}
+
+/* 添加科技感角落装饰 */
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at top right, rgba(24, 144, 255, 0.05), transparent 70%);
+  pointer-events: none;
+}
+
+.modal-content::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle at bottom left, rgba(24, 144, 255, 0.05), transparent 70%);
+  pointer-events: none;
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(to right, #fcfdff, #f6f9fd);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 添加顶部装饰线 */
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, #1677ff, #4096ff, #1677ff);
+  opacity: 0.8;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.modal-title::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(to bottom, #1677ff, #4096ff);
+  border-radius: 2px;
+  margin-right: 6px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #909090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+}
+
+.modal-close:hover {
+  color: #595959;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 点击时的涟漪效果 */
+.modal-close:active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: ripple 0.5s ease-out;
+}
+
+@keyframes ripple {
+  to {
+    width: 50px;
+    height: 50px;
+    opacity: 0;
+  }
+}
+
+.modal-body {
+  padding: 24px;
+  position: relative;
+}
+
+/* 表单组 统一宽度和对齐 */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+  position: relative;
+  width: 100%;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 14px;
+  color: #545454;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+/* 统一表单输入样式 */
+.form-input {
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.25s ease;
+  width: 100%;
+  background-color: #fafafa;
+  height: 45px;
+  box-sizing: border-box;
+}
+
+.form-input:hover {
+  border-color: #b8b8b8;
+  background-color: #ffffff;
+}
+
+.form-input:focus {
+  border-color: #1677ff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.12);
+  background-color: #ffffff;
+}
+
+/* 标签容器样式优化 */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  min-height: 32px;
+  padding: 4px 0;
+}
+
+.tag {
+  background-color: #f0f7ff;
+  border: 1px solid #d6e4ff;
+  color: #1677ff;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: tagFadeIn 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes tagFadeIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: #1677ff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.tag-remove:hover {
+  background-color: rgba(22, 119, 255, 0.1);
+}
+
+/* 确保标签输入容器与名称输入框高度一致 */
+.tag-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 14px;
+  gap: 10px;
+  background-color: #fafafa;
+  transition: all 0.25s ease;
+  height: 45px;
+  box-sizing: border-box;
+}
+
+.tag-input-container:hover {
+  border-color: #b8b8b8;
+  background-color: #ffffff;
+}
+
+.tag-input-container:focus-within {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.12);
+  background-color: #ffffff;
+}
+
+.tag-icon {
+  color: #999;
+}
+
+.tag-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+  height: 100%;
+}
+
+.tag-add-button {
+  background: none;
+  border: none;
+  color: #1677ff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tag-add-button:hover {
+  background-color: rgba(22, 119, 255, 0.1);
+}
+
+.tag-add-button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #888;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 添加提示图标 */
+.form-hint::before {
+  content: 'ℹ';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  border-radius: 50%;
+  background-color: #e6f4ff;
+  color: #1677ff;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #f0f0f0;
+  position: relative;
+}
+
+/* 添加底部发光效果 */
+.modal-footer::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(24, 144, 255, 0.2) 20%, 
+    rgba(24, 144, 255, 0.2) 80%, 
+    transparent 100%);
+}
+
+.modal-button {
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s;
+  font-weight: 500;
+  min-width: 90px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 按钮悬停时细微缩放效果 */
+.modal-button:hover {
+  transform: translateY(-1px);
+}
+
+.cancel-button {
+  background-color: #f0f0f0;
+  color: #595959;
+  border: 1px solid #d9d9d9;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+  color: #434343;
+}
+
+.confirm-button {
+  background-color: #1677ff;
+  color: white;
+  box-shadow: 0 2px 0 rgba(5, 85, 212, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 确认按钮科技感光效 */
+.confirm-button::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -210%;
+  width: 200%;
+  height: 200%;
+  opacity: 0;
+  transform: rotate(30deg);
+  background: rgba(255, 255, 255, 0.13);
+  background: linear-gradient(
+    to right, 
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 255, 255, 0.13) 77%,
+    rgba(255, 255, 255, 0.5) 92%,
+    rgba(255, 255, 255, 0.0) 100%
+  );
+}
+
+.confirm-button:hover::before {
+  opacity: 1;
+  top: -30%;
+  left: -30%;
+  transition-property: left, top, opacity;
+  transition-duration: 0.7s, 0.7s, 0.15s;
+  transition-timing-function: ease;
+}
+
+.confirm-button:hover {
+  background-color: #0958d9;
+  box-shadow: 0 4px 8px rgba(5, 85, 212, 0.2);
+}
+
+.confirm-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(5, 85, 212, 0.2);
+}
+
+.confirm-button:disabled {
+  background-color: #bae0ff;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.confirm-button:disabled::before {
+  display: none;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+}
+
+/* 深色主题适配 */
+:global(.dark-theme) .modal-content {
+  background-color: #1f1f1f;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(.dark-theme) .modal-content::before,
+:global(.dark-theme) .modal-content::after {
+  background: radial-gradient(circle, rgba(80, 150, 255, 0.08), transparent 70%);
+}
+
+:global(.dark-theme) .modal-header {
+  background: linear-gradient(to right, #18191a, #1c1d1f);
+  border-bottom-color: #2a2a2a;
+}
+
+:global(.dark-theme) .modal-title {
+  color: #e0e0e0;
+}
+
+:global(.dark-theme) .modal-close {
+  color: #999;
+}
+
+:global(.dark-theme) .modal-close:hover {
+  color: #ccc;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark-theme) .form-label {
+  color: #b8b8b8;
+}
+
+:global(.dark-theme) .form-input {
+  background-color: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+:global(.dark-theme) .form-input:hover,
+:global(.dark-theme) .form-input:focus {
+  background-color: #333;
+  border-color: #1677ff;
+}
+
+:global(.dark-theme) .tag {
+  background-color: #111d2c;
+  border-color: #153450;
+}
+
+:global(.dark-theme) .tag-input-container {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+:global(.dark-theme) .tag-input-container:hover,
+:global(.dark-theme) .tag-input-container:focus-within {
+  background-color: #333;
+  border-color: #1677ff;
+}
+
+:global(.dark-theme) .tag-input {
+  background-color: transparent;
+  color: #e0e0e0;
+}
+
+:global(.dark-theme) .form-hint {
+  color: #aaa;
+}
+
+:global(.dark-theme) .form-hint::before {
+  background-color: #153450;
+  color: #4096ff;
+}
+
+:global(.dark-theme) .modal-footer {
+  background-color: #282828;
+  border-top-color: #2a2a2a;
+}
+
+:global(.dark-theme) .cancel-button {
+  background-color: #333;
+  border-color: #444;
+  color: #d9d9d9;
+}
+
+:global(.dark-theme) .cancel-button:hover {
+  background-color: #444;
+  color: #fff;
+} 

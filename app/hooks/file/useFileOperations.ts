@@ -335,7 +335,6 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
 
       // 使用fileApi客户端
       const folder = await fileApi.createFolder(name.trim(), parentId, tags);
-      message.success('文件夹创建成功');
       return folder.id;
     } catch (error) {
       console.error('创建文件夹过程中出错:', error);

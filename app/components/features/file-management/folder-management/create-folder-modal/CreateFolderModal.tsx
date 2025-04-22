@@ -1,54 +1,48 @@
-import React, { useState, useEffect, useRef } from 'react';
-import styles from '@/app/components/features/file-management/shared/modal-styles.module.css';
-import { Folder, File, X, Plus, Tag as TagIcon, AlertCircle } from 'lucide-react';
+'use client';
 
-interface RenameModalProps {
+import React, { useState, useEffect, useRef } from 'react';
+import { Folder, Tag as TagIcon, X, Plus, Info, AlertCircle } from 'lucide-react';
+import styles from '@/app/components/features/file-management/shared/modal-styles.module.css';
+
+interface CreateFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRename: (newName: string, tags?: string[]) => void;
-  initialName: string;
-  initialTags?: string[];
-  fileType: 'file' | 'folder';
+  onCreateFolder: (name: string, tags: string[]) => Promise<void>;
 }
 
-export const RenameModal: React.FC<RenameModalProps> = ({
+export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   isOpen,
   onClose,
-  onRename,
-  initialName,
-  initialTags = [],
-  fileType
+  onCreateFolder
 }) => {
-  const [newName, setNewName] = useState(initialName);
-  const [tags, setTags] = useState<string[]>(initialTags);
+  const [folderName, setFolderName] = useState('');
+  const [folderTags, setFolderTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-
+  
+  // 弹窗打开时重置表单
   useEffect(() => {
-    setNewName(initialName);
-    // 确保初始标签不包含重复项
-    setTags(Array.from(new Set(initialTags)));
-    setError(null);
-  }, [initialName, initialTags]);
-
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      // 自动聚焦输入框并选中文件名（不包括扩展名）
-      inputRef.current.focus();
+    if (isOpen) {
+      setFolderName('');
+      setFolderTags([]);
+      setTagInput('');
+      setIsSubmitting(false);
+      setError(null);
       
-      const extension = fileType === 'file' ? initialName.lastIndexOf('.') : -1;
-      if (extension !== -1) {
-        inputRef.current.setSelectionRange(0, extension);
-      } else {
-        inputRef.current.select();
-      }
+      // 延迟聚焦到输入框
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
     }
-  }, [isOpen, initialName, fileType]);
-
+  }, [isOpen]);
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
@@ -64,48 +58,42 @@ export const RenameModal: React.FC<RenameModalProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, onClose]);
-
-  const validateInput = () => {
-    if (!newName.trim()) {
-      setError('名称不能为空');
-      return false;
+  
+  // 处理提交
+  const handleSubmit = async () => {
+    if (!folderName.trim()) {
+      setError('文件夹名称不能为空');
+      return;
     }
     
     // 检查特殊字符
     const invalidChars = /[\/\\:*?"<>|]/;
-    if (invalidChars.test(newName)) {
-      setError('名称不能包含下列字符: / \\ : * ? " < > |');
-      return false;
-    }
-    
-    setError(null);
-    return true;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateInput()) {
+    if (invalidChars.test(folderName)) {
+      setError('文件夹名称不能包含下列字符: / \\ : * ? " < > |');
       return;
     }
     
-    // 检查是否有更改
-    if (newName !== initialName || JSON.stringify(tags) !== JSON.stringify(initialTags)) {
-      onRename(newName, tags);
+    setError(null);
+    setIsSubmitting(true);
+    
+    try {
+      await onCreateFolder(folderName.trim(), folderTags);
       onClose();
-    } else {
-      setError('请进行修改后再确认');
+    } catch (error) {
+      // 错误处理已在onCreateFolder回调中处理
+      setIsSubmitting(false);
     }
   };
-
-  const handleAddTag = () => {
-    if (!tagInput.trim()) return;
-    
-    // 避免添加重复标签
-    if (!tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
+  
+  // 处理标签输入和添加
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTagInput(e.target.value);
+  };
+  
+  const handleInputConfirm = () => {
+    if (tagInput && !folderTags.includes(tagInput)) {
+      setFolderTags([...folderTags, tagInput]);
     }
-    
     setTagInput('');
     
     // 添加后自动聚焦回标签输入框
@@ -115,29 +103,30 @@ export const RenameModal: React.FC<RenameModalProps> = ({
       }
     }, 0);
   };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+  
+  const handleTagClose = (removedTag: string) => {
+    const newTags = folderTags.filter(tag => tag !== removedTag);
+    setFolderTags(newTags);
   };
-
+  
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleAddTag();
+      handleInputConfirm();
     }
   };
-
+  
   if (!isOpen) return null;
-
+  
   return (
     <div className={styles['modal-overlay']}>
       <div ref={modalRef} className={styles['modal-content']}>
         <div className={styles['modal-header']}>
           <h3 className={styles['modal-title']}>
             <span className={styles['icon-wrapper']}>
-              {fileType === 'folder' ? <Folder size={18} /> : <File size={18} />}
+              <Folder size={18} />
             </span>
-            {fileType === 'folder' ? '重命名文件夹' : '重命名文件'}
+            新建文件夹
           </h3>
           <button 
             className={styles['modal-close']} 
@@ -151,15 +140,15 @@ export const RenameModal: React.FC<RenameModalProps> = ({
         <div className={styles['modal-body']}>
           <div className={styles['form-group']}>
             <label className={styles['form-label']}>
-              名称
+              文件夹名称
             </label>
             <input
               ref={inputRef}
               type="text"
               className={styles['form-input']}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="输入新名称"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              placeholder="输入文件夹名称"
               autoFocus
             />
             {error && (
@@ -182,13 +171,13 @@ export const RenameModal: React.FC<RenameModalProps> = ({
               标签
             </label>
             <div className={styles['tags-container']}>
-              {tags.map((tag, index) => (
-                <div key={index} className={styles.tag}>
+              {folderTags.map((tag, index) => (
+                <div key={`${tag}-${index}`} className={styles.tag}>
                   <span>{tag}</span>
-                  <button 
+                  <button
                     type="button"
                     className={styles['tag-remove']}
-                    onClick={() => handleRemoveTag(tag)}
+                    onClick={() => handleTagClose(tag)}
                   >
                     <X size={14} />
                   </button>
@@ -202,27 +191,25 @@ export const RenameModal: React.FC<RenameModalProps> = ({
                 type="text"
                 className={styles['tag-input']}
                 value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleTagInputKeyDown}
                 placeholder="输入标签，按回车添加"
               />
               <button
                 type="button"
                 className={styles['tag-add-button']}
-                onClick={handleAddTag}
+                onClick={handleInputConfirm}
                 disabled={!tagInput.trim()}
               >
                 <Plus size={16} />
               </button>
             </div>
-            {fileType === 'file' && (
-              <div className={styles['form-hint']}>
-                修改文件名不会改变文件扩展名
-              </div>
-            )}
+            <div className={styles['form-hint']}>
+              相同目录下不能存在同名文件夹
+            </div>
           </div>
         </div>
-
+        
         <div className={styles['modal-footer']}>
           <button 
             type="button" 
@@ -232,15 +219,17 @@ export const RenameModal: React.FC<RenameModalProps> = ({
             取消
           </button>
           <button 
-            type="button" 
-            onClick={handleSubmit}
+            type="button"
             className={`${styles['modal-button']} ${styles['confirm-button']}`}
-            disabled={!newName.trim() || (newName === initialName && JSON.stringify(tags) === JSON.stringify(initialTags))}
+            onClick={handleSubmit}
+            disabled={isSubmitting || !folderName.trim()}
           >
-            确认
+            创建
           </button>
         </div>
       </div>
     </div>
   );
-}; 
+};
+
+export default CreateFolderModal; 
