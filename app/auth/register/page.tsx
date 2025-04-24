@@ -1,9 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { CloudIcon } from 'lucide-react';
-import RegisterForm from './components/register-form';
-import styles from '../login/Page.module.css';
+import { RegisterForm, AuthHeader, AuthFooter } from '@/app/components/features/auth';
+import styles from '@/app/styles/AuthPages.module.css';
 
 export default function Register() {
   return (
@@ -15,18 +13,7 @@ export default function Register() {
         <div className={`${styles.bgCircle} ${styles.bgCircle3}`}></div>
       </div>
 
-      <header className={styles.header}>
-        <h1>
-          <CloudIcon size={24} className={styles.headerIcon} />
-          Archimedes' Cloud Drive
-        </h1>
-        <nav className={styles.nav}>
-          <Link href="/">首页</Link>
-          <Link href="/auth/login">登录</Link>
-          <Link href="/auth/register">注册</Link>
-          <Link href="#">帮助中心</Link>
-        </nav>
-      </header>
+      <AuthHeader />
 
       <main className={styles.content}>
         <div className={styles.loginSection}>
@@ -62,6 +49,8 @@ export default function Register() {
           </div>
         </div>
       </main>
+
+      <AuthFooter />
     </div>
   );
 } 

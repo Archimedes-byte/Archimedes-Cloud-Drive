@@ -4,4 +4,5 @@ export * from './profile-header';
 // export * from './profile-content'; // 此目录当前为空
 export * from './completeness';
 export * from './password-form';
-export * from './edit-form'; 
+export * from './edit-form';
+export * from './user-form'; 

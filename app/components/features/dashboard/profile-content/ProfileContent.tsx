@@ -1,15 +1,15 @@
 import React from 'react';
 import { Session } from 'next-auth';
-import { UserInfo } from '@/app/dashboard/page';
+import { UserProfile } from '@/app/hooks/user/useProfile';
 import styles from './ProfileContent.module.css';
 
 interface ProfileContentProps {
   session: Session;
-  userInfo: UserInfo;
+  userProfile: UserProfile;
   isLoading: boolean;
 }
 
-const ProfileContent = ({ session, userInfo, isLoading }: ProfileContentProps) => {
+const ProfileContent = ({ session, userProfile, isLoading }: ProfileContentProps) => {
   // 格式化账户创建时间
   const formatDate = (dateString?: string) => {
     if (!dateString) return '未知';
@@ -49,29 +49,29 @@ const ProfileContent = ({ session, userInfo, isLoading }: ProfileContentProps) =
         <h2 className={styles.sectionTitle}>个人信息</h2>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>用户名</span>
-          <p className={styles.fieldValue}>{userInfo.displayName || '未设置'}</p>
+          <p className={styles.fieldValue}>{userProfile.name || '未设置'}</p>
         </div>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>个人简介</span>
-          <p className={styles.fieldValue}>{userInfo.bio || '未设置'}</p>
+          <p className={styles.fieldValue}>{userProfile.bio || '未设置'}</p>
         </div>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>所在地</span>
-          <p className={styles.fieldValue}>{userInfo.location || '未设置'}</p>
+          <p className={styles.fieldValue}>{userProfile.location || '未设置'}</p>
         </div>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>个人网站</span>
           <p className={styles.fieldValue}>
-            {userInfo.website ? (
-              <a href={userInfo.website} target="_blank" rel="noopener noreferrer" className={styles.link}>
-                {userInfo.website}
+            {userProfile.website ? (
+              <a href={userProfile.website} target="_blank" rel="noopener noreferrer" className={styles.link}>
+                {userProfile.website}
               </a>
             ) : '未设置'}
           </p>
         </div>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>公司/组织</span>
-          <p className={styles.fieldValue}>{userInfo.company || '未设置'}</p>
+          <p className={styles.fieldValue}>{userProfile.company || '未设置'}</p>
         </div>
       </div>
       
@@ -83,7 +83,7 @@ const ProfileContent = ({ session, userInfo, isLoading }: ProfileContentProps) =
         </div>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>账户创建时间</span>
-          <p className={styles.fieldValue}>{formatDate(userInfo.createdAt)}</p>
+          <p className={styles.fieldValue}>{formatDate(userProfile.createdAt)}</p>
         </div>
       </div>
     </div>

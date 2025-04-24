@@ -83,7 +83,7 @@ const DEFAULT_OFFLINE_PROFILE: UserProfile = {
 
 // 重试配置
 const RETRY_DELAY = 3000 // 3秒
-const MAX_RETRIES = 2 // 最大重试次数
+const MAX_RETRIES = 3 // 修改为3次重试 (原来是2次)
 const MAX_ERROR_COUNT = 3 // 连续错误阈值，超过后进入离线模式
 
 /**
@@ -132,10 +132,39 @@ export function useProfile() {
       retryCount 
     })
 
-    if (!session || !session.user) {
-      console.log('未检测到有效会话，无法获取用户资料')
+    // 会话检查 - 增加容错处理
+    if (!session) {
+      console.log('未检测到有效会话，等待会话初始化后再试...')
+      
+      // 如果还有重试次数，延迟后重试
+      if (retryCount < MAX_RETRIES) {
+        console.log(`${RETRY_DELAY * 2}ms后尝试重新获取会话...`)
+        setTimeout(() => {
+          fetchUserProfile(showToast, retryCount + 1)
+        }, RETRY_DELAY * 2)
+        return null
+      }
+      
       setIsLoading(false)
       setError('未检测到有效会话')
+      return null
+    }
+    
+    // 确保会话中有用户信息
+    if (!session.user || !session.user.email) {
+      console.log('会话中没有有效的用户信息，无法获取用户资料')
+      
+      // 如果还有重试次数，延迟后重试
+      if (retryCount < MAX_RETRIES) {
+        console.log(`${RETRY_DELAY * 2}ms后重试获取用户信息...`)
+        setTimeout(() => {
+          fetchUserProfile(showToast, retryCount + 1)
+        }, RETRY_DELAY * 2)
+        return null
+      }
+      
+      setIsLoading(false)
+      setError('会话中无有效用户信息')
       return null
     }
 
@@ -182,13 +211,13 @@ export function useProfile() {
       
       console.log(`获取用户资料${retryCount > 0 ? `(重试 ${retryCount}/${MAX_RETRIES})` : ''}...`)
       
-      // 设置请求超时 - 10秒，增强容错性
+      // 设置请求超时 - 15秒，增强容错性 (原来是10秒)
       timeoutId = setTimeout(() => {
         if (abortControllerRef.current) {
           console.log('用户资料请求超时，中止请求')
           abortControllerRef.current.abort()
         }
-      }, 10000) // 10秒超时
+      }, 15000) // 15秒超时
       
       const response = await fetch('/api/user/profile', {
         signal,
@@ -272,12 +301,13 @@ export function useProfile() {
         return newCount
       })
       
-      // 在重试次数内进行重试
+      // 在重试次数内进行重试，增加递增的延迟时间
       if (retryCount < MAX_RETRIES) {
-        console.log(`${RETRY_DELAY}ms后进行第${retryCount + 1}次重试...`)
+        const nextRetryDelay = RETRY_DELAY * (retryCount + 1) // 递增延迟
+        console.log(`${nextRetryDelay}ms后进行第${retryCount + 1}次重试...`)
         setTimeout(() => {
           fetchUserProfile(showToast, retryCount + 1)
-        }, RETRY_DELAY)
+        }, nextRetryDelay)
       } else {
         setIsLoading(false)
       }

@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
-import { CloudIcon } from 'lucide-react';
-import LoginForm from './components/login-form';
-import styles from './Page.module.css';
+import { LoginForm, AuthHeader, AuthFooter } from '@/app/components/features/auth';
+import styles from '@/app/styles/AuthPages.module.css';
 
 // 为Google对象声明全局类型
 declare global {
@@ -44,18 +42,7 @@ export default function Login() {
         <div className={styles.bgGradient}></div>
       </div>
 
-      <header className={styles.header}>
-        <h1>
-          <CloudIcon size={24} className={styles.headerIcon} />
-          Archimedes' Cloud Drive
-        </h1>
-        <nav className={styles.nav}>
-          <Link href="/">首页</Link>
-          <Link href="/auth/login">登录</Link>
-          <Link href="/auth/register">注册</Link>
-          <Link href="#">帮助中心</Link>
-        </nav>
-      </header>
+      <AuthHeader />
 
       <main className={styles.content}>
         <div className={styles.loginSection}>
@@ -96,9 +83,7 @@ export default function Login() {
         </div>
       </main>
 
-      <footer className={styles.footer}>
-        <p>© 2025 Archimedes' Cloud Drive. All rights reserved.</p>
-      </footer>
+      <AuthFooter />
     </div>
   );
 } 

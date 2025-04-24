@@ -1,0 +1,446 @@
+.formContainer {
+  background-color: white;
+  border-radius: 1.2rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 360px;
+  padding: 1rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.6s ease-out;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  margin: 0;
+  margin-left: auto;
+  margin-right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  z-index: 10;
+  flex: 0 0 auto;
+  background-color: rgba(255, 255, 255, 1);
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.formContainer:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.formContainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+}
+
+.formContainer h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 0.7rem;
+  text-align: center;
+  position: relative;
+  letter-spacing: -0.02em;
+}
+
+.formContainer h2::after {
+  content: '';
+  position: absolute;
+  bottom: -0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 3px;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  border-radius: 3px;
+}
+
+.message {
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.error {
+  background-color: rgba(254, 202, 202, 0.5);
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.success {
+  background-color: rgba(187, 247, 208, 0.5);
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* 社交登录按钮样式 */
+.socialButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+  max-width: 180px;
+}
+
+.socialIconButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.githubButton {
+  background-color: #24292e;
+}
+
+.githubButton:hover {
+  background-color: #1a1e22;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.googleButton {
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.googleButton svg {
+  position: relative;
+  z-index: 2;
+}
+
+.googleButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: conic-gradient(
+    from 90deg,
+    #4285f4 0%, #4285f4 25%,
+    #ea4335 25%, #ea4335 50%,
+    #fbbc05 50%, #fbbc05 75%,
+    #34a853 75%, #34a853 100%
+  );
+  border-radius: 50%;
+  z-index: 1;
+  transform: scale(1.45);
+  transition: transform 0.3s ease;
+}
+
+.googleButton::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  background: white;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.googleButton svg {
+  color: #1e40af;
+}
+
+.googleButton:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 15px rgba(30, 64, 175, 0.2);
+}
+
+.googleButton:hover::before {
+  transform: scale(1.5) rotate(10deg);
+}
+
+.socialIconButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 0.3rem 0 0.5rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  width: 100%;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #e2e8f0;
+}
+
+.divider::before {
+  margin-right: 0.5rem;
+}
+
+.divider::after {
+  margin-left: 0.5rem;
+}
+
+.formGroup {
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 0.2rem;
+}
+
+.formGroup input,
+.input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+  color: #1a202c;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.formGroup input:focus,
+.input:focus {
+  outline: none;
+  border-color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+  background-color: white;
+}
+
+.passwordContainer {
+  position: relative;
+  width: 100%;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.passwordToggle:hover {
+  color: #1e40af;
+}
+
+.button {
+  width: 100%;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+  margin-top: 0.3rem;
+  font-size: 0.95rem;
+  z-index: 1;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #1e40af, #1e3a8a, #2563eb);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
+}
+
+.button:hover::before {
+  opacity: 1;
+}
+
+.button span {
+  position: relative;
+  z-index: 1;
+}
+
+.button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 4px 6px rgba(30, 64, 175, 0.2) !important;
+}
+
+.loading {
+  position: relative;
+  color: transparent;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: spin 1s linear infinite;
+  z-index: 1;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.link {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: #4a5568;
+  width: 100%;
+  text-align: center;
+}
+
+.link a {
+  color: #1e40af;
+  font-weight: 500;
+  margin-left: 0.4rem;
+  text-decoration: none;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.link a:hover {
+  color: #1e3a8a;
+  text-decoration: underline;
+}
+
+/* 移除旧的社交按钮样式 */
+.socialButton {
+  display: none;
+}
+
+.googleSignin {
+  display: none;
+}
+
+/* 移除记住我和忘记密码的样式 */
+.formActions,
+.rememberMe,
+.forgotPassword {
+  display: none;
+}
+
+/* 表单样式 */
+.loginForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* 响应式适配 */
+@media (max-width: 992px) {
+  .formContainer {
+    margin: 0 auto;
+    margin-bottom: 0;
+    max-height: calc(100vh - 150px);
+  }
+}
+
+@media (max-width: 768px) {
+  .formContainer {
+    max-height: calc(100vh - 120px);
+    padding: 1.25rem;
+  }
+}
+
+@media (max-height: 600px) {
+  .formContainer {
+    max-height: calc(100vh - 80px);
+    padding: 1rem;
+  }
+  
+  .formGroup {
+    margin-bottom: 0.75rem;
+  }
+  
+  .button {
+    margin-top: 0.5rem;
+  }
+} 

@@ -1,4 +1,4 @@
-import { ToastProvider } from '@/app/components/features/dashboard/Toaster';
+import { ToastProvider } from '@/app/components/features/dashboard/toaster/Toaster';
 
 export default function DashboardLayout({
   children,

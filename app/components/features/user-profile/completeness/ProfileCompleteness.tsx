@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { UserInfo } from '@/app/dashboard/page';
+import { UserProfile } from '@/app/hooks/user/useProfile';
 import styles from './ProfileCompleteness.module.css';
 import { AlertCircle, CheckCircle, User, FileText, MapPin, Globe, Briefcase, Image } from 'lucide-react';
 
 interface ProfileCompletenessProps {
-  userInfo: UserInfo;
+  userProfile: UserProfile;
   onEditClick?: () => void; // 添加打开编辑模态框的回调
   onAvatarClick?: () => void; // 添加上传头像的回调
 }
@@ -12,14 +12,14 @@ interface ProfileCompletenessProps {
 interface CheckItem {
   id: string;
   label: string;
-  check: (userInfo: UserInfo) => boolean;
+  check: (userProfile: UserProfile) => boolean;
   importance: number; // 1-5，表示这个项目对资料完整度的重要性
   icon: React.ReactNode;
   description: string; // 添加建议描述
   field: string; // 对应的字段名
 }
 
-const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCompletenessProps) => {
+const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: ProfileCompletenessProps) => {
   const [completenessPercentage, setCompletenessPercentage] = useState(0);
   const [animation, setAnimation] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -29,16 +29,16 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     {
       id: 'displayName',
       label: '设置显示名称',
-      check: (info) => !!info.displayName,
+      check: (profile) => !!profile.name,
       importance: 5,
       icon: <User size={16} />,
       description: '有个好名字让大家更容易记住你',
-      field: 'displayName'
+      field: 'name'
     },
     {
       id: 'bio',
       label: '填写个人简介',
-      check: (info) => !!info.bio, // 修改为只要有内容就算完成
+      check: (profile) => !!profile.bio, // 修改为只要有内容就算完成
       importance: 4,
       icon: <FileText size={16} />,
       description: '简单介绍一下自己，让别人了解你的兴趣和专长',
@@ -47,9 +47,9 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     {
       id: 'avatar',
       label: '上传个人头像',
-      check: (info) => {
-        const hasAvatar = !!info.avatarUrl && info.avatarUrl.trim() !== '';
-        console.log('检查头像完整度:', info.avatarUrl, hasAvatar);
+      check: (profile) => {
+        const hasAvatar = !!profile.avatarUrl && profile.avatarUrl.trim() !== '';
+        console.log('检查头像完整度:', profile.avatarUrl, hasAvatar);
         return hasAvatar;
       },
       importance: 4,
@@ -60,7 +60,7 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     {
       id: 'location',
       label: '添加所在地',
-      check: (info) => !!info.location,
+      check: (profile) => !!profile.location,
       importance: 3,
       icon: <MapPin size={16} />,
       description: '分享你的位置有助于找到附近的合作伙伴',
@@ -69,7 +69,7 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     {
       id: 'website',
       label: '添加个人网站',
-      check: (info) => !!info.website,
+      check: (profile) => !!profile.website,
       importance: 2,
       icon: <Globe size={16} />,
       description: '展示你的个人网站或社交媒体链接',
@@ -78,7 +78,7 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     {
       id: 'company',
       label: '添加公司/组织',
-      check: (info) => !!info.company,
+      check: (profile) => !!profile.company,
       importance: 3,
       icon: <Briefcase size={16} />,
       description: '分享你所在的公司或组织信息',
@@ -86,16 +86,16 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     }
   ];
 
-  // 在userInfo变化时强制刷新
+  // 在userProfile变化时强制刷新
   useEffect(() => {
     setRefreshTrigger(prev => prev + 1);
-    console.log('用户信息变更，触发完整度重新计算', userInfo);
-  }, [userInfo]);
+    console.log('用户信息变更，触发完整度重新计算', userProfile);
+  }, [userProfile]);
 
   // 使用useCallback创建记忆化的计算函数
   const calculateCompleteness = useCallback(() => {
-    // 确保每次userInfo变更时都重新计算
-    const completedItems = checkItems.filter(item => item.check(userInfo));
+    // 确保每次userProfile变更时都重新计算
+    const completedItems = checkItems.filter(item => item.check(userProfile));
     const totalWeight = checkItems.reduce((sum, item) => sum + item.importance, 0);
     const completedWeight = completedItems.reduce((sum, item) => sum + item.importance, 0);
     
@@ -104,12 +104,12 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
     
     console.log('完整度计算:', {
       completed: completedItems.map(i => i.id),
-      incomplete: checkItems.filter(item => !item.check(userInfo)).map(i => i.id),
+      incomplete: checkItems.filter(item => !item.check(userProfile)).map(i => i.id),
       percentage: newPercentage
     });
     
     return newPercentage;
-  }, [userInfo, checkItems]);
+  }, [userProfile, checkItems]);
 
   // 计算完成的项目和总权重
   useEffect(() => {
@@ -123,11 +123,11 @@ const ProfileCompleteness = ({ userInfo, onEditClick, onAvatarClick }: ProfileCo
         setTimeout(() => setAnimation(false), 500);
       }, 100);
     }
-  }, [userInfo, calculateCompleteness, completenessPercentage, refreshTrigger]);
+  }, [userProfile, calculateCompleteness, completenessPercentage, refreshTrigger]);
 
   // 按重要性排序未完成的项目
   const incompleteItems = checkItems
-    .filter(item => !item.check(userInfo))
+    .filter(item => !item.check(userProfile))
     .sort((a, b) => b.importance - a.importance);
 
   // 已完成的项目数量

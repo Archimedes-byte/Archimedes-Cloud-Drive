@@ -3,11 +3,13 @@ import { UserProfile } from './useProfile';
 
 // 定义错误类型
 interface ValidationErrors {
-  displayName?: string;
+  name?: string;
   bio?: string;
   location?: string;
   website?: string;
   company?: string;
+  // 兼容旧字段名
+  displayName?: string;
 }
 
 // 验证函数类型
@@ -60,7 +62,11 @@ export const useValidation = () => {
     
     // 验证用户名
     const displayNameError = validators.required('用户名')(userInfo.name || '');
-    if (displayNameError) newErrors.displayName = displayNameError;
+    if (displayNameError) {
+      newErrors.name = displayNameError;
+      // 兼容旧代码
+      newErrors.displayName = displayNameError;
+    }
     
     // 验证个人简介
     if (userInfo.bio) {
@@ -115,10 +121,26 @@ export const useValidation = () => {
         error = undefined;
     }
     
-    setErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
+    // 处理字段名变更的兼容性问题
+    let fieldKey = field;
+    if (field === 'displayName') {
+      setErrors(prev => ({
+        ...prev,
+        displayName: error,
+        name: error
+      }));
+    } else if (field === 'name') {
+      setErrors(prev => ({
+        ...prev,
+        name: error,
+        displayName: error
+      }));
+    } else {
+      setErrors(prev => ({
+        ...prev,
+        [field]: error
+      }));
+    }
     
     return error;
   };

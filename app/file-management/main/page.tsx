@@ -632,13 +632,14 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
                 })
                 .catch(error => {
                   console.error('加载文件列表失败:', error);
-                  finishLoading(true, '加载文件列表失败');
+                  // 即使文件加载失败，我们也尝试显示主界面
+                  finishLoading(false, '文件列表可能不完整，请稍后刷新');
                   loadInProgressRef.current = false;
                 });
             } else {
               console.log('用户资料为空，尝试重新获取...');
               // 增加重试延迟，确保session稳定
-              return new Promise(resolve => setTimeout(resolve, 1000))
+              return new Promise(resolve => setTimeout(resolve, 1500))
                 .then(() => fetchUserProfile(true)) // 强制刷新模式
                 .then(retryProfileData => {
                   if (retryProfileData) {
@@ -651,13 +652,22 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
                       })
                       .catch(error => {
                         console.error('加载文件列表失败:', error);
-                        finishLoading(true, '加载文件列表失败');
+                        // 即使文件加载失败，也尝试显示主界面
+                        finishLoading(false, '文件列表可能不完整，请稍后刷新');
                         loadInProgressRef.current = false;
                       });
                   } else {
                     console.error('重试获取用户资料失败');
-                    loadInProgressRef.current = false;
-                    throw new Error("获取用户资料失败，请刷新页面重试");
+                    // 尝试使用部分可用的会话信息展示基本界面
+                    if (session?.user) {
+                      console.log('使用会话信息尝试显示有限功能界面');
+                      loadInProgressRef.current = false;
+                      // 使用警告消息而不是错误，允许用户继续尝试使用
+                      finishLoading(false, '用户资料不完整，部分功能可能受限');
+                    } else {
+                      loadInProgressRef.current = false;
+                      throw new Error("获取用户资料失败，请刷新页面重试");
+                    }
                   }
                 });
             }
@@ -677,21 +687,34 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
                         loadInProgressRef.current = false;
                       })
                       .catch(err => {
-                        finishLoading(true, '加载文件列表失败');
+                        // 即使文件加载失败，也尝试显示主界面
+                        finishLoading(false, '文件列表可能不完整，请稍后刷新');
                         loadInProgressRef.current = false;
                       });
                   } else {
-                    finishLoading(true, '获取用户资料失败，请刷新页面重试');
+                    // 尝试使用会话信息展示有限功能界面
+                    if (session?.user?.email) {
+                      console.log('使用会话信息显示应急界面');
+                      finishLoading(false, '无法获取完整用户资料，部分功能可能不可用');
+                    } else {
+                      finishLoading(true, '获取用户资料失败，请刷新页面重试');
+                    }
                     loadInProgressRef.current = false;
                   }
                 })
                 .catch(err => {
-                  finishLoading(true, err.message || '加载失败，请重试');
+                  // 如果会话信息可用，尝试显示基础界面
+                  if (session?.user?.email) {
+                    console.log('使用会话信息显示应急界面');
+                    finishLoading(false, '无法获取完整用户资料，部分功能可能不可用');
+                  } else {
+                    finishLoading(true, err.message || '加载失败，请重试');
+                  }
                   loadInProgressRef.current = false;
                 });
-            }, 1500);
+            }, 2000); // 延长延迟时间
           });
-      }, 500); // 短暂延迟，等待session稳定
+      }, 800); // 延长初始延迟，等待session稳定
     }
   }, [status, session, currentFolderId, selectedFileType, loadFiles, fetchUserProfile, startLoading, finishLoading]);
 

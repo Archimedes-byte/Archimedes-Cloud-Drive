@@ -38,7 +38,7 @@ export async function GET() {
   console.log('GET /api/user/profile 请求开始')
   try {
     const session = await getServerSession(authOptions)
-    console.log('获取到用户会话:', session ? '成功' : '失败')
+    console.log('获取到用户会话:', session ? '成功' : '失败', '邮箱:', session?.user?.email || '无')
     
     if (!session?.user?.email) {
       console.log('未授权访问: 没有找到用户邮箱')
@@ -49,46 +49,102 @@ export async function GET() {
     }
 
     console.log('查询用户信息，邮箱:', session.user.email)
-    // 查询用户，并包含用户资料
-    const user = await prisma.user.findUnique({
-      where: {
-        email: session.user.email
-      },
-      include: {
-        profile: true
-      }
-    })
+    
+    // 使用 try-catch 包装数据库操作
+    try {
+      // 查询用户，并包含用户资料
+      const user = await prisma.user.findUnique({
+        where: {
+          email: session.user.email
+        },
+        include: {
+          profile: true
+        }
+      })
 
-    if (!user) {
-      console.log('用户不存在:', session.user.email)
+      if (!user) {
+        console.log('用户不存在，尝试通过其他方式检索或创建用户')
+        return NextResponse.json(
+          { success: false, error: '用户不存在，请先完成注册流程' },
+          { status: 404 }
+        )
+      }
+
+      // 检查用户资料是否存在
+      if (!user.profile) {
+        console.log('用户资料不存在，创建默认资料')
+        
+        // 为用户创建默认资料
+        await prisma.userProfile.create({
+          data: {
+            userId: user.id,
+            displayName: user.name || user.email.split('@')[0],
+            theme: 'default'
+          }
+        })
+        
+        // 重新获取包含资料的用户
+        const updatedUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          include: { profile: true }
+        })
+        
+        if (!updatedUser || !updatedUser.profile) {
+          throw new Error('创建资料后无法检索用户数据')
+        }
+        
+        // 构建用户资料响应
+        const userProfile: UserProfileResponse = {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          avatarUrl: updatedUser.profile.avatarUrl,
+          theme: updatedUser.profile.theme,
+          bio: updatedUser.profile.bio,
+          location: updatedUser.profile.location,
+          website: updatedUser.profile.website,
+          company: updatedUser.profile.company,
+          storageUsed: updatedUser.storageUsed,
+          storageLimit: updatedUser.storageLimit,
+          createdAt: updatedUser.createdAt.toISOString(),
+          updatedAt: updatedUser.updatedAt.toISOString()
+        }
+        
+        return NextResponse.json({
+          success: true,
+          profile: userProfile
+        })
+      }
+
+      // 构建用户资料响应
+      const userProfile: UserProfileResponse = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatarUrl: user.profile.avatarUrl,
+        theme: user.profile.theme,
+        bio: user.profile.bio,
+        location: user.profile.location,
+        website: user.profile.website,
+        company: user.profile.company,
+        storageUsed: user.storageUsed,
+        storageLimit: user.storageLimit,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString()
+      }
+
+      console.log('成功获取用户信息:', user.id)
+      return NextResponse.json({
+        success: true,
+        profile: userProfile
+      })
+    } catch (dbError) {
+      console.error('数据库操作失败:', dbError)
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
+        { success: false, error: '数据库操作失败，请稍后重试' },
+        { status: 500 }
       )
     }
-
-    // 构建用户资料响应
-    const userProfile: UserProfileResponse = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatarUrl: user.profile?.avatarUrl || null, 
-      theme: user.profile?.theme || null,
-      bio: user.profile?.bio || null,
-      location: user.profile?.location || null,
-      website: user.profile?.website || null,
-      company: user.profile?.company || null,
-      storageUsed: user.storageUsed,
-      storageLimit: user.storageLimit,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString()
-    }
-
-    console.log('成功获取用户信息:', user.id)
-    return NextResponse.json({
-      success: true,
-      profile: userProfile
-    })
   } catch (error) {
     console.error('获取用户信息失败:', error)
     return NextResponse.json(

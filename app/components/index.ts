@@ -17,6 +17,7 @@
  *   - file-management/: 文件管理组件
  *   - home/: 首页相关组件
  *   - user-profile/: 用户资料组件
+ *   - auth/: 认证相关组件
  * 
  * 为保持向后兼容性，所有组件可以从根路径直接导入
  */
@@ -49,11 +50,14 @@ export { default as PasswordForm } from './features/user-profile/password-form';
 export { default as EditProfileForm } from './features/user-profile/edit-form';
 export * from './features/user-profile/avatar';
 
+// 认证组件
+export * from './features/auth';
+
 // 表单组件
 export * from './common/form';
 
 // 反馈组件
-export { default as Toaster } from './common/feedback/toast';
+export { ToastProvider, useToast } from './features/dashboard/toaster/Toaster';
 
 // 首页组件
 export { default as Hero } from './features/home/hero';

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Session } from 'next-auth';
-import { UserInfo } from '@/app/dashboard/page';
+import { UserProfile } from '@/app/hooks/user/useProfile';
 import { Camera } from 'lucide-react';
 import styles from './ProfileHeader.module.css';
 import { AvatarModal } from '@/app/components/features/user-profile/avatar';
 
 interface ProfileHeaderProps {
   session: Session;
-  userInfo: UserInfo;
+  userProfile: UserProfile;
   onEditClick: () => void;
   onPasswordClick: () => void;
   isLoading: boolean;
@@ -17,7 +17,7 @@ interface ProfileHeaderProps {
 
 const ProfileHeader = ({ 
   session, 
-  userInfo,
+  userProfile,
   onEditClick, 
   onPasswordClick, 
   isLoading,
@@ -26,35 +26,35 @@ const ProfileHeader = ({
   const [avatarError, setAvatarError] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   
-  // 使用userInfo中的displayName作为首选，如果没有则使用session中的name
-  const displayName = userInfo.displayName || session.user?.name || '未设置昵称';
+  // 使用userProfile中的name作为首选，如果没有则使用session中的name
+  const displayName = userProfile.name || session.user?.name || '未设置昵称';
   
   // 获取用于头像占位符的首字母
   const nameInitial = displayName[0]?.toUpperCase() || '?';
 
-  // 简化头像URL逻辑，直接使用userInfo中的头像或session头像
-  const effectiveAvatarUrl = userInfo.avatarUrl || session.user?.image;
+  // 简化头像URL逻辑，直接使用userProfile中的头像或session头像
+  const effectiveAvatarUrl = userProfile.avatarUrl || session.user?.image;
   
   // 添加时间戳作为key的一部分，确保每次头像变更都会重新渲染
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const avatarKey = `${effectiveAvatarUrl || 'fallback'}-${refreshKey}`;
 
-  // 添加useEffect监听userInfo.avatarUrl的变化
+  // 添加useEffect监听userProfile.avatarUrl的变化
   useEffect(() => {
     setRefreshKey(Date.now()); // 强制头像重新渲染
     setAvatarError(false); // 重置错误状态
-  }, [userInfo.avatarUrl]);
+  }, [userProfile.avatarUrl]);
 
   // 添加深度调试 - 监控props变化
   useEffect(() => {
-    console.log('ProfileHeader收到新的userInfo:', 
+    console.log('ProfileHeader收到新的userProfile:', 
       { 
-        avatarUrl: userInfo.avatarUrl,
-        hasAvatar: !!userInfo.avatarUrl,
-        displayName: userInfo.displayName
+        avatarUrl: userProfile.avatarUrl,
+        hasAvatar: !!userProfile.avatarUrl,
+        displayName: userProfile.name
       }
     );
-  }, [userInfo]);
+  }, [userProfile]);
 
   // 打开头像管理弹窗
   const handleAvatarClick = () => {

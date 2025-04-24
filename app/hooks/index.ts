@@ -12,6 +12,7 @@ export * from './core/useThemeManager';
 export * from './user/useProfile';
 export * from './user/usePassword';
 export * from './user/useValidation';
+export * from './user/useUserForm';
 
 // 文件相关hooks
 export * from './file/useFiles';
@@ -23,4 +24,5 @@ export * from './file/useFileShare';
 export * from './file/useShareView';
 
 // 认证相关hooks
-// export * from './auth/useAuth'; 
+export * from './auth/useAuth';
+export * from './auth'; 

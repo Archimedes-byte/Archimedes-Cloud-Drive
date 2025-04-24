@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import '@/app/shared/themes/variables.css';
+import '@/app/styles/auth.css';
 import Providers from './providers';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';

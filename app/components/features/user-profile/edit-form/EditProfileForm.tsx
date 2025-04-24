@@ -1,16 +1,16 @@
 import React from 'react';
-import { User, MapPin, Building, Globe, Briefcase } from 'lucide-react';
-import { UserInfo } from '@/app/dashboard/page';
+import { User, MapPin, Globe, Briefcase } from 'lucide-react';
+import { UserProfile } from '@/app/hooks/user/useProfile';
 import { useValidation } from '@/app/hooks';
 import { FormField } from '@/app/components/common/form';
 import styles from './EditProfileForm.module.css';
 
 interface EditProfileFormProps {
-  userInfo: UserInfo;
+  userProfile: UserProfile;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: string) => void;
 }
 
-const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
+const EditProfileForm = ({ userProfile, onInputChange }: EditProfileFormProps) => {
   const { errors, validateField } = useValidation();
   
   // 处理输入元素获取焦点时自动选中全部文本
@@ -19,7 +19,7 @@ const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
   };
   
   // 处理失去焦点时验证字段
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof UserInfo) => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>, field: string) => {
     validateField(field, e.target.value);
   };
   
@@ -28,21 +28,21 @@ const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
       <FormField label="用户名" icon={<User size={16} />}>
         <input
           type="text"
-          value={userInfo.displayName}
-          onChange={(e) => onInputChange(e, 'displayName')}
-          onBlur={(e) => handleBlur(e, 'displayName')}
+          value={userProfile.name || ''}
+          onChange={(e) => onInputChange(e, 'name')}
+          onBlur={(e) => handleBlur(e, 'name')}
           onFocus={handleFocus}
-          className={`${styles.input} ${errors.displayName ? styles.inputError : ''}`}
+          className={`${styles.input} ${errors.name ? styles.inputError : ''}`}
           placeholder="请输入用户名"
         />
-        {errors.displayName && (
-          <div className={styles.errorText}>{errors.displayName}</div>
+        {errors.name && (
+          <div className={styles.errorText}>{errors.name}</div>
         )}
       </FormField>
       
       <FormField label="个人简介" icon={<Globe size={16} />}>
         <textarea
-          value={userInfo.bio}
+          value={userProfile.bio || ''}
           onChange={(e) => onInputChange(e, 'bio')}
           onBlur={(e) => handleBlur(e, 'bio')}
           onFocus={handleFocus}
@@ -51,7 +51,7 @@ const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
           rows={4}
         />
         <div className={styles.charCount}>
-          {userInfo.bio.length}/500
+          {(userProfile.bio || '').length}/500
         </div>
         {errors.bio && (
           <div className={styles.errorText}>{errors.bio}</div>
@@ -61,7 +61,7 @@ const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
       <FormField label="所在地" icon={<MapPin size={16} />}>
         <input
           type="text"
-          value={userInfo.location}
+          value={userProfile.location || ''}
           onChange={(e) => onInputChange(e, 'location')}
           onBlur={(e) => handleBlur(e, 'location')}
           onFocus={handleFocus}
@@ -76,7 +76,7 @@ const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
       <FormField label="个人网站" icon={<Globe size={16} />}>
         <input
           type="url"
-          value={userInfo.website}
+          value={userProfile.website || ''}
           onChange={(e) => onInputChange(e, 'website')}
           onBlur={(e) => handleBlur(e, 'website')}
           onFocus={handleFocus}
@@ -91,7 +91,7 @@ const EditProfileForm = ({ userInfo, onInputChange }: EditProfileFormProps) => {
       <FormField label="公司/组织" icon={<Briefcase size={16} />}>
         <input
           type="text"
-          value={userInfo.company}
+          value={userProfile.company || ''}
           onChange={(e) => onInputChange(e, 'company')}
           onBlur={(e) => handleBlur(e, 'company')}
           onFocus={handleFocus}

@@ -2,38 +2,26 @@
 
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ArrowLeft } from 'lucide-react'
 
-// 导入自定义钩子
-import { useProfile, usePassword, UserProfileInput } from '@/app/hooks'
-import { useToast } from '@/app/components/features/dashboard/Toaster'
-import { useValidation } from '@/app/hooks'
-// 导入主题服务
+import { useProfile, usePassword } from '@/app/hooks'
+import { useToast } from '@/app/components/features/dashboard/toaster/Toaster'
 import { applyTheme as applyThemeService } from '@/app/components/ui/themes';
+import { createProfileUpdate } from '@/app/utils/user/profile'
 
 // 导入组件
 import Modal from '@/app/components/features/dashboard/modal'
 import ProfileHeader from '@/app/components/features/user-profile/profile-header'
 import ProfileContent from '@/app/components/features/dashboard/profile-content'
-import EditProfileForm from '@/app/components/features/user-profile/edit-form'
+import { UserProfileForm } from '@/app/components/features/user-profile/user-form'
 import PasswordForm from '@/app/components/features/user-profile/password-form'
 import ProfileCompleteness from '@/app/components/features/user-profile/completeness'
 
-// 创建兼容旧组件的UserInfo接口
-export interface UserInfo {
-  displayName: string;
-  bio: string;
-  location: string;
-  website: string;
-  company: string;
-  avatarUrl?: string | null; 
-  theme?: string | null;     
-  createdAt?: string;        
-}
-
-// 导入样式
-import styles from './Layout.module.css'
+// 导入组件库样式代替Layout.module.css
+import modalStyles from '@/app/components/features/dashboard/modal/Modal.module.css'
+import profileStyles from '@/app/components/features/dashboard/profile-content/ProfileContent.module.css'
+import styles from './dashboard.module.css' // 仅保留特定的样式
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -47,39 +35,16 @@ export default function DashboardPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   
+  // 使用Ref代替直接DOM操作
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  
   const { 
     userProfile, 
     isLoading: profileLoading, 
     error: profileError, 
-    updateUserProfile  } = useProfile()
-  
-  // 创建一个本地状态用于编辑，兼容旧的UserInfo格式
-  const [userInfo, setUserInfo] = useState<UserInfo>({
-    displayName: '',
-    bio: '',
-    location: '',
-    website: '',
-    company: '',
-    avatarUrl: null,
-    theme: null
-  })
-  
-  // 当userProfile更新时，同步更新userInfo
-  useEffect(() => {
-    if (userProfile) {
-      setUserInfo({
-        displayName: userProfile.name || '',
-        bio: userProfile.bio || '',
-        location: userProfile.location || '',
-        website: userProfile.website || '',
-        company: userProfile.company || '',
-        avatarUrl: userProfile.avatarUrl,
-        theme: userProfile.theme,
-        createdAt: userProfile.createdAt
-      })
-    }
-  }, [userProfile])
-  
+    updateUserProfile, 
+    forceRefreshProfile } = useProfile()
+
   const {
     passwordInfo,
     passwordError,
@@ -94,63 +59,13 @@ export default function DashboardPage() {
     resetPasswordState
   } = usePassword()
 
-  const [isSaving, setIsSaving] = useState(false)
   const toast = useToast()
-  const { validateForm } = useValidation()
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: string) => {
-    setUserInfo(prev => ({...prev, [field]: e.target.value}))
-  }
-
-  const handleSave = async () => {
-    try {
-      console.log('保存用户资料:', userInfo);
-      
-      // 表单验证
-      if (!validateForm(userInfo)) {
-        toast.error('请修正表单中的错误后再提交');
-        return;
-      }
-      
-      // 禁用保存按钮，防止重复提交
-      setIsSaving(true);
-      
-      // 转换为UserProfileInput格式
-      const profileInput: UserProfileInput = {
-        displayName: userInfo.displayName,
-        bio: userInfo.bio,
-        location: userInfo.location,
-        website: userInfo.website,
-        company: userInfo.company,
-        // 仅在非null时包含avatarUrl
-        ...(userInfo.avatarUrl && { avatarUrl: userInfo.avatarUrl }),
-        // 仅在非null时包含theme
-        ...(userInfo.theme && { theme: userInfo.theme })
-      };
-      
-      const success = await updateUserProfile(profileInput);
-      
-      if (success) {
-        setIsEditModalOpen(false);
-        // 使用Toast通知替代alert
-        toast.success('个人信息已成功保存！');
-      } else {
-        // 保存失败提示
-        toast.error('保存失败，请稍后重试');
-      }
-    } catch (error) {
-      console.error('保存用户资料时出错:', error);
-      toast.error('发生错误，请稍后重试');
-    } finally {
-      // 无论成功还是失败，都重新启用保存按钮
-      setIsSaving(false);
-    }
-  }
 
   const handlePasswordSave = async () => {
     const success = await updatePassword()
     if (success) {
       setIsPasswordModalOpen(false)
+      toast.success('密码已成功更新')
     }
   }
 
@@ -162,56 +77,60 @@ export default function DashboardPage() {
   // 应用主题
   useEffect(() => {
     if (userProfile?.theme) {
-      applyTheme(userProfile.theme);
+      applyThemeService(userProfile.theme);
     }
   }, [userProfile?.theme]);
 
-  // 处理主题更改
-
-  // 将主题应用到文档 - 使用统一的主题服务
-  const applyTheme = (theme: string) => {
-    applyThemeService(theme);
+  // 处理头像上传点击 - 使用ref代替直接DOM操作
+  const handleAvatarClick = () => {
+    // 如果ref绑定了头像上传input，则直接触发点击
+    if (avatarInputRef.current) {
+      avatarInputRef.current.click();
+    } else {
+      toast.error('无法访问头像上传控件');
+    }
   };
 
-  // 引用ProfileHeader中的fileInputRef
+  // 设置密码弹窗底部按钮
+  const renderPasswordFooter = () => (
+    <div className={modalStyles.modalFooter}>
+      <button
+        onClick={() => setIsPasswordModalOpen(false)}
+        className={modalStyles.cancelButton || styles.cancelButton}
+      >
+        取消
+      </button>
+      <button
+        onClick={handlePasswordSave}
+        className={modalStyles.saveButton || styles.saveButton}
+        disabled={passwordLoading}
+      >
+        保存密码
+      </button>
+    </div>
+  );
 
-  // 触发头像上传功能
-  const handleAvatarClick = () => {
-    console.log('资料完整度头像点击被触发');
-    
-    // 首先尝试使用特定的class查找
-    const avatarInput = document.querySelector('.avatar-upload-input');
-    if (avatarInput && avatarInput instanceof HTMLInputElement) {
-      console.log('通过class找到头像上传input，触发点击');
-      avatarInput.click();
-      return;
-    }
-    
-    // 备用方案1：通过容器class查找
-    const containerInput = document.querySelector('.avatarContainer input[type="file"]');
-    if (containerInput && containerInput instanceof HTMLInputElement) {
-      console.log('通过容器找到头像上传input，触发点击');
-      containerInput.click();
-      return;
-    }
-    
-    // 备用方案2：查找所有文件上传input
-    console.error('未找到精确的头像上传input元素，尝试查找所有图片上传控件');
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    let found = false;
-    fileInputs.forEach(input => {
-      const fileInput = input as HTMLInputElement;
-      if (fileInput.accept && fileInput.accept.includes('image')) {
-        console.log('找到备选图片上传input，触发点击');
-        fileInput.click();
-        found = true;
-        return;
+  // 更新头像处理函数
+  const handleAvatarChange = async (avatarUrl: string) => {
+    try {
+      if (userProfile) {
+        // 使用转换工具函数生成UserProfileInput
+        const profileInput = createProfileUpdate(userProfile, { avatarUrl });
+        
+        // 调用API更新
+        const success = await updateUserProfile(profileInput);
+        
+        if (success) {
+          toast.success('头像已成功更新');
+        } else {
+          toast.error('头像更新失败');
+          // 刷新用户资料而不是刷新整个页面
+          forceRefreshProfile();
+        }
       }
-    });
-    
-    if (!found) {
-      console.error('无法找到任何图片上传控件');
-      alert('无法找到头像上传控件，请尝试直接点击头像进行上传');
+    } catch (error) {
+      console.error('处理头像变更时出错:', error);
+      toast.error('更新头像失败，请稍后再试');
     }
   };
 
@@ -237,7 +156,7 @@ export default function DashboardPage() {
           <h2 className={styles.errorTitle}>加载失败</h2>
           <p className={styles.errorText}>{profileError}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => forceRefreshProfile()}
             className={styles.retryButton}
           >
             重试
@@ -247,49 +166,10 @@ export default function DashboardPage() {
     )
   }
 
-  // 未登录
-  if (!session?.user) {
+  // 未登录或没有用户资料
+  if (!session?.user || !userProfile) {
     return null
   }
-
-  // 编辑个人信息弹窗底部按钮
-  const renderEditFooter = () => (
-    <div className={styles.modalFooterButtons}>
-      <button
-        onClick={() => setIsEditModalOpen(false)}
-        className={styles.cancelButton}
-        disabled={isSaving}
-      >
-        取消
-      </button>
-      <button
-        onClick={handleSave}
-        className={styles.saveButton}
-        disabled={isSaving}
-      >
-        {isSaving ? '保存中...' : '保存更改'}
-      </button>
-    </div>
-  );
-
-  // 设置密码弹窗底部按钮
-  const renderPasswordFooter = () => (
-    <div className={styles.modalFooterButtons}>
-      <button
-        onClick={() => setIsPasswordModalOpen(false)}
-        className={styles.cancelButton}
-      >
-        取消
-      </button>
-      <button
-        onClick={handlePasswordSave}
-        className={styles.saveButton}
-        disabled={passwordLoading}
-      >
-        保存密码
-      </button>
-    </div>
-  );
 
   return (
     <div className={styles.container}>
@@ -304,55 +184,29 @@ export default function DashboardPage() {
         </button>
         
         <div className={styles.profileHeader}>
+          {/* 隐藏的头像上传input，使用ref代替DOM查询 */}
+          <input 
+            type="file"
+            ref={avatarInputRef}
+            accept="image/*"
+            className="hidden avatar-upload-input"
+            style={{ display: 'none' }}
+          />
+          
           {/* 个人资料头部 */}
           <ProfileHeader 
             session={session}
-            userInfo={userInfo}
+            userProfile={userProfile}
             onEditClick={() => setIsEditModalOpen(true)}
             onPasswordClick={openPasswordModal}
             isLoading={profileLoading || passwordLoading}
-            onAvatarChange={async (avatarUrl) => {
-              console.log('头像变更被触发，新URL:', avatarUrl);
-              
-              try {
-                // 创建新的userInfo对象
-                const updatedInfo = {...userInfo, avatarUrl};
-                console.log('更新后的userInfo:', updatedInfo);
-                
-                // 更新本地状态
-                setUserInfo(updatedInfo);
-                
-                // 转换为UserProfileInput格式
-                const profileInput: UserProfileInput = {
-                  displayName: updatedInfo.displayName,
-                  bio: updatedInfo.bio,
-                  location: updatedInfo.location,
-                  website: updatedInfo.website,
-                  company: updatedInfo.company,
-                  avatarUrl: updatedInfo.avatarUrl,
-                  // 仅在theme不为null时包含
-                  ...(updatedInfo.theme && { theme: updatedInfo.theme })
-                };
-                
-                // 保存到数据库并等待完成
-                const success = await updateUserProfile(profileInput);
-                console.log('保存头像到数据库结果:', success ? '成功' : '失败');
-                
-                // 如果保存失败，强制重新获取用户数据
-                if (!success) {
-                  window.location.reload(); // 最后的手段：刷新整个页面
-                }
-              } catch (error) {
-                console.error('处理头像变更时出错:', error);
-                alert('更新头像失败，请稍后再试');
-              }
-            }}
+            onAvatarChange={handleAvatarChange}
           />
         </div>
         
         {/* 资料完整度 */}
         <ProfileCompleteness 
-          userInfo={userInfo} 
+          userProfile={userProfile}
           onEditClick={() => setIsEditModalOpen(true)}
           onAvatarClick={handleAvatarClick}
         />
@@ -360,7 +214,7 @@ export default function DashboardPage() {
         {/* 个人资料内容 */}
         <ProfileContent 
           session={session}
-          userInfo={userInfo}
+          userProfile={userProfile}
           isLoading={profileLoading || passwordLoading}
         />
       </div>
@@ -370,11 +224,15 @@ export default function DashboardPage() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title="编辑个人信息"
-        footer={renderEditFooter()}
       >
-        <EditProfileForm 
-          userInfo={userInfo}
-          onInputChange={handleInputChange}
+        <UserProfileForm 
+          userProfile={userProfile}
+          onUpdate={updateUserProfile}
+          onComplete={() => {
+            setIsEditModalOpen(false)
+            toast.success('个人信息已更新')
+          }}
+          onCancel={() => setIsEditModalOpen(false)}
         />
       </Modal>
 
