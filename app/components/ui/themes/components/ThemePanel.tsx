@@ -6,7 +6,8 @@ import {
   applyTheme as applyThemeService,
   getAllThemes,
   saveCustomTheme,
-  deleteCustomTheme
+  deleteCustomTheme,
+  THEME_STORAGE_KEY
 } from '../theme-service';
 import { ThemeStyle } from '../theme-definitions';
 
@@ -105,24 +106,44 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     setSelectedTheme(themeId);
     
     try {
+      console.log(`开始应用主题: ${themeId}`);
+      
+      // 优先保存到本地存储，确保即使服务器保存失败也能应用主题
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+        console.log(`主题 ${themeId} 已保存到本地存储`);
+      }
+      
+      // 优先应用主题到UI，防止后续步骤出错导致主题不应用
+      applyThemeService(themeId);
+      console.log(`主题 ${themeId} 已本地应用`);
+      
       // 使用onThemeChange回调保存到服务器
-      const success = await onThemeChange(themeId);
-      if (success) {
-        // 应用主题 - 使用全局服务
-        applyThemeService(themeId);
-        console.log(`主题 ${themeId} 已成功应用`);
-      } else {
-        console.error(`主题 ${themeId} 应用失败`);
-        // 恢复之前的主题
-        if (currentTheme) {
-          setSelectedTheme(currentTheme);
+      try {
+        console.log(`正在将主题 ${themeId} 同步到服务器...`);
+        const success = await onThemeChange(themeId);
+        
+        if (success) {
+          console.log(`主题 ${themeId} 已成功同步到服务器`);
+        } else {
+          console.error(`主题 ${themeId} 服务器同步失败，但已本地应用并保存`);
+          
+          // 只有在失败时才显示提示，避免打扰用户体验
+          if (themeId.startsWith('custom_')) {
+            alert(`自定义主题已在本地应用，但未能同步到服务器。下次登录时可能需要重新选择主题。`);
+          }
         }
-        // 显示错误消息
-        alert(`主题应用失败，请稍后再试。`);
+      } catch (error) {
+        console.error(`同步主题到服务器出错:`, error);
+        
+        // 只对自定义主题显示错误提示
+        if (themeId.startsWith('custom_')) {
+          alert(`自定义主题已在本地应用，但未能同步到服务器。下次登录时可能需要重新选择主题。`);
+        }
       }
     } catch (error) {
       console.error(`应用主题时出错:`, error);
-      // 恢复之前的主题
+      // 恢复之前的主题选择状态
       if (currentTheme) {
         setSelectedTheme(currentTheme);
       }
@@ -213,30 +234,58 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     let userId = '';
     if (typeof window !== 'undefined') {
       userId = localStorage.getItem('user-id') || `user_${Date.now()}`;
+      
+      // 确保userId不包含特殊字符，使用encodeURIComponent处理
+      userId = encodeURIComponent(userId).replace(/%/g, '');
+      
+      // 限制userId长度
+      if (userId.length > 20) {
+        userId = userId.substring(0, 20);
+      }
     }
     
-    // 生成唯一ID - 使用时间戳、用户ID和随机数组合
-    const customThemeId = `custom_${userId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    // 生成唯一ID - 使用简短的格式
+    // 使用6位时间戳和3位随机数，确保ID简短
+    const timestamp = Date.now().toString().slice(-6);
+    const randomNum = Math.floor(Math.random() * 1000);
+    const customThemeId = `custom_${userId}_${timestamp}_${randomNum}`;
+    
+    console.log(`创建自定义主题: ${customThemeId}`);
     
     try {
-      // 保存自定义主题到本地存储
+      // 步骤1: 先保存到本地存储
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, customThemeId);
+        console.log(`自定义主题 ${customThemeId} 已保存到本地存储`);
+      }
+      
+      // 步骤2: 保存自定义主题到主题库
       const saveSuccess = saveCustomTheme(customThemeId, fullCustomTheme);
       
       if (saveSuccess) {
-        // 应用新主题
+        // 步骤3: 应用主题到UI
         applyThemeService(customThemeId);
+        console.log(`自定义主题 ${customThemeId} 已本地应用`);
         
-        // 尝试保存到服务器
-        const serverSuccess = await onThemeChange(customThemeId);
+        // 返回到主题列表并选中新创建的主题
+        setIsCustomizing(false);
+        setSelectedTheme(customThemeId);
         
-        if (serverSuccess) {
-          // 返回到主题列表并选中新创建的主题
-          setIsCustomizing(false);
-          setSelectedTheme(customThemeId);
-        } else {
-          alert('主题已在本地应用，但未能保存到服务器');
-        }
+        // 步骤4: 尝试同步到服务器（非阻塞操作）
+        console.log(`正在将自定义主题 ${customThemeId} 同步到服务器...`);
+        onThemeChange(customThemeId)
+          .then(success => {
+            if (success) {
+              console.log(`自定义主题 ${customThemeId} 已成功同步到服务器`);
+            } else {
+              console.warn(`自定义主题 ${customThemeId} 服务器同步失败，但本地创建成功`);
+            }
+          })
+          .catch(error => {
+            console.error('同步自定义主题到服务器出错:', error);
+          });
       } else {
+        console.error(`保存自定义主题到主题库失败`);
         alert('保存自定义主题失败，请稍后再试');
       }
     } catch (error) {

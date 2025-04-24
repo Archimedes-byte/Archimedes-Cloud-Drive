@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import styles from '@/app/file-management/styles/SortDropdown.module.css';
-import { FileSortInterface, SortDirectionEnum, FileSortEnum, SortField } from '@/app/types';
+import styles from './SortDropdown.module.css';
+import { FileSortInterface, SortDirectionEnum, SortField } from '@/app/types';
 
 interface SortDropdownProps {
   sortOrder: FileSortInterface;

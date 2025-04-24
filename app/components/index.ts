@@ -22,9 +22,19 @@
  * 为保持向后兼容性，所有组件可以从根路径直接导入
  */
 
-// 从新的目录结构中重新导出组件
+// 从主要目录结构导出所有组件
 // UI组件
 export * from './ui';
+
+// 通用组件
+export * from './common/form';
+export * from './common/media';
+
+// 业务功能组件
+export * from './features';
+
+// 注：不要在此处直接导出子组件，应从各自的目录进行导出
+// 这样可以避免重复导出和命名冲突
 
 // 导航组件 - 已迁移到file-management/navigation目录
 // export { default as Navbar } from './features/dashboard/navigation/navbar';
@@ -52,9 +62,6 @@ export * from './features/user-profile/avatar';
 
 // 认证组件
 export * from './features/auth';
-
-// 表单组件
-export * from './common/form';
 
 // 反馈组件
 export { ToastProvider, useToast } from './features/dashboard/toaster/Toaster';

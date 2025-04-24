@@ -217,6 +217,9 @@ export class FavoriteService {
    */
   async getOrCreateDefaultFolder(userId: string): Promise<FavoriteFolderInfo> {
     try {
+      // 先检查并修复可能存在的多个默认收藏夹问题
+      await this.fixMultipleDefaultFolders(userId);
+      
       // 查找默认收藏夹
       let defaultFolder = await prisma.favoriteFolder.findFirst({
         where: { userId, isDefault: true }
@@ -224,6 +227,7 @@ export class FavoriteService {
 
       // 如果不存在默认收藏夹，创建一个
       if (!defaultFolder) {
+        console.log(`[收藏夹服务] 用户 ${userId} 没有默认收藏夹，正在创建...`);
         defaultFolder = await prisma.favoriteFolder.create({
           data: {
             name: '默认收藏夹',
@@ -231,6 +235,7 @@ export class FavoriteService {
             userId
           }
         });
+        console.log(`[收藏夹服务] 已为用户 ${userId} 创建默认收藏夹，ID: ${defaultFolder.id}`);
       }
 
       return defaultFolder;
@@ -653,6 +658,51 @@ export class FavoriteService {
     } catch (error) {
       console.error('[收藏夹服务] 修复多个默认收藏夹问题失败:', error);
       return false;
+    }
+  }
+
+  /**
+   * 批量修复所有用户的默认收藏夹问题
+   * 可在系统启动时调用此方法进行全面修复
+   */
+  async batchFixAllUsersDefaultFolders(): Promise<{ total: number, fixed: number }> {
+    try {
+      console.log('[收藏夹服务] 开始批量修复所有用户的默认收藏夹问题');
+      
+      // 找出所有存在多个默认收藏夹的用户
+      const result = await prisma.$queryRaw`
+        SELECT userId, COUNT(*) as count 
+        FROM FavoriteFolder 
+        WHERE isDefault = true 
+        GROUP BY userId 
+        HAVING COUNT(*) > 1
+      `;
+      
+      const usersWithMultipleDefaults = result as { userId: string, count: number }[];
+      
+      if (usersWithMultipleDefaults.length === 0) {
+        console.log('[收藏夹服务] 没有用户存在多个默认收藏夹问题');
+        return { total: 0, fixed: 0 };
+      }
+      
+      console.log(`[收藏夹服务] 发现 ${usersWithMultipleDefaults.length} 个用户存在多个默认收藏夹问题`);
+      
+      // 修复每个用户的问题
+      let fixedCount = 0;
+      for (const user of usersWithMultipleDefaults) {
+        const fixed = await this.fixMultipleDefaultFolders(user.userId);
+        if (fixed) fixedCount++;
+      }
+      
+      console.log(`[收藏夹服务] 已修复 ${fixedCount}/${usersWithMultipleDefaults.length} 个用户的默认收藏夹问题`);
+      
+      return {
+        total: usersWithMultipleDefaults.length,
+        fixed: fixedCount
+      };
+    } catch (error) {
+      console.error('[收藏夹服务] 批量修复默认收藏夹问题失败:', error);
+      return { total: 0, fixed: 0 };
     }
   }
 } 

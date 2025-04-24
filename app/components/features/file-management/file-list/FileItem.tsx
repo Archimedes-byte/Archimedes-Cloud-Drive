@@ -4,8 +4,12 @@ import { ExtendedFile } from '@/app/types';
 import { formatFileSize } from '@/app/utils/file/format';
 import { formatDate } from '@/app/utils/file/format';
 import { getFileIcon, getFileType } from '@/app/utils/file/type';
-import styles from '@/app/shared/themes/components/fileList.module.css';
+import styles from './FileItem.module.css';
 
+/**
+ * 文件项组件 - 重构版本
+ * 该组件用于在文件列表中展示单个文件项
+ */
 interface FileItemProps {
   file: ExtendedFile;
   onClick: (file: ExtendedFile) => void;
@@ -53,6 +57,7 @@ const FileItem: React.FC<FileItemProps> = ({ file, onClick, onSelect, isSelected
     <div 
       className={`${styles.fileItem} ${isSelected ? styles.selected : ''}`}
       onClick={handleFileItemClick}
+      data-testid={`file-item-${file.id}`}
     >
       {onSelect && (
         <div className={styles.checkboxContainer} onClick={(e) => e.stopPropagation()}>

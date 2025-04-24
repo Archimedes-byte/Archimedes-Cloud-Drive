@@ -6,12 +6,11 @@ import {
   Space, Spin, Empty, message, Divider 
 } from 'antd';
 import { 
-  Star, FolderPlus, Plus, Edit, Trash2, Check
-} from 'lucide-react';
+  Star, FolderPlus, Edit, Trash2} from 'lucide-react';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 import styles from './favorite-modal.module.css';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Item } = Form;
 
 interface FavoriteModalProps {
@@ -251,35 +250,45 @@ export default function FavoriteModal({
           {showCreateForm && (
             <div className={styles.createForm}>
               <Form layout="vertical">
-                <Item label="收藏夹名称" required>
+                <Item
+                  label={editingFolder ? "修改收藏夹名称" : "收藏夹名称"}
+                  required
+                >
                   <Input
+                    placeholder="请输入收藏夹名称"
                     value={folderName}
                     onChange={(e) => setFolderName(e.target.value)}
-                    placeholder="请输入收藏夹名称"
+                    maxLength={50}
                     disabled={creating}
                   />
                 </Item>
-                <Item label="描述">
+                <Item
+                  label="描述"
+                >
                   <Input.TextArea
+                    placeholder="收藏夹描述（可选）"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="请输入收藏夹描述（可选）"
                     rows={2}
+                    maxLength={200}
+                    showCount
                     disabled={creating}
                   />
                 </Item>
                 <Item>
-                  <Space>
-                    <Button
-                      type="primary"
-                      icon={editingFolder ? <Check size={16} /> : <Plus size={16} />}
-                      onClick={editingFolder ? handleUpdateFolder : handleCreateFolder}
-                      loading={creating}
+                  <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                    <Button 
+                      onClick={cancelEdit}
+                      disabled={creating}
                     >
-                      {editingFolder ? '更新收藏夹' : '创建收藏夹'}
-                    </Button>
-                    <Button onClick={cancelEdit} disabled={creating}>
                       取消
+                    </Button>
+                    <Button 
+                      type="primary"
+                      loading={creating}
+                      onClick={editingFolder ? handleUpdateFolder : handleCreateFolder}
+                    >
+                      {editingFolder ? '更新' : '创建'}
                     </Button>
                   </Space>
                 </Item>

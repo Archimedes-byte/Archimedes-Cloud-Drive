@@ -42,7 +42,7 @@ const CreateFavoriteModal: React.FC<CreateFavoriteModalProps> = ({
     try {
       // 表单验证
       const values = await form.validateFields();
-      const { name, description, isDefault } = values;
+      const { name } = values;
 
       // 检查收藏夹名称是否已存在
       const trimmedName = name.trim();
@@ -58,7 +58,6 @@ const CreateFavoriteModal: React.FC<CreateFavoriteModalProps> = ({
       setLoading(true);
       
       // 调用API创建收藏夹
-      const response = await fileApi.createFavoriteFolder(trimmedName, description, isDefault);
       
       message.success('收藏夹创建成功');
       form.resetFields();

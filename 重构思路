@@ -1,6 +1,0 @@
-// 1. 将register-form/index.tsx移动到register/RegisterForm.tsx
-// 2. 将register-form/RegisterForm.module.css移动到register/RegisterForm.module.css
-// 3. 关于login-form和social-login的问题，这两个是不同功能的组件:
-//    - login-form负责邮箱密码登录表单
-//    - social-login是社交媒体登录按钮组件
-//    它们被分开是合理的，因为它们负责不同的功能，可以独立使用 

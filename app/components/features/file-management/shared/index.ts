@@ -7,5 +7,4 @@
 // 导出当前目录中的组件
 export * from './skeleton';
 export * from './error-display';
-export * from './Skeleton';
-export * from './ErrorDisplay'; 
+// 删除重复导出的 Skeleton 

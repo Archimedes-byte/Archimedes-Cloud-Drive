@@ -269,16 +269,22 @@ export const useFiles = () => {
   /**
    * 选择文件类型进行过滤
    */
-  const filterByFileType = useCallback((type: FileTypeEnum | null, onClearSpecialViews?: () => void) => {
-    // 如果提供了视图清理函数，先调用它清除特殊视图状态
-    if (onClearSpecialViews) {
-      onClearSpecialViews();
-    }
+  const filterByFileType = useCallback((type: FileTypeEnum | null) => {
+    console.log('filterByFileType被调用，文件类型:', type);
     
+    // 更新选中的文件类型
     setSelectedFileType(type);
+    console.log('设置selectedFileType为:', type);
     
     // 类型改变时重新加载文件
-    loadFiles(currentFolderId, type);
+    console.log('准备加载文件列表，参数:', {folderId: currentFolderId, type});
+    loadFiles(currentFolderId, type, true) // 添加true参数强制刷新
+      .then(() => {
+        console.log('文件类型过滤完成，加载成功');
+      })
+      .catch(error => {
+        console.error('文件类型过滤时出错:', error);
+      });
   }, [currentFolderId, loadFiles]);
 
   /**

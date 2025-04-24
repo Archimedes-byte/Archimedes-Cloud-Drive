@@ -311,6 +311,14 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
         fetchFavorites();
         // 刷新收藏夹列表，更新文件计数
         fetchFolderList();
+        
+        // 发布取消收藏事件，通知其他组件更新状态
+        // 使用自定义事件通知应用的其他部分
+        const unfavoriteEvent = new CustomEvent('unfavorite_files', { 
+          detail: { fileIds: favoriteIds } 
+        });
+        window.dispatchEvent(unfavoriteEvent);
+        console.log('已发布取消收藏事件:', favoriteIds);
       } else {
         message.error(data.error || '取消收藏失败');
         console.error('取消收藏失败原因:', data.error);

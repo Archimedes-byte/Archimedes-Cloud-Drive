@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { getFileTypeByExtension } from '@/app/utils/file/type';
 import { 
   File, X, Download, FileText, Folder,

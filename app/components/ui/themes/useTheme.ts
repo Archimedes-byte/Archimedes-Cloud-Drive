@@ -4,7 +4,8 @@ import {
   getThemeStyle, 
   loadThemeFromStorage, 
   THEME_CHANGE_EVENT,
-  addThemeChangeListener
+  addThemeChangeListener,
+  THEME_STORAGE_KEY
 } from './theme-service';
 import { ThemeStyle } from './theme-definitions';
 
@@ -70,6 +71,12 @@ export function useTheme(options: UseThemeOptions = {}): UseThemeReturn {
       setCurrentTheme(themeId);
       setThemeStyle(getThemeStyle(themeId));
       
+      // 保存主题到localStorage，如果saveToStorage为true
+      if (saveToStorage && typeof window !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+        console.log(`主题 ${themeId} 已保存到本地存储`);
+      }
+      
       // 调用回调
       if (onThemeChange) {
         onThemeChange(themeId, getThemeStyle(themeId));
@@ -79,7 +86,7 @@ export function useTheme(options: UseThemeOptions = {}): UseThemeReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [onThemeChange]);
+  }, [onThemeChange, saveToStorage]);
 
   // 监听外部主题变更
   useEffect(() => {

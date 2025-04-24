@@ -74,19 +74,38 @@ function initCustomThemes(): void {
     const storedThemes = localStorage.getItem(userSpecificKey);
     
     if (storedThemes) {
-      customThemes = JSON.parse(storedThemes);
-      console.log(`已加载用户自定义主题(${userSpecificKey}):`, Object.keys(customThemes).length);
+      try {
+        const parsedThemes = JSON.parse(storedThemes);
+        customThemes = parsedThemes;
+        
+        // 记录加载的主题列表，方便调试
+        const themeIds = Object.keys(customThemes);
+        console.log(`已加载用户自定义主题(${userSpecificKey}):`, themeIds.length);
+        themeIds.forEach(id => {
+          console.log(`-- 自定义主题: ${id}, 名称: ${customThemes[id].name || '未命名'}`);
+        });
+      } catch (parseError) {
+        console.error('解析自定义主题JSON失败:', parseError);
+        customThemes = {};
+      }
     } else {
       // 检查是否存在旧的非用户特定的主题数据，可能是迁移场景
       const oldStoredThemes = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
       if (oldStoredThemes && userSpecificKey !== CUSTOM_THEMES_STORAGE_KEY) {
         console.log('发现旧的自定义主题数据，正在迁移到用户特定存储...');
-        customThemes = JSON.parse(oldStoredThemes);
-        // 迁移到新的用户特定存储
-        localStorage.setItem(userSpecificKey, oldStoredThemes);
-        // 清理旧数据
-        localStorage.removeItem(CUSTOM_THEMES_STORAGE_KEY);
+        try {
+          customThemes = JSON.parse(oldStoredThemes);
+          // 迁移到新的用户特定存储
+          localStorage.setItem(userSpecificKey, oldStoredThemes);
+          // 清理旧数据
+          localStorage.removeItem(CUSTOM_THEMES_STORAGE_KEY);
+          console.log('自定义主题迁移完成');
+        } catch (parseError) {
+          console.error('迁移过程中解析旧自定义主题失败:', parseError);
+          customThemes = {};
+        }
       } else {
+        console.log('未找到自定义主题数据，使用空对象初始化');
         customThemes = {};
       }
     }
@@ -94,6 +113,50 @@ function initCustomThemes(): void {
     console.error('加载自定义主题失败:', error);
     customThemes = {};
   }
+}
+
+/**
+ * 重新初始化自定义主题
+ * 用于手动触发重新加载自定义主题的场景
+ * @returns 加载的自定义主题数量
+ */
+export function reinitCustomThemes(): number {
+  console.log('手动重新初始化自定义主题');
+  
+  // 备份当前主题ID，用于检测变化
+  const previousThemeIds = Object.keys(customThemes);
+  
+  // 重新初始化
+  initCustomThemes();
+  
+  // 检查是否有变化
+  const currentThemeIds = Object.keys(customThemes);
+  const added = currentThemeIds.filter(id => !previousThemeIds.includes(id));
+  const removed = previousThemeIds.filter(id => !currentThemeIds.includes(id));
+  
+  if (added.length > 0) {
+    console.log('新增自定义主题:', added);
+  }
+  
+  if (removed.length > 0) {
+    console.log('移除自定义主题:', removed);
+  }
+  
+  // 更新主题数组，确保内存中的themes列表包含所有自定义主题
+  currentThemeIds.forEach(themeId => {
+    const existingIndex = themes.findIndex(t => t.id === themeId);
+    if (existingIndex === -1) {
+      // 添加到themes数组
+      themes.push({
+        id: themeId,
+        name: customThemes[themeId].name || themeId,
+        type: 'custom'
+      });
+      console.log(`将自定义主题 ${themeId} 添加到主题列表`);
+    }
+  });
+  
+  return currentThemeIds.length;
 }
 
 /**
@@ -262,10 +325,17 @@ function applyCustomTheme(themeId: string): ThemeStyle {
  * @returns 应用的主题样式对象
  */
 export const applyTheme = (themeId: string, dispatchEvent = true): ThemeStyle | null => {
-  // 避免重复应用相同主题，防止循环调用
+  // 避免重复应用相同主题，防止循环调用，但仍然返回主题样式以便保存到localStorage
   if (lastAppliedTheme === themeId) {
-    console.log('跳过重复应用相同主题:', themeId);
-    return null;
+    console.log('相同主题重新应用:', themeId);
+    const style = getThemeStyle(themeId);
+    // 即使是同一个主题，我们也保存它
+    lastAppliedTheme = themeId;
+    // 保存当前主题到localStorage以确保持久化
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(THEME_STORAGE_KEY, themeId);
+    }
+    return style;
   }
 
   // 防止函数重入导致的循环
@@ -283,6 +353,14 @@ export const applyTheme = (themeId: string, dispatchEvent = true): ThemeStyle | 
     
     // 检查自定义主题
     if (themeId.startsWith('custom_')) {
+      // 如果是自定义主题但在内存中找不到，尝试重新初始化
+      if (!customThemes[themeId]) {
+        console.log(`自定义主题${themeId}不在内存中，尝试重新初始化`);
+        // 重新加载自定义主题
+        initCustomThemes();
+      }
+      
+      // 再次检查自定义主题是否存在
       if (customThemes[themeId]) {
         themeStyle = applyCustomTheme(themeId);
         // 应用主题成功后，保存最后应用的主题ID
@@ -290,8 +368,10 @@ export const applyTheme = (themeId: string, dispatchEvent = true): ThemeStyle | 
         // 更新body的data-theme属性
         document.body.dataset.theme = themeId;
       } else {
-        console.error(`自定义主题不存在: ${themeId}`);
-        return null;
+        console.error(`自定义主题仍然不存在: ${themeId}，切换到默认主题`);
+        // 如果自定义主题确实找不到，应用默认主题但不更改lastAppliedTheme
+        themeStyle = applyPresetTheme('default');
+        return themeStyle; // 提前返回，不触发事件和保存
       }
     } else {
       // 获取预设主题对象
@@ -314,6 +394,11 @@ export const applyTheme = (themeId: string, dispatchEvent = true): ThemeStyle | 
       document.body.dataset.theme = themeId;
     }
     
+    // 保存当前主题到localStorage以确保持久化
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(THEME_STORAGE_KEY, themeId);
+    }
+    
     // 触发主题变更事件
     if (dispatchEvent && typeof window !== 'undefined' && themeStyle) {
       console.log('触发主题变更事件:', themeId);
@@ -323,6 +408,9 @@ export const applyTheme = (themeId: string, dispatchEvent = true): ThemeStyle | 
     }
     
     return themeStyle;
+  } catch (error) {
+    console.error('应用主题出错:', error);
+    return null;
   } finally {
     isApplyingTheme = false;
   }

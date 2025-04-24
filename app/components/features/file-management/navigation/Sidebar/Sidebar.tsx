@@ -118,8 +118,11 @@ export function Sidebar({
 
   // 使用useCallback优化处理类型点击事件，更新统一的活动视图
   const handleTypeClick = useCallback((type: FileType) => {
+    console.log('Sidebar: 文件类型点击 -', type);
     setInternalActiveView(type);
+    console.log('Sidebar: 内部活动视图已更新为:', type);
     onTypeClick(type);
+    console.log('Sidebar: 已调用onTypeClick回调');
   }, [onTypeClick]);
 
   // 添加按标签搜索处理函数

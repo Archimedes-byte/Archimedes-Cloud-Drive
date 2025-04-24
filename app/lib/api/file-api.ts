@@ -513,6 +513,19 @@ export const fileApi = {
     return handleResponse<{ count: number }>(response);
   },
   
+  // 切换收藏状态
+  async toggleFavorite(fileId: string, isFavorite: boolean): Promise<{ success: boolean, count: number }> {
+    if (isFavorite) {
+      // 添加到收藏
+      const result = await this.addToFavorites([fileId]);
+      return { success: true, count: result.count };
+    } else {
+      // 从收藏中移除
+      const result = await this.removeFromFavorites([fileId]);
+      return { success: true, count: result.count };
+    }
+  },
+  
   // 获取收藏列表
   async getFavorites(page = 1, pageSize = 50): Promise<PaginatedResponse<FileInfo>> {
     const queryParams = new URLSearchParams();

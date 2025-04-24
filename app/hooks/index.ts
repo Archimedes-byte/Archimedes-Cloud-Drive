@@ -22,6 +22,11 @@ export * from './file/useFileSearch';
 export * from './file/useFilePreview';
 export * from './file/useFileShare';
 export * from './file/useShareView';
+export * from './file/useRecentContent';
+
+// 视图相关hooks
+export * from './useViewState';
+export * from './useModalState';
 
 // 认证相关hooks
 export * from './auth/useAuth';

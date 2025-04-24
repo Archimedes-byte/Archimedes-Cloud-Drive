@@ -1,0 +1,75 @@
+/* 文件项组件样式 */
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  user-select: none;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 8px;
+  will-change: transform, opacity;
+}
+
+.fileItem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  border-color: rgba(66, 153, 225, 0.3);
+}
+
+.fileItem.selected {
+  background-color: rgba(49, 130, 206, 0.05);
+  border-color: rgba(66, 153, 225, 0.5);
+}
+
+.checkboxContainer {
+  margin-right: 10px;
+}
+
+.checkbox {
+  cursor: pointer;
+}
+
+.fileIcon {
+  color: #718096;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileDetails {
+  flex: 1;
+  min-width: 0; /* 确保flex item可以正确缩小 */
+}
+
+.fileName {
+  font-weight: 500;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1a202c;
+  font-size: 14px;
+}
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #718096;
+  margin-top: 2px;
+}
+
+.fileType, .fileSize, .fileDate {
+  white-space: nowrap;
+}
+
+.fileDivider {
+  margin: 0 4px;
+  color: #cbd5e0;
+} 

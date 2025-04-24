@@ -284,6 +284,13 @@ export class StorageService {
   }): Promise<FileInfo> {
     return this.managementService.updateFile(userId, fileId, updates);
   }
+
+  /**
+   * 批量修复所有用户的默认收藏夹问题
+   */
+  async batchFixAllUsersDefaultFolders(): Promise<{ total: number, fixed: number }> {
+    return this.favoriteService.batchFixAllUsersDefaultFolders();
+  }
 }
 
 // 导出FileEntityToFileInfo转换函数，用于向后兼容

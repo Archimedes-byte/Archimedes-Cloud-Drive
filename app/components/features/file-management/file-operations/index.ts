@@ -1,2 +1,2 @@
 // 导出fileOperations目录下的所有组件
-export * from './RenameModal'; 
+export * from './rename-modal'; 

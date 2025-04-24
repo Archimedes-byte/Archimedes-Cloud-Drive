@@ -75,14 +75,19 @@ export const useFilePreview = ({
     // 记录文件访问历史（只记录非文件夹）
     if (file && !file.isFolder && file.id) {
       try {
+        console.log(`🔍 记录文件访问: ${file.id} (${file.name})`);
         // 异步记录文件访问，不影响预览功能
-        fileApi.recordFileAccess(file.id).catch(error => {
-          console.error('记录文件访问失败:', error);
-          // 不向用户展示错误，避免影响体验
-        });
+        fileApi.recordFileAccess(file.id)
+          .then(result => {
+            console.log(`✅ 文件访问记录成功: ${file.id}, 结果:`, result);
+          })
+          .catch(error => {
+            console.error(`❌ 记录文件访问失败: ${file.id}`, error);
+            // 不向用户展示错误，避免影响体验
+          });
       } catch (error) {
         // 捕获任何可能的错误，确保不会影响主要功能
-        console.error('记录文件访问发生错误:', error);
+        console.error('❌ 记录文件访问发生错误:', error);
       }
     }
   }, []);
@@ -169,9 +174,10 @@ export const useFilePreview = ({
       // 无论扩展名是否变化，始终强制刷新整个文件列表
       if (onRefresh) {
         console.log('重命名成功后刷新文件列表');
+        // 确保刷新操作是异步的，在UI更新后执行一次
         setTimeout(() => {
           onRefresh();
-        }, 100); // 短暂延迟确保UI正常更新
+        }, 200);
       }
       
       // 同时也更新文件列表中的条目（在刷新之前保持UI连续性）
@@ -181,6 +187,7 @@ export const useFilePreview = ({
           ...updatedFile,
           _forceInclude: true // 添加标记
         } as any;
+        // 只进行一次更新，避免多次触发状态变化
         onFileUpdate(fileWithMark);
       }
       

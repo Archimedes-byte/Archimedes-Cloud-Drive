@@ -664,3 +664,5 @@ export const SearchView: React.FC<SearchViewProps> = ({
     </div>
   );
 };
+
+export { SearchContainer } from './search-container';

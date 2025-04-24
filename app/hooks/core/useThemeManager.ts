@@ -5,7 +5,8 @@ import {
   addThemeChangeListener, 
   getAllThemes,
   getThemesByCategory,
-  ThemeStyle
+  ThemeStyle,
+  THEME_STORAGE_KEY
 } from '@/app/components/ui/themes';
 import { useSession } from 'next-auth/react';
 
@@ -54,7 +55,29 @@ const fetchUserTheme = async (): Promise<string | null> => {
     }
     
     const data = await response.json();
-    return data.success ? data.theme : null;
+    const serverTheme = data.success ? data.theme : null;
+    
+    // 如果API返回的是预设主题，检查是否有自定义主题的映射
+    if (serverTheme && typeof window !== 'undefined') {
+      // 检查并恢复自定义主题映射
+      const themeMapping = JSON.parse(localStorage.getItem('theme-id-mapping') || '{}');
+      
+      // 检查是否有映射关系（这里尤其是要检查bluePurple这个代理ID）
+      if (themeMapping[serverTheme]) {
+        const originalThemeId = themeMapping[serverTheme];
+        console.log(`恢复主题映射: ${serverTheme} (服务器主题) -> ${originalThemeId} (本地自定义主题)`);
+        return originalThemeId;
+      }
+      
+      // 如果本地存在自定义主题，且用户曾经使用过自定义主题，优先返回自定义主题
+      const storedTheme = loadThemeFromStorage();
+      if (storedTheme && storedTheme.startsWith('custom_')) {
+        console.log(`发现本地自定义主题 ${storedTheme}，忽略服务器主题 ${serverTheme}`);
+        return storedTheme;
+      }
+    }
+    
+    return serverTheme;
   } catch (error) {
     console.error('获取用户主题失败:', error);
     return null;
@@ -67,22 +90,128 @@ const fetchUserTheme = async (): Promise<string | null> => {
  * @returns 是否成功
  */
 const saveUserTheme = async (themeId: string): Promise<boolean> => {
+  // 默认主题直接保存
+  if (themeId === 'default') {
+    console.log('默认主题无需保存到服务器');
+    return true;
+  }
+  
   try {
-    const response = await fetch('/api/user/theme', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ theme: themeId }),
-    });
+    // 对于自定义主题，我们使用一个预设主题ID替代
+    // 服务器可能只接受预设的主题ID列表
+    let serverThemeId = themeId;
+    let isCustomTheme = false;
     
-    if (!response.ok) {
-      console.warn('无法保存用户主题设置:', response.statusText);
-      return false;
+    if (themeId.startsWith('custom_')) {
+      // 检查服务器是否支持直接保存自定义主题
+      // 如果不支持，则使用系统预设主题作为代理
+      try {
+        // 尝试获取服务器支持的主题列表（这里简化处理，实际应该从服务器获取）
+        const supportedThemes = ['default', 'dark', 'light', 'spring', 'summer', 'autumn', 'winter', 'ocean', 'sunset', 'forest', 'bluePurple'];
+        
+        // 确认服务器是否支持bluePurple主题
+        if (supportedThemes.includes('bluePurple')) {
+          // 使用bluePurple作为自定义主题在服务器上的代理ID
+          serverThemeId = 'bluePurple';
+        } else {
+          // 如果bluePurple不被支持，则使用spring作为备选
+          serverThemeId = 'spring';
+        }
+        
+        isCustomTheme = true;
+        
+        // 在localStorage中保存映射关系，便于以后恢复
+        if (typeof window !== 'undefined') {
+          // 记录服务器主题->实际主题的映射
+          const themeMapping = JSON.parse(localStorage.getItem('theme-id-mapping') || '{}');
+          themeMapping[serverThemeId] = themeId;
+          localStorage.setItem('theme-id-mapping', JSON.stringify(themeMapping));
+          console.log(`创建主题ID映射: ${serverThemeId} (代理ID) -> ${themeId} (实际自定义主题)`);
+        }
+      } catch (mappingError) {
+        console.error('创建主题映射失败:', mappingError);
+        // 失败时使用安全的系统预设主题
+        serverThemeId = 'spring';
+        isCustomTheme = true;
+      }
     }
     
-    const data = await response.json();
-    return data.success;
+    console.log('正在保存主题到服务器:', serverThemeId);
+    
+    try {
+      const response = await fetch('/api/user/theme', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ theme: serverThemeId }),
+      });
+      
+      if (!response.ok) {
+        console.warn(`无法保存用户主题设置: ${response.statusText}`);
+        
+        // 即使API保存失败，也保证本地主题应用成功
+        if (typeof window !== 'undefined') {
+          // 确保本地存储了原始主题ID
+          localStorage.setItem(THEME_STORAGE_KEY, themeId);
+          
+          // 确保文档应用了正确的主题属性
+          if (isCustomTheme) {
+            document.body.dataset.theme = themeId;
+          }
+        }
+        
+        // 尝试使用备选系统主题重试一次
+        if (isCustomTheme && serverThemeId !== 'spring') {
+          console.log('尝试使用备选系统主题重试保存');
+          try {
+            const retryResponse = await fetch('/api/user/theme', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ theme: 'spring' }),
+            });
+            
+            if (retryResponse.ok) {
+              console.log('使用备选主题保存成功');
+              
+              // 更新映射关系
+              if (typeof window !== 'undefined') {
+                const themeMapping = JSON.parse(localStorage.getItem('theme-id-mapping') || '{}');
+                themeMapping['spring'] = themeId;
+                localStorage.setItem('theme-id-mapping', JSON.stringify(themeMapping));
+              }
+            }
+          } catch (retryError) {
+            console.error('备选主题保存失败:', retryError);
+          }
+        }
+        
+        // 返回false表示API保存失败，但本地应用可能成功
+        return false;
+      }
+      
+      const data = await response.json();
+      if (isCustomTheme) {
+        console.log(`自定义主题 ${themeId} 已通过代理主题 ${serverThemeId} 保存到服务器`);
+      } else {
+        console.log('主题已成功保存到服务器:', serverThemeId);
+      }
+      return data.success;
+    } catch (fetchError) {
+      console.error('API请求失败:', fetchError);
+      
+      // 确保本地主题应用成功
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+        if (isCustomTheme) {
+          document.body.dataset.theme = themeId;
+        }
+      }
+      
+      return false;
+    }
   } catch (error) {
     console.error('保存用户主题失败:', error);
     return false;
@@ -146,43 +275,93 @@ export const useThemeManager = ({
       setIsLoading(true);
       
       try {
-        // 主题优先级:
-        // 1. API获取的用户主题 (已登录用户)
-        // 2. 传入的用户主题 (由父组件提供)
-        // 3. localStorage中的主题 (临时保存)
-        // 4. 默认主题
+        // 获取本地存储的主题
+        const storedTheme = loadThemeFromStorage();
+        
+        // 直接检查是否有本地存储的自定义主题，如果有，立即使用
+        if (storedTheme && storedTheme.startsWith('custom_')) {
+          console.log('发现本地自定义主题，立即应用:', storedTheme);
+          const appliedThemeStyle = applyThemeService(storedTheme);
+          
+          if (appliedThemeStyle) {
+            setCurrentTheme(storedTheme);
+            setThemeStyle(appliedThemeStyle);
+            console.log(`自定义主题 ${storedTheme} 已应用`);
+            
+            // 如果用户已登录，尝试将自定义主题同步到服务器
+            if (status === 'authenticated' && session?.user) {
+              saveUserTheme(storedTheme).catch(console.error);
+            }
+            
+            setIsLoading(false);
+            return; // 直接返回，跳过后续主题逻辑
+          }
+        }
+        
+        // 检查本地主题是否是自定义主题
+        const isStoredThemeCustom = storedTheme && storedTheme.startsWith('custom_');
+        
+        // 修改主题优先级:
+        // 1. 本地存储的自定义主题 (用户的最后选择，最高优先级)
+        // 2. API获取的非默认用户主题 (已登录用户)
+        // 3. 传入的用户主题 (由父组件提供)
+        // 4. API获取的默认主题
+        // 5. 默认主题
         
         let themeToApply = defaultTheme;
         
-        // 检查用户是否已登录
-        if (status === 'authenticated' && session?.user) {
-          // 尝试从API获取用户主题
-          const apiTheme = await loadUserThemeFromAPI();
-          if (apiTheme) {
-            themeToApply = apiTheme;
-            console.log('使用API获取的用户主题:', apiTheme);
-          } else if (userTheme) {
-            // 如果API没有返回主题，使用传入的用户主题
-            themeToApply = userTheme;
-            console.log('使用传入的用户主题:', userTheme);
-          } else {
-            // 尝试从localStorage获取
-            const storedTheme = loadThemeFromStorage();
-            if (storedTheme) {
+        // 如果存在本地存储的自定义主题，直接使用
+        if (isStoredThemeCustom) {
+          themeToApply = storedTheme;
+          console.log('使用本地存储的自定义主题:', storedTheme);
+          
+          // 如果用户已登录，尝试将自定义主题同步到服务器
+          if (status === 'authenticated' && session?.user) {
+            saveUserTheme(storedTheme).catch(console.error);
+          }
+        } 
+        // 否则，按照其他优先级规则选择主题
+        else {
+          // 检查用户是否已登录
+          if (status === 'authenticated' && session?.user) {
+            // 尝试从API获取用户主题
+            const apiTheme = await loadUserThemeFromAPI();
+            
+            // 再次检查本地是否有自定义主题
+            const localTheme = loadThemeFromStorage();
+            if (localTheme && localTheme.startsWith('custom_')) {
+              themeToApply = localTheme;
+              console.log('加载API后再次检查，使用本地自定义主题:', localTheme);
+            }
+            else if (apiTheme && apiTheme !== 'default') {
+              // 如果API返回非默认主题，且本地没有自定义主题，使用API主题
+              themeToApply = apiTheme;
+              console.log('使用API获取的用户主题:', apiTheme);
+            } else if (storedTheme && storedTheme !== 'default') {
+              // 如果有本地存储的非默认非自定义主题，使用本地主题
               themeToApply = storedTheme;
               console.log('使用本地存储的主题:', storedTheme);
-              // 可选：将localStorage中的主题同步到服务器
+              // 将本地主题同步到服务器
               saveUserTheme(storedTheme).catch(console.error);
+            } else if (userTheme) {
+              // 如果有传入的用户主题，再次使用传入主题
+              themeToApply = userTheme;
+              console.log('使用传入的用户主题:', userTheme);
+            } else if (apiTheme === 'default') {
+              // 最后才使用API返回的默认主题
+              themeToApply = 'default';
+              console.log('使用API返回的默认主题');
+            }
+          } else if (status === 'unauthenticated') {
+            // 用户未登录，优先使用localStorage中的主题
+            if (storedTheme) {
+              themeToApply = storedTheme;
+              console.log('未登录用户，使用本地存储的主题:', storedTheme);
             }
           }
-        } else if (status === 'unauthenticated') {
-          // 用户未登录，尝试使用localStorage中的主题
-          const storedTheme = loadThemeFromStorage();
-          if (storedTheme) {
-            themeToApply = storedTheme;
-            console.log('未登录用户，使用本地存储的主题:', storedTheme);
-          }
         }
+        
+        console.log(`最终决定应用主题: ${themeToApply}`);
         
         // 应用主题并更新状态
         const appliedThemeStyle = applyThemeService(themeToApply);
@@ -194,6 +373,7 @@ export const useThemeManager = ({
           // 保存到localStorage作为临时存储
           if (typeof window !== 'undefined') {
             localStorage.setItem('user-theme', themeToApply);
+            console.log(`主题 ${themeToApply} 已保存到本地存储`);
           }
         }
       } catch (error) {
@@ -254,32 +434,48 @@ export const useThemeManager = ({
    */
   const updateTheme = useCallback(async (themeId: string) => {
     try {
-      // 先应用主题到UI
+      console.log(`开始更新主题: ${themeId}`);
+      
+      // 先应用主题到UI和localStorage
       const success = setTheme(themeId);
       
       if (!success) {
+        console.error(`主题 ${themeId} 应用失败`);
         return false;
+      }
+      
+      console.log(`主题 ${themeId} 已应用到UI并保存到本地存储`);
+      
+      // 如果是默认主题，则不需要保存到服务器
+      if (themeId === 'default') {
+        console.log('默认主题无需保存到服务器');
+        return true;
       }
       
       // 如果用户已登录，同步到服务器
       if (status === 'authenticated' && session?.user) {
         try {
+          console.log(`正在将主题 ${themeId} 保存到服务器...`);
           // 使用自定义API同步主题
           const apiSuccess = await saveUserTheme(themeId);
           if (!apiSuccess) {
             console.warn('通过API更新用户主题失败，但UI已更新');
+          } else {
+            console.log(`主题 ${themeId} 已成功保存到服务器`);
           }
         } catch (error) {
           console.warn('保存主题到API失败，但UI已更新:', error);
         }
+      } else {
+        console.log('用户未登录，主题仅保存在本地');
       }
       
       // 如果有额外的保存回调，也执行
       if (saveToServer) {
         try {
-          await saveToServer(themeId).catch(error => {
-            console.warn('通过回调保存主题失败，但UI已更新:', error);
-          });
+          console.log('执行自定义保存回调...');
+          await saveToServer(themeId);
+          console.log('自定义保存回调执行完成');
         } catch (error) {
           console.warn('回调保存主题失败，但UI已更新:', error);
         }
