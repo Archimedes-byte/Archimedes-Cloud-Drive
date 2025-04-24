@@ -29,19 +29,7 @@ async function resetDatabase() {
     
     console.log('所有表已清空');
     
-    // 可以在这里添加种子数据
-    console.log('添加种子数据...');
-    
-    // 示例：创建默认管理员用户
-    await prisma.user.create({
-      data: {
-        name: '管理员',
-        email: 'admin@example.com',
-        password: '$2a$10$qlakjdkadjadjlkadkasldkladjklasjkldajsldkj', // 示例哈希密码
-      }
-    });
-    
-    console.log('数据库重置完成!');
+
   } catch (error) {
     console.error('数据库重置失败:', error);
   } finally {

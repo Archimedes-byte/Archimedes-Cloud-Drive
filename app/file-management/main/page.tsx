@@ -1576,7 +1576,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
               message.warning('请选择要删除的文件');
               return;
             }
-            handleDelete(selectedFiles)
+            handleDelete(selectedFiles, handleRefreshFiles)
               .then(success => {
                 if (success) {
                   message.success('删除成功');

@@ -1,7 +1,7 @@
 import React from 'react';
 import { User, MapPin, Building, Globe, Briefcase } from 'lucide-react';
 import { UserInfo } from '@/app/dashboard/page';
-import { useValidation } from '@/app/dashboard/hooks/useValidation';
+import { useValidation } from '@/app/hooks';
 import { FormField } from '@/app/components/common/form';
 import styles from './EditProfileForm.module.css';
 

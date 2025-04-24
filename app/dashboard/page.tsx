@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react'
 // 导入自定义钩子
 import { useProfile, usePassword, UserProfileInput } from '@/app/hooks'
 import { useToast } from '@/app/components/features/dashboard/Toaster'
-import { useValidation } from './hooks/useValidation'
+import { useValidation } from '@/app/hooks'
 // 导入主题服务
 import { applyTheme as applyThemeService } from '@/app/components/ui/themes';
 

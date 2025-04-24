@@ -342,12 +342,35 @@ const UploadModal: React.FC<UploadModalProps> = ({
         if (fileItem.originalName && fileItem.originalName !== fileItem.name) {
           // 创建新的File对象或Blob以保留原始文件但更改名称
           // 由于File构造函数在某些浏览器可能不完全支持，这里使用Blob
-          const blob = new Blob([file], { type: file.type });
+          
+          // 获取原始文件扩展名和新文件扩展名
+          const getFileExtension = (fileName: string) => {
+            const lastDotIndex = fileName.lastIndexOf('.');
+            return lastDotIndex !== -1 ? fileName.substring(lastDotIndex + 1).toLowerCase() : '';
+          };
+          
+          const originalExt = getFileExtension(fileItem.originalName);
+          const newExt = getFileExtension(fileItem.name);
+          
+          // 判断文件类型是否应该保持不变
+          const shouldPreserveType = originalExt !== newExt || !newExt;
+          
+          // 如果新文件名没有扩展名或扩展名变了，则使用原始文件的类型
+          // 否则让浏览器根据新文件名的扩展名推断类型
+          const blob = new Blob([file], { 
+            type: shouldPreserveType ? file.type : '' 
+          });
+          
           formData.append('file', blob, fileItem.name);
           
           // 添加原始文件名和新文件名的映射
           formData.append(`originalName_${index}`, fileItem.originalName);
           formData.append(`newName_${index}`, fileItem.name);
+          
+          // 确保传递原始文件类型，防止服务器端无法正确识别
+          if (shouldPreserveType) {
+            formData.append(`fileType_${index}`, file.type);
+          }
         } else {
           // 使用原始文件
           formData.append('file', file);

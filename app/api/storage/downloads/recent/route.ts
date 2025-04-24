@@ -8,7 +8,7 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import prisma from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database';
 import { FileInfo, mapFileEntityToFileInfo } from '@/app/types';
 
 /**

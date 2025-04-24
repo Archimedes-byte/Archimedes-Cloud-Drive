@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import path from 'path';
 import { FILE_CATEGORIES } from '@/app/utils/file/type';
-import { getSignedUrl } from '@/app/lib/storage';
+import { getSignedUrl } from '@/app/lib/storage/file-handling';
 
 const storageService = new StorageService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');

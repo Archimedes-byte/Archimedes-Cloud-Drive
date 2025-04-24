@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Folder } from 'lucide-react';
 import { Button, message, Modal, Spin } from 'antd';
-import { downloadFolder } from '@/app/lib/download-utils';
+import { downloadFolder } from '@/app/lib/storage/utils/download';
 import { useFileOperations } from '@/app/hooks/file/useFileOperations';
 
 interface FolderDownloadButtonProps {

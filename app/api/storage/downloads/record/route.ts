@@ -8,7 +8,7 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import prisma from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database';
 
 /**
  * POST方法：记录文件下载历史

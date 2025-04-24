@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/app/lib/prisma';
-import { getFileStream } from '@/app/lib/storage/file-handler';
+import { getFileStream } from '@/app/lib/storage/file-handling/file-handler';
+import { db } from '@/app/lib/database';
 import { Readable } from 'stream';
 import JSZip from 'jszip';
 

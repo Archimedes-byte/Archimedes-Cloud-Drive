@@ -14,6 +14,9 @@ export * from './format';
 // 导出文件相关工具
 export * from './file';
 
+// 导出存储相关工具
+export * from './storage';
+
 // 导出错误处理工具
 // 类型导出
 export type { ErrorType, ErrorInfo } from './error';

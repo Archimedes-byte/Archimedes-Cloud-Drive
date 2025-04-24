@@ -4,6 +4,7 @@ import { FileWithSize } from './useFiles';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { fileApi } from '@/app/lib/api/file-api';
 import { FileInfo } from '@/app/types';
+import { downloadFile, downloadFolder } from '@/app/lib/storage/utils/download';
 
 /**
  * 文件操作接口
@@ -22,7 +23,7 @@ export interface FileOperations {
   /** 移动文件 */
   moveFiles: (fileIds: string[], targetFolderId: string) => Promise<boolean>;
   /** 删除文件 */
-  deleteFiles: (fileIds: string[]) => Promise<boolean>;
+  deleteFiles: (fileIds: string[], onSuccess?: () => void) => Promise<boolean>;
   /** 重命名文件 */
   renameFile: (fileId: string, newName: string, onSuccess?: (updatedFile: FileInfo) => void) => Promise<boolean>;
   /** 创建文件夹 */
@@ -97,100 +98,170 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       const startTime = Date.now();
       console.log(`开始下载文件: ${fileIds.join(', ')}`);
 
-      // 使用POST方法处理下载
-      const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileIds }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || '下载失败');
-      }
-
-      // 获取文件Blob
-      const blob = await response.blob();
-      console.log(`文件下载响应接收完成，大小: ${(blob.size / 1024).toFixed(2)} KB, 耗时: ${Date.now() - startTime}ms`);
+      let success = false;
       
-      // 检查blob是否为空
-      if (blob.size === 0) {
-        throw new Error('下载的文件为空，请重试');
-      }
-      
-      // 从响应头获取文件名和内容类型
-      const contentDisposition = response.headers.get('Content-Disposition') || '';
-      const contentType = response.headers.get('Content-Type') || 'application/octet-stream';
-      let fileName = '下载文件';
-      
-      // 尝试从响应头中提取文件名
-      const filenameMatch = contentDisposition.match(/filename="?(.+?)"?(?:;|$)/);
-      if (filenameMatch && filenameMatch[1]) {
-        fileName = decodeURIComponent(filenameMatch[1]);
-      } else if (fileIds.length === 1) {
-        // 如果是单个文件且无法从响应头获取文件名，尝试从文件信息中获取
-        try {
-          const fileInfo = await fileApi.getFile(fileIds[0]);
-          if (fileInfo && fileInfo.name) {
-            fileName = fileInfo.name;
-          }
-        } catch (e) {
-          console.warn('获取文件名称失败，使用默认文件名', e);
-        }
-      } else {
-        // 多文件下载默认使用zip扩展名
-        fileName = '下载文件.zip';
-      }
-
-      // 确保文件名有扩展名
-      if (!fileName.includes('.') && contentType && contentType !== 'application/octet-stream') {
-        const extension = contentType.split('/')[1];
-        if (extension && !['octet-stream', 'unknown'].includes(extension)) {
-          fileName = `${fileName}.${extension}`;
-        }
-      }
-
-      console.log(`准备下载文件: ${fileName}, 类型: ${contentType}`);
-
-      // 创建下载链接 - 使用更安全可靠的方式
-      const url = URL.createObjectURL(new Blob([blob], { type: contentType }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      link.style.display = 'none';
-      
-      // 触发下载
-      document.body.appendChild(link);
-      link.click();
-      
-      // 清理 - 使用更可靠的方式
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        console.log(`文件下载过程完成: ${fileName}`);
-      }, 200);
-      
-      // 记录下载历史
-      // 如果是单个文件下载
+      // 如果是单个文件夹，使用文件夹下载功能
       if (fileIds.length === 1) {
         try {
-          await fileApi.recordFileDownload(fileIds[0]);
+          const fileInfo = await fileApi.getFile(fileIds[0]);
+          if (fileInfo && fileInfo.isFolder) {
+            console.log(`检测到文件夹下载: ${fileInfo.name}`);
+            // 使用改进的文件夹下载函数
+            success = await downloadFolder(fileIds[0], fileInfo.name);
+            
+            if (success) {
+              // 记录下载历史
+              try {
+                await fileApi.recordFileDownload(fileIds[0]);
+              } catch (error) {
+                console.warn('记录下载历史失败:', error);
+                // 但不影响下载成功的状态
+              }
+              
+              return true;
+            }
+          }
+        } catch (error) {
+          console.warn('获取文件信息失败，尝试通用下载方式', error);
+        }
+      }
+      
+      // 对于单个非文件夹文件，或者多文件
+      try {
+        // 使用POST方法处理下载
+        const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          body: JSON.stringify({ fileIds }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || '下载失败');
+        }
+
+        // 获取文件Blob
+        const blob = await response.blob();
+        console.log(`文件下载响应接收完成，大小: ${(blob.size / 1024).toFixed(2)} KB, 耗时: ${Date.now() - startTime}ms`);
+        
+        // 检查blob是否为空
+        if (blob.size === 0) {
+          throw new Error('下载的文件为空，请重试');
+        }
+        
+        // 从响应头获取文件名和内容类型
+        const contentDisposition = response.headers.get('Content-Disposition') || '';
+        const contentType = response.headers.get('Content-Type') || 'application/octet-stream';
+        let fileName = '下载文件';
+        
+        // 尝试从响应头中提取文件名
+        const filenameMatch = contentDisposition.match(/filename="?(.+?)"?(?:;|$)/);
+        if (filenameMatch && filenameMatch[1]) {
+          fileName = decodeURIComponent(filenameMatch[1]);
+        } else if (fileIds.length === 1) {
+          // 如果是单个文件且无法从响应头获取文件名，尝试从文件信息中获取
+          try {
+            const fileInfo = await fileApi.getFile(fileIds[0]);
+            if (fileInfo && fileInfo.name) {
+              fileName = fileInfo.name;
+            }
+          } catch (e) {
+            console.warn('获取文件名称失败，使用默认文件名', e);
+          }
+        } else {
+          // 多文件下载默认使用zip扩展名
+          fileName = '下载文件.zip';
+        }
+
+        // 确保文件名有扩展名
+        if (!fileName.includes('.') && contentType && contentType !== 'application/octet-stream') {
+          const extension = contentType.split('/')[1];
+          if (extension && !['octet-stream', 'unknown'].includes(extension)) {
+            fileName = `${fileName}.${extension}`;
+          }
+        }
+
+        console.log(`准备下载文件: ${fileName}, 类型: ${contentType}`);
+
+        // 创建下载链接
+        const url = URL.createObjectURL(new Blob([blob], { type: contentType }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        
+        // 触发下载
+        document.body.appendChild(link);
+        link.click();
+        
+        // 清理
+        setTimeout(() => {
+          try {
+            document.body.removeChild(link);
+          } catch (e) {
+            // 忽略清理错误
+          }
+          URL.revokeObjectURL(url);
+          console.log(`文件下载过程完成: ${fileName}`);
+        }, 500);
+        
+        success = true;
+      } catch (downloadError) {
+        console.error('标准下载方式失败，尝试备用下载方法:', downloadError);
+        
+        // 如果是单个文件，尝试使用单文件下载API
+        if (fileIds.length === 1) {
+          try {
+            message.info('正在尝试备用下载方式...');
+            const fileInfo = await fileApi.getFile(fileIds[0]);
+            
+            if (fileInfo) {
+              if (fileInfo.isFolder) {
+                // 使用文件夹下载方法
+                success = await downloadFolder(fileIds[0], fileInfo.name);
+              } else {
+                // 使用文件下载方法
+                success = await downloadFile(fileIds[0], fileInfo.name);
+              }
+            }
+          } catch (backupError) {
+            console.error('备用下载方式也失败:', backupError);
+            success = false;
+          }
+        }
+        
+        if (!success) {
+          throw downloadError; // 重新抛出原始错误
+        }
+      }
+      
+      // 记录下载历史
+      if (success) {
+        try {
+          // 如果是单个文件下载
+          if (fileIds.length === 1) {
+            await fileApi.recordFileDownload(fileIds[0]);
+          } 
+          // 对于多个文件(打包下载)，我们仍然记录每个文件的下载历史
+          else if (fileIds.length > 1) {
+            // 异步记录，不等待完成
+            Promise.all(fileIds.map(fileId => 
+              fileApi.recordFileDownload(fileId).catch(error => 
+                console.warn(`记录文件 ${fileId} 下载历史失败:`, error)
+              )
+            ));
+          }
         } catch (error) {
           console.warn('记录下载历史失败:', error);
           // 但不影响下载成功的状态
         }
-      } 
-      // 对于多个文件(打包下载)，我们仍然记录每个文件的下载历史
-      else if (fileIds.length > 1) {
-        // 异步记录，不等待完成
-        Promise.all(fileIds.map(fileId => 
-          fileApi.recordFileDownload(fileId).catch(error => 
-            console.warn(`记录文件 ${fileId} 下载历史失败:`, error)
-          )
-        ));
       }
       
-      return true;
+      return success;
     } catch (error) {
       console.error('下载文件失败:', error);
       setError(error instanceof Error ? error.message : '下载失败');
@@ -234,9 +305,10 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
   /**
    * 删除文件
    * @param fileIds 文件ID列表
+   * @param onSuccess 成功回调函数
    * @returns 是否成功
    */
-  const deleteFiles = useCallback(async (fileIds: string[]): Promise<boolean> => {
+  const deleteFiles = useCallback(async (fileIds: string[], onSuccess?: () => void): Promise<boolean> => {
     if (!fileIds.length) {
       message.warning('请选择要删除的文件');
       return false;
@@ -251,6 +323,13 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       message.success('文件删除成功');
       // 清除已删除文件的选择
       setSelectedFileIds(prev => prev.filter(id => !fileIds.includes(id)));
+      
+      // 调用成功回调函数，通常用于刷新文件列表
+      if (onSuccess) {
+        console.log('文件删除成功，调用刷新回调');
+        onSuccess();
+      }
+      
       return true;
     } catch (error) {
       console.error('删除文件失败:', error);

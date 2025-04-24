@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Progress } from '@/app/components/ui/atoms/progress';
 import { mapFileEntityToFileInfo } from '@/app/types';
-import { uploadFile } from '@/app/lib/uploadService';
+import { uploadFile } from '@/app/lib/storage/service/uploadService';
 
 interface FileUploadProps {
   onUploadComplete: (file?: any) => void;

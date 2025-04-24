@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/app/lib/prisma';
+import { db } from '@/app/lib/database';
 
 /**
  * 获取分享文件夹内容

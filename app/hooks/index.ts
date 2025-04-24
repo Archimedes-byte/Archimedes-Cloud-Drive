@@ -11,6 +11,7 @@ export * from './core/useThemeManager';
 // 用户相关hooks
 export * from './user/useProfile';
 export * from './user/usePassword';
+export * from './user/useValidation';
 
 // 文件相关hooks
 export * from './file/useFiles';
@@ -18,9 +19,8 @@ export * from './file/useFileOperations';
 export * from './file/useFileUpload';
 export * from './file/useFileSearch';
 export * from './file/useFilePreview';
+export * from './file/useFileShare';
+export * from './file/useShareView';
 
 // 认证相关hooks
 // export * from './auth/useAuth'; 
-
-// 导出文件分享Hook
-export { useFileShare } from './useFileShare'; 

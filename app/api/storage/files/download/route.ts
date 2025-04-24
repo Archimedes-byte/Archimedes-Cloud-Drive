@@ -188,23 +188,55 @@ async function getAllFilesInFolder(
     const folderContentsResponse = await storageService.getFiles(userId, folderId);
     const folderContents = folderContentsResponse.items || [];
     
+    console.log(`文件夹 "${folderInfo.name}" (${folderId}) 包含 ${folderContents.length} 个项目`);
+    
     // 初始化结果数组
     let allFiles: Array<{ fileInfo: FileInfo, relativePath: string }> = [];
+    let folderCount = 0;
+    let fileCount = 0;
     
     // 处理文件夹下的每个项目
     for (const item of folderContents) {
       // 如果是文件夹，递归获取其中的文件
       if (item.isFolder) {
+        folderCount++;
         const folderName = item.name || `folder_${item.id}`;
+        console.log(`处理子文件夹: "${folderName}" (${item.id})`);
+        
+        // 即使是空文件夹，也在ZIP中创建目录结构
+        const folderPath = join(relativePath, folderName);
+        
         const nestedFiles = await getAllFilesInFolder(
           userId, 
           item.id, 
-          join(relativePath, folderName)
+          folderPath
         );
-        allFiles = allFiles.concat(nestedFiles);
+        
+        // 如果子文件夹是空的，添加一个.empty文件以保留目录结构
+        if (nestedFiles.length === 0) {
+          console.log(`子文件夹 "${folderName}" 为空，添加占位文件`);
+          allFiles.push({
+            fileInfo: {
+              id: `empty_${item.id}`,
+              name: '.empty',
+              isFolder: false,
+              size: 0,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              type: 'text/plain',
+              uploaderId: userId,
+              isDeleted: false
+            } as FileInfo,
+            relativePath: folderPath
+          });
+        } else {
+          console.log(`子文件夹 "${folderName}" 包含 ${nestedFiles.length} 个文件`);
+          allFiles = allFiles.concat(nestedFiles);
+        }
       } 
       // 如果是文件，添加到结果数组
       else {
+        fileCount++;
         allFiles.push({
           fileInfo: item,
           relativePath
@@ -212,6 +244,7 @@ async function getAllFilesInFolder(
       }
     }
     
+    console.log(`文件夹 "${folderInfo.name}" 统计: ${fileCount} 个文件, ${folderCount} 个子文件夹`);
     return allFiles;
   } catch (error) {
     console.error(`获取文件夹内容时出错: ${folderId}`, error);
@@ -253,7 +286,34 @@ export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => 
         const folderFiles = await getAllFilesInFolder(req.user.id, fileId);
         
         if (folderFiles.length === 0) {
-          return createApiErrorResponse('文件夹为空，无法下载', 400);
+          console.log(`文件夹 "${fileInfo.name}" 完全为空，添加空目录标记`);
+          // 即使文件夹完全为空，也创建一个ZIP文件返回一个.empty文件
+          const zip = new JSZip();
+          const folderName = fileInfo.name || `folder_${fileId}`;
+          
+          // 添加一个空文件以保持目录结构
+          zip.file(`${folderName}/.empty`, '此文件夹为空', { comment: '空文件夹标记' });
+          
+          // 生成ZIP文件
+          const zipContent = await zip.generateAsync({
+            type: 'nodebuffer',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 } 
+          });
+          
+          console.log(`空文件夹ZIP文件生成完成，大小: ${(zipContent.length / 1024).toFixed(2)} KB`);
+          
+          // 返回ZIP文件
+          return new NextResponse(zipContent, {
+            headers: {
+              'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"`,
+              'Content-Type': 'application/zip',
+              'Content-Length': zipContent.length.toString(),
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
+          });
         }
         
         // 创建ZIP文件
@@ -265,6 +325,14 @@ export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => 
         // 添加文件到ZIP
         for (const { fileInfo, relativePath } of folderFiles) {
           try {
+            // 对于占位文件，直接添加内容
+            if (fileInfo.name === '.empty' && fileInfo.id.startsWith('empty_')) {
+              const emptyFilePath = join(relativePath, '.empty');
+              zip.file(emptyFilePath, '此文件夹为空', { comment: '空文件夹标记' });
+              console.log(`已添加空文件夹标记: ${emptyFilePath}`);
+              continue;
+            }
+            
             // 获取文件路径
             const filePath = await getFilePath(fileInfo);
             if (!filePath) {
@@ -378,6 +446,14 @@ export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => 
             const filePath = await getFilePath(nestedFile);
             if (!filePath) {
               console.warn(`找不到文件: ${nestedFile.name}，跳过`);
+              continue;
+            }
+            
+            // 对于占位文件，直接添加内容
+            if (nestedFile.name === '.empty' && nestedFile.id.startsWith('empty_')) {
+              const emptyFilePath = join(relativePath, '.empty');
+              zip.file(emptyFilePath, '此文件夹为空', { comment: '空文件夹标记' });
+              console.log(`已添加空文件夹标记: ${emptyFilePath}`);
               continue;
             }
             

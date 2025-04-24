@@ -8,7 +8,8 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import prisma from '@/app/lib/prisma';
+import { prisma } from '@/app/lib/database';
+import { NextResponse } from 'next/server';
 
 /**
  * POST方法：记录文件访问历史

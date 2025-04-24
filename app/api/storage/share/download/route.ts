@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
-import { db } from '@/app/lib/prisma';
-import { getFileStream } from '@/app/lib/storage/file-handler';
+import { db } from '@/app/lib/database';
+import { getFileStream } from '@/app/lib/storage/file-handling/file-handler';
 import { Readable } from 'stream';
 import path from 'path';
 

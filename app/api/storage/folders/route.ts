@@ -64,7 +64,7 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
  */
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
-    const { name, parentId } = await req.json();
+    const { name, parentId, tags = [] } = await req.json();
     
     // 文件夹名称验证
     if (!name || typeof name !== 'string') {
@@ -125,6 +125,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       ? `${parentPath === '/' ? '' : parentPath}/${folderId}` 
       : `/${folderId}`;
     
+    // 验证标签列表
+    const validTags = Array.isArray(tags) ? tags : [];
+    
     // 创建文件夹
     const folder = await prisma.file.create({
       data: {
@@ -137,6 +140,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         type: 'folder',
         filename: cleanName,    // 必须为filename提供值
         path: folderPath,       // 使用处理后的路径
+        tags: validTags,        // 存储标签信息
         updatedAt: new Date()   // 提供更新时间
       }
     });

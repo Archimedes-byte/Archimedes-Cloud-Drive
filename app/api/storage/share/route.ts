@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
-import { db } from '@/app/lib/prisma';
+import { db } from '@/app/lib/database';
 import { randomString } from '@/app/utils/string';
+import { getErrorMessage } from '@/app/utils/errors';
 
 /**
  * 创建分享
