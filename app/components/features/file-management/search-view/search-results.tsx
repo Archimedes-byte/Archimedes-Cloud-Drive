@@ -148,6 +148,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             onToggleFavorite={onToggleFavorite}
             fileUpdateTrigger={fileUpdateTrigger}
             onFileContextMenu={onFileContextMenu}
+            isLoading={false}
           />
         </>
       ) : searchQuery && !searchLoading ? (

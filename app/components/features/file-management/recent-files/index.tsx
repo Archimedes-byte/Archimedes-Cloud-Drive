@@ -10,6 +10,18 @@ import { TimeSection } from './time-section';
 import { Button } from 'antd';
 import { AntFileList } from '../file-list/AntFileList';
 
+// 添加加载动画样式
+const spinnerStyle = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+  }
+`;
+
 // 重命名为RecentFilesContent以匹配content-area.tsx中的导入
 export function RecentFilesContent({
   loadingRecentFiles = false,
@@ -50,10 +62,33 @@ export function RecentFilesContent({
   const effectiveIsLoading = loadingRecentFiles || isLoading;
   const effectiveRecentFiles = recentFiles.length > 0 ? recentFiles : [...todayFiles, ...yesterdayFiles, ...pastWeekFiles, ...olderFiles];
 
+  // 添加调试日志
+  useEffect(() => {
+    console.log('📌 RecentFilesContent 渲染:');
+    console.log('- loadingRecentFiles (props):', loadingRecentFiles);
+    console.log('- isLoading (local):', isLoading);
+    console.log('- effectiveIsLoading:', effectiveIsLoading);
+    console.log('- recentFiles数量:', recentFiles?.length || 0);
+  }, [loadingRecentFiles, isLoading, effectiveIsLoading, recentFiles]);
+
+  // 强制同步props到本地state
+  useEffect(() => {
+    console.log('🔄 isLoading 状态更新:', loadingRecentFiles);
+    // 防止不必要的状态更新和渲染循环
+    if (isLoading !== loadingRecentFiles) {
+      setIsLoading(loadingRecentFiles);
+    }
+  }, [loadingRecentFiles, isLoading]);
+
   // 初始加载数据
   useEffect(() => {
     if (recentFiles.length > 0) {
       // 如果传入了recentFiles，则使用传入的数据
+      console.log('使用传入的recentFiles数据:', recentFiles.length);
+      // 确保在有数据的情况下，不再显示加载状态
+      if (isLoading) {
+        setIsLoading(false);
+      }
       return;
     }
     
@@ -162,8 +197,16 @@ export function RecentFilesContent({
     }
   };
 
+  // 更智能的加载状态逻辑
+  const showLoadingIndicator = effectiveIsLoading && effectiveRecentFiles.length === 0;
+  const showEmptyState = !effectiveIsLoading && effectiveRecentFiles.length === 0;
+  const showContent = effectiveRecentFiles.length > 0;
+
   return (
     <div className="recent-files-container">
+      {/* 添加样式标签 */}
+      <style dangerouslySetInnerHTML={{ __html: spinnerStyle }} />
+      
       <h2 style={{ 
         fontSize: '20px', 
         fontWeight: 600, 
@@ -171,185 +214,183 @@ export function RecentFilesContent({
         color: '#1f2937'
       }}>
         最近访问的文件
+        {effectiveIsLoading && <small style={{marginLeft: '10px', fontSize: '12px', color: '#888'}}>(刷新中...)</small>}
       </h2>
 
-      {effectiveIsLoading ? (
+      {showLoadingIndicator && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            margin: '0 auto 20px',
-            border: '3px solid rgba(52, 144, 220, 0.2)',
-            borderTop: '3px solid #3490dc',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }}></div>
-          <p>加载中，请稍候...</p>
+          <div 
+            style={{
+              width: '40px',
+              height: '40px',
+              margin: '0 auto 20px',
+              border: '3px solid rgba(52, 144, 220, 0.2)',
+              borderTop: '3px solid #3490dc',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}
+            className="loading-spinner"
+          ></div>
+          <p>加载中，请稍候... <span style={{color: 'gray', fontSize: '12px'}}>(loadingRecentFiles={loadingRecentFiles.toString()}, isLoading={isLoading.toString()})</span></p>
         </div>
-      ) : (
+      )}
+
+      {showEmptyState && (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '40px 0',
+          color: '#888',
+          backgroundColor: 'rgba(247, 250, 252, 0.5)',
+          borderRadius: '12px',
+          border: '1px dashed #e2e8f0',
+        }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            lineHeight: '60px',
+            fontSize: '24px',
+            margin: '0 auto 15px',
+            backgroundColor: 'rgba(226, 232, 240, 0.5)',
+            borderRadius: '50%',
+          }}>
+            📂
+          </div>
+          <p>暂无最近访问的文件</p>
+          <p style={{ fontSize: '14px', color: '#999', maxWidth: '300px', margin: '10px auto' }}>
+            浏览或搜索文件后，它们将显示在这里
+          </p>
+          <Button type="primary" style={{ marginTop: '10px' }}>
+            浏览全部文件
+          </Button>
+        </div>
+      )}
+
+      {showContent && (
         <>
-          {effectiveRecentFiles.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '40px 0',
-              color: '#888',
-              backgroundColor: 'rgba(247, 250, 252, 0.5)',
-              borderRadius: '12px',
-              border: '1px dashed #e2e8f0',
-            }}>
-              <div style={{
-                width: '60px',
-                height: '60px',
-                lineHeight: '60px',
-                fontSize: '24px',
-                margin: '0 auto 15px',
-                backgroundColor: 'rgba(226, 232, 240, 0.5)',
-                borderRadius: '50%',
-              }}>
-                📂
-              </div>
-              <p>暂无最近访问的文件</p>
-              <p style={{ fontSize: '14px', color: '#999', maxWidth: '300px', margin: '10px auto' }}>
-                浏览或搜索文件后，它们将显示在这里
-              </p>
-              <Button type="primary" style={{ marginTop: '10px' }}>
-                浏览全部文件
-              </Button>
-            </div>
+          {recentFiles.length > 0 ? (
+            <AntFileList 
+              files={recentFiles}
+              selectedFiles={effectiveSelectedFiles}
+              onFileClick={handleFileClick}
+              onFileSelect={handleFileSelect}
+              onSelectAll={onSelectAll}
+              onDeselectAll={onDeselectAll}
+              areAllSelected={recentFiles.every(file => effectiveSelectedFiles.includes(file.id))}
+              showCheckboxes={true}
+              favoritedFileIds={effectiveFavoritedFileIds}
+              onToggleFavorite={handleToggleFavorite}
+              fileUpdateTrigger={effectiveFileUpdateTrigger}
+              isLoading={false}
+            />
           ) : (
             <>
-              {recentFiles.length > 0 ? (
-                <AntFileList 
-                  files={recentFiles}
+              {todayFiles.length > 0 && (
+                <TimeSection 
+                  title="今天" 
+                  files={todayFiles}
                   selectedFiles={effectiveSelectedFiles}
-                  onFileClick={handleFileClick}
-                  onFileSelect={handleFileSelect}
-                  onSelectAll={onSelectAll}
-                  onDeselectAll={onDeselectAll}
-                  areAllSelected={recentFiles.every(file => effectiveSelectedFiles.includes(file.id))}
-                  showCheckboxes={true}
                   favoritedFileIds={effectiveFavoritedFileIds}
-                  onToggleFavorite={handleToggleFavorite}
                   fileUpdateTrigger={effectiveFileUpdateTrigger}
-                />
-              ) : (
-                <>
-                  {todayFiles.length > 0 && (
-                    <TimeSection 
-                      title="今天" 
+                  FileListComponent={
+                    <AntFileList 
                       files={todayFiles}
                       selectedFiles={effectiveSelectedFiles}
+                      onFileClick={handleFileClick}
+                      onFileSelect={handleFileSelect}
+                      onSelectAll={() => handleSelectAll(todayFiles)}
+                      onDeselectAll={() => handleDeselectAll(todayFiles)}
+                      areAllSelected={todayFiles.every(file => effectiveSelectedFiles.includes(file.id))}
+                      showCheckboxes={true}
                       favoritedFileIds={effectiveFavoritedFileIds}
+                      onToggleFavorite={handleToggleFavorite}
                       fileUpdateTrigger={effectiveFileUpdateTrigger}
-                      FileListComponent={
-                        <AntFileList 
-                          files={todayFiles}
-                          selectedFiles={effectiveSelectedFiles}
-                          onFileClick={handleFileClick}
-                          onFileSelect={handleFileSelect}
-                          onSelectAll={() => handleSelectAll(todayFiles)}
-                          onDeselectAll={() => handleDeselectAll(todayFiles)}
-                          areAllSelected={todayFiles.every(file => effectiveSelectedFiles.includes(file.id))}
-                          showCheckboxes={true}
-                          favoritedFileIds={effectiveFavoritedFileIds}
-                          onToggleFavorite={handleToggleFavorite}
-                          fileUpdateTrigger={effectiveFileUpdateTrigger}
-                        />
-                      }
+                      isLoading={false}
                     />
-                  )}
-                  
-                  {yesterdayFiles.length > 0 && (
-                    <TimeSection 
-                      title="昨天" 
+                  }
+                />
+              )}
+              
+              {yesterdayFiles.length > 0 && (
+                <TimeSection 
+                  title="昨天" 
+                  files={yesterdayFiles}
+                  selectedFiles={effectiveSelectedFiles}
+                  favoritedFileIds={effectiveFavoritedFileIds}
+                  fileUpdateTrigger={effectiveFileUpdateTrigger}
+                  FileListComponent={
+                    <AntFileList 
                       files={yesterdayFiles}
                       selectedFiles={effectiveSelectedFiles}
+                      onFileClick={handleFileClick}
+                      onFileSelect={handleFileSelect}
+                      onSelectAll={() => handleSelectAll(yesterdayFiles)}
+                      onDeselectAll={() => handleDeselectAll(yesterdayFiles)}
+                      areAllSelected={yesterdayFiles.every(file => effectiveSelectedFiles.includes(file.id))}
+                      showCheckboxes={true}
                       favoritedFileIds={effectiveFavoritedFileIds}
+                      onToggleFavorite={handleToggleFavorite}
                       fileUpdateTrigger={effectiveFileUpdateTrigger}
-                      FileListComponent={
-                        <AntFileList 
-                          files={yesterdayFiles}
-                          selectedFiles={effectiveSelectedFiles}
-                          onFileClick={handleFileClick}
-                          onFileSelect={handleFileSelect}
-                          onSelectAll={() => handleSelectAll(yesterdayFiles)}
-                          onDeselectAll={() => handleDeselectAll(yesterdayFiles)}
-                          areAllSelected={yesterdayFiles.every(file => effectiveSelectedFiles.includes(file.id))}
-                          showCheckboxes={true}
-                          favoritedFileIds={effectiveFavoritedFileIds}
-                          onToggleFavorite={handleToggleFavorite}
-                          fileUpdateTrigger={effectiveFileUpdateTrigger}
-                        />
-                      }
+                      isLoading={false}
                     />
-                  )}
-                  
-                  {pastWeekFiles.length > 0 && (
-                    <TimeSection 
-                      title="过去一周" 
+                  }
+                />
+              )}
+              
+              {pastWeekFiles.length > 0 && (
+                <TimeSection 
+                  title="过去一周" 
+                  files={pastWeekFiles}
+                  selectedFiles={effectiveSelectedFiles}
+                  favoritedFileIds={effectiveFavoritedFileIds}
+                  fileUpdateTrigger={effectiveFileUpdateTrigger}
+                  FileListComponent={
+                    <AntFileList 
                       files={pastWeekFiles}
                       selectedFiles={effectiveSelectedFiles}
+                      onFileClick={handleFileClick}
+                      onFileSelect={handleFileSelect}
+                      onSelectAll={() => handleSelectAll(pastWeekFiles)}
+                      onDeselectAll={() => handleDeselectAll(pastWeekFiles)}
+                      areAllSelected={pastWeekFiles.every(file => effectiveSelectedFiles.includes(file.id))}
+                      showCheckboxes={true}
                       favoritedFileIds={effectiveFavoritedFileIds}
+                      onToggleFavorite={handleToggleFavorite}
                       fileUpdateTrigger={effectiveFileUpdateTrigger}
-                      FileListComponent={
-                        <AntFileList 
-                          files={pastWeekFiles}
-                          selectedFiles={effectiveSelectedFiles}
-                          onFileClick={handleFileClick}
-                          onFileSelect={handleFileSelect}
-                          onSelectAll={() => handleSelectAll(pastWeekFiles)}
-                          onDeselectAll={() => handleDeselectAll(pastWeekFiles)}
-                          areAllSelected={pastWeekFiles.every(file => effectiveSelectedFiles.includes(file.id))}
-                          showCheckboxes={true}
-                          favoritedFileIds={effectiveFavoritedFileIds}
-                          onToggleFavorite={handleToggleFavorite}
-                          fileUpdateTrigger={effectiveFileUpdateTrigger}
-                        />
-                      }
+                      isLoading={false}
                     />
-                  )}
-                  
-                  {olderFiles.length > 0 && (
-                    <TimeSection 
-                      title="更早" 
+                  }
+                />
+              )}
+              
+              {olderFiles.length > 0 && (
+                <TimeSection 
+                  title="更早" 
+                  files={olderFiles}
+                  selectedFiles={effectiveSelectedFiles}
+                  favoritedFileIds={effectiveFavoritedFileIds}
+                  fileUpdateTrigger={effectiveFileUpdateTrigger}
+                  FileListComponent={
+                    <AntFileList 
                       files={olderFiles}
                       selectedFiles={effectiveSelectedFiles}
+                      onFileClick={handleFileClick}
+                      onFileSelect={handleFileSelect}
+                      onSelectAll={() => handleSelectAll(olderFiles)}
+                      onDeselectAll={() => handleDeselectAll(olderFiles)}
+                      areAllSelected={olderFiles.every(file => effectiveSelectedFiles.includes(file.id))}
+                      showCheckboxes={true}
                       favoritedFileIds={effectiveFavoritedFileIds}
+                      onToggleFavorite={handleToggleFavorite}
                       fileUpdateTrigger={effectiveFileUpdateTrigger}
-                      FileListComponent={
-                        <AntFileList 
-                          files={olderFiles}
-                          selectedFiles={effectiveSelectedFiles}
-                          onFileClick={handleFileClick}
-                          onFileSelect={handleFileSelect}
-                          onSelectAll={() => handleSelectAll(olderFiles)}
-                          onDeselectAll={() => handleDeselectAll(olderFiles)}
-                          areAllSelected={olderFiles.every(file => effectiveSelectedFiles.includes(file.id))}
-                          showCheckboxes={true}
-                          favoritedFileIds={effectiveFavoritedFileIds}
-                          onToggleFavorite={handleToggleFavorite}
-                          fileUpdateTrigger={effectiveFileUpdateTrigger}
-                        />
-                      }
+                      isLoading={false}
                     />
-                  )}
-                </>
+                  }
+                />
               )}
             </>
           )}
         </>
       )}
-
-      <style jsx>{`
-        .recent-files-container {
-          padding: 20px;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

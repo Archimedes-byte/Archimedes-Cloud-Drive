@@ -11,7 +11,9 @@ import {
   Tooltip, 
   Typography,
   Empty,
-  Spin
+  Spin,
+  Modal,
+  Popover
 } from 'antd';
 import type { TableProps } from 'antd';
 import { 
@@ -28,7 +30,9 @@ import {
   CheckOutlined,
   CloseOutlined,
   StarOutlined,
-  StarFilled
+  StarFilled,
+  FilePdfOutlined,
+  SoundOutlined
 } from '@ant-design/icons';
 import { getFileNameAndExtension } from '@/app/utils/file/path';
 import { FileInfo } from '@/app/types';
@@ -233,23 +237,38 @@ export function AntFileList({
   const renderFileIcon = (file: FileInfo) => {
     const { isFolder } = file;
     const extension = file.extension || '';
+    const fileType = file.type || '';
     
     if (isFolder) {
       return <FolderOutlined style={{ color: '#ffc53d', fontSize: '18px' }} />;
     }
     
-    // 根据文件类型或扩展名选择图标
+    // 获取小写扩展名
     const ext = extension.toLowerCase();
+
+    // 先检查文件名中的扩展名（对于某些文件可能没有正确设置MIME类型）
+    if (file.name && file.name.toLowerCase().endsWith('.pdf')) {
+      return <FilePdfOutlined style={{ color: '#f5222d', fontSize: '20px' }} />;
+    }
     
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
+    if (['mp3', 'wav', 'ogg', 'flac', 'aac'].some(audioExt => 
+        file.name.toLowerCase().endsWith(`.${audioExt}`) || 
+        fileType.toLowerCase().includes('audio'))) {
+      return <SoundOutlined style={{ color: '#722ed1', fontSize: '20px' }} />;
+    }
+    
+    // 检查文件类型和扩展名
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext) || fileType.includes('image')) {
       return <FileImageOutlined style={{ color: '#73d13d', fontSize: '18px' }} />;
-    } else if (['doc', 'docx', 'txt', 'pdf', 'md'].includes(ext)) {
+    } else if (['doc', 'docx', 'txt', 'md'].includes(ext) || fileType.includes('document') || fileType.includes('text')) {
       return <FileTextOutlined style={{ color: '#40a9ff', fontSize: '18px' }} />;
-    } else if (['mp3', 'wav', 'ogg'].includes(ext)) {
-      return <CustomerServiceOutlined style={{ color: '#9254de', fontSize: '18px' }} />;
-    } else if (['mp4', 'webm', 'avi', 'mov'].includes(ext)) {
+    } else if (ext === 'pdf' || fileType.includes('pdf')) {
+      return <FilePdfOutlined style={{ color: '#f5222d', fontSize: '20px' }} />;
+    } else if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext) || fileType.includes('audio')) {
+      return <SoundOutlined style={{ color: '#722ed1', fontSize: '20px' }} />;
+    } else if (['mp4', 'webm', 'avi', 'mov'].includes(ext) || fileType.includes('video')) {
       return <PlayCircleOutlined style={{ color: '#ff4d4f', fontSize: '18px' }} />;
-    } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+    } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext) || fileType.includes('archive') || fileType.includes('zip')) {
       return <FileZipOutlined style={{ color: '#faad14', fontSize: '18px' }} />;
     }
     
@@ -429,9 +448,18 @@ export function AntFileList({
           return <Text type="secondary">-</Text>;
         }
         
-        // 显示前2个标签，其余折叠
+        // 显示前2个标签，其余使用可点击标签展示
         const visibleTags = record.tags.slice(0, 2);
         const remainingCount = record.tags.length - visibleTags.length;
+        
+        // 定义所有标签的内容
+        const allTagsContent = (
+          <div style={{ maxWidth: '300px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {record.tags.map(tag => (
+              <Tag key={tag} color="blue">{tag}</Tag>
+            ))}
+          </div>
+        );
         
         return (
           <div className="tag-container">
@@ -439,7 +467,14 @@ export function AntFileList({
               <Tag key={tag} color="blue">{tag}</Tag>
             ))}
             {remainingCount > 0 && (
-              <Tag color="default">+{remainingCount}</Tag>
+              <Popover 
+                content={allTagsContent} 
+                title="全部标签" 
+                trigger="click"
+                placement="right"
+              >
+                <Tag color="default" style={{ cursor: 'pointer' }}>+{remainingCount}</Tag>
+              </Popover>
             )}
           </div>
         );
@@ -541,6 +576,9 @@ export function AntFileList({
           locale={{ emptyText: renderEmpty() }}
           className="ant-file-table"
           size="middle"
+          bordered={false}
+          tableLayout="fixed"
+          style={{ height: '100%' }}
         />
       </Spin>
     </div>

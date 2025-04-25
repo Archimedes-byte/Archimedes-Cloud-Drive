@@ -472,10 +472,32 @@ export const fileApi = {
     
     const response = await fetch(`${API_PATHS.STORAGE.RECENT}?${queryParams.toString()}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      cache: 'no-store'
     });
     
-    return handleResponse<FileInfo[]>(response);
+    const result = await handleResponse<any>(response);
+    console.log('获取最近访问文件，原始响应:', result);
+    
+    // 特殊处理响应格式，确保返回正确的数据结构
+    if (result && typeof result === 'object') {
+      if (Array.isArray(result)) {
+        // 如果直接是数组，直接返回
+        return result;
+      } else if (result.files && Array.isArray(result.files)) {
+        // 如果是包含files字段的对象，返回files数组
+        return result.files;
+      }
+    }
+    
+    // 返回空数组作为默认值
+    console.warn('获取最近访问文件返回格式异常:', result);
+    return [];
   },
   
   // 获取最近下载的文件
@@ -485,10 +507,32 @@ export const fileApi = {
     
     const response = await fetch(`${API_PATHS.STORAGE.DOWNLOADS.RECENT}?${queryParams.toString()}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      cache: 'no-store'
     });
     
-    return handleResponse<FileInfo[]>(response);
+    const result = await handleResponse<any>(response);
+    console.log('获取最近下载文件，原始响应:', result);
+    
+    // 特殊处理响应格式，确保返回正确的数据结构
+    if (result && typeof result === 'object') {
+      if (Array.isArray(result)) {
+        // 如果直接是数组，直接返回
+        return result;
+      } else if (result.files && Array.isArray(result.files)) {
+        // 如果是包含files字段的对象，返回files数组
+        return result.files;
+      }
+    }
+    
+    // 返回空数组作为默认值
+    console.warn('获取最近下载文件返回格式异常:', result);
+    return [];
   },
   
   // 添加到收藏

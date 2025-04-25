@@ -5,7 +5,7 @@ import {
   Star, Clock, Tag, Download,
   CheckCircle, Share2, Plus
 } from 'lucide-react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import styles from './sidebar.module.css';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 
 export type FileType = 'image' | 'document' | 'video' | 'audio' | 'other' | null;
@@ -16,7 +16,7 @@ type ViewType = FileType | 'search' | 'favorites' | 'recent' | 'downloads' | 'ta
 interface SidebarProps {
   selectedFileType: FileType;
   onTypeClick: (type: FileType) => void;
-  onSearchClick?: (query?: string) => void;
+  onSearchClick?: (query?: string, searchType?: string) => void;
   onSharesClick?: () => void;
   onFavoritesClick?: (folderId?: string) => void;
   onCreateFavoriteFolder?: () => void;
@@ -129,7 +129,7 @@ export function Sidebar({
   const handleTagSearchClick = useCallback(() => {
     setInternalActiveView('tag');
     if (onSearchClick) {
-      onSearchClick('tag');
+      onSearchClick('', 'tag');
     }
   }, [onSearchClick]);
 
@@ -155,8 +155,8 @@ export function Sidebar({
   const handleSearchClick = useCallback(() => {
     setInternalActiveView('search');
     if (onSearchClick) {
-      // 传递空字符串表示普通搜索，不是标签搜索
-      onSearchClick('');
+      // 传递空字符串表示普通搜索，明确指定searchType为'name'
+      onSearchClick('', 'name');
     }
   }, [onSearchClick]);
 

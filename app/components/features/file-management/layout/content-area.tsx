@@ -1,20 +1,27 @@
 import React from 'react';
-import { message } from 'antd';
-import { Breadcrumb, TopActionBar } from '@/app/components/features/file-management';
-import { AntFileList } from '@/app/components/features/file-management/file-list/AntFileList';
-import { FavoritesContent } from '@/app/components/features/file-management/favorites';
-import { MySharesContent } from '@/app/components/features/file-management/my-shares';
-import { RecentFilesContent } from '@/app/components/features/file-management/recent-files';
-import { RecentDownloadsContent } from '@/app/components/features/file-management/recent-downloads';
-import { SearchContainer } from '@/app/components/features/file-management/search-view';
-import { FileInfo } from '@/app/types';
+import { Breadcrumb, message, Badge } from 'antd';
 import { 
-  SortField, 
-  FileSortInterface, 
-  SortDirectionEnum, 
-  FileTypeEnum 
-} from '@/app/types/domains/fileTypes';
+  ChevronRight, 
+  FolderClosed, 
+  Home,
+  FileText,
+  FileType
+} from 'lucide-react';
+
+import { AntFileList } from '../file-list';
+import { 
+  SearchContainer, 
+  RecentFilesContent, 
+  RecentDownloadsContent,
+  TopActionBar,
+  FavoritesContent
+} from '@/app/components/features/file-management';
+import { Breadcrumb as FileBreadcrumb } from '../navigation/breadcrumb';
+
 import styles from '@/app/components/features/file-management/styles/page-layout.module.css';
+
+import { FileInfo } from '@/app/types';
+import { FileTypeEnum, SortDirectionEnum, FileSortInterface, SortField } from '@/app/types/domains/fileTypes';
 
 interface ContentAreaProps {
   // 视图状态
@@ -169,18 +176,21 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   changeSort,
   setSortOrder,
 }) => {
-  // 渲染面包屑组件
-  const renderBreadcrumb = () => (
-    <div className={styles.breadcrumbContainer}>
-      <Breadcrumb
-        folderPath={folderPath}
-        onPathClick={onBreadcrumbPathClick}
-        onBackClick={onBreadcrumbBackClick}
-        onClearFilter={onClearFilter}
-        key={`breadcrumb-${folderPath.length}-${folderPath.length > 0 ? folderPath[folderPath.length-1].id : 'root'}`}
-      />
-    </div>
-  );
+  // 面包屑渲染
+  const renderBreadcrumb = () => {
+    return (
+      <div className={styles.breadcrumbContainer}>
+        <FileBreadcrumb 
+          folderPath={folderPath}
+          showHome={true}
+          onPathClick={onBreadcrumbPathClick}
+          onBackClick={onBreadcrumbBackClick}
+          onClearFilter={onClearFilter}
+          selectedFileType={selectedFileType}
+        />
+      </div>
+    );
+  };
 
   // 如果当前显示收藏内容，渲染收藏内容组件
   if (showFavoritesContent) {
@@ -241,7 +251,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   // 如果当前显示我的分享内容，渲染分享内容组件
   if (showMySharesContent) {
     return (
-      <MySharesContent 
+      <FavoritesContent 
         onNavigateBack={() => {
           // 关闭所有特殊视图，确保完全返回到文件浏览界面
           closeAllSpecialViews();

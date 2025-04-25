@@ -562,7 +562,26 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           // 记录当前选择的类型，确保与侧边栏同步
           console.log('文件类型切换为:', type);
         }}
-        onSearchClick={handleSearchClick}
+        onSearchClick={(query, type) => {
+          // 处理搜索点击，支持文件名搜索和标签搜索
+          console.log(`处理搜索点击，查询: ${query}, 类型: ${type}`);
+          
+          // 调用视图状态钩子处理搜索视图
+          handleSearchClick(query, type as 'name' | 'tag');
+          
+          // 设置搜索类型
+          if (type === 'tag') {
+            setSearchType('tag');
+          } else {
+            setSearchType('name');
+          }
+          
+          // 如果有查询字符串，立即进行搜索
+          if (query) {
+            setSearchQuery(query);
+            handleSearch(query, type as 'name' | 'tag');
+          }
+        }}
         onSharesClick={handleViewMyShares}
         onFavoritesClick={handleFavoritesClick}
         onCreateFavoriteFolder={handleCreateFavoriteFolder}

@@ -249,393 +249,187 @@
 
 .dropdownMenu {
   position: absolute;
-  top: calc(100% + 5px);
+  top: 100%;
   right: 0;
-  z-index: 1000;
-  min-width: 150px;
-  background: white;
+  min-width: 180px;
+  background-color: white;
   border-radius: 8px;
-  border: 1px solid #eaeaea;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 8px;
-  animation: slideDown 0.2s ease-in-out;
-  overflow: visible;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  margin-top: 8px;
 }
 
 .dropdownItem {
-  padding: 10px 12px;
+  padding: 8px 16px;
+  cursor: pointer;
   font-size: 14px;
   color: #333;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.2s;
-  user-select: none;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .dropdownItem:hover {
-  background: #f5f5f5;
-  color: var(--theme-primary, #3182ce);
+  background-color: #f5f8ff;
+  color: var(--theme-primary, #3b82f6);
 }
 
 .actionButtons {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-/* ===== 按钮样式 ===== */
 .btn {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  background-color: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  color: #4b5563;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btnPrimary {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(to right, var(--theme-primary, #4f46e5), var(--theme-secondary, #3730a3));
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
-}
-
-.btnPrimary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.25);
-}
-
-.btnPrimary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.uploadButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  height: 38px;
-  box-sizing: border-box;
-  background: linear-gradient(to right, var(--theme-primary, #4299e1), var(--theme-secondary, #3182ce));
-  border: none;
-  border-radius: 10px;
-  color: white;
+  padding: 8px 20px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 10px rgba(49, 130, 206, 0.2);
+  transition: all 0.2s ease;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 9px 22px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  min-width: 120px;
+}
+
+.btnPrimary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btnPrimary:disabled {
+  background: linear-gradient(135deg, #93b5f0 0%, #93b5f0 100%);
+  box-shadow: none;
+}
+
+.uploadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  position: relative;
+  overflow: hidden;
+  gap: 8px;
 }
 
 .uploadButton svg {
-  transition: transform 0.3s ease;
+  width: 16px;
+  height: 16px;
 }
 
 .uploadButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(49, 130, 206, 0.25);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
 }
 
 .folderButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  min-width: 120px;
-  height: 38px;
   background: #fff;
-  border: 1px solid #e8e8f8;
-  border-radius: 10px;
   color: #333;
-  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 18px;
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   gap: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .folderButton:hover {
-  background: #f5f5f5;
+  background: #f8fafc;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .confirmButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
   border: none;
   border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  margin-right: 8px;
-  transition: all 0.2s;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
-}
-
-.confirmButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25);
-}
-
-.cancelButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
-}
-
-.cancelButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.25);
-}
-
-.newFolderRow {
-  display: flex;
-  align-items: center;
-  padding: 18px 24px;
-  margin-bottom: 16px;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
-  border-radius: 14px;
-  animation: fadeIn 0.3s ease;
-  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.08);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.newFolderRow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(to bottom, var(--theme-primary, #3182ce), var(--theme-secondary, #2c5282));
-}
-
-.newFolderRow svg {
-  margin-right: 18px;
-  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.2));
-  transition: all 0.3s ease;
-}
-
-.newFolderForm {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-  gap: 18px;
-}
-
-.newFolderNameContainer {
-  flex: 1;
-  min-width: 220px;
-}
-
-.newFolderInput {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  padding: 8px 20px;
   font-size: 14px;
-  outline: none;
-  transition: all 0.3s ease;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.newFolderInput:focus {
-  border-color: var(--theme-primary, #3182ce);
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
-  transform: translateY(-1px);
-}
-
-.newFolderTagsContainer {
-  flex: 2;
-}
-
-.tagsWrapper {
-  display: flex;
-  flex-wrap: wrap;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
   gap: 8px;
-  align-items: center;
-  width: 100%;
-  padding: 10px 14px;
-  min-height: 44px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.tagsWrapper:focus-within {
-  border-color: var(--theme-primary, #3182ce);
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
-  transform: translateY(-1px);
-}
-
-.tagItem {
-  display: flex;
-  align-items: center;
-  padding: 5px 12px;
-  background: linear-gradient(to right, #edf2f7, #e6f0ff);
-  border-radius: 20px;
-  font-size: 13px;
-  color: #4a5568;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.tagItem:hover {
-  background: linear-gradient(to right, #e6f0ff, #dbeafe);
-  border-color: #bfdbfe;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(49, 130, 206, 0.1);
-}
-
-.removeTagButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-left: 8px;
-  border: none;
-  background: none;
-  color: #a0aec0;
-  cursor: pointer;
-  border-radius: 50%;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.removeTagButton:hover {
-  color: #e53e3e;
-  background-color: rgba(229, 62, 62, 0.1);
-  transform: scale(1.2);
-}
-
-.tagInput {
-  flex-grow: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 14px;
-  min-width: 100px;
-  padding: 6px;
-  transition: all 0.2s ease;
-}
-
-.newFolderActions {
-  display: flex;
-  gap: 12px;
-  margin-left: auto;
-}
-
-.confirmButton {
-  padding: 10px 24px;
-  height: 44px;
-  min-width: 100px;
-  background: linear-gradient(135deg, var(--theme-primary, #3182ce) 0%, var(--theme-secondary, #2c5282) 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.25);
-  position: relative;
-  overflow: hidden;
-}
-
-.confirmButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: all 0.6s ease;
 }
 
 .confirmButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(49, 130, 206, 0.3);
-}
-
-.confirmButton:hover::before {
-  left: 100%;
-}
-
-.confirmButton:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 8px rgba(49, 130, 206, 0.2);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
 }
 
 .cancelButton {
-  padding: 10px 24px;
-  height: 44px;
-  min-width: 100px;
-  background-color: #ffffff;
-  color: #4a5568;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: #64748b;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 8px;
 }
 
 .cancelButton:hover {
-  background-color: #f7fafc;
-  border-color: #cbd5e0;
+  background: #f8fafc;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  color: var(--theme-primary, #3182ce);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .cancelButton:active {
@@ -644,293 +438,7 @@
 }
 
 /* ===== 侧边栏样式优化 ===== */
-.sidebar {
-  width: 260px;
-  height: 100%;
-  padding: 1.25rem 0.75rem;
-  overflow-y: auto;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(226, 232, 240, 0.6);
-  transition: all 0.3s ease;
-  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.03);
-  position: relative;
-  z-index: 10;
-}
-
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: rgba(241, 245, 249, 0.6);
-  border-radius: 3px;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 3px;
-  transition: background 0.2s ease;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
-}
-
-.sidebarSection {
-  margin-bottom: 1.5rem;
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s ease;
-}
-
-.sidebarHeader {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  letter-spacing: 0.01em;
-}
-
-.sidebarHeader .icon {
-  margin-right: 0.75rem;
-  transition: all 0.3s ease;
-  color: #64748b;
-}
-
-.sidebarHeader:hover {
-  background-color: rgba(243, 244, 246, 0.9);
-  color: var(--theme-primary, #3b82f6);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-}
-
-.sidebarHeader:hover .icon {
-  color: var(--theme-primary, #3b82f6);
-}
-
-.sidebarSubmenu {
-  padding: 0.5rem 0.25rem;
-  transition: all 0.3s ease;
-  background: rgba(251, 252, 253, 0.7);
-  border-radius: 0 0 8px 8px;
-}
-
-.sidebarItem {
-  display: flex;
-  align-items: center;
-  padding: 0.7rem 0.85rem;
-  color: #475569;
-  cursor: pointer;
-  border-radius: 6px;
-  margin: 0.2rem 0;
-  font-size: 0.9rem;
-  position: relative;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  background: transparent;
-}
-
-.sidebarItem::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(59, 130, 246, 0.08),
-    rgba(59, 130, 246, 0.05) 60%,
-    rgba(59, 130, 246, 0) 100%
-  );
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: -1;
-  border-radius: 6px;
-}
-
-.sidebarItem:hover {
-  color: var(--theme-primary, #3b82f6);
-  background-color: rgba(243, 244, 246, 0.7);
-  transform: translateX(2px);
-}
-
-.sidebarItem:hover::before {
-  width: 100%;
-}
-
-.sidebarItem.active {
-  color: var(--theme-primary, #3b82f6);
-  font-weight: 500;
-  background-color: rgba(59, 130, 246, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.sidebarItem.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 4px;
-  background: var(--theme-primary, #3b82f6);
-  border-radius: 0 3px 3px 0;
-  box-shadow: 1px 0 5px rgba(59, 130, 246, 0.3);
-}
-
-.sidebarItem .icon {
-  margin-right: 0.75rem;
-  color: #64748b;
-  transition: all 0.3s ease;
-}
-
-.sidebarItem:hover .icon {
-  color: var(--theme-primary, #3b82f6);
-  transform: scale(1.05);
-}
-
-/* 优化收藏夹子菜单样式 */
-.sidebarSubmenuItem {
-  margin: 0.25rem 0;
-  border-radius: 6px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.nestedSubmenu {
-  padding: 0.4rem 0 0.4rem 1.1rem;
-  margin-left: 0.75rem;
-  border-left: 1px dashed rgba(148, 163, 184, 0.3);
-  margin-top: 0.3rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 300px;
-  overflow-y: auto;
-  background: rgba(248, 250, 252, 0.6);
-  border-radius: 0 0 6px 6px;
-}
-
-.sidebarNestedItem {
-  display: flex;
-  align-items: center;
-  padding: 0.55rem 0.7rem;
-  color: #64748b;
-  cursor: pointer;
-  border-radius: 5px;
-  margin: 0.15rem 0;
-  font-size: 0.85rem;
-  position: relative;
-  transition: all 0.25s ease;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.sidebarNestedItem:hover {
-  color: var(--theme-primary, #3b82f6);
-  background-color: rgba(243, 244, 246, 0.6);
-  transform: translateX(2px);
-}
-
-.sidebarNestedItem .icon {
-  margin-right: 0.5rem;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
-}
-
-.sidebarNestedItem:hover .icon {
-  color: var(--theme-primary, #3b82f6);
-  transform: scale(1.1);
-}
-
-.folderName {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  max-width: 130px;
-}
-
-.folderCount {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  margin-left: 0.3rem;
-  opacity: 0.8;
-  transition: opacity 0.2s ease;
-}
-
-.defaultBadge {
-  display: inline-block;
-  font-size: 0.65rem;
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--theme-primary, #3b82f6);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  margin-left: 0.5rem;
-  font-weight: 500;
-}
-
-.emptyText {
-  color: #94a3b8;
-  font-style: italic;
-  font-size: 0.8rem;
-  padding: 0.5rem 0.7rem;
-}
-
-.loadingText {
-  color: #94a3b8;
-  font-size: 0.8rem;
-  padding: 0.5rem 0.7rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.loadingText::before {
-  content: '';
-  display: inline-block;
-  width: 0.8rem;
-  height: 0.8rem;
-  border: 2px solid rgba(148, 163, 184, 0.3);
-  border-top-color: var(--theme-primary, #3b82f6);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.createNewItem {
-  color: #64748b;
-  font-style: italic;
-  border-top: 1px dashed rgba(148, 163, 184, 0.2);
-  margin-top: 0.5rem;
-  padding-top: 0.6rem;
-}
-
-.createNewItem:hover {
-  color: var(--theme-primary, #3b82f6);
-  background-color: rgba(59, 130, 246, 0.05);
-}
-
-.createNewItem .icon {
-  color: #94a3b8;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* 侧边栏样式已移至单独的模块 sidebar.module.css */
 
 /* ===== 面包屑容器样式 ===== */
 .breadcrumbBar {
@@ -1040,160 +548,163 @@
 .tagContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  max-width: 200px;
+  gap: 6px;
+  margin: 4px 0;
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 4px;
+  background-color: rgba(226, 232, 240, 0.7);
+  color: #4a5568;
   font-size: 12px;
   font-weight: 500;
-  background-color: #edf2f7;
-  color: #4a5568;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100px;
+  max-width: 150px;
 }
 
 .tag:hover {
-  background-color: #e2e8f0;
+  background-color: rgba(226, 232, 240, 0.9);
   transform: translateY(-1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .extraTagsCount {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
   height: 20px;
-  background-color: #e2e8f0;
-  color: #4a5568;
+  padding: 0 6px;
   border-radius: 10px;
+  background-color: rgba(159, 175, 189, 0.2);
+  color: #64748b;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .tagsCell {
-  max-width: 220px;
-  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .emptyText {
-  color: #a0aec0;
+  color: #94a3b8;
   font-style: italic;
+  font-size: 0.85rem;
 }
 
-/* 标签输入相关样式 */
 .tagsContainer {
-  min-height: 40px;
-  margin-bottom: 16px;
-  padding: 8px;
-  border-radius: 8px;
-  background-color: #fafafa;
-  border: 1px dashed #e8e8e8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .tagsInputWrapper {
-  margin-bottom: 12px;
+  position: relative;
+  margin-bottom: 10px;
 }
 
 .tagsList {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .interactiveTag {
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
   padding: 4px 8px;
-  border-radius: 16px;
-  background: #f0f5ff;
-  border-color: #d6e4ff;
-  transition: all 0.2s;
+  border-radius: 4px;
+  background-color: rgba(59, 130, 246, 0.08);
+  color: var(--theme-primary, #3b82f6);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 
 .interactiveTag:hover {
-  background: #e6f7ff;
-  border-color: #91caff;
+  background-color: rgba(59, 130, 246, 0.15);
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.1);
 }
 
 .emptyTagsHint {
-  padding: 10px;
-  color: #8c8c8c;
   font-size: 13px;
-  text-align: center;
-  background: #fafafa;
-  border-radius: 8px;
+  color: #a0aec0;
   font-style: italic;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(226, 232, 240, 0.5);
 }
 
-/* 头像占位符 */
 .avatarPlaceholder {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-  color: white;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  font-weight: bold;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e6efff;
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 12px;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .avatarPlaceholder::before {
   content: '';
   position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  background: linear-gradient(45deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0.15) 50%, 
-    rgba(255, 255, 255, 0.05) 100%);
-  transform: rotate(45deg) translateY(100%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.2) 100%);
   z-index: -1;
-  transition: transform 0.6s ease;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
 }
 
 .avatarPlaceholder:hover::before {
-  transform: rotate(45deg) translateY(-100%);
+  opacity: 1;
+  transform: scale(1.2);
 }
 
-/* ===== 动画样式 ===== */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 .fadeIn {
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.3s ease;
 }
 
 @keyframes slideDown {
   from {
-    transform: translateY(-10px);
     opacity: 0;
+    transform: translateY(-10px);
   }
   to {
-    transform: translateY(0);
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 .slideDown {
-  animation: slideDown 0.3s ease-in-out;
+  animation: slideDown 0.3s ease;
 }
 
 @keyframes pulse {
@@ -1208,13 +719,7 @@
 
 /* ===== 响应式设计 ===== */
 @media (max-width: 1024px) {
-  .sidebar {
-    width: 100%;
-  }
-  
-  .sidebarContainer {
-    width: 220px; /* 在中等屏幕上进一步缩小宽度 */
-  }
+  /* 侧边栏响应式样式已移至单独的模块 sidebar.module.css */
 }
 
 @media (max-width: 768px) {
@@ -1223,20 +728,7 @@
     padding: 0;
   }
   
-  .sidebarContainer {
-    width: 100%;
-    max-height: 220px; /* 减小高度 */
-  }
-  
-  .sidebarHeader {
-    padding: 10px 14px; /* 减小内边距 */
-    font-size: 14px; /* 减小字体大小 */
-  }
-  
-  .sidebarItem {
-    padding: 8px 12px; /* 减小内边距 */
-    font-size: 13px; /* 减小字体大小 */
-  }
+  /* 侧边栏响应式样式已移至单独的模块 sidebar.module.css */
   
   .mainContent {
     border-radius: 0;
@@ -1398,138 +890,123 @@
   color: var(--theme-primary, #3182ce);
 }
 
-/* 添加上传按钮激活状态 */
 .activeButton {
-  background: linear-gradient(to right, var(--theme-secondary, #3182ce), var(--theme-primary, #4299e1));
-  transform: translateY(-1px);
-  box-shadow: 0 5px 12px rgba(49, 130, 206, 0.3);
+  background-color: #f0f7ff;
+  border-color: #cfe0fc;
+  color: var(--theme-primary, #3182ce);
 }
 
-/* 上传按钮容器 */
 .uploadOptionsContainer {
-  position: relative;
   display: flex;
   align-items: center;
-  height: 38px; /* 与其他按钮保持一致的高度 */
-  z-index: 100; /* 确保容器有足够的z-index */
+  gap: 8px;
+  margin-left: auto;
+  position: relative;
 }
 
-/* 下拉图标样式 */
 .dropdownIcon {
-  margin-left: 0;
   transition: transform 0.3s ease;
+  margin-left: 4px;
+  width: 16px;
+  height: 16px;
 }
 
-/* 下拉图标旋转效果 */
 .activeButton .dropdownIcon {
   transform: rotate(180deg);
 }
 
-/* 下拉菜单样式 */
 .dropdownMenu {
   position: absolute;
-  top: calc(100% + 5px);
+  top: 100%;
   right: 0;
-  z-index: 1000;
-  min-width: 150px;
-  background: white;
+  min-width: 200px;
+  background-color: white;
   border-radius: 8px;
-  border: 1px solid #eaeaea;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 8px;
-  animation: slideDown 0.2s ease-in-out;
-  overflow: visible;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  margin-top: 8px;
 }
 
-/* 下拉菜单选项 */
 .dropdownItem {
-  padding: 10px 12px;
+  padding: 10px 16px;
+  cursor: pointer;
   font-size: 14px;
   color: #333;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.2s;
-  user-select: none;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .dropdownItem:hover {
-  background: #f5f5f5;
-  color: var(--theme-primary, #3182ce);
+  background-color: #f5f8ff;
+  color: var(--theme-primary, #3b82f6);
 }
 
-/* 按钮图标统一样式 */
 .buttonIcon {
-  transition: transform 0.2s ease;
+  margin-right: 8px;
 }
 
-/* 搜索视图样式 - 与文件列表保持一致的滚动行为 */
 .searchViewContainer {
-  flex: 1;
-  overflow-y: auto;
+  padding: 20px;
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  animation: fadeIn 0.3s ease;
-  min-height: 200px;
-  max-height: calc(100vh - 240px);
-  display: flex;
-  flex-direction: column;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
-/* 刷新覆盖层 */
 .refreshingOverlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.8);
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: flex-start;
-  padding-top: 100px;
-  z-index: 100;
-  backdrop-filter: blur(2px);
+  z-index: 10;
   animation: fadeIn 0.3s ease;
-  border-radius: 16px; /* 匹配父容器圆角 */
-  pointer-events: none; /* 允许下层内容的点击交互 */
 }
 
-/* 添加滚动条样式 */
 .fileListContainer::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 .fileListContainer::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 3px;
 }
 
 .fileListContainer::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
   transition: background 0.2s ease;
 }
 
 .fileListContainer::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(148, 163, 184, 0.5);
 }
 
-/* 对Firefox的特殊处理 */
 .fileListContainer {
-  scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f1f1f1;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
 }
 
-/* 主题面板动画过渡 */
 @keyframes fadeInThemePanel {
   from {
     opacity: 0;
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -1547,56 +1024,54 @@
 }
 
 .refreshing {
-  opacity: 0.7;
-  cursor: not-allowed;
+  animation: rotate 1s linear infinite;
 }
 
 .fileContainer {
-  flex: 1;
-  overflow: auto;
-  padding: 0 16px 16px 16px;
-  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
 
 .fileList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .fileItem {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  border-radius: 8px;
-  transition: all 0.15s ease-in-out;
-  cursor: pointer;
-  user-select: none;
-  background-color: white;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  animation: fadeInUp 0.2s ease-in-out;
-  will-change: transform, opacity;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s;
+  animation: fadeInUp 0.3s ease;
+  animation-fill-mode: both;
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* 收藏按钮样式 */
 .favoriteCell {
-  width: 60px;
-  text-align: center;
+  width: 40px;
 }
 
 .favoriteButton {
-  background: transparent;
-  border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
   width: 32px;
   height: 32px;
   border-radius: 4px;
@@ -1626,167 +1101,7 @@
   color: #666;
 }
 
-/* 添加收藏夹嵌套菜单样式 */
-.sidebarSubmenuItem {
-  position: relative;
-}
-
-.nestedSubmenu {
-  padding-left: 20px;
-  margin-top: 2px;
-  margin-bottom: 8px;
-  border-left: 1px dashed rgba(0, 0, 0, 0.15);
-  animation: fadeIn 0.3s ease;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 4px;
-}
-
-.sidebarNestedItem {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
-  border-radius: 6px;
-  margin-bottom: 2px;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.85);
-}
-
-.sidebarNestedItem:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: rgba(0, 0, 0, 1);
-}
-
-.sidebarNestedItem .icon {
-  margin-right: 10px;
-  opacity: 0.8;
-  color: rgba(0, 0, 0, 0.7);
-}
-
-.sidebarNestedItem:hover .icon {
-  opacity: 1;
-  color: rgba(0, 0, 0, 0.9);
-}
-
-.folderName {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-  color: rgba(0, 0, 0, 0.85);
-}
-
-.folderCount {
-  margin-left: 4px;
-  font-size: 11px;
-  color: rgba(0, 0, 0, 0.5);
-}
-
-.defaultBadge {
-  font-size: 10px;
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 1px 4px;
-  border-radius: 4px;
-  margin-left: 4px;
-  color: rgba(0, 0, 0, 0.7);
-}
-
-.emptyText {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.5);
-  font-style: italic;
-}
-
-.loadingText {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.5);
-  animation: pulse 1.5s infinite;
-}
-
-.createNewItem {
-  margin-top: 4px;
-  border-top: 1px dashed rgba(0, 0, 0, 0.1);
-  padding-top: 8px;
-}
-
-.createNewItem:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.createNewItem .icon {
-  color: rgba(59, 130, 246, 0.9);
-}
-
-/* ===== 侧边栏展开/折叠动画 ===== */
-.submenuVisible {
-  max-height: 800px;
-  opacity: 1;
-  transform: translateY(0);
-  transition: max-height 0.3s ease-in-out, 
-              opacity 0.3s ease-in-out, 
-              transform 0.3s ease-in-out;
-}
-
-.submenuHidden {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: max-height 0.3s ease-in-out, 
-              opacity 0.3s ease-in-out, 
-              transform 0.3s ease-in-out;
-  overflow: hidden;
-}
-
-/* ===== 涟漪效果 ===== */
-.rippleContainer {
-  position: relative;
-  overflow: hidden;
-}
-
-.ripple {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 50%;
-  transform: scale(0);
-  animation: ripple 0.6s linear;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes ripple {
-  to {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-/* 优化hover效果 */
-.sidebarItem:hover,
-.sidebarNestedItem:hover,
-.sidebarHeader:hover {
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
-  transform: translateY(-1px);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.sidebarItem:active,
-.sidebarNestedItem:active,
-.sidebarHeader:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.05); 
-  transition: all 0.1s ease;
-}
-
-/* 添加子菜单流畅过渡效果 */
-.sidebarSubmenu,
-.nestedSubmenu {
-  transition: max-height 0.3s ease-in-out,
-              opacity 0.3s ease-in-out,
-              transform 0.3s ease-in-out;
-}
+/* 添加收藏夹嵌套菜单样式已移至sidebar.module.css */
 
 .fileAreaContainer {
   display: flex;

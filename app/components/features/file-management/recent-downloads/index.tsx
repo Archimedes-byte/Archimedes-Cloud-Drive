@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Spin, Switch } from 'antd';
+import React from 'react';
+import { Spin } from 'antd';
 import { DownloadCloud } from 'lucide-react';
-import { FileList } from '../../file-management/file-list';
 import { AntFileList } from '../../file-management/file-list/AntFileList';
 import { FileInfo } from '@/app/types';
 
@@ -20,6 +19,18 @@ interface RecentDownloadsContentProps {
   onToggleFavorite: (file: FileInfo, isFavorite: boolean) => void;
 }
 
+// 添加加载动画样式
+const spinnerStyle = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+  }
+`;
+
 export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   loadingRecentDownloads,
   recentDownloads,
@@ -32,10 +43,46 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   onDeselectAll,
   onToggleFavorite
 }) => {
-  const [useAntDesign, setUseAntDesign] = useState<boolean>(false);
+  // 本地加载状态
+  const [isLoading, setIsLoading] = React.useState(loadingRecentDownloads);
+  
+  // 同步props到本地状态
+  React.useEffect(() => {
+    if (isLoading !== loadingRecentDownloads) {
+      console.log('🔄 RecentDownloadsContent - 更新加载状态:', loadingRecentDownloads);
+      setIsLoading(loadingRecentDownloads);
+    }
+  }, [loadingRecentDownloads, isLoading]);
+  
+  // 当有数据时，确保不显示加载状态
+  React.useEffect(() => {
+    if (recentDownloads.length > 0 && isLoading) {
+      console.log('📥 有下载数据，关闭加载状态');
+      setIsLoading(false);
+    }
+  }, [recentDownloads, isLoading]);
+
+  // 添加调试日志
+  React.useEffect(() => {
+    console.log('📌 RecentDownloadsContent 渲染:');
+    console.log('- loadingRecentDownloads (props):', loadingRecentDownloads);
+    console.log('- isLoading (local):', isLoading);
+    console.log('- recentDownloads数量:', recentDownloads?.length || 0);
+  }, [loadingRecentDownloads, isLoading, recentDownloads]);
+
+  // 使用本地状态替代props状态
+  const effectiveIsLoading = isLoading;
+
+  // 更智能的加载状态逻辑
+  const showLoadingIndicator = effectiveIsLoading && recentDownloads.length === 0;
+  const showEmptyState = !effectiveIsLoading && recentDownloads.length === 0;
+  const showContent = recentDownloads.length > 0;
 
   return (
     <div>
+      {/* 添加样式标签 */}
+      <style dangerouslySetInnerHTML={{ __html: spinnerStyle }} />
+      
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -45,50 +92,28 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
         <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <DownloadCloud size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
           最近下载的文件
+          {effectiveIsLoading && <small style={{marginLeft: '10px', fontSize: '12px', color: '#888'}}>(刷新中...)</small>}
         </h2>
-        
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: 8, fontSize: '14px' }}>使用Ant Design组件:</span>
-          <Switch checked={useAntDesign} onChange={setUseAntDesign} size="small" />
-        </div>
       </div>
       
-      {loadingRecentDownloads ? (
+      {showLoadingIndicator && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <Spin />
-          <p>加载最近下载文件...</p>
+          <div
+            className="loading-spinner"
+            style={{
+              width: '40px',
+              height: '40px',
+              margin: '0 auto 20px',
+              border: '3px solid rgba(52, 144, 220, 0.2)',
+              borderTop: '3px solid #3490dc',
+              borderRadius: '50%'
+            }}
+          />
+          <p>加载最近下载文件... <span style={{color: 'gray', fontSize: '12px'}}>(loadingRecentDownloads={loadingRecentDownloads.toString()}, isLoading={isLoading.toString()})</span></p>
         </div>
-      ) : recentDownloads.length > 0 ? (
-        useAntDesign ? (
-          <AntFileList 
-            files={recentDownloads}
-            selectedFiles={selectedFiles}
-            onFileClick={onFileClick}
-            onFileSelect={onFileSelect}
-            onSelectAll={onSelectAll}
-            onDeselectAll={onDeselectAll}
-            areAllSelected={false}
-            showCheckboxes={true}
-            favoritedFileIds={favoritedFileIds}
-            onToggleFavorite={onToggleFavorite}
-            fileUpdateTrigger={fileUpdateTrigger}
-          />
-        ) : (
-          <FileList 
-            files={recentDownloads}
-            selectedFiles={selectedFiles}
-            onFileClick={onFileClick}
-            onFileSelect={onFileSelect}
-            onSelectAll={onSelectAll}
-            onDeselectAll={onDeselectAll}
-            areAllSelected={false}
-            showCheckboxes={true}
-            favoritedFileIds={favoritedFileIds}
-            onToggleFavorite={onToggleFavorite}
-            fileUpdateTrigger={fileUpdateTrigger}
-          />
-        )
-      ) : (
+      )}
+      
+      {showEmptyState && (
         <div style={{ 
           textAlign: 'center', 
           padding: '40px 0',
@@ -96,6 +121,23 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
         }}>
           <p>暂无最近下载的文件记录</p>
         </div>
+      )}
+      
+      {showContent && (
+        <AntFileList 
+          files={recentDownloads}
+          selectedFiles={selectedFiles}
+          onFileClick={onFileClick}
+          onFileSelect={onFileSelect}
+          onSelectAll={onSelectAll}
+          onDeselectAll={onDeselectAll}
+          areAllSelected={false}
+          showCheckboxes={true}
+          favoritedFileIds={favoritedFileIds}
+          onToggleFavorite={onToggleFavorite}
+          fileUpdateTrigger={fileUpdateTrigger}
+          isLoading={false}
+        />
       )}
     </div>
   );

@@ -20,7 +20,7 @@ interface PageLayoutProps {
   searchType: string;
   favoriteFoldersRefreshTrigger: number;
   onTypeClick: (type: FileType) => void;
-  onSearchClick: (query?: string) => void;
+  onSearchClick: (query?: string, searchType?: string) => void;
   onSharesClick: () => void;
   onFavoritesClick: (folderId?: string) => void;
   onCreateFavoriteFolder: () => void;

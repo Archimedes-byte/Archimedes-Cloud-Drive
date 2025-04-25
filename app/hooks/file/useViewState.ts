@@ -87,18 +87,33 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   
   /**
    * 处理搜索点击
+   * @param query 可选的搜索查询
+   * @param type 可选的搜索类型，默认为'name'（文件名搜索）
    */
-  const handleSearchClick = useCallback((query?: string) => {
+  const handleSearchClick = useCallback((query?: string, type?: 'name' | 'tag') => {
     // 关闭所有特殊视图
     closeAllSpecialViews();
     // 打开搜索视图
     setShowSearchView(true);
-    // 设置当前视图类型
-    setCurrentView('search');
     
-    // 这里可以返回查询字符串，由父组件进一步处理
-    return query;
+    // 根据搜索类型设置当前视图
+    if (type === 'tag') {
+      setCurrentView('tag');
+    } else {
+      setCurrentView('search');
+    }
+    
+    // 这里可以返回查询字符串和类型，由父组件进一步处理
+    return { query, type };
   }, [closeAllSpecialViews]);
+  
+  /**
+   * 处理标签搜索点击
+   * 这是一个便捷方法，内部调用handleSearchClick并指定类型为tag
+   */
+  const handleTagSearchClick = useCallback((query?: string) => {
+    return handleSearchClick(query, 'tag');
+  }, [handleSearchClick]);
   
   /**
    * 处理创建收藏夹
@@ -145,6 +160,7 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
     handleRecentClick,
     handleRecentDownloadsClick,
     handleSearchClick,
+    handleTagSearchClick,
     handleCreateFavoriteFolder,
     handleFavoriteCreateSuccess
   };
