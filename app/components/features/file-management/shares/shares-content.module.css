@@ -1,0 +1,125 @@
+.sharesContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+}
+
+.backButton:hover {
+  color: #1890ff;
+}
+
+.title {
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  color: #1890ff;
+}
+
+.content {
+  flex: 1;
+  padding: 24px;
+  overflow: auto;
+}
+
+.fileNameCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.openButton {
+  padding: 0;
+  height: auto;
+}
+
+.shareLinkCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shareLink {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyButton {
+  padding: 0;
+  height: auto;
+}
+
+.expiryCell,
+.accessLimitCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon {
+  color: #666;
+}
+
+.createdAtCell {
+  color: #666;
+}
+
+.deleteButton {
+  padding: 0;
+  height: auto;
+}
+
+/* 表格样式覆盖 */
+.tableStyles :global(.ant-table) {
+  background-color: transparent;
+}
+
+.tableStyles :global(.ant-table-thead > tr > th) {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+.tableStyles :global(.ant-table-tbody > tr:hover > td) {
+  background-color: #f0f7ff !important;
+}
+
+.tableStyles :global(.ant-table-pagination) {
+  margin: 16px 0 0;
+} 

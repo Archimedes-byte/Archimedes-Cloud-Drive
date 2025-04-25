@@ -80,6 +80,18 @@ export class FavoriteService {
     isDefault = false
   ): Promise<FavoriteFolderInfo> {
     try {
+      // 检查是否存在同名收藏夹
+      const existingFolder = await prisma.favoriteFolder.findFirst({
+        where: { 
+          userId,
+          name: name.trim()
+        }
+      });
+
+      if (existingFolder) {
+        throw createFileError('conflict', '已存在同名收藏夹');
+      }
+
       // 如果设置为默认收藏夹，需要将其他收藏夹的默认状态取消
       if (isDefault) {
         await prisma.favoriteFolder.updateMany({

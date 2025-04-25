@@ -5,7 +5,7 @@ import { FileInfo } from '@/app/types';
 import { Sidebar, FileType } from '../navigation/sidebar/Sidebar';
 import MiniSidebar from '../navigation/mini-sidebar/MiniSidebar';
 import { ThemePanel } from '@/app/components/ui/themes';
-import styles from '../styles/page-layout.module.css';
+import styles from '../styles/layout/page-layout.module.css';
 
 // 添加ViewType类型定义，与Sidebar中一致
 type ViewType = FileType | 'search' | 'favorites' | 'recent' | 'downloads' | 'tag' | 'shares';

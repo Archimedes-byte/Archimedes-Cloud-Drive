@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal } from 'antd';
+import { Modal, notification } from 'antd';
 import { Clipboard, Clock, Lock, Users } from 'lucide-react';
 import styles from './share-modal.module.css';
 import { FileInfo } from '@/app/types';
@@ -74,6 +74,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     setIsSharing(true);
 
     try {
+      // 创建暂存对象避免状态更新问题
       const shareOptions: ShareOptions = {
         fileIds: selectedFiles.map(file => file.id),
         expiryDays,
@@ -83,13 +84,27 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       };
 
       const result = await onShare(shareOptions);
-      setShareLink(result.shareLink);
-      setShareCode(result.extractCode);
-      setHasShared(true);
-      antMessage.success('分享链接已生成');
+      
+      // 使用setTimeout错开状态更新，避免渲染冲突
+      setTimeout(() => {
+        setShareLink(result.shareLink);
+        setShareCode(result.extractCode);
+        setHasShared(true);
+        // 使用更可靠的消息通知方式
+        notification.success({
+          message: '分享成功',
+          description: '分享链接已生成，可以复制分享给他人',
+          placement: 'bottomRight'
+        });
+      }, 100);
     } catch (error) {
       console.error('分享失败:', error);
-      antMessage.error('分享失败，请重试');
+      // 使用更友好的错误提示
+      notification.error({
+        message: '分享失败',
+        description: error instanceof Error ? error.message : '请稍后重试',
+        placement: 'bottomRight'
+      });
     } finally {
       setIsSharing(false);
     }
@@ -132,7 +147,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <div className={styles.shareSettings}>
             <div className={styles.tabHeader}>
               <div className={styles.tabItem + ' ' + styles.active}>链接分享</div>
-              <div className={styles.tabItem}>发给网盘好友</div>
             </div>
 
             {/* 有效期设置 */}

@@ -4,8 +4,7 @@
  */
 import { 
   withAuth, 
-  AuthenticatedRequest, 
-  createApiResponse, 
+  AuthenticatedRequest,
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { StorageService } from '@/app/services/storage-service';

@@ -20,7 +20,7 @@ import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 import { FileInfo } from '@/app/types';
 import { AntFileList } from '../file-list';
 import { Breadcrumb } from '../navigation/breadcrumb';
-import FolderManagement from './FolderManagement';
+import { FolderManagement } from '../folder-management';
 
 const { Title, Text } = Typography;
 

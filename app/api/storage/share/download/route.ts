@@ -26,6 +26,56 @@ function streamToReadableStream(nodeStream: Readable): ReadableStream {
 }
 
 /**
+ * 根据文件扩展名获取MIME类型
+ */
+function getMimeTypeByExtension(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  
+  // 音频文件
+  if (ext === 'mp3') return 'audio/mpeg';
+  if (ext === 'wav') return 'audio/wav';
+  if (ext === 'ogg') return 'audio/ogg';
+  if (ext === 'flac') return 'audio/flac';
+  if (ext === 'aac') return 'audio/aac';
+  if (ext === 'm4a') return 'audio/mp4';
+  
+  // 视频文件
+  if (ext === 'mp4') return 'video/mp4';
+  if (ext === 'webm') return 'video/webm';
+  if (ext === 'avi') return 'video/x-msvideo';
+  if (ext === 'mov') return 'video/quicktime';
+  if (ext === 'wmv') return 'video/x-ms-wmv';
+  
+  // 图片文件
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'png') return 'image/png';
+  if (ext === 'gif') return 'image/gif';
+  if (ext === 'webp') return 'image/webp';
+  if (ext === 'svg') return 'image/svg+xml';
+  
+  // 文档文件
+  if (ext === 'pdf') return 'application/pdf';
+  if (ext === 'doc' || ext === 'docx') return 'application/msword';
+  if (ext === 'xls' || ext === 'xlsx') return 'application/vnd.ms-excel';
+  if (ext === 'ppt' || ext === 'pptx') return 'application/vnd.ms-powerpoint';
+  if (ext === 'txt') return 'text/plain';
+  if (ext === 'html' || ext === 'htm') return 'text/html';
+  if (ext === 'css') return 'text/css';
+  if (ext === 'js') return 'application/javascript';
+  if (ext === 'json') return 'application/json';
+  
+  // 压缩文件
+  if (ext === 'zip') return 'application/zip';
+  if (ext === 'rar') return 'application/x-rar-compressed';
+  if (ext === '7z') return 'application/x-7z-compressed';
+  if (ext === 'tar') return 'application/x-tar';
+  if (ext === 'gz') return 'application/gzip';
+  
+  // 默认类型
+  return 'application/octet-stream';
+}
+
+/**
  * 下载分享文件
  * POST /api/storage/share/download
  */
@@ -119,9 +169,13 @@ export async function POST(request: NextRequest) {
       
       // 设置Content-Disposition头以触发下载
       const filename = encodeURIComponent(file.name);
+      // 确保使用正确的MIME类型
+      let contentType = getMimeTypeByExtension(file.filename);
+      
       const headers = {
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Type': file.type || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${filename}`,
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache',
       };
       
       // 将Node.js的Readable流转换为Web标准的ReadableStream
@@ -153,9 +207,13 @@ export async function POST(request: NextRequest) {
 
       // 设置Content-Disposition头以触发下载
       const filename = encodeURIComponent(file.name);
+      // 确保使用正确的MIME类型
+      let contentType = getMimeTypeByExtension(file.filename);
+      
       const headers = {
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Type': file.type || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${filename}`,
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache',
       };
       
       // 将Node.js的Readable流转换为Web标准的ReadableStream

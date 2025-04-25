@@ -1,0 +1,138 @@
+/* 文件夹管理组件样式 */
+.folderManagementContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  height: 100%;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+}
+
+.backButton {
+  margin-right: 16px;
+}
+
+.title {
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+}
+
+.titleIcon {
+  margin-right: 12px;
+  color: #fadb14;
+}
+
+.breadcrumbContainer {
+  margin-bottom: 24px;
+}
+
+.folderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 16px 0;
+}
+
+.folderCard {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(235, 240, 245, 0.8);
+  transition: all 0.2s ease;
+}
+
+.folderCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.folderCardHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.folderIcon {
+  color: #1677ff;
+  margin-right: 10px;
+}
+
+.defaultBadge {
+  margin-left: 10px;
+  padding: 2px 8px;
+  background-color: #e6f7ff;
+  color: #1677ff;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.folderDescription {
+  margin-bottom: 16px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.folderMeta {
+  margin-top: auto;
+  margin-bottom: 16px;
+}
+
+.folderCardActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.emptyContainer {
+  padding: 48px;
+  text-align: center;
+}
+
+.formItem {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .folderGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .folderGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .folderManagementContainer {
+    padding: 16px;
+  }
+} 

@@ -294,13 +294,33 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       return false;
     }
 
+    // 验证目标文件夹ID
+    if (!targetFolderId) {
+      message.warning('请选择目标文件夹');
+      return false;
+    }
+
+    // 验证是否在移动文件夹到自身或其子文件夹
+    if (fileIds.includes(targetFolderId)) {
+      message.error('不能将文件夹移动到自身');
+      return false;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
+      console.log(`开始移动文件，文件数: ${fileIds.length}，目标文件夹: ${targetFolderId}`);
+      
       // 使用fileApi客户端
       await fileApi.moveFiles(fileIds, targetFolderId);
+      
+      console.log(`文件移动成功，文件已移动到: ${targetFolderId}`);
       message.success('文件移动成功');
+      
+      // 清除选择的文件
+      setSelectedFileIds([]);
+      
       return true;
     } catch (error) {
       console.error('移动文件失败:', error);

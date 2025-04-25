@@ -170,9 +170,32 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
       ),
     },
     {
+      title: '分享链接',
+      key: 'shareLink',
+      ellipsis: true,
+      render: (_: any, record: ShareItem) => {
+        const baseUrl = window.location.origin;
+        const shareLink = `${baseUrl}/s/${record.shareCode}`;
+        return (
+          <Tooltip title={shareLink} placement="topLeft">
+            <div style={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {shareLink}
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: '提取码',
+      dataIndex: 'extractCode',
+      key: 'extractCode',
+      width: 100,
+    },
+    {
       title: '分享时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 120,
       render: (date: string) => (
         <Tooltip title={format(new Date(date), 'yyyy-MM-dd HH:mm:ss')}>
           {formatDistanceToNow(new Date(date), { addSuffix: true, locale: zhCN })}

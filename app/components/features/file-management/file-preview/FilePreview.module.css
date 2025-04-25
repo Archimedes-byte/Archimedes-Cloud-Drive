@@ -251,15 +251,15 @@
 }
 
 .audioPreview {
-  margin-top: 16px;
+  margin-top: 20px;
   width: 100%;
   max-width: 400px;
 }
 
 /* PDF预览 */
 .pdfPreviewContainer {
-  height: 100%;
   width: 100%;
+  height: 100%;
 }
 
 .pdfPreview {
@@ -268,10 +268,10 @@
   border: none;
 }
 
-/* Office文档预览 */
+/* Office预览 */
 .officePreviewContainer {
-  height: 100%;
   width: 100%;
+  height: 100%;
 }
 
 .officePreview {
@@ -280,125 +280,123 @@
   border: none;
 }
 
-/* 通用文件预览 */
+/* 通用文件信息展示 */
 .genericPreviewContainer {
-  text-align: center;
-  padding: 32px;
-  max-width: 500px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
 }
 
+/* 文件信息面板 */
 .fileInfo {
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* 文件类型和大小信息 */
+.fileType, .fileSize {
+  display: inline-block;
+  margin-right: 16px;
   color: #57606a;
   font-size: 14px;
 }
 
-.fileType, .fileSize {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* 预览容器布局改为水平 */
+/* 预览容器布局 */
 .previewContainer {
   display: flex;
   flex: 1;
-  width: 100%;
-  height: calc(100% - 64px); /* 预留头部高度 */
   overflow: hidden;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.03) inset;
 }
 
 /* 文件信息面板 */
 .fileInfoPanel {
-  width: 280px;
-  background-color: rgba(248, 250, 252, 0.8);
-  backdrop-filter: blur(5px);
+  width: 300px;
+  background-color: #fff;
   border-left: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
-  padding: 20px;
-  overflow-y: auto;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
   position: relative;
+  overflow: auto;
 }
 
+/* 文件信息面板顶部装饰线 */
 .fileInfoPanel::before {
   content: '';
   position: absolute;
   top: 0;
-  bottom: 0;
-  left: 0;
-  width: 3px;
-  background: linear-gradient(to bottom, 
+  right: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to left, 
     var(--theme-primary, #3b82f6), 
-    var(--theme-secondary, #4f46e5));
-  opacity: 0.5;
+    var(--theme-secondary, #4f46e5), 
+    var(--theme-accent, #ec4899));
 }
 
+/* 文件信息标题 */
 .fileInfoTitle {
-  font-size: 16px;
+  padding: 16px;
   font-weight: 600;
-  color: #1f2328;
-  margin: 0 0 16px 0;
-  padding-bottom: 8px;
   border-bottom: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: #fff;
 }
 
+/* 文件信息内容 */
 .fileInfoContent {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding: 16px;
+  flex: 1;
 }
 
+/* 文件信息项 */
 .fileInfoItem {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  margin-bottom: 16px;
   padding: 8px;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.5);
-  transition: all 0.2s;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
+/* 文件信息项悬停效果 */
 .fileInfoItem:hover {
   background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05);
-  transform: translateX(2px);
 }
 
+/* 文件信息标签 */
 .fileInfoLabel {
   font-size: 12px;
-  color: #64748b;
-  font-weight: 500;
+  color: #57606a;
+  margin-bottom: 4px;
 }
 
+/* 文件信息值 */
 .fileInfoValue {
   font-size: 14px;
-  color: #1f2328;
-  word-break: break-word;
+  word-break: break-all;
 }
 
-/* 返回按钮样式 */
+/* 返回按钮 */
 .backButton {
-  background: none;
-  border: none;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
+  margin-right: 12px;
+  padding: 4px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #57606a;
-  transition: all 0.3s;
-  margin-right: 8px;
+  transition: all 0.2s;
   position: relative;
   overflow: hidden;
 }
 
+/* 返回按钮悬停效果背景 */
 .backButton::before {
   content: '';
   position: absolute;
@@ -407,111 +405,129 @@
   width: 100%;
   height: 100%;
   background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
-  border-radius: 8px;
+  border-radius: 50%;
   transform: scale(0);
   transition: transform 0.2s ease;
 }
 
+/* 返回按钮悬停效果展示 */
 .backButton:hover::before {
   transform: scale(1);
 }
 
+/* 返回按钮悬停文字颜色 */
 .backButton:hover {
   color: var(--theme-primary, #3b82f6);
-  transform: translateX(-2px);
 }
 
-/* 深色主题适配 */
+/* 暗色主题适配 */
+/* 预览覆盖层 */
 :global(.dark-theme) .previewOverlay {
-  background-color: #0d1117;
+  background-color: #111827;
   background-image: 
     radial-gradient(circle at 10% 20%, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05) 0%, transparent 20%),
     radial-gradient(circle at 90% 80%, rgba(var(--theme-secondary-rgb, 79, 70, 229), 0.05) 0%, transparent 20%);
 }
 
+/* 预览模态框 */
 :global(.dark-theme) .filePreviewModal {
   background-color: transparent;
 }
 
+/* 预览头部 */
 :global(.dark-theme) .previewHeader {
-  background-color: rgba(30, 41, 59, 0.7);
-  border-bottom-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.2);
+  background-color: rgba(17, 24, 39, 0.8);
+  border-bottom-color: rgba(55, 65, 81, 0.5);
 }
 
+/* 预览标题 */
 :global(.dark-theme) .previewTitle {
-  color: #f0f6fc;
+  color: #e5e7eb;
 }
 
+/* 操作按钮和关闭按钮 */
 :global(.dark-theme) .actionButton,
-:global(.dark-theme) .closeButton,
-:global(.dark-theme) .backButton {
-  color: #8b949e;
+:global(.dark-theme) .closeButton {
+  color: #9ca3af;
 }
 
+/* 操作按钮悬停 */
 :global(.dark-theme) .actionButton:hover {
-  color: var(--theme-primary, #3b82f6);
+  color: var(--theme-primary, #60a5fa);
 }
 
+/* 关闭按钮悬停 */
 :global(.dark-theme) .closeButton:hover {
   background-color: rgba(239, 68, 68, 0.2);
   color: #f87171;
 }
 
+/* 预览内容区 */
 :global(.dark-theme) .previewContent {
-  background-color: rgba(13, 17, 23, 0.8);
+  background-color: rgba(17, 24, 39, 0.8);
   background-image: 
-    linear-gradient(135deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%),
-    linear-gradient(225deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%),
-    linear-gradient(315deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%),
-    linear-gradient(45deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.03) 25%, transparent 25%);
+    linear-gradient(135deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05) 25%, transparent 25%);
 }
 
+/* 文件信息面板 */
 :global(.dark-theme) .fileInfoPanel {
-  background-color: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(5px);
-  border-left-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.2);
+  background-color: #1f2937;
+  border-left-color: rgba(55, 65, 81, 0.5);
 }
 
+/* 文件信息标题 */
 :global(.dark-theme) .fileInfoTitle {
-  color: #f0f6fc;
-  border-bottom-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.2);
+  border-bottom-color: rgba(55, 65, 81, 0.5);
+  background-color: #1f2937;
 }
 
+/* 文件信息项 */
 :global(.dark-theme) .fileInfoItem {
-  background-color: rgba(30, 41, 59, 0.4);
+  border-bottom-color: rgba(55, 65, 81, 0.2);
 }
 
+/* 文件信息项悬停 */
 :global(.dark-theme) .fileInfoItem:hover {
-  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
+  background-color: rgba(var(--theme-primary-rgb, 96, 165, 250), 0.1);
 }
 
+/* 文件信息标签 */
 :global(.dark-theme) .fileInfoLabel {
-  color: #8b949e;
+  color: #9ca3af;
 }
 
+/* 文件信息值 */
 :global(.dark-theme) .fileInfoValue {
-  color: #c9d1d9;
+  color: #e5e7eb;
 }
 
+/* 加载文本 */
 :global(.dark-theme) .loadingText {
-  color: #8b949e;
+  color: #9ca3af;
 }
 
+/* 错误消息 */
 :global(.dark-theme) .errorMessage {
-  background-color: rgba(207, 34, 46, 0.1);
-  border-color: rgba(207, 34, 46, 0.3);
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #f87171;
+  border-color: rgba(220, 38, 38, 0.3);
 }
 
+/* 文件图标 */
 :global(.dark-theme) .fileIcon {
-  color: #8b949e;
+  color: #9ca3af;
 }
 
+/* 调试信息 */
 :global(.dark-theme) .debugInfo {
-  background-color: #21262d;
-  border-color: #30363d;
+  border-color: #374151;
+  background-color: #1f2937;
 }
 
-/* 在小屏幕上的响应式设计 */
+/* 移动端适配 */
 @media (max-width: 768px) {
   .previewContainer {
     flex-direction: column;
@@ -520,24 +536,23 @@
   .fileInfoPanel {
     width: 100%;
     height: auto;
+    max-height: 300px;
     border-left: none;
     border-top: 1px solid rgba(var(--theme-primary-rgb, 59, 130, 246), 0.1);
-    padding: 16px;
   }
   
   .fileInfoPanel::before {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: auto;
     width: 100%;
     height: 3px;
+    top: 0;
+    left: 0;
     background: linear-gradient(to right, 
       var(--theme-primary, #3b82f6), 
-      var(--theme-secondary, #4f46e5));
+      var(--theme-secondary, #4f46e5), 
+      var(--theme-accent, #ec4899));
   }
   
   .previewContent {
-    height: 60vh;
+    padding: 16px;
   }
 } 

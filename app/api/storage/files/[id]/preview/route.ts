@@ -111,15 +111,33 @@ function isPreviewableFile(type?: string, extension?: string): boolean {
  */
 export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
   try {
+    console.log('文件预览API请求开始', { userId: req.user.id, url: req.url });
+    
     // 从URL中获取文件ID
     const fileId = req.url.split('/').slice(-2)[0];
     
     if (!fileId) {
+      console.error('预览请求缺少文件ID');
       return createApiErrorResponse('文件ID无效', 400);
     }
     
+    console.log(`处理文件预览请求: ${fileId}`);
+    
     // 获取文件信息
-    const fileInfo = await storageService.getFile(req.user.id, fileId);
+    let fileInfo;
+    try {
+      fileInfo = await storageService.getFile(req.user.id, fileId);
+      console.log('获取到文件信息:', { 
+        fileId, 
+        name: fileInfo.name, 
+        type: fileInfo.type,
+        isFolder: fileInfo.isFolder,
+        filename: fileInfo.filename
+      });
+    } catch (error: any) {
+      console.error(`获取文件信息失败 (ID: ${fileId}):`, error);
+      return createApiErrorResponse(error.message || '文件不存在或无权限访问', 404);
+    }
     
     if (fileInfo.isFolder) {
       return createApiErrorResponse('不能预览文件夹', 400);
@@ -130,16 +148,23 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
     const isPreviewable = isPreviewableFile(fileInfo.type, fileExtension);
     
     if (!isPreviewable) {
+      console.log(`文件类型不支持预览: ${fileInfo.type || fileExtension}`);
       return createApiErrorResponse('此文件类型不支持预览', 400);
     }
     
     // 获取文件路径
-    const filename = path.basename(fileInfo.url || '');
+    const filename = fileInfo.filename || path.basename(fileInfo.url || '');
+    if (!filename) {
+      console.error('文件路径无效:', fileInfo);
+      return createApiErrorResponse('文件路径无效', 500);
+    }
+    
     const filePath = join(UPLOAD_DIR, filename);
     
     // 检查文件是否存在
     if (!existsSync(filePath)) {
-      return createApiErrorResponse('文件不存在', 404);
+      console.error(`文件物理路径不存在: ${filePath}`);
+      return createApiErrorResponse('文件不存在或已被删除', 404);
     }
     
     // 判断请求类型
@@ -148,18 +173,26 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
     
     // 如果需要JSON格式的预览URL，返回带签名的URL
     if (format === 'json') {
-      const contentType = getMimeType(fileInfo.type, fileExtension);
-      
-      // 根据文件类型设置过期时间
-      const expiresIn = contentType.startsWith('image/') ? 60 * 10 : 60 * 30; // 10分钟或30分钟
-      const signedUrl = await getSignedUrl(filePath, expiresIn);
-      
-      return createApiResponse({
-        success: true,
-        url: signedUrl,
-        fileType: contentType,
-        fileName: fileInfo.name
-      });
+      try {
+        const contentType = getMimeType(fileInfo.type, fileExtension);
+        
+        // 根据文件类型设置过期时间
+        const expiresIn = contentType.startsWith('image/') ? 60 * 10 : 60 * 30; // 10分钟或30分钟
+        
+        console.log(`生成签名URL: ${filePath}, 过期时间: ${expiresIn}秒, 类型: ${contentType}`);
+        const signedUrl = await getSignedUrl(filePath, expiresIn);
+        
+        console.log('签名URL生成成功');
+        return createApiResponse({
+          success: true,
+          url: signedUrl,
+          fileType: contentType,
+          fileName: fileInfo.name
+        });
+      } catch (error: any) {
+        console.error('生成签名URL失败:', error);
+        return createApiErrorResponse(error.message || '生成预览URL失败', 500);
+      }
     }
     
     // 默认行为：直接返回文件内容

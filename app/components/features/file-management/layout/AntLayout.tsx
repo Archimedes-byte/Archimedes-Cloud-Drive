@@ -3,7 +3,7 @@
 import React, { ReactNode } from 'react';
 import { Layout, theme } from 'antd';
 import { themeTokens } from '@/app/theme';
-import './antLayout.css';
+import '../styles/layout/ant-layout.css';
 
 const { Header, Sider, Content } = Layout;
 

@@ -83,6 +83,16 @@ export function useShareView(shareCode: string) {
   // 下载文件
   const downloadFile = useCallback(async (fileId: string) => {
     try {
+      message.loading({ content: '准备下载文件...', key: 'fileDownload' });
+      
+      // 先获取文件信息以确保有正确的文件名
+      const fileInfo = currentFolder?.contents.find(f => f.id === fileId) || 
+                      (shareInfo?.files || []).find(f => f.id === fileId);
+      
+      if (!fileInfo) {
+        throw new Error('无法获取文件信息');
+      }
+      
       const response = await fetch(`/api/storage/share/download`, {
         method: 'POST',
         headers: {
@@ -93,41 +103,70 @@ export function useShareView(shareCode: string) {
           extractCode,
           fileId,
         }),
+        // 添加超时处理
+        signal: AbortSignal.timeout(30000), // 30秒超时
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '下载失败');
+        let errorMsg = '下载失败';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch (e) {
+          // 如果响应不是JSON格式，使用默认错误信息
+        }
+        throw new Error(errorMsg);
       }
 
       // 获取文件名
       const contentDisposition = response.headers.get('content-disposition');
-      let filename = 'download';
+      // 默认使用UI中显示的文件名
+      let filename = fileInfo.name;
+      
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?([^"]*)"?/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
+        // 尝试从filename*的UTF-8编码中获取文件名
+        const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''([^;]*)/i);
+        if (filenameStarMatch && filenameStarMatch[1]) {
+          filename = decodeURIComponent(filenameStarMatch[1]);
+        } else {
+          // 回退到普通filename
+          const filenameMatch = contentDisposition.match(/filename="?([^";]*)"?/i);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = decodeURIComponent(filenameMatch[1]);
+          }
         }
       }
 
+      // 获取Content-Type，用于确定正确的文件类型
+      const contentType = response.headers.get('content-type') || '';
+      
       // 创建下载链接
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // 使用正确的MIME类型创建Blob
+      const typedBlob = new Blob([blob], { type: contentType });
+      const url = window.URL.createObjectURL(typedBlob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // 延迟回收URL以确保下载开始
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 1000);
 
-      message.success('下载成功');
+      message.success({ content: '下载成功', key: 'fileDownload' });
     } catch (error) {
       console.error('下载失败:', error);
-      message.error(error instanceof Error ? error.message : '下载失败，请稍后重试');
+      message.error({ 
+        content: error instanceof Error ? error.message : '下载失败，请稍后重试', 
+        key: 'fileDownload' 
+      });
     }
-  }, [shareCode, extractCode]);
+  }, [shareCode, extractCode, currentFolder, shareInfo]);
 
   // 打开文件夹
   const openFolder = useCallback(async (folderId: string, folderName: string) => {
@@ -236,24 +275,63 @@ export function useShareView(shareCode: string) {
           extractCode,
           folderId,
         }),
+        // 添加超时处理
+        signal: AbortSignal.timeout(60000), // 60秒超时
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '下载失败');
+        let errorMsg = '下载失败';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch (e) {
+          // 如果响应不是JSON格式，使用默认错误信息
+        }
+        throw new Error(errorMsg);
       }
 
+      // 获取文件名
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `${folderName}.zip`;
+      
+      if (contentDisposition) {
+        // 尝试从filename*的UTF-8编码中获取文件名
+        const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''([^;]*)/i);
+        if (filenameStarMatch && filenameStarMatch[1]) {
+          filename = decodeURIComponent(filenameStarMatch[1]);
+        } else {
+          // 回退到普通filename
+          const filenameMatch = contentDisposition.match(/filename="?([^";]*)"?/i);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = decodeURIComponent(filenameMatch[1]);
+          }
+        }
+      }
+      
+      // 确保文件名以.zip结尾
+      if (!filename.toLowerCase().endsWith('.zip')) {
+        filename = `${filename}.zip`;
+      }
+
+      // 获取Content-Type，确认是zip文件
+      const contentType = response.headers.get('content-type') || 'application/zip';
+      
       // 创建下载链接
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const typedBlob = new Blob([blob], { type: contentType });
+      const url = window.URL.createObjectURL(typedBlob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `${folderName}.zip`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // 延迟回收URL以确保下载开始
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 1000);
 
       message.success({ content: '文件夹打包下载成功', key: 'folderDownload' });
     } catch (error) {

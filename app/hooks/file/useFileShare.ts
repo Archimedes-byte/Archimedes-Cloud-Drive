@@ -40,6 +40,14 @@ export function useFileShare() {
     setIsSharing(true);
     
     try {
+      console.log('开始分享文件', {
+        fileIds: options.fileIds,
+        expiryDays: options.expiryDays,
+        hasExtractCode: !!options.extractCode,
+        accessLimit: options.accessLimit,
+        autoRefreshCode: options.autoRefreshCode
+      });
+      
       const result = await fileApi.shareFiles({
         fileIds: options.fileIds,
         expiryDays: options.expiryDays,
@@ -48,11 +56,25 @@ export function useFileShare() {
         autoRefreshCode: options.autoRefreshCode
       });
       
+      console.log('分享文件成功，获得结果:', {
+        hasShareLink: !!result.shareLink,
+        hasExtractCode: !!result.extractCode,
+      });
+      
       message.success('文件分享成功');
       return result;
     } catch (error) {
+      // 详细记录错误
       console.error('分享文件失败:', error);
-      message.error('分享文件失败，请重试');
+      
+      // 检查是否是API错误
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = (error as Error).message;
+        message.error(`分享失败：${errorMessage}`);
+      } else {
+        message.error('分享文件失败，请重试');
+      }
+      
       throw error;
     } finally {
       setIsSharing(false);
@@ -106,9 +128,17 @@ export function useFileShare() {
    */
   const copyShareLink = useCallback((shareUrl: string, extractCode?: string) => {
     try {
+      // 获取当前网站的域名部分
+      const baseUrl = window.location.origin;
+      
+      // 检查shareUrl是否已经是完整URL
+      const fullShareUrl = shareUrl.startsWith('http') ? 
+        shareUrl : 
+        `${baseUrl}${shareUrl.startsWith('/') ? '' : '/'}${shareUrl}`;
+      
       const textToCopy = extractCode 
-        ? `分享链接：${shareUrl}\n提取码：${extractCode}` 
-        : `分享链接：${shareUrl}`;
+        ? `分享链接：${fullShareUrl}\n提取码：${extractCode}` 
+        : `分享链接：${fullShareUrl}`;
       
       navigator.clipboard.writeText(textToCopy);
       message.success('分享链接已复制到剪贴板');

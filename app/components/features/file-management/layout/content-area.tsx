@@ -9,16 +9,16 @@ import {
 } from 'lucide-react';
 
 import { AntFileList } from '../file-list';
-import { 
-  SearchContainer, 
-  RecentFilesContent, 
-  RecentDownloadsContent,
-  TopActionBar,
-  FavoritesContent
-} from '@/app/components/features/file-management';
+import { SearchContainer } from '../search-view/search-container';
+import { RecentFilesContent } from '../recent-files';
+import { RecentDownloadsContent } from '../recent-downloads';
+import { TopActionBar } from '../action-bar/top-action-bar';
+import { FavoritesContent } from '../favorites';
+import { SharesContent } from '../shares';
+
 import { Breadcrumb as FileBreadcrumb } from '../navigation/breadcrumb';
 
-import styles from '@/app/components/features/file-management/styles/page-layout.module.css';
+import styles from '../styles/layout/page-layout.module.css';
 
 import { FileInfo } from '@/app/types';
 import { FileTypeEnum, SortDirectionEnum, FileSortInterface, SortField } from '@/app/types/domains/fileTypes';
@@ -251,7 +251,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   // 如果当前显示我的分享内容，渲染分享内容组件
   if (showMySharesContent) {
     return (
-      <FavoritesContent 
+      <SharesContent 
         onNavigateBack={() => {
           // 关闭所有特殊视图，确保完全返回到文件浏览界面
           closeAllSpecialViews();

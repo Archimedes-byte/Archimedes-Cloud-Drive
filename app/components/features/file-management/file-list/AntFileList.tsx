@@ -288,8 +288,20 @@ export function AntFileList({
           className={`favorite-button ${isFavorited ? 'favorited' : ''}`}
           onClick={(e) => {
             e.stopPropagation();
-            if (onToggleFavorite) {
-              onToggleFavorite(file, !isFavorited);
+            if (isFavorited) {
+              // 如果已收藏，直接取消收藏
+              if (onToggleFavorite) {
+                onToggleFavorite(file, false);
+              }
+            } else {
+              // 如果未收藏，打开收藏夹选择框
+              const favoriteEvent = new CustomEvent('open_favorite_modal', {
+                detail: {
+                  fileId: file.id,
+                  fileName: file.name
+                }
+              });
+              window.dispatchEvent(favoriteEvent);
             }
           }}
         />

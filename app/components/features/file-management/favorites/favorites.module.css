@@ -185,4 +185,165 @@
   .folderDescription {
     color: #aaa;
   }
+}
+
+.favoriteModal {
+  max-width: 90vw;
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.titleIcon {
+  color: #faad14;
+}
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.fileIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.fileIcon {
+  width: 24px;
+  height: 24px;
+  color: #40a9ff;
+}
+
+.fileNameContainer {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 12px;
+}
+
+.loadingText {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.folderList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.folderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.folderCard {
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid #f0f0f0;
+}
+
+.folderCard:hover {
+  border-color: #40a9ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.folderContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.folderHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.folderIcon {
+  width: 24px;
+  height: 24px;
+  color: #faad14;
+}
+
+.folderNameContainer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.folderName {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.defaultBadge {
+  font-size: 12px;
+}
+
+.folderDescription {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.folderFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.fileCount {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.folderActions {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.folderCard:hover .folderActions {
+  opacity: 1;
+}
+
+.createButton {
+  margin-top: 8px;
+}
+
+.createForm {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
 } 

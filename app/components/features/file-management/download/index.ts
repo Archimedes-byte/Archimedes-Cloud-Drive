@@ -1,2 +1,1 @@
-export { FolderDownloadButton } from './FolderDownloadButton';
-export { FolderActionButtons } from './FolderActionButtons'; 
+export { FolderDownloadButton } from './FolderDownloadButton'; 

@@ -198,99 +198,97 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
               console.log('获取到预览URL:', fileData.url);
               setPreviewUrl(fileData.url);
             } else {
-              throw new Error(fileData.error || '获取预览URL失败');
+              console.error('预览响应不包含有效URL:', fileData);
+              throw new Error(`无法获取预览URL: ${fileData.message || '服务响应格式错误'}`);
             }
           } 
-          // 检查第一层嵌套 data.data
-          else if (data.data && data.data.success && data.data.url) {
-            console.log('获取到预览URL:', data.data.url);
+          // 检查 data.data 结构
+          else if (data.data && data.data.url) {
+            console.log('获取到预览URL (data.data):', data.data.url);
             setPreviewUrl(data.data.url);
-          }
-          // 检查无嵌套的情况
-          else if (data.success && data.url) {
-            console.log('获取到预览URL:', data.url);
+          } 
+          // 检查简单 data 结构
+          else if (data.url) {
+            console.log('获取到预览URL (data):', data.url);
             setPreviewUrl(data.url);
           } else {
-            throw new Error(data.error || '获取预览URL失败');
+            console.error('预览响应不包含有效URL:', data);
+            throw new Error('无法获取预览URL: 服务响应格式错误');
           }
         } else {
-          // 对于不支持预览的文件类型，直接显示不支持预览的信息
-          console.log('文件类型不支持预览:', file.type, extension);
-          setError('此文件类型不支持预览');
+          // 不支持预览的文件类型
+          console.log('文件类型不支持预览:', file.type || extension);
+          setError(`不支持预览的文件类型: ${extension || file.type || '未知'}`);
         }
-      } catch (err) {
-        console.error('预览加载失败:', err);
-        setError(err instanceof Error ? err.message : '预览加载失败');
-        
-        // 添加重试按钮
-        if (!debugInfo) {
-          setDebugInfo({
-            errorInfo: err instanceof Error ? err.message : String(err),
-            apiPath: API_PATHS.STORAGE.FILES.PREVIEW(file.id)
-          });
-        }
+      } catch (error) {
+        console.error('获取预览URL出错:', error);
+        setError(error instanceof Error ? error.message : '获取预览失败');
       } finally {
         setLoading(false);
       }
     };
 
+    // 保存fetchPreviewUrl的引用
     fetchPreviewUrlRef.current = fetchPreviewUrl;
+    
+    // 执行获取预览URL
     fetchPreviewUrl();
   }, [file]);
 
-  if (!file) return null;
-
-  const fileName = file.name.split('/').pop() || file.name;
-  const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-  // 使用辅助函数判断文件类型
-  const isImageFile = isImageType(file.type, extension);
-  const isVideoFile = isVideoType(file.type, extension);
-  const isAudioFile = isAudioType(file.type, extension);
-  const isDocumentFile = isDocumentType(file.type, extension);
-
-  // 确定文件图标
+  // 文件图标渲染
   const getFileIconComponent = () => {
-    if (file.isFolder) return Folder;
-    
-    if (isImageFile) return ImageIcon;
-    if (isVideoFile) return Video;
-    if (isAudioFile) return Music;
-    if (isDocumentFile) return FileText;
-    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) return Archive;
-    if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'go', 'rb', 'php', 'html', 'css'].includes(extension)) return Code;
-    
-    return File;
-  };
+    if (!file) return <File size={48} />;
 
-  const IconComponent = getFileIconComponent();
+    // 获取扩展名
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    const fileType = getFileTypeByExtension(extension);
 
-  // 直接从文件路径尝试预览图片
-  const tryDirectPreview = () => {
-    if (isImageFile && file.path) {
-      // 尝试构建一个直接的文件URL
-      try {
-        // 如果有预览URL就优先使用预览URL
-        if (previewUrl) return previewUrl;
-        
-        // 尝试使用后端路径
-        return `/uploads/${file.id}`;
-      } catch (e) {
-        console.error('构建直接预览URL失败:', e);
-        return null;
-      }
+    switch (fileType) {
+      case 'image': return <ImageIcon size={48} />;
+      case 'video': return <Video size={48} />;
+      case 'audio': return <Music size={48} />;
+      case 'document': return <FileText size={48} />;
+      case 'archive': return <Archive size={48} />;
+      case 'code': return <Code size={48} />;
+      default: return <File size={48} />;
     }
-    return null;
   };
 
-  const directPreviewUrl = tryDirectPreview();
+  // 处理直接预览
+  const tryDirectPreview = () => {
+    if (!file) return;
+    
+    try {
+      // 获取文件扩展名
+      const extension = file.name.split('.').pop()?.toLowerCase() || '';
+      
+      console.log('尝试直接预览文件:', {
+        id: file.id,
+        name: file.name,
+        extension
+      });
+      
+      // 构建预览URL
+      const previewUrl = API_PATHS.STORAGE.FILES.PREVIEW(file.id);
+      
+      // 在新窗口中打开预览
+      window.open(previewUrl, '_blank');
+    } catch (error) {
+      console.error('直接预览文件出错:', error);
+      alert('打开文件预览失败');
+    }
+  };
 
-  // 渲染文件预览内容
+  // 渲染预览内容
   const renderPreviewContent = () => {
     if (loading) {
       return (
         <div className={styles.loadingContainer}>
-          <span className={styles.loadingText}>加载预览中...</span>
+          <svg className={styles.loadingIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2" />
+            <path d="M12 2C6.47715 2 2 6.47715 2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className={styles.loadingText}>正在加载预览...</p>
         </div>
       );
     }
@@ -298,21 +296,30 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     if (error) {
       return (
         <div className={styles.errorContainer}>
-          <IconComponent size={48} className={styles.fileIcon} />
-          <h3 className={styles.fileName}>{fileName}</h3>
-          <p className={styles.errorMessage}>{error}</p>
+          {getFileIconComponent()}
+          <h3>无法预览此文件</h3>
+          <div className={styles.errorMessage}>{error}</div>
           
-          {/* 添加重试按钮 */}
           <button 
-            className={styles.retryButton}
+            className={styles.actionButton} 
             onClick={() => {
-              setLoading(true);
-              setError(null);
-              setPreviewUrl(null);
-              fetchPreviewUrlRef.current?.();
+              if (fetchPreviewUrlRef.current) {
+                setLoading(true);
+                setError(null);
+                fetchPreviewUrlRef.current();
+              }
             }}
+            style={{ marginTop: '16px' }}
           >
             重试加载
+          </button>
+          
+          <button 
+            className={styles.actionButton} 
+            onClick={tryDirectPreview}
+            style={{ marginTop: '8px' }}
+          >
+            尝试直接预览
           </button>
           
           {debugInfo && (
@@ -325,17 +332,30 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
       );
     }
 
+    if (!file) {
+      return (
+        <div className={styles.errorContainer}>
+          <File size={48} className={styles.fileIcon} />
+          <h3>无效的文件</h3>
+          <div className={styles.errorMessage}>未找到文件数据</div>
+        </div>
+      );
+    }
+
+    // 获取文件扩展名
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+
     // 图片预览
-    if (isImageFile && (previewUrl || directPreviewUrl)) {
+    if (isImageType(file.type, extension) && previewUrl) {
       return (
         <div className={styles.imagePreviewContainer}>
           <img 
-            src={previewUrl || directPreviewUrl || ''} 
-            alt={fileName}
+            src={previewUrl} 
+            alt={file.name} 
             className={styles.imagePreview}
-            onError={(e) => {
-              console.error('图片加载失败:', e);
+            onError={() => {
               setError('图片加载失败');
+              setPreviewUrl(null);
             }}
           />
         </div>
@@ -343,57 +363,54 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     }
 
     // 视频预览
-    if (isVideoFile && previewUrl) {
+    if (isVideoType(file.type, extension) && previewUrl) {
       return (
         <div className={styles.videoPreviewContainer}>
           <video 
+            src={previewUrl} 
             controls 
             className={styles.videoPreview}
-            onError={(e) => {
-              console.error('视频加载失败:', e);
+            onError={() => {
               setError('视频加载失败');
+              setPreviewUrl(null);
             }}
-          >
-            <source src={previewUrl} />
-            您的浏览器不支持视频播放
-          </video>
+          />
         </div>
       );
     }
 
     // 音频预览
-    if (isAudioFile && previewUrl) {
+    if (isAudioType(file.type, extension) && previewUrl) {
       return (
         <div className={styles.audioPreviewContainer}>
-          <IconComponent size={48} className={styles.fileIcon} />
-          <h3 className={styles.fileName}>{fileName}</h3>
+          <div className={styles.fileIcon}>
+            <Music size={48} />
+          </div>
+          <h3>{file.name}</h3>
           <audio 
+            src={previewUrl} 
             controls 
             className={styles.audioPreview}
-            onError={(e) => {
-              console.error('音频加载失败:', e);
+            onError={() => {
               setError('音频加载失败');
+              setPreviewUrl(null);
             }}
-          >
-            <source src={previewUrl} />
-            您的浏览器不支持音频播放
-          </audio>
+          />
         </div>
       );
     }
 
-    // PDF预览（使用iframe）
+    // PDF预览
     if (isPdfFile(file.type, extension) && previewUrl) {
       return (
         <div className={styles.pdfPreviewContainer}>
           <iframe
             src={previewUrl}
             className={styles.pdfPreview}
-            title={fileName}
-            frameBorder="0"
-            onError={(e) => {
-              console.error('PDF加载失败:', e);
+            title={file.name}
+            onError={() => {
               setError('PDF加载失败');
+              setPreviewUrl(null);
             }}
           />
         </div>
@@ -407,30 +424,22 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
           <iframe
             src={previewUrl}
             className={styles.officePreview}
-            title={fileName}
-            frameBorder="0"
-            onError={(e) => {
-              console.error('文档加载失败:', e);
+            title={file.name}
+            onError={() => {
               setError('文档加载失败');
+              setPreviewUrl(null);
             }}
           />
         </div>
       );
     }
 
-    // 其他文件类型的通用预览界面
+    // 通用文件信息展示
     return (
       <div className={styles.genericPreviewContainer}>
-        <IconComponent size={64} className={styles.fileIcon} />
-        <h2 className={styles.fileName}>{fileName}</h2>
-        <p className={styles.fileInfo}>
-          {file.type && <span className={styles.fileType}>{getFileTypeByExtension(extension)}</span>}
-          {file.size && <span className={styles.fileSize}>{formatFileSize(file.size)}</span>}
-        </p>
-        {file.updatedAt && <p className={styles.fileDate}>最后修改: {formatDate(file.updatedAt.toString())}</p>}
-        <div className={styles.previewMessage}>
-          <p>此文件类型不支持直接预览</p>
-        </div>
+        {getFileIconComponent()}
+        <h3>{file.name}</h3>
+        <p>此文件类型不支持直接预览</p>
       </div>
     );
   };
@@ -438,37 +447,57 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
   // 渲染文件信息面板
   const renderFileInfo = () => {
     if (!file) return null;
-    
+
+    // 获取扩展名
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+
+    // 获取文件类型
+    let fileType = '未知类型';
+    if (isImageType(file.type, extension)) {
+      fileType = '图片';
+    } else if (isVideoType(file.type, extension)) {
+      fileType = '视频';
+    } else if (isAudioType(file.type, extension)) {
+      fileType = '音频';
+    } else if (isPdfFile(file.type, extension)) {
+      fileType = 'PDF文档';
+    } else if (isOfficeFile(file.type, extension)) {
+      if (extension === 'doc' || extension === 'docx') {
+        fileType = 'Word文档';
+      } else if (extension === 'xls' || extension === 'xlsx') {
+        fileType = 'Excel表格';
+      } else if (extension === 'ppt' || extension === 'pptx') {
+        fileType = 'PowerPoint演示文稿';
+      } else {
+        fileType = 'Office文档';
+      }
+    } else {
+      fileType = extension ? `${extension.toUpperCase()}文件` : '二进制文件';
+    }
+
     return (
       <div className={styles.fileInfoPanel}>
-        <h3 className={styles.fileInfoTitle}>文件信息</h3>
+        <div className={styles.fileInfoTitle}>
+          <ArrowLeft size={16} className={styles.backButton} onClick={onClose} />
+          <span>文件信息</span>
+        </div>
         <div className={styles.fileInfoContent}>
           <div className={styles.fileInfoItem}>
-            <span className={styles.fileInfoLabel}>文件名</span>
-            <span className={styles.fileInfoValue}>{fileName}</span>
+            <div className={styles.fileInfoLabel}>文件名</div>
+            <div className={styles.fileInfoValue}>{file.name}</div>
           </div>
-          {file.type && (
-            <div className={styles.fileInfoItem}>
-              <span className={styles.fileInfoLabel}>类型</span>
-              <span className={styles.fileInfoValue}>{getFileTypeByExtension(extension)}</span>
-            </div>
-          )}
-          {file.size && (
-            <div className={styles.fileInfoItem}>
-              <span className={styles.fileInfoLabel}>大小</span>
-              <span className={styles.fileInfoValue}>{formatFileSize(file.size)}</span>
-            </div>
-          )}
-          {file.updatedAt && (
-            <div className={styles.fileInfoItem}>
-              <span className={styles.fileInfoLabel}>修改时间</span>
-              <span className={styles.fileInfoValue}>{formatDate(file.updatedAt.toString())}</span>
-            </div>
-          )}
+          <div className={styles.fileInfoItem}>
+            <div className={styles.fileInfoLabel}>文件类型</div>
+            <div className={styles.fileInfoValue}>{fileType}</div>
+          </div>
+          <div className={styles.fileInfoItem}>
+            <div className={styles.fileInfoLabel}>文件大小</div>
+            <div className={styles.fileInfoValue}>{formatFileSize(file.size)}</div>
+          </div>
           {file.createdAt && (
             <div className={styles.fileInfoItem}>
-              <span className={styles.fileInfoLabel}>创建时间</span>
-              <span className={styles.fileInfoValue}>{formatDate(file.createdAt.toString())}</span>
+              <div className={styles.fileInfoLabel}>创建时间</div>
+              <div className={styles.fileInfoValue}>{formatDate(file.createdAt)}</div>
             </div>
           )}
         </div>
@@ -480,33 +509,22 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     <div className={styles.previewOverlay}>
       <div className={styles.filePreviewModal}>
         <div className={styles.previewHeader}>
-          <h2 className={styles.previewTitle}>
-            <button 
-              className={styles.backButton}
-              onClick={onClose}
-              title="返回"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <IconComponent size={24} />
-            {fileName}
-          </h2>
+          <div className={styles.previewTitle}>
+            {getFileIconComponent()}
+            <span>{file ? file.name : '文件预览'}</span>
+          </div>
           <div className={styles.previewActions}>
+            {file && (
+              <button 
+                className={styles.actionButton}
+                onClick={() => onDownload(file)}
+                title="下载文件"
+              >
+                <Download size={20} />
+              </button>
+            )}
             <button 
-              className={styles.actionButton}
-              onClick={() => onDownload(file)}
-              title="下载文件"
-            >
-              <Download size={20} />
-            </button>
-            <button 
-              className={styles.actionButton}
-              title="分享文件"
-            >
-              <Share2 size={20} />
-            </button>
-            <button 
-              className={styles.actionButton}
+              className={styles.closeButton}
               onClick={onClose}
               title="关闭预览"
             >
@@ -525,25 +543,22 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
   );
 };
 
-// 辅助函数：格式化文件大小
+// 辅助函数
 const formatFileSize = (bytes?: number): string => {
-  if (bytes === undefined || bytes === null) return '';
+  if (bytes === undefined || bytes === null) return '未知大小';
   if (bytes === 0) return '0 B';
   
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   
-  return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
 };
 
-// 辅助函数：格式化日期
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+const formatDate = (dateString: string | Date): string => {
+  try {
+    const date = dateString instanceof Date ? dateString : new Date(dateString);
+    return date.toLocaleString();
+  } catch (e) {
+    return dateString instanceof Date ? dateString.toString() : dateString;
+  }
 }; 

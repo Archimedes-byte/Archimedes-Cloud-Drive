@@ -8,12 +8,13 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Input, Button, Spin, Result, List, Avatar, Breadcrumb } from 'antd';
 import { FileIcon, folderIcon } from '@/app/utils/file/icon-map';
 import { formatFileSize } from '@/app/utils/file/formatter';
-import { Lock, Download, File, Folder, ChevronLeft, Home } from 'lucide-react';
+import { Lock, Download, File, Folder, ChevronLeft, Home, Eye } from 'lucide-react';
 import { useShareView } from '@/app/hooks/file/useShareView';
+import { FilePreview } from '@/app/components/features/file-management/file-preview/FilePreview';
 import styles from './file-share-page.module.css';
 
 export default function SharePage({ params }: { params: { code: string } }) {
@@ -35,6 +36,7 @@ export default function SharePage({ params }: { params: { code: string } }) {
     goToRoot,
     downloadFolder
   } = useShareView(params.code);
+  const [previewFile, setPreviewFile] = useState<any>(null);
 
   // 渲染提取码输入界面
   const renderExtractCodeInput = () => {
@@ -72,9 +74,8 @@ export default function SharePage({ params }: { params: { code: string } }) {
 
   // 渲染分享内容界面
   const renderShareContent = () => {
-    if (!shareInfo && !currentFolder) return null;
+    if (!shareInfo) return null;
 
-    // 决定显示哪些文件
     const files = currentFolder 
       ? currentFolder.contents 
       : shareInfo?.files || [];
@@ -151,6 +152,17 @@ export default function SharePage({ params }: { params: { code: string } }) {
               <List.Item
                 className={styles.fileItem}
                 actions={[
+                  !file.isFolder && (
+                    <Button
+                      key="preview"
+                      type="link"
+                      onClick={() => setPreviewFile(file)}
+                      disabled={false}
+                    >
+                      <Eye size={16} />
+                      预览
+                    </Button>
+                  ),
                   <Button 
                     key="action" 
                     type="link" 
@@ -176,13 +188,25 @@ export default function SharePage({ params }: { params: { code: string } }) {
                     />
                   }
                   title={file.name}
-                  description={file.isFolder 
+                  description={file.isFolder
                     ? '文件夹' 
                     : `${file.type.toUpperCase()} | ${formatFileSize(file.size)}`
                   }
                 />
               </List.Item>
             )}
+          />
+        )}
+        
+        {previewFile && (
+          <FilePreview
+            file={previewFile}
+            onClose={() => setPreviewFile(null)}
+            onDownload={(file) => {
+              if (file && file.id) {
+                downloadFile(file.id);
+              }
+            }}
           />
         )}
       </div>

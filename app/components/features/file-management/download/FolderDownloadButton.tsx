@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { DownloadOutlined, FolderOutlined } from '@ant-design/icons';
-import { Button, message, Modal, Spin, Typography, Space, Flex, Alert } from '@/app/components/ui/ant';
+import { Button, message, Modal, Spin, Typography, Space, Flex, Alert, Tooltip } from '@/app/components/ui/ant';
 import { downloadFolder } from '@/app/lib/storage/utils/download';
 import { useFileOperations } from '@/app/hooks/file/useFileOperations';
+import { Edit, MoreHorizontal } from 'lucide-react';
 import styles from './FolderDownloadButton.module.css';
 
 interface FolderDownloadButtonProps {
@@ -11,11 +12,15 @@ interface FolderDownloadButtonProps {
   className?: string;
   buttonText?: string;
   showIcon?: boolean;
+  onRename?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+  mode?: 'button' | 'actions';
 }
 
 /**
  * 文件夹下载按钮组件
  * 提供增强的文件夹下载体验，解决浏览器下载问题
+ * 支持两种模式：普通按钮和操作按钮组
  */
 export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
   folderId,
@@ -23,6 +28,9 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
   className = '',
   buttonText = '下载文件夹',
   showIcon = true,
+  onRename,
+  onContextMenu,
+  mode = 'button',
 }) => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -116,17 +124,114 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
     }
   };
 
-  return (
-    <>
-      <Button
-        className={className}
-        onClick={handleClick}
-        icon={showIcon ? <DownloadOutlined /> : undefined}
-        disabled={loading}
-      >
-        {buttonText}
-      </Button>
+  // 渲染按钮模式（原 FolderDownloadButton）
+  if (mode === 'button') {
+    return (
+      <>
+        <Button
+          className={className}
+          onClick={handleClick}
+          icon={showIcon ? <DownloadOutlined /> : undefined}
+          disabled={loading}
+        >
+          {buttonText}
+        </Button>
 
+        <Modal
+          title={<Flex align="center"><FolderOutlined className={styles.titleIcon} /> 下载文件夹</Flex>}
+          open={showModal}
+          onCancel={handleCancel}
+          footer={[
+            <Button key="cancel" onClick={handleCancel}>
+              取消
+            </Button>,
+            <Button 
+              key="newwindow" 
+              type="default" 
+              onClick={handleNewWindowDownload}
+              disabled={loading}
+            >
+              在新窗口下载
+            </Button>,
+            <Button 
+              key="download" 
+              type="primary" 
+              onClick={startDownload} 
+              loading={loading}
+            >
+              开始下载
+            </Button>,
+          ]}
+        >
+          <div className={styles.modalContent}>
+            {loading ? (
+              <Flex vertical align="center" className={styles.loadingContainer}>
+                <Spin />
+                <Typography.Paragraph className={styles.loadingText}>正在准备下载，请稍候...</Typography.Paragraph>
+              </Flex>
+            ) : (
+              <>
+                <Typography.Paragraph>您即将下载文件夹 <strong>"{folderName}"</strong></Typography.Paragraph>
+                <Typography.Paragraph>文件夹将被压缩为ZIP格式下载</Typography.Paragraph>
+                
+                {downloadAttempt > 0 && (
+                  <Alert
+                    className={styles.warningAlert}
+                    type="warning"
+                    message={
+                      <Space direction="vertical" className={styles.warningContent}>
+                        <Typography.Paragraph strong>提示：</Typography.Paragraph>
+                        <Typography.Paragraph>文件夹下载可能被浏览器安全策略阻止。您可以尝试：</Typography.Paragraph>
+                        <ul className={styles.warningList}>
+                          <li>再次点击"开始下载"按钮</li>
+                          <li>点击"在新窗口下载"按钮</li>
+                          <li>稍后再试或使用其他浏览器</li>
+                        </ul>
+                      </Space>
+                    }
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </Modal>
+      </>
+    );
+  }
+  
+  // 渲染操作按钮组模式（原 FolderActionButtons）
+  return (
+    <div className={`${styles.container} ${className}`}>
+      <Tooltip title="下载文件夹" placement="top">
+        <div className={styles.actionButton} onClick={handleClick}>
+          <Button
+            className={styles.iconButton}
+            onClick={(e) => e.stopPropagation()}
+            icon={<DownloadOutlined />}
+            type="text"
+          />
+        </div>
+      </Tooltip>
+      
+      {onRename && (
+        <Tooltip title="重命名" placement="top">
+          <div className={styles.actionButton} onClick={onRename}>
+            <Edit size={16} />
+          </div>
+        </Tooltip>
+      )}
+      
+      {onContextMenu && (
+        <Tooltip title="更多操作" placement="top">
+          <div 
+            className={styles.actionButton} 
+            onClick={onContextMenu}
+          >
+            <MoreHorizontal size={16} />
+          </div>
+        </Tooltip>
+      )}
+      
       <Modal
         title={<Flex align="center"><FolderOutlined className={styles.titleIcon} /> 下载文件夹</Flex>}
         open={showModal}
@@ -185,6 +290,6 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
           )}
         </div>
       </Modal>
-    </>
+    </div>
   );
 }; 

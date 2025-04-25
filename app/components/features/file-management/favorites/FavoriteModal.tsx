@@ -3,12 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Modal, Button, List, Typography, Input, Form, 
-  Space, Spin, Empty, message, Divider 
+  Space, Spin, Empty, message, Divider, Card,
+  Tooltip, Badge
 } from 'antd';
 import { 
-  Star, FolderPlus, Edit, Trash2} from 'lucide-react';
+  Star, FolderPlus, Edit, Trash2, FolderOpen,
+  FileText, FileImage, FileVideo, FileAudio,
+  FileCode, File
+} from 'lucide-react';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
-import styles from './favorite-modal.module.css';
+import styles from './favorites.module.css';
 
 const { Text } = Typography;
 const { Item } = Form;
@@ -35,6 +39,7 @@ export default function FavoriteModal({
   const [folderName, setFolderName] = useState('');
   const [description, setDescription] = useState('');
   const [editingFolder, setEditingFolder] = useState<FavoriteFolderInfo | null>(null);
+  const [hoveredFolder, setHoveredFolder] = useState<string | null>(null);
 
   // 获取收藏夹列表
   const fetchFolders = async () => {
@@ -72,6 +77,10 @@ export default function FavoriteModal({
       setShowCreateForm(false);
       setFolderName('');
       setDescription('');
+      
+      // 触发刷新事件
+      const refreshEvent = new CustomEvent('refresh_favorite_folders');
+      window.dispatchEvent(refreshEvent);
     } catch (error) {
       console.error('创建收藏夹失败:', error);
       message.error('创建收藏夹失败');
@@ -152,6 +161,43 @@ export default function FavoriteModal({
     setShowCreateForm(false);
   };
 
+  // 获取文件图标
+  const getFileIcon = () => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'txt':
+      case 'doc':
+      case 'docx':
+        return <FileText className={styles.fileIcon} />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FileImage className={styles.fileIcon} />;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return <FileVideo className={styles.fileIcon} />;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+        return <FileAudio className={styles.fileIcon} />;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return <File className={styles.fileIcon} />;
+      case 'pdf':
+        return <File className={styles.fileIcon} />;
+      case 'html':
+      case 'css':
+      case 'js':
+      case 'ts':
+        return <FileCode className={styles.fileIcon} />;
+      default:
+        return <File className={styles.fileIcon} />;
+    }
+  };
+
   return (
     <Modal
       title={
@@ -163,12 +209,19 @@ export default function FavoriteModal({
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={450}
+      width={600}
       destroyOnClose
+      className={styles.favoriteModal}
     >
       <div className={styles.fileInfo}>
-        <Text className={styles.fileLabel}>文件名:</Text>
-        <Text className={styles.fileName}>{fileName}</Text>
+        <div className={styles.fileIconContainer}>
+          {getFileIcon()}
+        </div>
+        <div className={styles.fileNameContainer}>
+          <Text className={styles.fileName} ellipsis={{ tooltip: fileName }}>
+            {fileName}
+          </Text>
+        </div>
       </div>
 
       <Divider>选择收藏夹</Divider>
@@ -186,53 +239,66 @@ export default function FavoriteModal({
               description="您还没有创建收藏夹"
             />
           ) : (
-            <List
-              dataSource={folders}
-              renderItem={(folder) => (
-                <List.Item
-                  className={styles.folderItem}
-                  actions={[
-                    <Space key="actions">
-                      <Button
-                        type="text"
-                        icon={<Edit size={16} />}
-                        onClick={() => startEdit(folder)}
-                        disabled={creating}
-                      />
-                      <Button
-                        type="text"
-                        danger
-                        icon={<Trash2 size={16} />}
-                        onClick={() => handleDeleteFolder(folder)}
-                        disabled={folder.isDefault || creating}
-                      />
-                    </Space>
-                  ]}
+            <div className={styles.folderGrid}>
+              {folders.map((folder) => (
+                <Card
+                  key={folder.id}
+                  className={`${styles.folderCard} ${hoveredFolder === folder.id ? styles.hovered : ''}`}
+                  onMouseEnter={() => setHoveredFolder(folder.id)}
+                  onMouseLeave={() => setHoveredFolder(null)}
+                  onClick={() => handleAddToFolder(folder)}
                 >
-                  <div 
-                    className={styles.folderInfo}
-                    onClick={() => handleAddToFolder(folder)}
-                  >
-                    <div className={styles.folderName}>
-                      {folder.isDefault && (
-                        <span className={styles.defaultBadge}>默认</span>
-                      )}
-                      {folder.name}
+                  <div className={styles.folderContent}>
+                    <div className={styles.folderHeader}>
+                      <FolderOpen className={styles.folderIcon} />
+                      <div className={styles.folderNameContainer}>
+                        <Text className={styles.folderName} ellipsis={{ tooltip: folder.name }}>
+                          {folder.name}
+                        </Text>
+                        {folder.isDefault && (
+                          <Badge status="processing" text="默认" className={styles.defaultBadge} />
+                        )}
+                      </div>
                     </div>
-                    {folder.fileCount !== undefined && (
-                      <div className={styles.folderCount}>
-                        {folder.fileCount} 个文件
-                      </div>
-                    )}
                     {folder.description && (
-                      <div className={styles.folderDescription}>
+                      <Text type="secondary" className={styles.folderDescription}>
                         {folder.description}
-                      </div>
+                      </Text>
                     )}
+                    <div className={styles.folderFooter}>
+                      <Badge count={folder.fileCount || 0} className={styles.fileCount} />
+                      <Space className={styles.folderActions}>
+                        <Tooltip title="编辑">
+                          <Button
+                            type="text"
+                            icon={<Edit size={16} />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEdit(folder);
+                            }}
+                            disabled={creating}
+                          />
+                        </Tooltip>
+                        {!folder.isDefault && (
+                          <Tooltip title="删除">
+                            <Button
+                              type="text"
+                              danger
+                              icon={<Trash2 size={16} />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFolder(folder);
+                              }}
+                              disabled={creating}
+                            />
+                          </Tooltip>
+                        )}
+                      </Space>
+                    </div>
                   </div>
-                </List.Item>
-              )}
-            />
+                </Card>
+              ))}
+            </div>
           )}
 
           {!showCreateForm && (
@@ -248,52 +314,46 @@ export default function FavoriteModal({
           )}
 
           {showCreateForm && (
-            <div className={styles.createForm}>
+            <Card className={styles.createForm}>
               <Form layout="vertical">
-                <Item
-                  label={editingFolder ? "修改收藏夹名称" : "收藏夹名称"}
+                <Item 
+                  label="收藏夹名称" 
                   required
+                  validateStatus={folderName.trim() ? 'success' : 'error'}
+                  help={folderName.trim() ? undefined : '请输入收藏夹名称'}
                 >
                   <Input
                     placeholder="请输入收藏夹名称"
                     value={folderName}
                     onChange={(e) => setFolderName(e.target.value)}
                     maxLength={50}
-                    disabled={creating}
                   />
                 </Item>
-                <Item
-                  label="描述"
-                >
+                <Item label="描述(可选)">
                   <Input.TextArea
-                    placeholder="收藏夹描述（可选）"
+                    placeholder="添加收藏夹描述"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={2}
                     maxLength={200}
-                    showCount
-                    disabled={creating}
                   />
                 </Item>
                 <Item>
-                  <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-                    <Button 
-                      onClick={cancelEdit}
-                      disabled={creating}
-                    >
-                      取消
-                    </Button>
-                    <Button 
+                  <Space>
+                    <Button
                       type="primary"
-                      loading={creating}
                       onClick={editingFolder ? handleUpdateFolder : handleCreateFolder}
+                      loading={creating}
                     >
                       {editingFolder ? '更新' : '创建'}
+                    </Button>
+                    <Button onClick={cancelEdit}>
+                      取消
                     </Button>
                   </Space>
                 </Item>
               </Form>
-            </div>
+            </Card>
           )}
         </div>
       )}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import layoutStyles from '@/app/components/features/file-management/layout/styles/layout.module.css';
+import layoutStyles from '@/app/components/features/file-management/styles/layout/layout.module.css';
 import { FileInfo, FileSortInterface, FileTypeEnum } from '@/app/types';
 import { FileActions } from './FileActions';
 import { FileBrowseActions } from './FileBrowseActions';

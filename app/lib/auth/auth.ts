@@ -20,6 +20,11 @@ if (!prisma) {
   throw new Error('Prisma client is not initialized properly');
 }
 
+// 用于调试的辅助函数
+function logObject(prefix: string, obj: any) {
+  console.log(`${prefix}:`, JSON.stringify(obj, null, 2));
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -168,18 +173,38 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account }) {
+      logObject('JWT回调 - 传入token', token);
+      logObject('JWT回调 - 传入user', user || {});
+      
       if (user) {
         token.id = user.id;
+        token.userId = user.id; // 添加备用字段
+        console.log(`JWT: 设置token.id=${user.id}`);
       }
+      
       if (account) {
         token.accessToken = account.access_token;
       }
+      
+      logObject('JWT回调 - 返回token', token);
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
+      logObject('Session回调 - 传入session', session);
+      logObject('Session回调 - 传入token', token);
+      
+      if (session.user && token) {
+        // 确保用户ID被正确设置
+        const userId = (token.id as string) || (token.userId as string) || token.sub;
+        if (userId) {
+          session.user.id = userId;
+          console.log(`Session: 设置session.user.id=${session.user.id}`);
+        } else {
+          console.error('警告: 无法找到有效的用户ID!');
+        }
       }
+      
+      logObject('Session回调 - 返回session', session);
       return session;
     },
     async redirect({ url, baseUrl }) {

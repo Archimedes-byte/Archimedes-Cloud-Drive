@@ -6,13 +6,13 @@
 // 核心组件导出
 export * from './action-bar';
 export * from './file-list';
-export * from './file-operations';
 export * from './file-preview';
 export * from './folder-management';
 export * from './navigation';
 export * from './search-view';
 export * from './shared';
 export * from './upload';
+export * from './rename-modal';
 
 // 选择性导出模块功能组件
 export { PageLayout } from './layout/page-layout';
@@ -20,11 +20,8 @@ export { ShareModal } from './sharing';
 export { LinkInputModal } from './sharing/link-modal';
 export { RecentFilesContent } from './recent-files';
 export { RecentDownloadsContent } from './recent-downloads';
-export { FavoritesContent, CreateFavoriteModal, FavoriteModal } from './favorites';
+export { FavoritesContent, FavoriteModal, CreateFavoriteModal } from './favorites';
 export { default as UploadModal } from './upload/upload-modal';
 export { CreateFolderModal } from './folder-management/create-folder-modal';
 export { default as FolderSelectModal } from './folder-select/FolderSelectModal';
-export { RenameModal } from './file-operations/rename-modal';
-
-// 依赖的外部组件
-export { ThemePanel } from '@/app/components/ui/themes'; 
+export { SharesContent } from './shares'; 

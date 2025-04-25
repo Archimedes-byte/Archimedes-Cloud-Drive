@@ -39,7 +39,7 @@ export const LinkInputModal: React.FC<LinkInputModalProps> = ({
       open={isVisible}
       onCancel={onCancel}
       onOk={onSubmit}
-      okText="打开"
+      okText="验证并打开"
       cancelText="取消"
     >
       <div style={{ marginBottom: 16 }}>

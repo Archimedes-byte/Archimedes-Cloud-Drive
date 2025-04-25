@@ -113,7 +113,8 @@
   }
   
   .fileItem:hover {
-    background-color: #f5f7fa;
+    background-color: #f0f7ff !important;
+    border-radius: 4px;
   }
   
   .fileIcon {

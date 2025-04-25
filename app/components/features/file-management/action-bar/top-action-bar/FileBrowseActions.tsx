@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Image as ImageIcon, FileText, Video, Music, File
 } from 'lucide-react';
-import buttonStyles from '@/app/components/features/file-management/buttons/styles/buttons.module.css';
+import { Button, Tag } from '@/app/components/ui/ant';
 import { FileSortInterface, FileTypeEnum, SortDirectionEnum } from '@/app/types';
 import { SortDropdown } from '@/app/components/features/file-management/action-bar/sort-dropdown';
 
@@ -41,19 +41,18 @@ export const FileBrowseActions: React.FC<FileBrowseActionsProps> = ({
 
   return (
     <>
-      <button 
-        className={buttonStyles.topButton}
+      <Button 
+        variant="ghost"
         onClick={handleRootDirClick}
         disabled={isInRootFolder}
-        style={isInRootFolder ? { pointerEvents: 'none' } : {}}
+        icon={<span>📁</span>}
       >
-        <span>📁</span>
         {showSearchView ? '返回文件列表' : (selectedFileType ? '清除过滤' : '根目录')}
-      </button>
+      </Button>
 
       {/* 添加当前过滤状态指示器 */}
       {selectedFileType && (
-        <div className={buttonStyles.topButton} style={{ cursor: 'default', background: '#f0f7ff', borderColor: '#60a5fa' }}>
+        <Tag color="blue" style={{ padding: '4px 8px', height: 'auto', display: 'flex', alignItems: 'center' }}>
           {(() => {
             switch(selectedFileType) {
               case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" />;
@@ -69,7 +68,7 @@ export const FileBrowseActions: React.FC<FileBrowseActionsProps> = ({
           {selectedFileType === FileTypeEnum.VIDEO && '仅视频'}
           {selectedFileType === FileTypeEnum.AUDIO && '仅音频'}
           {selectedFileType === FileTypeEnum.UNKNOWN && '其他文件'}
-        </div>
+        </Tag>
       )}
 
       {/* 排序下拉菜单 */}

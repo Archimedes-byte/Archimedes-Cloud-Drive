@@ -72,6 +72,8 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
     if (isOpen) {
       loadFolders(null);
       setMoveSuccess(false);
+      // 重置选择状态，避免上次选择的文件夹被保留
+      setSelectedFolderId(null);
     } else {
       // 重置状态
       setSelectedFolderId(null);
@@ -117,6 +119,22 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
       
       setFolders(folderNodes);
       setFilteredFolders(folderNodes);
+      
+      // 当切换文件夹后，清除选中状态
+      // 但如果这是初始加载，且当前目录不是根目录，可以预选当前目录的父目录
+      if (parentId !== null || currentFolderId === null) {
+        setSelectedFolderId(null);
+      } else if (currentFolderId && parentId === null) {
+        // 如果处于根目录，尝试查找并选中当前文件夹的父文件夹
+        try {
+          const currentFolder = await fileApi.getFile(currentFolderId);
+          if (currentFolder && currentFolder.parentId) {
+            setSelectedFolderId(currentFolder.parentId);
+          }
+        } catch (error) {
+          console.error('获取当前文件夹信息失败:', error);
+        }
+      }
     } catch (error) {
       console.error('加载文件夹失败:', error);
       setError('加载文件夹失败，请重试');
@@ -167,7 +185,12 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
    * @param folder 选择的文件夹
    */
   const handleFolderSelect = (folder: FolderNode) => {
-    setSelectedFolderId(folder.id);
+    // 如果是重复点击已选中的文件夹，则取消选择
+    if (selectedFolderId === folder.id) {
+      setSelectedFolderId(null);
+    } else {
+      setSelectedFolderId(folder.id);
+    }
   };
   
   /**
@@ -175,6 +198,18 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
    */
   const handleConfirm = () => {
     if (selectedFolderId) {
+      // 移动前检查，确保不会移动到被禁用的目录
+      if (disabledFolderIds.includes(selectedFolderId)) {
+        message.error('不能移动到所选文件夹或其子文件夹');
+        return;
+      }
+      
+      // 确认不是移动到当前目录
+      if (selectedFolderId === currentFolderId) {
+        message.warning('不能移动到文件的当前位置');
+        return;
+      }
+      
       // 设置移动成功状态为true，显示刷新按钮
       setMoveSuccess(true);
       onConfirm(selectedFolderId);
@@ -190,6 +225,8 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
     if (onRefresh) {
       onRefresh();
       message.success('文件列表已刷新');
+      // 刷新后关闭弹窗
+      onClose();
     }
   };
   
@@ -249,6 +286,7 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
             根目录
           </Button>
           
+          {/* 搜索框 */}
           <div className={styles.searchContainer}>
             <Input
               placeholder="搜索文件夹..." 

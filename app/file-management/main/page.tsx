@@ -18,6 +18,7 @@ import {
   CreateFolderModal,
   ShareModal,
   LinkInputModal,
+  FavoriteModal,
 } from '@/app/components/features/file-management';
 
 // 导入ContentArea组件
@@ -231,6 +232,21 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   
   // 文件夹选择相关状态
   const [disabledFolderIds, setDisabledFolderIds] = useState<string[]>([]);
+  
+  // 添加快捷键监听器
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        openLinkInputModal('', '');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openLinkInputModal]);
   
   // 文件操作钩子
   const {
@@ -503,21 +519,25 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     setIsMoveLoading(true);
 
     try {
-      // TODO: 实现移动文件
-      console.log('Moving files to', targetFolderId);
+      // 使用fileApi客户端来实际执行文件移动
+      await fileApi.moveFiles(selectedFiles, targetFolderId);
       
       // 成功后关闭模态窗口并刷新文件列表
       closeMoveModal();
-      refreshCurrentFolder();
+      
+      // 确保刷新文件列表，显示最新的文件状态
+      await refreshCurrentFolder();
+      
+      // 清除选择
       setSelectedFiles([]);
       message.success('文件移动成功');
     } catch (error) {
-      console.error('移动文件失败', error);
-      message.error('移动文件失败，请重试');
+      console.error('移动文件失败:', error);
+      message.error(error instanceof Error ? error.message : '移动文件失败，请重试');
     } finally {
       setIsMoveLoading(false);
     }
-  }, [selectedFiles, refreshCurrentFolder, setSelectedFiles, closeMoveModal, setIsMoveLoading]);
+  }, [selectedFiles, refreshCurrentFolder, setSelectedFiles, closeMoveModal, setIsMoveLoading, fileApi]);
 
   // 处理分享按钮点击
   const handleShareButtonClick = useCallback(() => {
@@ -529,14 +549,103 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   }, [selectedFiles, openShareModal]);
 
   // 处理链接输入提交
-  const handleLinkSubmit = useCallback(() => {
-    closeLinkInputModal();
-  }, [closeLinkInputModal]);
+  const handleLinkSubmit = useCallback(async () => {
+    try {
+      if (!shareLink) {
+        message.warning('请输入分享链接');
+        return;
+      }
+
+      // 显示加载中提示
+      const loadingMessage = message.loading('正在验证分享链接...', 0);
+
+      // 调用API验证分享链接
+      const response = await fetch('/api/storage/share/open', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shareLink,
+          extractCode: shareLinkPassword,
+        }),
+      });
+
+      // 关闭加载提示
+      loadingMessage();
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || '验证分享链接失败');
+      }
+
+      // 如果需要提取码但未提供或提取码错误
+      if (data.needsExtractCode) {
+        message.warning(data.error || '请提供正确的提取码');
+        return; // 保持弹窗打开，让用户输入提取码
+      }
+      
+      if (data.success) {
+        // 关闭链接输入弹窗
+        closeLinkInputModal();
+        
+        // 根据分享信息显示文件
+        const shareInfo = data.shareInfo;
+        message.success('分享链接验证成功，正在打开分享内容...');
+        
+        // 这里可以根据分享的内容跳转到相应的页面或显示相应的内容
+        // 例如，如果是单个文件，可以直接预览
+        if (shareInfo.files.length === 1 && !shareInfo.files[0].isFolder) {
+          // 修改为使用分享页面而不是直接预览
+          router.push(`/s/${shareInfo.shareCode}`);
+        } else {
+          // 如果是多个文件或文件夹，可以导航到特定的共享视图
+          // 这里需要根据实际应用逻辑进行实现
+          router.push(`/s/${shareInfo.shareCode}`);
+        }
+      } else {
+        message.error(data.error || '分享链接无效');
+      }
+    } catch (error) {
+      console.error('处理分享链接时出错:', error);
+      message.error((error as Error).message || '处理分享链接失败，请重试');
+    }
+  }, [shareLink, shareLinkPassword, closeLinkInputModal, handlePreviewFile, router]);
 
   // 处理分享成功
   const handleShareSuccess = useCallback((result: { shareLink: string, extractCode: string }) => {
     openLinkInputModal(result.shareLink, result.extractCode);
   }, [openLinkInputModal]);
+
+  // 添加收藏夹选择框的监听器
+  const [favoriteModalVisible, setFavoriteModalVisible] = useState(false);
+  const [selectedFileForFavorite, setSelectedFileForFavorite] = useState<{id: string, name: string} | null>(null);
+
+  useEffect(() => {
+    const handleOpenFavoriteModal = (event: Event) => {
+      const customEvent = event as CustomEvent<{fileId: string, fileName: string}>;
+      setSelectedFileForFavorite({
+        id: customEvent.detail.fileId,
+        name: customEvent.detail.fileName
+      });
+      setFavoriteModalVisible(true);
+    };
+
+    window.addEventListener('open_favorite_modal', handleOpenFavoriteModal);
+    return () => {
+      window.removeEventListener('open_favorite_modal', handleOpenFavoriteModal);
+    };
+  }, []);
+
+  // 处理收藏成功
+  const handleFavoriteSuccess = () => {
+    if (selectedFileForFavorite) {
+      setFavoritedFileIds(prev => [...prev, selectedFileForFavorite.id]);
+    }
+    setFavoriteModalVisible(false);
+    setSelectedFileForFavorite(null);
+  };
 
   return (
     <>
@@ -822,6 +931,18 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             finishLoading();
           }
         }}
+      />
+
+      {/* 收藏夹选择框 */}
+      <FavoriteModal
+        fileId={selectedFileForFavorite?.id || ''}
+        fileName={selectedFileForFavorite?.name || ''}
+        visible={favoriteModalVisible}
+        onClose={() => {
+          setFavoriteModalVisible(false);
+          setSelectedFileForFavorite(null);
+        }}
+        onSuccess={handleFavoriteSuccess}
       />
     </>
   );

@@ -134,12 +134,16 @@ export async function POST(request: NextRequest) {
 
     // 设置响应头
     const headers = {
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"`,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"; filename*=UTF-8''${encodeURIComponent(folderName)}.zip`,
       'Content-Type': 'application/zip',
+      'Cache-Control': 'no-cache',
     };
 
     // 返回ZIP文件
-    return new Response(zipBuffer, { headers });
+    return new Response(zipBuffer, { 
+      status: 200,
+      headers 
+    });
 
   } catch (error) {
     console.error('下载分享文件夹失败:', error);

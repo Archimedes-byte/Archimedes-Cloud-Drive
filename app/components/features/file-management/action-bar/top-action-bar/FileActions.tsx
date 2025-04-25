@@ -5,7 +5,6 @@ import {
 } from '@ant-design/icons';
 import { Button } from '@/app/components/ui/ant';
 import { FileInfo } from '@/app/types';
-import buttonStyles from '@/app/components/features/file-management/buttons/styles/buttons.module.css';
 import { FolderDownloadButton } from '@/app/components/features/file-management/download/FolderDownloadButton';
 
 interface FileActionsProps {
@@ -36,10 +35,9 @@ export const FileActions: React.FC<FileActionsProps> = ({
   return (
     <>
       <Button 
-        className={buttonStyles.topButton} 
+        variant="text"
         onClick={onClearSelection}
         icon={<CloseOutlined />}
-        type="text"
       >
         取消选择
       </Button>
@@ -51,52 +49,47 @@ export const FileActions: React.FC<FileActionsProps> = ({
           folderName={selectedFolder.name}
           buttonText="下载"
           showIcon={true}
-          className={buttonStyles.topButton}
+          className=""
         />
       ) : (
         // 否则使用常规下载按钮
         <Button 
-          className={buttonStyles.topButton} 
+          variant="text"
           onClick={onDownload}
           icon={<DownloadOutlined />}
-          type="text"
         >
           下载
         </Button>
       )}
       
       <Button 
-        className={buttonStyles.topButton} 
+        variant="text"
         onClick={onShare}
         icon={<ShareAltOutlined />}
-        type="text"
       >
         分享
       </Button>
       
       <Button 
-        className={buttonStyles.topButton}
+        variant="text"
         onClick={onRename}
         icon={<EditOutlined />}
-        type="text"
       >
         重命名
       </Button>
       
       <Button 
-        className={buttonStyles.topButton} 
+        variant="text"
         onClick={onMove}
         icon={<SwapOutlined />}
-        type="text"
       >
         移动
       </Button>
       
       <Button 
-        className={buttonStyles.topButton} 
+        variant="text"
         onClick={onDelete}
         icon={<DeleteOutlined />}
-        type="text"
       >
         删除
       </Button>
