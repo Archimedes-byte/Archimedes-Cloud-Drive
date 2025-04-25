@@ -1,18 +1,14 @@
-import React, { useEffect, useRef } from 'react';
-import { 
-  Upload, FolderUp
-} from 'lucide-react';
-import { Button } from '@/app/components/ui/ant';
-import animationStyles from '@/app/components/features/file-management/styles/animations/animation.module.css';
+import React from 'react';
+import { Button } from '@/app/components/ui';
+import { Upload, FolderUp } from 'lucide-react';
+import animationStyles from '@/app/styles/animations.module.css';
 
-interface UploadActionsProps {
-  setIsUploadModalOpen: (open: boolean) => void;
-  setIsFolderUploadModalOpen: (open: boolean) => void;
+export interface UploadActionsProps {
+  setIsUploadModalOpen?: (open: boolean) => void;
+  setIsFolderUploadModalOpen?: (open: boolean) => void;
   onUploadClick?: () => void;
   onFolderUploadClick?: () => void;
-  onCreateFolder: () => void;
-  onRefresh?: () => void;
-  isRefreshing?: boolean;
+  onCreateFolder?: () => void;
 }
 
 /**
@@ -23,9 +19,7 @@ export const UploadActions: React.FC<UploadActionsProps> = ({
   setIsFolderUploadModalOpen = () => {},
   onUploadClick,
   onFolderUploadClick,
-  onCreateFolder,
-  onRefresh,
-  isRefreshing = false
+  onCreateFolder
 }) => {
   return (
     <>
@@ -67,18 +61,6 @@ export const UploadActions: React.FC<UploadActionsProps> = ({
       <Button variant="ghost" onClick={onCreateFolder} icon={<span>📁</span>}>
         新建文件夹
       </Button>
-      
-      {/* 刷新按钮 */}
-      {onRefresh && (
-        <Button 
-          variant="ghost"
-          onClick={onRefresh}
-          disabled={isRefreshing}
-          icon={<span className={isRefreshing ? animationStyles.rotating : ''}>🔄</span>}
-        >
-          {isRefreshing ? '刷新中...' : '刷新'}
-        </Button>
-      )}
     </>
   );
 }; 

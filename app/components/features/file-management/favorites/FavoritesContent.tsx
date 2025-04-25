@@ -10,7 +10,7 @@ import {
 import { 
   Star, ExternalLink, Trash2, 
   File, Folder, FileText, Image as ImageIcon, 
-  Video, Music, AlertCircle, ArrowLeft
+  Video, Music, AlertCircle, ArrowLeft, StarIcon, SearchIcon, PlusIcon
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -21,6 +21,7 @@ import { FileInfo } from '@/app/types';
 import { AntFileList } from '../file-list';
 import { Breadcrumb } from '../navigation/breadcrumb';
 import { FolderManagement } from '../folder-management';
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 const { Title, Text } = Typography;
 
@@ -66,6 +67,9 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
   const [fileUpdateTrigger, setFileUpdateTrigger] = useState(0);
   const [showFolderManagement, setShowFolderManagement] = useState(false);
 
+  // 添加favoritedFileIds以跟踪所有收藏的文件
+  const [favoritedFileIds, setFavoritedFileIds] = useState<string[]>([]);
+
   // 初始化时，如果传入了selectedFolderId，则设置为当前选中的文件夹
   useEffect(() => {
     if (selectedFolderId) {
@@ -85,16 +89,16 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
 
     if (status === 'authenticated') {
       // 加载收藏夹列表
-      fetchFolderList();
+      fetchFolders();
     }
   }, [status, router]);
 
   // 获取收藏夹列表
-  const fetchFolderList = async () => {
+  const fetchFolders = async () => {
     setLoadingFolders(true);
     try {
       const response = await fileApi.getFavoriteFolders();
-      setFolders(response.folders || []);
+      setFolders(response.folders);
     } catch (error) {
       console.error('获取收藏夹列表失败:', error);
       message.error('获取收藏夹列表失败');
@@ -102,6 +106,56 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
       setLoadingFolders(false);
     }
   };
+
+  // 初始获取收藏夹列表
+  useEffect(() => {
+    fetchFolders();
+  }, []);
+
+  // 添加收藏文件ID列表
+  useEffect(() => {
+    if (status === 'authenticated') {
+      // 把所有收藏项的ID添加到favoritedFileIds中
+      const getAllFavoriteIds = async () => {
+        try {
+          const response = await fileApi.getFavorites();
+          if (response?.items?.length > 0) {
+            const ids = response.items.map(item => item.id);
+            setFavoritedFileIds(ids);
+          }
+        } catch (error) {
+          console.error('获取收藏文件ID列表失败:', error);
+        }
+      };
+      
+      getAllFavoriteIds();
+    }
+  }, [status]);
+
+  // 当收藏状态变化时更新favoritedFileIds
+  useEffect(() => {
+    if (favorites.length > 0) {
+      const ids = favorites.map(file => file.id);
+      setFavoritedFileIds(ids);
+    }
+  }, [favorites]);
+
+  // 监听全局收藏夹刷新事件
+  useEffect(() => {
+    // 处理收藏夹刷新事件
+    const handleRefreshFavoriteFolders = () => {
+      // 重新获取最新的收藏夹列表
+      fetchFolders();
+    };
+    
+    // 添加事件监听器
+    window.addEventListener('refresh_favorite_folders', handleRefreshFavoriteFolders);
+    
+    // 清理函数移除监听器
+    return () => {
+      window.removeEventListener('refresh_favorite_folders', handleRefreshFavoriteFolders);
+    };
+  }, []);
 
   // 获取特定收藏夹中的文件
   const fetchFolderFiles = async (folderId: string) => {
@@ -138,6 +192,23 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
         
         console.log(`成功获取到${favoriteFiles.length}个收藏文件`);
         setFavorites(favoriteFiles);
+
+        // 检查是否有无效项目需要清理
+        const invalidItems = favoriteFiles.filter(file => !file.id || file.id === 'undefined');
+        if (invalidItems.length > 0) {
+          console.warn('发现无效收藏项，将自动清理:', invalidItems.length);
+          const invalidIds = invalidItems
+            .filter(item => item.favoriteId)
+            .map(item => item.favoriteId as string);
+          
+          if (invalidIds.length > 0) {
+            try {
+              await removeFavorite(invalidIds);
+            } catch (error) {
+              console.error('清理无效收藏失败:', error);
+            }
+          }
+        }
       } else {
         console.log('收藏夹文件列表为空或格式不正确');
         setFavorites([]);
@@ -214,7 +285,25 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
               favoriteFolderId: item.favoriteFolderId,
               favoriteFolderName: item.favoriteFolderName
             }));
+            
             setFavorites(favoriteFiles);
+            
+            // 检查是否有无效项目需要清理
+            const invalidItems = favoriteFiles.filter(file => !file.id || file.id === 'undefined');
+            if (invalidItems.length > 0) {
+              console.warn('发现无效收藏项，将自动清理:', invalidItems.length);
+              const invalidIds = invalidItems
+                .filter(item => item.favoriteId)
+                .map(item => item.favoriteId as string);
+              
+              if (invalidIds.length > 0) {
+                try {
+                  await removeFavorite(invalidIds);
+                } catch (error) {
+                  console.error('清理无效收藏失败:', error);
+                }
+              }
+            }
           } else if (data.data && Array.isArray(data.data)) {
             console.log(`成功获取到${data.data.length}个收藏项`);
             // 处理服务端可能返回的不同数据结构
@@ -268,7 +357,7 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
 
     if (status === 'authenticated') {
       // 加载收藏夹列表
-      fetchFolderList();
+      fetchFolders();
     }
   }, [status, router]);
 
@@ -315,7 +404,7 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
         setSelectedRows([]);
         fetchFavorites();
         // 刷新收藏夹列表，更新文件计数
-        fetchFolderList();
+        fetchFolders();
         
         // 发布取消收藏事件，通知其他组件更新状态
         // 使用自定义事件通知应用的其他部分
@@ -376,17 +465,13 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
 
   // 获取文件图标
   const getFileIcon = (file: FavoriteFile) => {
-    if (file.isFolder) return <Folder size={18} />;
-    
-    const fileType = file.type?.toLowerCase() || '';
-    
-    if (fileType.includes('image')) return <ImageIcon size={18} />;
-    if (fileType.includes('video')) return <Video size={18} />;
-    if (fileType.includes('audio')) return <Music size={18} />;
-    if (fileType.includes('pdf') || fileType.includes('doc') || fileType.includes('txt')) 
-      return <FileText size={18} />;
-    
-    return <File size={18} />;
+    const extension = file.name?.split('.').pop()?.toLowerCase();
+    return <FileIcon 
+      isFolder={file.isFolder} 
+      extension={extension} 
+      mimeType={file.type} 
+      size={18} 
+    />;
   };
 
   // 渲染面包屑
@@ -417,6 +502,20 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
         />
       </div>
     );
+  };
+
+  // 处理切换收藏状态
+  const handleToggleFavorite = async (file: FileInfo, isFavorite: boolean) => {
+    if (!isFavorite) {
+      // 从收藏中移除
+      try {
+        await removeFavorite([file.id]);
+      } catch (error) {
+        console.error('取消收藏失败:', error);
+        message.error('取消收藏失败');
+      }
+    }
+    // 注意：添加收藏功能通常需要选择收藏夹，这里不处理
   };
 
   // 渲染内容
@@ -514,6 +613,8 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
               showCheckboxes={true}
               fileUpdateTrigger={fileUpdateTrigger}
               isLoading={loading}
+              favoritedFileIds={favoritedFileIds}
+              onToggleFavorite={handleToggleFavorite}
             />
           ) : (
             <Empty

@@ -69,6 +69,9 @@ export function Sidebar({
   // 添加缓存时间引用
   const lastFetchTimeRef = useRef(0);
   const cacheTimeoutRef = useRef(30000); // 30秒缓存超时
+  
+  // 添加一个ref用于防止无限循环刷新
+  const isEventTriggeredRefreshRef = useRef(false);
 
   // 添加渐变动画渲染完成控制
   const [myFilesVisible, setMyFilesVisible] = useState(true);
@@ -78,23 +81,44 @@ export function Sidebar({
   // 使用useCallback优化获取收藏夹列表函数
   const fetchFavoriteFolders = useCallback(async () => {
     const now = Date.now();
-    // 如果距离上次请求的时间小于缓存超时时间且已有数据，则不再请求
-    if (now - lastFetchTimeRef.current < cacheTimeoutRef.current && favoriteFolders.length > 0) {
+    
+    // 恢复缓存判断，防止频繁请求API
+    // 非事件触发的刷新尊重缓存时间，减少不必要的API调用
+    if (!isEventTriggeredRefreshRef.current && 
+        now - lastFetchTimeRef.current < cacheTimeoutRef.current && 
+        favoriteFolders.length > 0) {
       return;
     }
     
     try {
       setLoadingFolders(true);
       const response = await fileApi.getFavoriteFolders();
-      setFavoriteFolders(response.folders || []);
-      lastFetchTimeRef.current = now; // 更新最后请求时间
+      const newFolders = response.folders || [];
+      
+      // 判断列表是否真的发生了变化
+      const foldersChanged = JSON.stringify(newFolders) !== JSON.stringify(favoriteFolders);
+      
+      // 只有当文件夹列表确实发生变化时才更新状态
+      if (foldersChanged) {
+        setFavoriteFolders(newFolders);
+        
+        // 仅当列表变化且不是由事件触发时才发出事件，防止无限循环
+        if (!isEventTriggeredRefreshRef.current) {
+          const folderUpdatedEvent = new CustomEvent('favorite_folders_updated', { 
+            detail: { folders: newFolders } 
+          });
+          window.dispatchEvent(folderUpdatedEvent);
+        }
+      }
+      
+      // 总是更新最后请求时间
+      lastFetchTimeRef.current = now;
     } catch (error) {
-      // 保留错误日志，但移除非必要的详情
       console.error('获取收藏夹列表失败');
     } finally {
       setLoadingFolders(false);
     }
-  }, [favoriteFolders.length]);
+  }, [favoriteFolders]);
 
   // 当收藏夹菜单展开时或刷新触发器更新时，获取收藏夹列表
   useEffect(() => {
@@ -102,6 +126,33 @@ export function Sidebar({
       fetchFavoriteFolders();
     }
   }, [favoritesExpanded, refreshTrigger, fetchFavoriteFolders]);
+
+  // 监听全局收藏夹刷新事件
+  useEffect(() => {
+    // 处理收藏夹刷新事件
+    const handleRefreshFavoriteFolders = () => {
+      // 设置标记，表明这次刷新是由事件触发的
+      isEventTriggeredRefreshRef.current = true;
+      fetchFavoriteFolders().then(() => {
+        // 重置标记
+        isEventTriggeredRefreshRef.current = false;
+      });
+      
+      // 确保展开收藏夹列表，让用户可以看到新增的收藏夹
+      if (!favoritesExpanded) {
+        setFavoritesExpanded(true);
+        setFavoritesVisible(true);
+      }
+    };
+    
+    // 添加事件监听器
+    window.addEventListener('refresh_favorite_folders', handleRefreshFavoriteFolders);
+    
+    // 清理函数移除监听器
+    return () => {
+      window.removeEventListener('refresh_favorite_folders', handleRefreshFavoriteFolders);
+    };
+  }, [fetchFavoriteFolders, favoritesExpanded]);
   
   // 在展开/折叠状态更新后设置可见性状态
   useEffect(() => {
@@ -180,6 +231,9 @@ export function Sidebar({
   const handleCreateFavoriteFolderClick = useCallback(() => {
     if (onCreateFavoriteFolder) {
       onCreateFavoriteFolder();
+      
+      // 不要直接触发刷新事件，等待创建成功后再触发
+      // 移除这里的事件触发，由useViewState中的handleFavoriteCreateSuccess处理
     }
   }, [onCreateFavoriteFolder]);
 

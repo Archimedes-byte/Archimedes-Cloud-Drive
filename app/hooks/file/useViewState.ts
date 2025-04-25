@@ -37,10 +37,13 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   
   /**
    * 处理查看我的分享
+   * @param resetPathCallback 可选的重置路径回调函数
    */
-  const handleViewMyShares = useCallback(() => {
+  const handleViewMyShares = useCallback((resetPathCallback?: () => void) => {
     // 先关闭所有特殊视图
     closeAllSpecialViews();
+    // 重置路径（如果提供了回调）
+    if (resetPathCallback) resetPathCallback();
     // 打开我的分享视图
     setShowMySharesContent(true);
     // 设置当前视图类型
@@ -49,10 +52,14 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   
   /**
    * 处理查看收藏夹
+   * @param folderId 收藏夹ID
+   * @param resetPathCallback 可选的重置路径回调函数
    */
-  const handleFavoritesClick = useCallback((folderId?: string) => {
+  const handleFavoritesClick = useCallback((folderId?: string, resetPathCallback?: () => void) => {
     // 先关闭所有特殊视图
     closeAllSpecialViews();
+    // 重置路径（如果提供了回调）
+    if (resetPathCallback) resetPathCallback();
     // 设置选中的收藏夹ID
     setSelectedFavoriteFolderId(folderId);
     // 打开收藏夹视图
@@ -63,10 +70,13 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   
   /**
    * 处理查看最近文件
+   * @param resetPathCallback 可选的重置路径回调函数
    */
-  const handleRecentClick = useCallback(() => {
+  const handleRecentClick = useCallback((resetPathCallback?: () => void) => {
     // 先关闭所有特殊视图
     closeAllSpecialViews();
+    // 重置路径（如果提供了回调）
+    if (resetPathCallback) resetPathCallback();
     // 打开最近文件视图
     setShowRecentFilesContent(true);
     // 设置当前视图类型
@@ -75,10 +85,13 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   
   /**
    * 处理查看最近下载
+   * @param resetPathCallback 可选的重置路径回调函数
    */
-  const handleRecentDownloadsClick = useCallback(() => {
+  const handleRecentDownloadsClick = useCallback((resetPathCallback?: () => void) => {
     // 先关闭所有特殊视图
     closeAllSpecialViews();
+    // 重置路径（如果提供了回调）
+    if (resetPathCallback) resetPathCallback();
     // 打开最近下载视图
     setShowRecentDownloadsContent(true);
     // 设置当前视图类型
@@ -89,10 +102,13 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
    * 处理搜索点击
    * @param query 可选的搜索查询
    * @param type 可选的搜索类型，默认为'name'（文件名搜索）
+   * @param resetPathCallback 可选的重置路径回调函数
    */
-  const handleSearchClick = useCallback((query?: string, type?: 'name' | 'tag') => {
+  const handleSearchClick = useCallback((query?: string, type?: 'name' | 'tag', resetPathCallback?: () => void) => {
     // 关闭所有特殊视图
     closeAllSpecialViews();
+    // 重置路径（如果提供了回调）
+    if (resetPathCallback) resetPathCallback();
     // 打开搜索视图
     setShowSearchView(true);
     
@@ -110,9 +126,11 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   /**
    * 处理标签搜索点击
    * 这是一个便捷方法，内部调用handleSearchClick并指定类型为tag
+   * @param query 可选的搜索查询
+   * @param resetPathCallback 可选的重置路径回调函数
    */
-  const handleTagSearchClick = useCallback((query?: string) => {
-    return handleSearchClick(query, 'tag');
+  const handleTagSearchClick = useCallback((query?: string, resetPathCallback?: () => void) => {
+    return handleSearchClick(query, 'tag', resetPathCallback);
   }, [handleSearchClick]);
   
   /**
@@ -128,6 +146,13 @@ export function useViewState(initialView: ViewType | null = null, initialShowSha
   const handleFavoriteCreateSuccess = useCallback(() => {
     // 递增刷新触发器，强制侧边栏刷新收藏夹列表
     setFavoriteFoldersRefreshTrigger(prev => prev + 1);
+    
+    // 添加延迟避免事件循环
+    setTimeout(() => {
+      // 同时发出全局刷新事件
+      const refreshEvent = new CustomEvent('refresh_favorite_folders');
+      window.dispatchEvent(refreshEvent);
+    }, 100);
   }, []);
   
   return {

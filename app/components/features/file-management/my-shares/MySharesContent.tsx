@@ -10,11 +10,12 @@ import {
 import { 
   Share2, ExternalLink, Trash2, Copy, 
   File, Folder, FileText, Image as ImageIcon, 
-  Video, Music, AlertCircle
+  Video, Music, AlertCircle, ArrowLeft
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import styles from './my-shares.module.css';
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 const { Title, Text } = Typography;
 
@@ -124,17 +125,13 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
 
   // 获取文件图标
   const getFileIcon = (file: ShareFile) => {
-    if (file.isFolder) return <Folder size={18} />;
-    
-    const fileType = file.type?.toLowerCase() || '';
-    
-    if (fileType.includes('image')) return <ImageIcon size={18} />;
-    if (fileType.includes('video')) return <Video size={18} />;
-    if (fileType.includes('audio')) return <Music size={18} />;
-    if (fileType.includes('pdf') || fileType.includes('doc') || fileType.includes('txt')) 
-      return <FileText size={18} />;
-    
-    return <File size={18} />;
+    const extension = file.name?.split('.').pop()?.toLowerCase();
+    return <FileIcon 
+      isFolder={file.isFolder} 
+      extension={extension} 
+      mimeType={file.type} 
+      size={18} 
+    />;
   };
 
   // 获取分享状态

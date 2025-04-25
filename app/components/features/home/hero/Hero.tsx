@@ -2,8 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ChevronDown, FileText, FileImage, FileVideo, FileArchive, FolderIcon, ShareIcon, LockIcon, DatabaseIcon, FileIcon, BookmarkIcon, Cloud } from 'lucide-react';
+import { ChevronDown, FileText, FileImage, FileVideo, FileArchive, FolderIcon, ShareIcon, LockIcon, DatabaseIcon, FileIcon as LucideFileIcon, BookmarkIcon, Cloud } from 'lucide-react';
 import styles from './Hero.module.css';
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 interface HeroProps {
   onExploreClick: () => void;
@@ -41,18 +42,18 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
         
           {/* 蓝色图标组 - 保留关键图标 */}
           <div className={`${styles.fileIcon} ${styles.circleOne} ${styles.item1}`}>
-            <FileText size={32} color="#3b82f6" />
+            <FileIcon extension="doc" size={32} color="#3b82f6" />
           </div>
           <div className={`${styles.fileIcon} ${styles.circleOne} ${styles.item2}`}>
-            <FileImage size={32} color="#3b82f6" />
+            <FileIcon extension="jpg" size={32} color="#3b82f6" />
           </div>
           <div className={`${styles.fileIcon} ${styles.circleOne} ${styles.item3}`}>
-            <FileVideo size={32} color="#3b82f6" />
+            <FileIcon extension="mp4" size={32} color="#3b82f6" />
           </div>
 
           {/* 绿色图标组 - 保留关键图标 */}
           <div className={`${styles.fileIcon} ${styles.circleTwo} ${styles.item1}`}>
-            <FileIcon size={32} color="#10b981" />
+            <FileIcon extension="" size={32} color="#10b981" />
           </div>
           <div className={`${styles.fileIcon} ${styles.circleTwo} ${styles.item3}`}>
             <LockIcon size={32} color="#10b981" />
@@ -60,7 +61,7 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
 
           {/* 黄色图标组 - 保留关键图标 */}
           <div className={`${styles.fileIcon} ${styles.circleThree} ${styles.item1}`}>
-            <FolderIcon size={32} color="#f59e0b" />
+            <FileIcon isFolder={true} size={32} color="#f59e0b" />
           </div>
           <div className={`${styles.fileIcon} ${styles.circleThree} ${styles.item3}`}>
             <ShareIcon size={32} color="#f59e0b" />
@@ -68,7 +69,7 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
 
           {/* 紫色图标组 - 保留关键图标 */}
           <div className={`${styles.fileIcon} ${styles.circleFour} ${styles.item1}`}>
-            <FileArchive size={32} color="#8b5cf6" />
+            <FileIcon extension="zip" size={32} color="#8b5cf6" />
           </div>
           <div className={`${styles.fileIcon} ${styles.circleFour} ${styles.item2}`}>
             <DatabaseIcon size={32} color="#8b5cf6" />

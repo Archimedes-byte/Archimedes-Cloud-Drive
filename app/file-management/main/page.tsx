@@ -221,7 +221,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     recentDownloads,
     loadingRecentDownloads,
     fetchRecentFiles,
-    fetchRecentDownloads
+    fetchRecentDownloads,
+    refreshContent
   } = useRecentContent();
 
   // 添加主题面板状态
@@ -647,6 +648,32 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     setSelectedFileForFavorite(null);
   };
 
+  // 处理查看最近文件
+  const handleRecentFilesClick = useCallback(() => {
+    // 调用视图状态钩子处理视图切换，并在回调中重置路径
+    handleRecentClick(() => {
+      // 清除当前路径，回到根目录
+      setFolderPath([]);
+      setCurrentFolderId(null);
+    });
+    
+    // 刷新最近访问文件列表
+    fetchRecentFiles();
+  }, [handleRecentClick, setFolderPath, setCurrentFolderId, fetchRecentFiles]);
+  
+  // 处理查看最近下载
+  const handleRecentDownloadsViewClick = useCallback(() => {
+    // 调用视图状态钩子处理视图切换，并在回调中重置路径
+    handleRecentDownloadsClick(() => {
+      // 清除当前路径，回到根目录
+      setFolderPath([]);
+      setCurrentFolderId(null);
+    });
+    
+    // 刷新最近下载文件列表
+    fetchRecentDownloads();
+  }, [handleRecentDownloadsClick, setFolderPath, setCurrentFolderId, fetchRecentDownloads]);
+
   return (
     <>
       <Head>
@@ -666,17 +693,24 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           closeAllSpecialViews();
           // 设置当前视图
           setCurrentView(type);
+          // 清除当前路径，回到根目录
+          setFolderPath([]);
+          setCurrentFolderId(null);
           // 应用文件类型过滤
           filterByFileType(type);
           // 记录当前选择的类型，确保与侧边栏同步
-          console.log('文件类型切换为:', type);
+          console.log('文件类型切换为:', type, '已重置面包屑路径');
         }}
         onSearchClick={(query, type) => {
           // 处理搜索点击，支持文件名搜索和标签搜索
           console.log(`处理搜索点击，查询: ${query}, 类型: ${type}`);
           
-          // 调用视图状态钩子处理搜索视图
-          handleSearchClick(query, type as 'name' | 'tag');
+          // 调用视图状态钩子处理搜索视图，添加路径重置回调
+          handleSearchClick(query, type as 'name' | 'tag', () => {
+            // 清除当前路径，回到根目录
+            setFolderPath([]);
+            setCurrentFolderId(null);
+          });
           
           // 设置搜索类型
           if (type === 'tag') {
@@ -691,11 +725,39 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
             handleSearch(query, type as 'name' | 'tag');
           }
         }}
-        onSharesClick={handleViewMyShares}
-        onFavoritesClick={handleFavoritesClick}
+        onSharesClick={() => {
+          handleViewMyShares(() => {
+            // 清除当前路径，回到根目录
+            setFolderPath([]);
+            setCurrentFolderId(null);
+          });
+        }}
+        onFavoritesClick={(folderId) => {
+          handleFavoritesClick(folderId, () => {
+            // 清除当前路径，回到根目录
+            setFolderPath([]);
+            setCurrentFolderId(null);
+          });
+        }}
         onCreateFavoriteFolder={handleCreateFavoriteFolder}
-        onRecentClick={handleRecentClick}
-        onRecentDownloadsClick={handleRecentDownloadsClick}
+        onRecentClick={() => {
+          handleRecentClick(() => {
+            // 清除当前路径，回到根目录
+            setFolderPath([]);
+            setCurrentFolderId(null);
+          });
+          // 刷新最近访问文件
+          fetchRecentFiles();
+        }}
+        onRecentDownloadsClick={() => {
+          handleRecentDownloadsViewClick(() => {
+            // 清除当前路径，回到根目录
+            setFolderPath([]);
+            setCurrentFolderId(null);
+          });
+          // 刷新最近下载文件
+          fetchRecentDownloads();
+        }}
         onThemeClick={() => {
           setShowThemePanel(!showThemePanel);
           if (!showThemePanel) {

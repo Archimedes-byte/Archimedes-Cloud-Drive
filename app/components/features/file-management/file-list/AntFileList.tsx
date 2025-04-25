@@ -40,6 +40,7 @@ import { formatFileSize } from '@/app/utils/file/format';
 import { createCancelableDebounce } from '@/app/utils/function/debounce';
 import { themeTokens } from '@/app/theme';
 import './antFileList.css'; // 将创建一个包含少量覆盖样式的CSS文件
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 const { Text, Title } = Typography;
 
@@ -236,43 +237,20 @@ export function AntFileList({
   // 渲染文件图标
   const renderFileIcon = (file: FileInfo) => {
     const { isFolder } = file;
-    const extension = file.extension || '';
+    const extension = file.name?.split('.').pop()?.toLowerCase() || file.extension || '';
     const fileType = file.type || '';
-    
-    if (isFolder) {
-      return <FolderOutlined style={{ color: '#ffc53d', fontSize: '18px' }} />;
-    }
-    
-    // 获取小写扩展名
-    const ext = extension.toLowerCase();
 
-    // 先检查文件名中的扩展名（对于某些文件可能没有正确设置MIME类型）
-    if (file.name && file.name.toLowerCase().endsWith('.pdf')) {
-      return <FilePdfOutlined style={{ color: '#f5222d', fontSize: '20px' }} />;
-    }
-    
-    if (['mp3', 'wav', 'ogg', 'flac', 'aac'].some(audioExt => 
-        file.name.toLowerCase().endsWith(`.${audioExt}`) || 
-        fileType.toLowerCase().includes('audio'))) {
-      return <SoundOutlined style={{ color: '#722ed1', fontSize: '20px' }} />;
-    }
-    
-    // 检查文件类型和扩展名
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext) || fileType.includes('image')) {
-      return <FileImageOutlined style={{ color: '#73d13d', fontSize: '18px' }} />;
-    } else if (['doc', 'docx', 'txt', 'md'].includes(ext) || fileType.includes('document') || fileType.includes('text')) {
-      return <FileTextOutlined style={{ color: '#40a9ff', fontSize: '18px' }} />;
-    } else if (ext === 'pdf' || fileType.includes('pdf')) {
-      return <FilePdfOutlined style={{ color: '#f5222d', fontSize: '20px' }} />;
-    } else if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext) || fileType.includes('audio')) {
-      return <SoundOutlined style={{ color: '#722ed1', fontSize: '20px' }} />;
-    } else if (['mp4', 'webm', 'avi', 'mov'].includes(ext) || fileType.includes('video')) {
-      return <PlayCircleOutlined style={{ color: '#ff4d4f', fontSize: '18px' }} />;
-    } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext) || fileType.includes('archive') || fileType.includes('zip')) {
-      return <FileZipOutlined style={{ color: '#faad14', fontSize: '18px' }} />;
-    }
-    
-    return <FileOutlined style={{ color: '#8c8c8c', fontSize: '18px' }} />;
+    return (
+      <span className="file-icon-wrapper">
+        <FileIcon 
+          isFolder={isFolder} 
+          extension={extension} 
+          mimeType={fileType} 
+          size={20} 
+          className="file-type-icon"
+        />
+      </span>
+    );
   };
 
   // 渲染收藏按钮

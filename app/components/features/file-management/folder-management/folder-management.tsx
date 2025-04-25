@@ -29,6 +29,7 @@ export default function FolderManagement({ onNavigateBack, onFolderSelect }: Fol
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderDescription, setNewFolderDescription] = useState('');
+  const [addingFolder, setAddingFolder] = useState(false);
 
   // 获取收藏夹列表
   const fetchFolderList = async () => {
@@ -48,6 +49,36 @@ export default function FolderManagement({ onNavigateBack, onFolderSelect }: Fol
   useEffect(() => {
     fetchFolderList();
   }, []);
+  
+  // 监听收藏夹列表更新事件
+  useEffect(() => {
+    // 处理收藏夹列表更新事件
+    const handleFoldersUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{folders: FavoriteFolderInfo[]}>;
+      if (customEvent.detail?.folders) {
+        // 直接使用事件中的文件夹列表更新，避免额外的API请求
+        setFolders(customEvent.detail.folders);
+      } else {
+        // 如果事件没有提供数据，则重新获取
+        fetchFolderList();
+      }
+    };
+    
+    // 添加事件监听器
+    window.addEventListener('favorite_folders_updated', handleFoldersUpdated);
+    
+    // 只监听refresh_favorite_folders事件但不触发它，避免产生循环
+    const handleRefreshRequest = () => {
+      fetchFolderList();
+    };
+    window.addEventListener('refresh_favorite_folders', handleRefreshRequest);
+    
+    // 组件卸载时移除事件监听器
+    return () => {
+      window.removeEventListener('favorite_folders_updated', handleFoldersUpdated);
+      window.removeEventListener('refresh_favorite_folders', handleRefreshRequest);
+    };
+  }, []);
 
   // 添加新收藏夹
   const handleAddFolder = async () => {
@@ -55,20 +86,27 @@ export default function FolderManagement({ onNavigateBack, onFolderSelect }: Fol
       message.error('收藏夹名称不能为空');
       return;
     }
-    
+
+    setAddingFolder(true);
     try {
-      setLoading(true);
-      await fileApi.createFavoriteFolder(newFolderName, newFolderDescription);
+      const response = await fileApi.createFavoriteFolder(
+        newFolderName,
+        newFolderDescription
+      );
       message.success('收藏夹创建成功');
-      setIsAddModalVisible(false);
       setNewFolderName('');
       setNewFolderDescription('');
-      fetchFolderList();
+      setFolders([...folders, response.folder]);
+      setIsAddModalVisible(false);
+      
+      // 触发全局收藏夹刷新事件
+      const refreshEvent = new CustomEvent('refresh_favorite_folders');
+      window.dispatchEvent(refreshEvent);
     } catch (error) {
       console.error('创建收藏夹失败:', error);
       message.error('创建收藏夹失败');
     } finally {
-      setLoading(false);
+      setAddingFolder(false);
     }
   };
 
@@ -94,7 +132,14 @@ export default function FolderManagement({ onNavigateBack, onFolderSelect }: Fol
       
       if (result.success) {
         message.success(`收藏夹 "${folder.name}" 已删除`);
-        fetchFolderList();
+        
+        // 直接更新本地列表
+        const updatedFolders = folders.filter(f => f.id !== folder.id);
+        setFolders(updatedFolders);
+        
+        // 触发全局刷新事件
+        const refreshEvent = new CustomEvent('refresh_favorite_folders');
+        window.dispatchEvent(refreshEvent);
       } else {
         message.error(result.message || '删除收藏夹失败');
       }
@@ -232,7 +277,7 @@ export default function FolderManagement({ onNavigateBack, onFolderSelect }: Fol
         open={isAddModalVisible}
         onOk={handleAddFolder}
         onCancel={() => setIsAddModalVisible(false)}
-        confirmLoading={loading}
+        confirmLoading={addingFolder}
       >
         <div className={styles.formItem}>
           <div className={styles.formLabel}>收藏夹名称:</div>

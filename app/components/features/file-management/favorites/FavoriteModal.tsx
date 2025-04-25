@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 import styles from './favorites.module.css';
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 const { Text } = Typography;
 const { Item } = Form;
@@ -164,38 +165,7 @@ export default function FavoriteModal({
   // 获取文件图标
   const getFileIcon = () => {
     const ext = fileName.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'txt':
-      case 'doc':
-      case 'docx':
-        return <FileText className={styles.fileIcon} />;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return <FileImage className={styles.fileIcon} />;
-      case 'mp4':
-      case 'avi':
-      case 'mov':
-        return <FileVideo className={styles.fileIcon} />;
-      case 'mp3':
-      case 'wav':
-      case 'flac':
-        return <FileAudio className={styles.fileIcon} />;
-      case 'zip':
-      case 'rar':
-      case '7z':
-        return <File className={styles.fileIcon} />;
-      case 'pdf':
-        return <File className={styles.fileIcon} />;
-      case 'html':
-      case 'css':
-      case 'js':
-      case 'ts':
-        return <FileCode className={styles.fileIcon} />;
-      default:
-        return <File className={styles.fileIcon} />;
-    }
+    return <FileIcon extension={ext} className={styles.fileIcon} size={24} />;
   };
 
   return (

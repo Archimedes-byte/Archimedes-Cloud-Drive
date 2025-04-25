@@ -4,10 +4,12 @@ import { getFileIcon } from '@/app/utils/file/type';
 import { 
   Home, Folder, Image as ImageIcon, FileText, Video, Music, 
   File, Search, AlertCircle, Calendar, Tag, Database, Settings, 
-  X, Sparkles, Filter, Zap, ArrowDownUp, Upload, Download
+  X, Sparkles, Filter, Zap, ArrowDownUp, Upload, Download, Plus, Trash2, 
+  ArrowUpDown, SortAsc, SortDesc, ArrowDown, ArrowUp
 } from 'lucide-react';
 import styles from './SearchView.module.css';
 import { createCancelableDebounce } from '@/app/utils/function/debounce';
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 export interface SearchViewProps {
   searchType: 'name' | 'tag';
@@ -121,20 +123,26 @@ export const SearchView: React.FC<SearchViewProps> = ({
     }
   };
 
-  const renderFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean | undefined) => {
+  const renderFileIcon = (type: string | undefined, extension: string | undefined, isFolder: boolean | undefined, fileName?: string) => {
     const _isFolder = isFolder === true;
-
-    const iconName = getFileIcon(type, extension, _isFolder);
-    const IconComponent = {
-      folder: Folder,
-      'file-text': FileText,
-      image: ImageIcon,
-      video: Video,
-      music: Music,
-      file: File
-    }[iconName as string] || File;
-
-    return <IconComponent className={styles['file-type-icon']} />;
+    
+    // 如果提供了文件名，尝试从文件名获取扩展名
+    let ext = extension;
+    if (!ext && fileName) {
+      ext = fileName.split('.').pop()?.toLowerCase();
+    }
+    
+    return (
+      <span className={styles['file-icon-wrapper']}>
+        <FileIcon 
+          isFolder={_isFolder}
+          extension={ext}
+          mimeType={type}
+          size={20}
+          className={styles['file-type-icon']}
+        />
+      </span>
+    );
   };
 
   const formatFileSize = (size: number | undefined) => {
@@ -590,7 +598,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     <td className={styles['file-name-cell']}>
                       <div className={styles['file-info']}>
                         <span className={styles['file-type-icon']}>
-                          {renderFileIcon(file.type, file.extension, file.isFolder)}
+                          {renderFileIcon(file.type, file.extension, file.isFolder, file.name)}
                         </span>
                         <span className={styles['file-name']}>
                           {file.name}

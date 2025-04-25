@@ -167,6 +167,22 @@
   align-items: center;
 }
 
+/* 文件图标包装器样式 */
+.file-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  min-width: 24px;
+}
+
+/* 文件类型图标样式 */
+.file-type-icon {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
 /* 文件夹图标颜色 */
 .ant-file-table .folder-icon {
   color: #f6ad55 !important;

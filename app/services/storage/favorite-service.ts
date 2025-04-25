@@ -46,13 +46,18 @@ export class FavoriteService {
         ]
       });
 
-      // 获取每个收藏夹中的文件数量
+      // 获取每个收藏夹中的文件数量，只计算关联文件仍然存在的收藏
       const foldersWithCount = await Promise.all(
         folders.map(async (folder) => {
+          // 使用连接查询确保只统计文件仍存在的收藏
           const count = await prisma.favorite.count({
             where: { 
               folderId: folder.id,
-              userId 
+              userId,
+              file: {
+                isDeleted: false,
+                // 不要使用NOT NULL条件，这在Prisma中不起作用
+              }
             }
           });
           
@@ -513,6 +518,9 @@ export class FavoriteService {
         throw createFileError('notfound', '收藏夹不存在');
       }
 
+      // 先清理已删除文件的收藏记录
+      await this.cleanupDeletedFileFavorites(userId, folderId);
+
       // 查询条件
       const where = {
         folderId,
@@ -532,13 +540,15 @@ export class FavoriteService {
         skip: (page - 1) * pageSize,
         take: pageSize,
       });
-
-      // 转换为文件信息列表
-      const items = favorites.map(fav => ({
-        ...mapFileEntityToFileInfo(fav.file),
-        favoriteId: fav.id, // 添加收藏ID
-        favoriteFolderId: fav.folderId // 添加收藏夹ID
-      }));
+      
+      // 转换为文件信息列表，并过滤掉已被删除的文件
+      const items = favorites
+        .filter(fav => fav.file !== null) // 过滤掉不存在的文件
+        .map(fav => ({
+          ...mapFileEntityToFileInfo(fav.file),
+          favoriteId: fav.id, // 添加收藏ID
+          favoriteFolderId: fav.folderId // 添加收藏夹ID
+        }));
 
       return {
         items,
@@ -561,6 +571,9 @@ export class FavoriteService {
     pageSize = 50
   ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
     try {
+      // 先清理所有收藏夹中已删除文件的收藏记录
+      await this.cleanupDeletedFileFavorites(userId);
+
       // 查询条件
       const where = {
         userId
@@ -581,13 +594,15 @@ export class FavoriteService {
         take: pageSize,
       });
 
-      // 转换为文件信息列表
-      const items = favorites.map(fav => ({
-        ...mapFileEntityToFileInfo(fav.file),
-        favoriteId: fav.id, // 添加收藏ID
-        favoriteFolderId: fav.folderId, // 添加收藏夹ID
-        favoriteFolderName: fav.folder.name // 添加收藏夹名称
-      }));
+      // 转换为文件信息列表，并过滤掉已被删除的文件
+      const items = favorites
+        .filter(fav => fav.file !== null) // 过滤掉文件已被删除的收藏
+        .map(fav => ({
+          ...mapFileEntityToFileInfo(fav.file),
+          favoriteId: fav.id, // 添加收藏ID
+          favoriteFolderId: fav.folderId, // 添加收藏夹ID
+          favoriteFolderName: fav.folder.name // 添加收藏夹名称
+        }));
 
       return {
         items,
@@ -598,6 +613,45 @@ export class FavoriteService {
     } catch (error) {
       console.error('[收藏夹服务] 获取所有收藏文件列表失败:', error);
       throw createFileError('access', '获取收藏文件列表失败');
+    }
+  }
+
+  /**
+   * 清理已删除文件的收藏记录
+   * @param userId 用户ID
+   * @param folderId 可选的收藏夹ID，如果提供则只清理指定收藏夹
+   */
+  private async cleanupDeletedFileFavorites(userId: string, folderId?: string): Promise<number> {
+    try {
+      // 构建查询条件
+      const whereClause: any = {
+        userId,
+        file: {
+          OR: [
+            { id: null },       // 文件不存在
+            { isDeleted: true } // 文件已被删除
+          ]
+        }
+      };
+
+      // 如果指定了收藏夹ID，则只清理该收藏夹
+      if (folderId) {
+        whereClause.folderId = folderId;
+      }
+
+      // 执行删除操作
+      const result = await prisma.favorite.deleteMany({
+        where: whereClause
+      });
+
+      if (result.count > 0) {
+        console.log(`[收藏夹服务] 已清理 ${result.count} 条指向已删除文件的收藏记录`);
+      }
+
+      return result.count;
+    } catch (error) {
+      console.error('[收藏夹服务] 清理已删除文件的收藏记录失败:', error);
+      return 0; // 返回0表示没有清理任何记录
     }
   }
 

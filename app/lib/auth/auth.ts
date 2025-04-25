@@ -20,9 +20,12 @@ if (!prisma) {
   throw new Error('Prisma client is not initialized properly');
 }
 
-// 用于调试的辅助函数
+// 用于调试的辅助函数，添加环境判断
 function logObject(prefix: string, obj: any) {
-  console.log(`${prefix}:`, JSON.stringify(obj, null, 2));
+  // 只在开发环境下输出日志
+  if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+    console.log(`${prefix}:`, JSON.stringify(obj, null, 2));
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -173,43 +176,45 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account }) {
-      logObject('JWT回调 - 传入token', token);
-      logObject('JWT回调 - 传入user', user || {});
+      // 简化日志输出
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+        console.log(`JWT回调处理中...`);
+      }
       
       if (user) {
         token.id = user.id;
         token.userId = user.id; // 添加备用字段
-        console.log(`JWT: 设置token.id=${user.id}`);
       }
       
       if (account) {
         token.accessToken = account.access_token;
       }
       
-      logObject('JWT回调 - 返回token', token);
       return token;
     },
     async session({ session, token }) {
-      logObject('Session回调 - 传入session', session);
-      logObject('Session回调 - 传入token', token);
+      // 简化日志输出
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+        console.log(`Session回调处理中...`);
+      }
       
       if (session.user && token) {
         // 确保用户ID被正确设置
         const userId = (token.id as string) || (token.userId as string) || token.sub;
         if (userId) {
           session.user.id = userId;
-          console.log(`Session: 设置session.user.id=${session.user.id}`);
         } else {
           console.error('警告: 无法找到有效的用户ID!');
         }
       }
       
-      logObject('Session回调 - 返回session', session);
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('重定向 URL:', url);
-      console.log('基础 URL:', baseUrl);
+      // 简化日志输出
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+        console.log(`重定向处理: ${url} -> ${baseUrl}/file-management/main`);
+      }
       
       // 始终重定向到文件管理页面
       return `${baseUrl}/file-management/main`;

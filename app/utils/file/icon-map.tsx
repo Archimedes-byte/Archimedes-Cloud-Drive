@@ -1,12 +1,12 @@
 import { 
   File, 
   FileText, 
-  Image, 
+  Image as ImageIcon, 
   Film, 
   Music, 
   Archive, 
   Code, 
-  FileType,
+  FileType as FileTypeIcon,
   Table,
   Presentation,
   Folder,
@@ -18,68 +18,129 @@ import React from 'react';
 export const folderIcon = <Folder size={24} color="#2878ff" />;
 
 /**
- * 获取文件类型的图标
- * @param extension 文件扩展名
- * @returns 文件类型对应的图标
+ * 文件类型与图标颜色映射
  */
-export const FileIcon = ({ extension, size = 24 }: { extension?: string, size?: number }) => {
-  if (!extension) {
-    return <File size={size} color="#909399" />;
+export const FILE_ICON_COLORS = {
+  folder: '#2878ff',
+  image: '#13C2C2',
+  video: '#722ED1',
+  audio: '#EB2F96',
+  document: '#1890FF',
+  pdf: '#F5222D',
+  spreadsheet: '#52C41A',
+  presentation: '#FA8C16',
+  archive: '#722ED1',
+  code: '#2878ff',
+  executable: '#F5222D',
+  default: '#909399'
+};
+
+/**
+ * 文件扩展名分类映射
+ */
+export const FILE_EXTENSIONS_MAP = {
+  image: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff', 'ico', 'avif'],
+  video: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v', 'mpeg', '3gp'],
+  audio: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'],
+  document: ['doc', 'docx', 'txt', 'rtf', 'odt', 'md'],
+  pdf: ['pdf'],
+  spreadsheet: ['xls', 'xlsx', 'csv', 'ods'],
+  presentation: ['ppt', 'pptx', 'odp'],
+  archive: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'],
+  code: ['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'scss', 'less', 'php', 'py', 'java', 'c', 'cpp', 'h', 'json', 'xml', 'go', 'rb'],
+  executable: ['exe', 'msi', 'app', 'apk', 'deb', 'rpm']
+};
+
+/**
+ * 根据扩展名或MIME类型确定文件类型
+ * @param extension 文件扩展名
+ * @param mimeType 文件MIME类型
+ * @param isFolder 是否为文件夹
+ * @returns 文件类型
+ */
+export const getFileType = (extension?: string, mimeType?: string, isFolder?: boolean): string => {
+  if (isFolder) return 'folder';
+  
+  // 处理扩展名
+  if (extension) {
+    const ext = extension.toLowerCase().replace('.', '');
+    
+    for (const [type, extensions] of Object.entries(FILE_EXTENSIONS_MAP)) {
+      if (extensions.includes(ext)) {
+        return type;
+      }
+    }
   }
-
-  // 转换为小写以便匹配
-  const ext = extension.toLowerCase();
-
-  // 图片类型
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext)) {
-    return <Image size={size} color="#13C2C2" />;
+  
+  // 处理MIME类型
+  if (mimeType) {
+    const mime = mimeType.toLowerCase();
+    
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'audio';
+    if (mime.includes('pdf')) return 'pdf';
+    if (mime.includes('spreadsheet') || mime.includes('excel')) return 'spreadsheet';
+    if (mime.includes('presentation') || mime.includes('powerpoint')) return 'presentation';
+    if (mime.includes('word') || mime.includes('text/')) return 'document';
+    if (mime.includes('zip') || mime.includes('archive') || mime.includes('compressed')) return 'archive';
+    if (mime.includes('javascript') || mime.includes('json') || mime.includes('xml') || mime.includes('html')) return 'code';
   }
+  
+  return 'default';
+};
 
-  // 视频类型
-  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v'].includes(ext)) {
-    return <Film size={size} color="#722ED1" />;
+/**
+ * 统一的文件图标组件
+ * 根据文件类型、扩展名或MIME类型返回对应的图标
+ */
+export interface FileIconProps {
+  extension?: string;
+  mimeType?: string;
+  isFolder?: boolean;
+  size?: number;
+  color?: string;
+  className?: string;
+}
+
+export const FileIcon: React.FC<FileIconProps> = ({ 
+  extension, 
+  mimeType, 
+  isFolder, 
+  size = 24, 
+  color,
+  className
+}) => {
+  // 确定文件类型
+  const fileType = getFileType(extension, mimeType, isFolder);
+  // 确定图标颜色
+  const iconColor = color || FILE_ICON_COLORS[fileType as keyof typeof FILE_ICON_COLORS] || FILE_ICON_COLORS.default;
+  
+  // 根据文件类型返回对应图标
+  switch (fileType) {
+    case 'folder':
+      return <Folder size={size} color={iconColor} className={className} />;
+    case 'image':
+      return <ImageIcon size={size} color={iconColor} className={className} />;
+    case 'video':
+      return <Film size={size} color={iconColor} className={className} />;
+    case 'audio':
+      return <Music size={size} color={iconColor} className={className} />;
+    case 'document':
+      return <FileText size={size} color={iconColor} className={className} />;
+    case 'pdf':
+      return <FileTypeIcon size={size} color={iconColor} className={className} />;
+    case 'spreadsheet':
+      return <Table size={size} color={iconColor} className={className} />;
+    case 'presentation':
+      return <Presentation size={size} color={iconColor} className={className} />;
+    case 'archive':
+      return <Archive size={size} color={iconColor} className={className} />;
+    case 'code':
+      return <Code size={size} color={iconColor} className={className} />;
+    case 'executable':
+      return <Package size={size} color={iconColor} className={className} />;
+    default:
+      return <File size={size} color={iconColor} className={className} />;
   }
-
-  // 音频类型
-  if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'].includes(ext)) {
-    return <Music size={size} color="#EB2F96" />;
-  }
-
-  // 文档类型
-  if (['doc', 'docx', 'txt', 'rtf', 'odt'].includes(ext)) {
-    return <FileText size={size} color="#1890FF" />;
-  }
-
-  // PDF类型
-  if (ext === 'pdf') {
-    return <FileType size={size} color="#F5222D" />;
-  }
-
-  // 表格类型
-  if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) {
-    return <Table size={size} color="#52C41A" />;
-  }
-
-  // 演示文稿类型
-  if (['ppt', 'pptx', 'odp'].includes(ext)) {
-    return <Presentation size={size} color="#FA8C16" />;
-  }
-
-  // 压缩文件类型
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) {
-    return <Archive size={size} color="#722ED1" />;
-  }
-
-  // 代码类型
-  if (['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'php', 'py', 'java', 'c', 'cpp', 'h', 'json', 'xml'].includes(ext)) {
-    return <Code size={size} color="#2878ff" />;
-  }
-
-  // 可执行文件类型
-  if (['exe', 'msi', 'app', 'apk', 'deb', 'rpm'].includes(ext)) {
-    return <Package size={size} color="#F5222D" />;
-  }
-
-  // 默认文件图标
-  return <File size={size} color="#909399" />;
 }; 

@@ -27,8 +27,6 @@ export interface TopActionBarProps {
   uploadDropdownRef: React.RefObject<HTMLDivElement>;
   onUploadClick?: () => void;
   onFolderUploadClick?: () => void;
-  onRefresh?: () => void;
-  isRefreshing?: boolean;
 }
 
 /**
@@ -97,8 +95,6 @@ export const TopActionBar: React.FC<TopActionBarProps> = (props) => {
               onUploadClick={props.onUploadClick}
               onFolderUploadClick={props.onFolderUploadClick}
               onCreateFolder={props.onCreateFolder}
-              onRefresh={props.onRefresh}
-              isRefreshing={props.isRefreshing}
             />
           </>
         )}

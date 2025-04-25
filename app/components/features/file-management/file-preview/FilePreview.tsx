@@ -3,11 +3,12 @@ import { getFileTypeByExtension } from '@/app/utils/file/type';
 import { 
   File, X, Download, FileText, Folder,
   Image as ImageIcon, Video, Music, Archive, Code,
-  ArrowLeft, Share2
+  ArrowLeft, Share2, ExternalLink
 } from 'lucide-react';
 import { ExtendedFile, FileInfo } from '@/app/types';
 import styles from './FilePreview.module.css';
 import { API_PATHS } from '@/app/lib/api/paths';
+import { FileIcon } from '@/app/utils/file/icon-map';
 
 interface FilePreviewProps {
   file: ExtendedFile | FileInfo | null;
@@ -237,21 +238,15 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
 
   // 文件图标渲染
   const getFileIconComponent = () => {
-    if (!file) return <File size={48} />;
+    if (!file) return <FileIcon size={48} />;
 
     // 获取扩展名
     const extension = file.name.split('.').pop()?.toLowerCase() || '';
-    const fileType = getFileTypeByExtension(extension);
-
-    switch (fileType) {
-      case 'image': return <ImageIcon size={48} />;
-      case 'video': return <Video size={48} />;
-      case 'audio': return <Music size={48} />;
-      case 'document': return <FileText size={48} />;
-      case 'archive': return <Archive size={48} />;
-      case 'code': return <Code size={48} />;
-      default: return <File size={48} />;
-    }
+    return <FileIcon 
+      extension={extension} 
+      mimeType={file.type} 
+      size={48} 
+    />;
   };
 
   // 处理直接预览
@@ -335,7 +330,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     if (!file) {
       return (
         <div className={styles.errorContainer}>
-          <File size={48} className={styles.fileIcon} />
+          <FileIcon size={48} className={styles.fileIcon} />
           <h3>无效的文件</h3>
           <div className={styles.errorMessage}>未找到文件数据</div>
         </div>
@@ -384,7 +379,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
       return (
         <div className={styles.audioPreviewContainer}>
           <div className={styles.fileIcon}>
-            <Music size={48} />
+            <FileIcon extension="mp3" size={48} />
           </div>
           <h3>{file.name}</h3>
           <audio 

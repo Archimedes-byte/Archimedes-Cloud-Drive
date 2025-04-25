@@ -11,7 +11,7 @@ interface FileApiResponse {
 /**
  * 最近文件和下载管理hook
  */
-export function useRecentContent() {
+export function useRecentContent(pollingInterval = 5000) {
   // 最近文件相关状态
   const [recentFiles, setRecentFiles] = useState<FileInfo[]>([]);
   const [loadingRecentFiles, setLoadingRecentFiles] = useState(false);
@@ -20,13 +20,20 @@ export function useRecentContent() {
   const [recentDownloads, setRecentDownloads] = useState<FileInfo[]>([]);
   const [loadingRecentDownloads, setLoadingRecentDownloads] = useState(false);
   
+  // 增加刷新触发器和轮询控制状态
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
+  
   // 增加错误状态
   const [error, setError] = useState<Error | null>(null);
   
-  // 使用useRef追踪加载状态，避免依赖循环
+  // 使用useRef追踪加载状态和轮询定时器，避免依赖循环
   const isLoadingRecentFilesRef = useRef(false);
   const isLoadingRecentDownloadsRef = useRef(false);
   const hasInitializedRef = useRef(false);
+  const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRecentFilesUpdateRef = useRef<number>(0);
+  const lastRecentDownloadsUpdateRef = useRef<number>(0);
   
   /**
    * 获取最近访问的文件
@@ -73,13 +80,16 @@ export function useRecentContent() {
         console.warn('📂 API返回空响应');
         setRecentFiles([]);
       }
+      
+      // 更新最后成功获取时间
+      lastRecentFilesUpdateRef.current = Date.now();
     } catch (error) {
       console.error('📂 获取最近文件失败:', error);
       setRecentFiles([]);
       setError(error instanceof Error ? error : new Error('获取最近文件失败'));
     } finally {
       // 确保在所有情况下都更新加载状态
-      console.log('📂 完成获取最近访问文件，设置loadingRecentFiles = false');
+      console.log('📂 完成获取最近文件，设置loadingRecentFiles = false');
       
       // 使用setTimeout确保状态更新在下一个tick执行
       setTimeout(() => {
@@ -87,8 +97,8 @@ export function useRecentContent() {
         isLoadingRecentFilesRef.current = false;
       }, 0);
     }
-  }, []); // 移除loadingRecentFiles依赖，避免依赖循环
-  
+  }, []);
+
   /**
    * 获取最近下载的文件
    */
@@ -134,6 +144,9 @@ export function useRecentContent() {
         console.warn('📥 API返回空响应');
         setRecentDownloads([]);
       }
+      
+      // 更新最后成功获取时间
+      lastRecentDownloadsUpdateRef.current = Date.now();
     } catch (error) {
       console.error('📥 获取最近下载文件失败:', error);
       setRecentDownloads([]);
@@ -148,54 +161,85 @@ export function useRecentContent() {
         isLoadingRecentDownloadsRef.current = false;
       }, 0);
     }
-  }, []); // 移除loadingRecentDownloads依赖，避免依赖循环
-  
-  // 初始加载 - 只执行一次
+  }, []);
+
+  /**
+   * 手动刷新所有内容
+   */
+  const refreshContent = useCallback(() => {
+    console.log('🔄 手动刷新最近内容');
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  /**
+   * 切换轮询状态
+   */
+  const togglePolling = useCallback((enabled: boolean) => {
+    setIsPollingEnabled(enabled);
+  }, []);
+
+  // 处理轮询数据获取
   useEffect(() => {
-    // 使用ref防止重复初始化
-    if (hasInitializedRef.current) {
-      console.log('🔄 已经初始化过，跳过重复初始化');
-      return;
+    const fetchData = async () => {
+      // 只有在启用轮询且当前没有正在加载时才进行
+      if (isPollingEnabled) {
+        const now = Date.now();
+        
+        // 从上次更新超过2秒后才重新获取最近文件
+        if (now - lastRecentFilesUpdateRef.current > 2000 && !isLoadingRecentFilesRef.current) {
+          fetchRecentFiles();
+        }
+        
+        // 从上次更新超过2秒后才重新获取最近下载
+        if (now - lastRecentDownloadsUpdateRef.current > 2000 && !isLoadingRecentDownloadsRef.current) {
+          fetchRecentDownloads();
+        }
+      }
+    };
+
+    // 初始化最近文件和下载列表
+    if (!hasInitializedRef.current) {
+      fetchData();
+      hasInitializedRef.current = true;
     }
     
-    console.log('🔄 useRecentContent 初始化 effect 执行 - 首次');
-    hasInitializedRef.current = true;
+    // 设置轮询定时器
+    pollingTimerRef.current = setInterval(fetchData, pollingInterval);
     
-    // 首次加载数据
-    fetchRecentFiles();
-    fetchRecentDownloads();
-    
-    // 设置定时刷新
-    const refreshInterval = setInterval(() => {
-      console.log('🔄 定时刷新最近文件列表');
+    // 清理函数
+    return () => {
+      if (pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+    };
+  }, [fetchRecentFiles, fetchRecentDownloads, isPollingEnabled, pollingInterval]);
+  
+  // 处理刷新触发器
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      // 仅当刷新触发器变化时刷新数据
       fetchRecentFiles();
       fetchRecentDownloads();
-    }, 5 * 60 * 1000); // 每5分钟刷新一次
-    
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, []); // 空依赖数组，确保只执行一次
-  
-  // 调试状态变化
-  useEffect(() => {
-    console.log('📊 最近文件加载状态变化:', loadingRecentFiles);
-  }, [loadingRecentFiles]);
-  
-  useEffect(() => {
-    console.log('📊 最近下载加载状态变化:', loadingRecentDownloads);
-  }, [loadingRecentDownloads]);
-  
+    }
+  }, [refreshTrigger, fetchRecentFiles, fetchRecentDownloads]);
+
   return {
-    // 状态
+    // 最近文件相关
     recentFiles,
     loadingRecentFiles,
+    
+    // 最近下载相关
     recentDownloads,
     loadingRecentDownloads,
-    error,
     
-    // 方法
+    // 操作方法
     fetchRecentFiles,
-    fetchRecentDownloads
+    fetchRecentDownloads,
+    refreshContent,
+    togglePolling,
+    
+    // 错误状态
+    error
   };
 } 

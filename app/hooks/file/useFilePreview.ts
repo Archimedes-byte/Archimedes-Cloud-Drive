@@ -147,20 +147,27 @@ export const useFilePreview = ({
         ? fileToRename.name.split('.').pop()?.toLowerCase() 
         : '';
       
-      // 获取新文件扩展名
+      // 获取新文件名中的扩展名
       const newExt = newName.includes('.') 
         ? newName.split('.').pop()?.toLowerCase() 
         : '';
       
+      // 确保新文件名保留原始扩展名
+      let finalName = newName.trim();
+      if (!fileToRename.isFolder && oldExt && !newName.endsWith(`.${oldExt}`)) {
+        // 如果用户输入的新名称不包含原始扩展名，自动添加
+        finalName = `${finalName}.${oldExt}`;
+      }
+      
       // 创建更新参数，确保保留原始文件类型
       const updateParams = {
-        name: newName.trim(), 
+        name: finalName, 
         tags,
         preserveOriginalType: true
       };
       
       // 使用fileApi直接更新文件信息
-      const updatedFile = await fileApi.updateFile(fileToRename.id, newName.trim(), tags, true);
+      const updatedFile = await fileApi.updateFile(fileToRename.id, finalName, tags, true);
       
       message.success('重命名成功');
       

@@ -288,6 +288,26 @@ export class FileManagementService {
         },
       });
 
+      // 清理收藏关系：删除所有与这些文件相关的收藏记录
+      const allIdsArray = Array.from(allIdsToDelete);
+      if (allIdsArray.length > 0) {
+        try {
+          // 删除收藏记录
+          const deletedFavorites = await prisma.favorite.deleteMany({
+            where: {
+              fileId: { in: allIdsArray }
+            }
+          });
+          console.log(`[文件管理] 已删除 ${deletedFavorites.count} 条相关的收藏记录`);
+          
+          // 触发收藏夹刷新事件（浏览器端处理）
+          // 这部分逻辑由前端处理
+        } catch (favoriteError) {
+          console.error('[文件管理] 清理收藏记录时出错:', favoriteError);
+          // 继续处理，不影响主流程
+        }
+      }
+
       // 尝试删除物理文件（仅针对非文件夹）
       const nonFolderFiles = filesToDelete.filter(file => !file.isFolder && file.filename);
       

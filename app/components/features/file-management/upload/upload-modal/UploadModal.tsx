@@ -180,16 +180,36 @@ const UploadModal: React.FC<UploadModalProps> = ({
     if (editingFileIndex === null || !editingFileName.trim()) return;
     
     setFileList(prev => 
-      prev.map((file, index) => 
-        index === editingFileIndex 
-          ? { 
-              ...file, 
-              name: editingFileName.trim(),
-              // 保持文件原始名称供上传时使用
-              originalName: file.originalName || file.name
-            } 
-          : file
-      )
+      prev.map((file, index) => {
+        if (index === editingFileIndex) {
+          // 保持文件原始名称供上传时使用
+          const originalName = file.originalName || file.name;
+          
+          // 获取原始文件扩展名
+          const getFileExtension = (fileName: string) => {
+            const lastDotIndex = fileName.lastIndexOf('.');
+            return lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : '';
+          };
+          
+          // 获取原始扩展名（带点）
+          const originalExt = getFileExtension(originalName);
+          
+          // 确保新文件名保留原始扩展名
+          let finalName = editingFileName.trim();
+          
+          // 如果不是文件夹，并且新名称不包含原始扩展名，则自动添加
+          if (originalExt && !finalName.endsWith(originalExt)) {
+            finalName = `${finalName}${originalExt}`;
+          }
+          
+          return { 
+            ...file, 
+            name: finalName,
+            originalName: originalName
+          };
+        }
+        return file;
+      })
     );
     
     setEditingFileIndex(null);
@@ -346,31 +366,36 @@ const UploadModal: React.FC<UploadModalProps> = ({
           // 获取原始文件扩展名和新文件扩展名
           const getFileExtension = (fileName: string) => {
             const lastDotIndex = fileName.lastIndexOf('.');
-            return lastDotIndex !== -1 ? fileName.substring(lastDotIndex + 1).toLowerCase() : '';
+            return lastDotIndex !== -1 ? fileName.substring(lastDotIndex).toLowerCase() : '';
           };
           
+          // 获取原始扩展名（带点）
           const originalExt = getFileExtension(fileItem.originalName);
           const newExt = getFileExtension(fileItem.name);
           
-          // 判断文件类型是否应该保持不变
-          const shouldPreserveType = originalExt !== newExt || !newExt;
+          // 确保新文件名保留原始扩展名
+          let finalName = fileItem.name;
+          if (originalExt && !finalName.endsWith(originalExt)) {
+            // 如果新文件名不包含原始扩展名，则添加
+            finalName = `${finalName}${originalExt}`;
+          }
           
-          // 如果新文件名没有扩展名或扩展名变了，则使用原始文件的类型
-          // 否则让浏览器根据新文件名的扩展名推断类型
+          // 判断文件类型是否应该保持不变
+          const shouldPreserveType = true; // 始终保留原始文件类型
+          
+          // 使用原始文件的类型创建Blob
           const blob = new Blob([file], { 
-            type: shouldPreserveType ? file.type : '' 
+            type: file.type  // 始终使用原始文件类型
           });
           
-          formData.append('file', blob, fileItem.name);
+          formData.append('file', blob, finalName);
           
           // 添加原始文件名和新文件名的映射
           formData.append(`originalName_${index}`, fileItem.originalName);
-          formData.append(`newName_${index}`, fileItem.name);
+          formData.append(`newName_${index}`, finalName);
           
           // 确保传递原始文件类型，防止服务器端无法正确识别
-          if (shouldPreserveType) {
-            formData.append(`fileType_${index}`, file.type);
-          }
+          formData.append(`fileType_${index}`, file.type);
         } else {
           // 使用原始文件
           formData.append('file', file);
