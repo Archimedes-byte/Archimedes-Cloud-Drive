@@ -1,7 +1,7 @@
-import React from 'react';
-import Image from 'next/image';
+import React, { useCallback } from 'react';
 import { Home, LogOut, Palette } from 'lucide-react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import { Button, Avatar, Flex } from 'antd';
+import styles from './mini-sidebar.module.css';
 
 interface MiniSidebarProps {
   avatarUrl: string | null;
@@ -24,57 +24,86 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
   currentTheme = 'default',
   onThemeClick
 }) => {
+  // 优化回调函数，避免不必要的重新创建
+  const handleAvatarClick = useCallback(() => {
+    onAvatarClick();
+  }, [onAvatarClick]);
+
+  const handleHomeClick = useCallback(() => {
+    onHomeClick();
+  }, [onHomeClick]);
+
+  const handleThemeClick = useCallback(() => {
+    onThemeClick();
+  }, [onThemeClick]);
+
+  const handleLogoutClick = useCallback(() => {
+    onLogoutClick();
+  }, [onLogoutClick]);
+
+  // 获取用户头像初始字符
+  const getAvatarText = useCallback(() => {
+    return userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?';
+  }, [userName, userEmail]);
+
   return (
-    <div className={styles.miniSidebar}>
+    <Flex 
+      vertical
+      className={styles.miniSidebar}
+      align="center"
+      justify="flex-start"
+    >
       <div className={styles.patternOverlay}></div>
       <div className={styles.avatarContainer}>
-        <button 
+        <Button 
           className={styles.miniSidebarButton}
-          onClick={onAvatarClick}
+          onClick={handleAvatarClick}
+          type="text"
         >
           {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt="用户头像"
-              width={38}
-              height={38}
-              className="rounded-full ring-1 ring-white/50 transition-all duration-300 hover:ring-2"
+            <Avatar 
+              src={avatarUrl} 
+              size={38} 
+              className="ring-1 ring-white/50 transition-all duration-300 hover:ring-2"
             />
           ) : (
-            <div 
-              className={styles.avatarPlaceholder}
-              style={{ width: '38px', height: '38px', fontSize: '16px' }}
-            >
-              {userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?'}
+            <div className={styles.avatarPlaceholder}>
+              {getAvatarText()}
             </div>
           )}
-        </button>
+        </Button>
       </div>
+      
       <div className={styles.miniSidebarDivider}></div>
-      <button 
+      
+      <Button 
         className={styles.miniSidebarButton}
-        onClick={onHomeClick}
+        onClick={handleHomeClick}
+        type="text"
       >
-        <Home className="w-5 h-5 text-white" />
-      </button>
+        <Home className={styles.iconStyle} />
+      </Button>
       
       {/* 主题选择按钮 */}
-      <button 
+      <Button 
         className={styles.miniSidebarButton}
-        onClick={onThemeClick}
+        onClick={handleThemeClick}
         title="主题设置"
+        type="text"
       >
-        <Palette className="w-5 h-5 text-white" />
-      </button>
+        <Palette className={styles.iconStyle} />
+      </Button>
       
-      <button 
+      <Button 
         className={styles.miniSidebarButton}
-        onClick={onLogoutClick}
+        onClick={handleLogoutClick}
+        type="text"
       >
-        <LogOut className="w-5 h-5 text-white" />
-      </button>
-    </div>
+        <LogOut className={styles.iconStyle} />
+      </Button>
+    </Flex>
   );
 };
 
-export default MiniSidebar; 
+// 使用React.memo优化组件，避免不必要的重渲染
+export default React.memo(MiniSidebar); 

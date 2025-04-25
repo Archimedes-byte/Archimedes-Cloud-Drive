@@ -23,6 +23,39 @@
 
 .breadcrumbContainer {
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.breadcrumbItem:hover {
+  color: var(--theme-primary, #3b82f6);
+}
+
+.fileTypeFilter {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.clearFilterBtn {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  vertical-align: middle;
 }
 
 /* 添加过渡动画 */

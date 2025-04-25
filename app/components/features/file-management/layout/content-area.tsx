@@ -1,6 +1,7 @@
 import React from 'react';
 import { message } from 'antd';
-import { Breadcrumb, TopActionBar, FileList, FileType } from '@/app/components/features/file-management';
+import { Breadcrumb, TopActionBar } from '@/app/components/features/file-management';
+import { AntFileList } from '@/app/components/features/file-management/file-list/AntFileList';
 import { FavoritesContent } from '@/app/components/features/file-management/favorites';
 import { MySharesContent } from '@/app/components/features/file-management/my-shares';
 import { RecentFilesContent } from '@/app/components/features/file-management/recent-files';
@@ -333,7 +334,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
       
       {renderBreadcrumb()}
       
-      <FileList
+      <AntFileList
         files={files}
         selectedFiles={selectedFiles}
         isLoading={filesLoading || isRefreshing}

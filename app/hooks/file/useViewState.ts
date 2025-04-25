@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
-import { FileType } from '@/app/components/features/file-management';
+import { FileTypeEnum } from '@/app/types';
 
 // ViewType类型定义
-export type ViewType = FileType | 'search' | 'favorites' | 'recent' | 'downloads' | 'tag' | 'shares';
+export type ViewType = FileTypeEnum | 'search' | 'favorites' | 'recent' | 'downloads' | 'tag' | 'shares';
 
 /**
  * 管理文件管理视图状态的hook

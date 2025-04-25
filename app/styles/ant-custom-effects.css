@@ -1,0 +1,97 @@
+/* 自定义Ant Design组件效果 */
+
+/* 侧边栏动画 */
+.custom-sidebar .ant-menu-submenu-title {
+  transition: all 0.3s ease;
+}
+
+.custom-sidebar .ant-menu-submenu-title:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.custom-sidebar .ant-menu-submenu-title .anticon {
+  transition: all 0.3s ease;
+}
+
+.custom-sidebar .ant-menu-submenu-open > .ant-menu-submenu-title .anticon-down {
+  transform: rotate(180deg);
+}
+
+/* 子菜单转场动画 */
+.custom-sidebar .ant-menu-inline-collapsed-tooltip,
+.custom-sidebar .ant-menu-inline .ant-menu-submenu-title {
+  width: 100%;
+  transition: all 0.3s;
+}
+
+/* 给选中项添加右侧边框 */
+.custom-sidebar .ant-menu-item.ant-menu-item-selected {
+  border-right: 3px solid var(--theme-primary, #1890ff);
+}
+
+/* 迷你侧边栏动画和交互 */
+.custom-mini-sidebar {
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-mini-sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/patterns/sidebar-pattern.svg');
+  background-size: cover;
+  opacity: 0.05;
+  z-index: -1;
+}
+
+/* 按钮悬停效果 */
+.mini-sidebar-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 按钮点击效果 */
+.mini-sidebar-button:active {
+  transform: translateY(1px);
+}
+
+/* 按钮涟漪效果 */
+.mini-sidebar-button,
+.custom-sidebar .ant-menu-item,
+.custom-sidebar .ant-menu-submenu-title {
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* 暗色模式下的额外调整 */
+@media (prefers-color-scheme: dark) {
+  .custom-sidebar {
+    background-color: #141414 !important;
+  }
+  
+  .custom-sidebar .ant-menu {
+    background-color: transparent !important;
+    color: rgba(255, 255, 255, 0.65);
+  }
+  
+  .custom-sidebar .ant-menu-item:hover,
+  .custom-sidebar .ant-menu-submenu-title:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+  
+  .custom-sidebar .ant-menu-item-selected {
+    background-color: var(--ant-primary-color) !important;
+    color: #fff;
+  }
+} 

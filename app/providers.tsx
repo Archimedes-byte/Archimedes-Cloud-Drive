@@ -3,6 +3,8 @@
 import React from 'react';
 import { SessionProvider } from 'next-auth/react';
 import type { Session } from 'next-auth';
+import { ConfigProvider } from 'antd';
+import { theme } from './theme';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -14,7 +16,9 @@ export default function Providers({ children, session }: ProvidersProps): React.
   
   return (
     <Provider session={session}>
-      {children}
+      <ConfigProvider theme={theme}>
+        {children}
+      </ConfigProvider>
     </Provider>
   );
 } 

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Spin } from 'antd';
+import React, { useState } from 'react';
+import { Spin, Switch } from 'antd';
 import { DownloadCloud } from 'lucide-react';
 import { FileList } from '../../file-management/file-list';
+import { AntFileList } from '../../file-management/file-list/AntFileList';
 import { FileInfo } from '@/app/types';
 
 interface RecentDownloadsContentProps {
@@ -31,6 +32,8 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   onDeselectAll,
   onToggleFavorite
 }) => {
+  const [useAntDesign, setUseAntDesign] = useState<boolean>(false);
+
   return (
     <div>
       <div style={{ 
@@ -43,6 +46,11 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
           <DownloadCloud size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
           最近下载的文件
         </h2>
+        
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: 8, fontSize: '14px' }}>使用Ant Design组件:</span>
+          <Switch checked={useAntDesign} onChange={setUseAntDesign} size="small" />
+        </div>
       </div>
       
       {loadingRecentDownloads ? (
@@ -51,19 +59,35 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
           <p>加载最近下载文件...</p>
         </div>
       ) : recentDownloads.length > 0 ? (
-        <FileList 
-          files={recentDownloads}
-          selectedFiles={selectedFiles}
-          onFileClick={onFileClick}
-          onFileSelect={onFileSelect}
-          onSelectAll={onSelectAll}
-          onDeselectAll={onDeselectAll}
-          areAllSelected={false}
-          showCheckboxes={true}
-          favoritedFileIds={favoritedFileIds}
-          onToggleFavorite={onToggleFavorite}
-          fileUpdateTrigger={fileUpdateTrigger}
-        />
+        useAntDesign ? (
+          <AntFileList 
+            files={recentDownloads}
+            selectedFiles={selectedFiles}
+            onFileClick={onFileClick}
+            onFileSelect={onFileSelect}
+            onSelectAll={onSelectAll}
+            onDeselectAll={onDeselectAll}
+            areAllSelected={false}
+            showCheckboxes={true}
+            favoritedFileIds={favoritedFileIds}
+            onToggleFavorite={onToggleFavorite}
+            fileUpdateTrigger={fileUpdateTrigger}
+          />
+        ) : (
+          <FileList 
+            files={recentDownloads}
+            selectedFiles={selectedFiles}
+            onFileClick={onFileClick}
+            onFileSelect={onFileSelect}
+            onSelectAll={onSelectAll}
+            onDeselectAll={onDeselectAll}
+            areAllSelected={false}
+            showCheckboxes={true}
+            favoritedFileIds={favoritedFileIds}
+            onToggleFavorite={onToggleFavorite}
+            fileUpdateTrigger={fileUpdateTrigger}
+          />
+        )
       ) : (
         <div style={{ 
           textAlign: 'center', 

@@ -7,6 +7,7 @@
 export * from './core/useLoadingState';
 export * from './core/useUIState';
 export * from './core/useThemeManager';
+export * from './core/useModalState';
 
 // 用户相关hooks
 export * from './user/useProfile';
@@ -23,10 +24,7 @@ export * from './file/useFilePreview';
 export * from './file/useFileShare';
 export * from './file/useShareView';
 export * from './file/useRecentContent';
-
-// 视图相关hooks
-export * from './useViewState';
-export * from './useModalState';
+export * from './file/useViewState';
 
 // 认证相关hooks
 export * from './auth/useAuth';

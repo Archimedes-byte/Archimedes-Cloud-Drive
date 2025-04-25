@@ -1,0 +1,78 @@
+/* Ant Design按钮组件的自定义样式 */
+
+/* 主要按钮样式 */
+.ant-btn-custom-primary {
+  background: var(--theme-primary, #3b82f6);
+  box-shadow: var(--theme-button-shadow, 0 4px 12px rgba(59, 130, 246, 0.2));
+  border: none;
+}
+
+.ant-btn-custom-primary:hover {
+  background: color-mix(in srgb, var(--theme-primary, #3b82f6), #000 10%);
+  box-shadow: var(--theme-button-hover-shadow, 0 6px 16px rgba(59, 130, 246, 0.3));
+  transform: translateY(-1px);
+}
+
+/* 次要按钮样式 */
+.ant-btn-custom-secondary {
+  background: white;
+  border-color: var(--theme-border, #e2e8f0);
+  color: #1a202c;
+}
+
+.ant-btn-custom-secondary:hover {
+  background: #f7fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 成功按钮样式 */
+.ant-btn-custom-success {
+  background: var(--theme-success, #10b981);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  border: none;
+}
+
+.ant-btn-custom-success:hover {
+  background: color-mix(in srgb, var(--theme-success, #10b981), #000 10%);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 危险按钮样式 */
+.ant-btn-custom-danger {
+  background: var(--theme-error, #ef4444);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  border: none;
+}
+
+.ant-btn-custom-danger:hover {
+  background: color-mix(in srgb, var(--theme-error, #ef4444), #000 10%);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 幽灵按钮样式 */
+.ant-btn-custom-ghost {
+  background: transparent;
+  border-color: var(--theme-primary, #3b82f6);
+  color: var(--theme-primary, #3b82f6);
+}
+
+.ant-btn-custom-ghost:hover {
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateY(-1px);
+}
+
+/* 大小按钮样式调整 */
+.ant-btn-lg {
+  height: 44px;
+  padding: 0 24px;
+  font-size: 16px;
+}
+
+.ant-btn-sm {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+} 

@@ -3,8 +3,7 @@
 import React from 'react';
 import { Spin } from 'antd';
 import { Zap, X, Download } from 'lucide-react';
-import { FileList } from '../file-list';
-import fileListStyles from '../file-list/FileList.module.css';
+import { AntFileList } from '../file-list/AntFileList';
 import { FileInfo } from '@/app/types';
 
 interface SearchResultsProps {
@@ -42,21 +41,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
   return (
     <>
-      {enableRealTimeSearch && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          marginTop: '12px',
-          fontSize: '12px',
-          color: '#666',
-          justifyContent: 'space-between',
-        }}>
-          <div>
-            <Zap size={14} style={{ marginRight: '6px', color: '#3490dc' }} />
-            实时搜索已启用，输入时自动显示结果
-          </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        marginTop: '12px',
+        fontSize: '12px',
+        color: '#666',
+        justifyContent: 'space-between',
+      }}>
+        <div>
+          {enableRealTimeSearch && (
+            <>
+              <Zap size={14} style={{ marginRight: '6px', color: '#3490dc' }} />
+              实时搜索已启用，输入时自动显示结果
+            </>
+          )}
         </div>
-      )}
+      </div>
     
       {/* 搜索结果区域 */}
       {searchLoading ? (
@@ -134,7 +135,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             </div>
           </div>
           
-          <FileList 
+          <AntFileList 
             files={searchResults}
             selectedFiles={selectedFiles}
             onFileClick={onFileClick}

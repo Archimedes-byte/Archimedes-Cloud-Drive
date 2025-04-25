@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
-  Table, Button, message, Typography, Space, 
+  Button, message, Typography, Space, 
   Tag, Tooltip, Popconfirm, Spin, Empty, Tabs, Select
 } from 'antd';
 import { 
@@ -18,6 +18,9 @@ import styles from './favorites.module.css';
 import type { SortOrder } from 'antd/es/table/interface';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 import { FileInfo } from '@/app/types';
+import { AntFileList } from '../file-list';
+import { Breadcrumb } from '../navigation/breadcrumb';
+import FolderManagement from './FolderManagement';
 
 const { Title, Text } = Typography;
 
@@ -60,6 +63,8 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
   const [folders, setFolders] = useState<FavoriteFolderInfo[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [loadingFolders, setLoadingFolders] = useState(false);
+  const [fileUpdateTrigger, setFileUpdateTrigger] = useState(0);
+  const [showFolderManagement, setShowFolderManagement] = useState(false);
 
   // 初始化时，如果传入了selectedFolderId，则设置为当前选中的文件夹
   useEffect(() => {
@@ -327,169 +332,45 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
       console.error('取消收藏出错:', error);
       message.error(`取消收藏出错: ${error instanceof Error ? error.message : '请重试'}`);
     }
+    
+    // 添加触发文件列表更新
+    setFileUpdateTrigger(prev => prev + 1);
   };
 
-  // 删除收藏夹
-  const handleDeleteFolder = async () => {
-    // 不能删除"all"选项和默认收藏夹
-    if (selectedFolder === 'all') {
-      message.error('不能删除全部收藏视图');
-      return;
+  // 处理返回主文件页面
+  const handleNavigateBack = () => {
+    if (onNavigateBack) {
+      onNavigateBack();
     }
-    
-    const folder = folders.find(f => f.id === selectedFolder);
-    if (!folder) {
-      message.error('收藏夹不存在');
-      return;
-    }
-    
-    if (folder.isDefault) {
-      message.error('不能删除默认收藏夹');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      console.log(`开始删除收藏夹: ${folder.name} (${folder.id})`);
-      
-      // 调用删除收藏夹API
-      const result = await fileApi.deleteFavoriteFolder(folder.id);
-      
-      if (result.success) {
-        message.success(`收藏夹 "${folder.name}" 已删除`);
-        
-        // 重要：先将已删除的收藏夹ID保存，用于后续日志记录
-        const deletedFolderId = folder.id;
-        
-        // 切换到全部收藏视图
-        setSelectedFolder('all');
-        
-        // 重新加载收藏夹列表
-        await fetchFolderList();
-        
-        // 重要：创建一个获取全部收藏的函数，直接获取所有收藏，不依赖于selectedFolder状态
-        const fetchAllFavorites = async () => {
-          setLoading(true);
-          try {
-            console.log('删除收藏夹后获取全部收藏列表...');
-            const response = await fetch('/api/storage/favorites', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({}),
-            });
-            
-            if (!response.ok) {
-              throw new Error(`服务器返回错误状态码: ${response.status} ${response.statusText}`);
-            }
-            
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-              throw new Error('服务器返回的不是JSON格式');
-            }
-            
-            const text = await response.text();
-            if (!text.trim()) {
-              console.log('API响应为空，设置空数组');
-              setFavorites([]);
-              return;
-            }
-            
-            const data = JSON.parse(text);
-            console.log('收到API响应:', data);
-            
-            if (data.success) {
-              if (data.data && data.data.items && Array.isArray(data.data.items)) {
-                const favoriteFiles = (data.data.items as FavoriteFileInfo[]).map((item) => ({
-                  id: item.id,
-                  name: item.name,
-                  size: item.size || 0,
-                  type: item.type || '',
-                  isFolder: !!item.isFolder,
-                  createdAt: typeof item.createdAt === 'string' 
-                    ? item.createdAt 
-                    : item.createdAt instanceof Date 
-                      ? item.createdAt.toISOString() 
-                      : new Date().toISOString(),
-                  updatedAt: typeof item.updatedAt === 'string' 
-                    ? item.updatedAt 
-                    : item.updatedAt instanceof Date 
-                      ? item.updatedAt.toISOString() 
-                      : new Date().toISOString(),
-                  path: item.path,
-                  favoriteId: item.favoriteId,
-                  favoriteFolderId: item.favoriteFolderId,
-                  favoriteFolderName: item.favoriteFolderName
-                }));
-                setFavorites(favoriteFiles);
-              } else if (data.data && Array.isArray(data.data)) {
-                const favoriteFiles = (data.data as FavoriteFileInfo[]).map((item) => ({
-                  id: item.id,
-                  name: item.name,
-                  size: item.size || 0,
-                  type: item.type || '',
-                  isFolder: !!item.isFolder,
-                  createdAt: typeof item.createdAt === 'string' 
-                    ? item.createdAt 
-                    : item.createdAt instanceof Date 
-                      ? item.createdAt.toISOString() 
-                      : new Date().toISOString(),
-                  updatedAt: typeof item.updatedAt === 'string' 
-                    ? item.updatedAt 
-                    : item.updatedAt instanceof Date 
-                      ? item.updatedAt.toISOString() 
-                      : new Date().toISOString(),
-                  path: item.path,
-                  favoriteId: item.favoriteId,
-                  favoriteFolderId: item.favoriteFolderId,
-                  favoriteFolderName: item.favoriteFolderName
-                }));
-                setFavorites(favoriteFiles);
-              } else {
-                console.warn('API返回的数据格式不符合预期', data.data);
-                setFavorites([]);
-              }
-            } else {
-              message.error(data.error || '获取收藏列表失败');
-            }
-          } catch (error) {
-            console.error('获取收藏列表出错:', error);
-            message.error(`获取收藏列表出错: ${error instanceof Error ? error.message : '请重试'}`);
-          } finally {
-            setLoading(false);
-          }
-        };
-        
-        // 调用新创建的函数，不依赖selectedFolder状态
-        await fetchAllFavorites();
-        
-        console.log(`收藏夹 ${deletedFolderId} 已删除并成功切换到全部收藏视图`);
+  };
+
+  // 处理选择文件变更
+  const handleSelectFile = (file: FileInfo, checked: boolean) => {
+    const favoriteFile = file as FavoriteFile;
+    setSelectedRows(prev => {
+      if (checked) {
+        return [...prev, favoriteFile.id];
       } else {
-        message.error(result.message || '删除收藏夹失败');
+        return prev.filter(id => id !== favoriteFile.id);
       }
-    } catch (error) {
-      console.error('删除收藏夹失败:', error);
-      message.error(`删除收藏夹失败: ${error instanceof Error ? error.message : '请重试'}`);
-    } finally {
-      setLoading(false);
-    }
+    });
+  };
+  
+  // 全选
+  const handleSelectAll = () => {
+    setSelectedRows(favorites.map(file => file.id));
+  };
+  
+  // 取消全选
+  const handleDeselectAll = () => {
+    setSelectedRows([]);
   };
 
-  // 处理文件打开
-  const handleOpenFile = (file: FavoriteFile) => {
-    // 如果提供了回调函数，则调用它
+  // 文件打开处理函数
+  const handleOpenFile = (file: FileInfo) => {
+    const favoriteFile = file as FavoriteFile;
     if (onOpenFile) {
-      onOpenFile(file);
-    } else {
-      // 作为后备方案，转到文件所在路径
-      message.info('正在跳转到文件位置...');
-      // 这里假设API返回的path可以作为导航路径使用
-      if (file.path) {
-        router.push(`/file-management/main?path=${encodeURIComponent(file.path)}`);
-      } else {
-        message.warning('无法定位此文件');
-      }
+      onOpenFile(favoriteFile);
     }
   };
 
@@ -508,220 +389,148 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
     return <File size={18} />;
   };
 
-  // 表格列定义
-  const columns = [
-    {
-      title: '文件名',
-      dataIndex: 'name',
-      key: 'name',
-      render: (_: string, record: FavoriteFile) => (
-        <Space>
-          {getFileIcon(record)}
-          <Text 
-            ellipsis={{ tooltip: record.name }} 
-            style={{ maxWidth: 250, cursor: 'pointer' }}
-            onClick={() => handleOpenFile(record)}
-          >
-            {record.name}
-          </Text>
-        </Space>
-      ),
-    },
-    {
-      title: '类型',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type: string, record: FavoriteFile) => (
-        <Tag color={record.isFolder ? 'blue' : 'green'}>
-          {record.isFolder ? '文件夹' : (type || '未知')}
-        </Tag>
-      ),
-    },
-    {
-      title: '大小',
-      dataIndex: 'size',
-      key: 'size',
-      render: (size: number) => (
-        size ? `${(size / 1024 / 1024).toFixed(2)} MB` : '-'
-      ),
-      sorter: (a: FavoriteFile, b: FavoriteFile) => a.size - b.size,
-    },
-    {
-      title: '收藏时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => (
-        <Tooltip title={format(new Date(date), 'yyyy-MM-dd HH:mm:ss')}>
-          {formatDistanceToNow(new Date(date), { addSuffix: true, locale: zhCN })}
-        </Tooltip>
-      ),
-      sorter: (a: FavoriteFile, b: FavoriteFile) => 
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      defaultSortOrder: 'descend' as SortOrder,
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: FavoriteFile) => (
-        <Space size="middle">
-          <Button 
-            type="text" 
-            icon={<ExternalLink size={16} />}
-            onClick={() => handleOpenFile(record)}
-          >
-            打开
-          </Button>
-          <Popconfirm
-            title="确定要取消收藏这个文件吗?"
-            onConfirm={() => removeFavorite([record.id])}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button 
-              type="text" 
-              danger 
-              icon={<Trash2 size={16} />}
-            >
-              取消收藏
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  // 批量操作按钮
-  const batchActions = (
-    <Space size="small">
-      <Popconfirm
-        title="确定要取消收藏选中的文件吗?"
-        onConfirm={() => removeFavorite(selectedRows)}
-        okText="确定"
-        cancelText="取消"
-        disabled={selectedRows.length === 0}
-      >
-        <Button
-          danger
-          disabled={selectedRows.length === 0}
-          icon={<Trash2 size={16} />}
-        >
-          批量取消收藏
-        </Button>
-      </Popconfirm>
-    </Space>
-  );
-
-  const rowSelection = {
-    selectedRowKeys: selectedRows,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      setSelectedRows(selectedRowKeys as string[]);
-    }
+  // 渲染面包屑
+  const renderBreadcrumb = () => {
+    // 创建面包屑路径
+    const folderPath = selectedFolder !== 'all' 
+      ? folders.filter(folder => folder.id === selectedFolder)
+          .map(folder => ({ id: folder.id, name: folder.name }))
+      : [];
+      
+    return (
+      <div className={styles.breadcrumbContainer}>
+        <Breadcrumb 
+          folderPath={folderPath}
+          showHome={true}
+          onPathClick={(folderId) => {
+            if (folderId === null) {
+              // 点击主目录
+              setSelectedFolder('all');
+              fetchFavorites();
+            } else {
+              // 点击特定文件夹
+              setSelectedFolder(folderId);
+              fetchFolderFiles(folderId);
+            }
+          }}
+          onBackClick={handleNavigateBack}
+        />
+      </div>
+    );
   };
 
-  // 处理返回主文件页面
-  const handleNavigateBack = () => {
-    if (onNavigateBack) {
-      onNavigateBack();
-    }
-  };
-
+  // 渲染内容
   return (
-    <div className={styles.favoritesPage}>
-      <div className={styles.header}>
-        <div className={styles.titleWrapper}>
-          <Title level={4} className={styles.title}>
-            {titleIcon ? (
-              titleIcon
-            ) : (
-              <Star className={styles.titleIcon} style={{ color: 'var(--theme-primary)' }} />
-            )}
-            我的收藏
-          </Title>
-        </div>
-        <div className={styles.actions}>
-          {batchActions}
-        </div>
-      </div>
-
-      <div className={styles.filterBar}>
-        <Select
-          className={styles.folderSelect}
-          value={selectedFolder}
-          onChange={(value) => setSelectedFolder(value)}
-          loading={loadingFolders}
-          disabled={loadingFolders}
-          style={{ width: 200 }}
-        >
-          <Select.Option value="all">全部收藏</Select.Option>
-          {folders.map(folder => (
-            <Select.Option key={folder.id} value={folder.id}>
-              {folder.name}
-              {folder.fileCount !== undefined && ` (${folder.fileCount})`}
-              {folder.isDefault && ' [默认]'}
-            </Select.Option>
-          ))}
-        </Select>
-        
-        {/* 删除收藏夹按钮 */}
-        {selectedFolder !== 'all' && (
-          <Popconfirm
-            title="删除收藏夹"
-            description="确定要删除这个收藏夹吗？其中的文件将被移动到默认收藏夹。"
-            onConfirm={handleDeleteFolder}
-            okText="删除"
-            cancelText="取消"
-            placement="bottom"
-            disabled={loading || loadingFolders || folders.find(f => f.id === selectedFolder)?.isDefault}
-          >
-            <Button
-              type="text"
-              danger
-              icon={<Trash2 size={16} />}
-              style={{ marginLeft: 8 }}
-              disabled={loading || loadingFolders || folders.find(f => f.id === selectedFolder)?.isDefault}
-              title={folders.find(f => f.id === selectedFolder)?.isDefault ? "默认收藏夹不能删除" : "删除当前收藏夹"}
-            >
-              删除收藏夹
-            </Button>
-          </Popconfirm>
-        )}
-      </div>
-
-      {loading ? (
-        <div className={styles.loadingContainer}>
-          <Spin size="large" />
-          <Text className={styles.loadingText}>加载收藏列表中...</Text>
-        </div>
-      ) : favorites.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <span>
-              <AlertCircle size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              {selectedFolder === 'all' ? '您还没有收藏任何文件' : '此收藏夹中没有文件'}
-            </span>
-          }
-        >
-          <Button 
-            type="primary" 
-            onClick={handleNavigateBack}
-          >
-            返回文件列表
-          </Button>
-        </Empty>
-      ) : (
-        <Table
-          rowSelection={rowSelection}
-          columns={columns}
-          dataSource={Array.isArray(favorites) ? favorites : []}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条收藏`
+    <>
+      {/* 收藏夹管理视图 */}
+      {showFolderManagement ? (
+        <FolderManagement 
+          onNavigateBack={() => setShowFolderManagement(false)} 
+          onFolderSelect={(folderId: string) => {
+            setSelectedFolder(folderId);
+            setShowFolderManagement(false);
+            fetchFolderFiles(folderId);
           }}
         />
+      ) : (
+        <div className={styles.favoritesContainer}>
+          <div className={styles.header}>
+            <div className={styles.headerLeft}>
+              {onNavigateBack && (
+                <Button 
+                  icon={<ArrowLeft size={16} />} 
+                  onClick={handleNavigateBack}
+                  className={styles.backButton}
+                  type="text"
+                >
+                  返回
+                </Button>
+              )}
+              <Title level={3} className={styles.title}>
+                {titleIcon || <Star className={styles.titleIcon} />}
+                我的收藏
+              </Title>
+            </div>
+            
+            <div className={styles.headerRight}>
+              <Select
+                loading={loadingFolders}
+                value={selectedFolder}
+                onChange={setSelectedFolder}
+                style={{ width: 180 }}
+                placeholder="选择收藏夹"
+                options={[
+                  { value: 'all', label: '全部收藏' },
+                  ...folders.map(folder => ({ 
+                    value: folder.id, 
+                    label: folder.name 
+                  }))
+                ]}
+              />
+              <Button 
+                type="default"
+                onClick={() => setShowFolderManagement(true)}
+                className={styles.manageFoldersButton}
+              >
+                管理收藏夹
+              </Button>
+            </div>
+          </div>
+          
+          {renderBreadcrumb()}
+
+          {/* 批量操作工具栏 */}
+          {selectedRows.length > 0 && (
+            <div className={styles.batchActions}>
+              <Space>
+                <Text>已选择 {selectedRows.length} 项</Text>
+                <Button onClick={handleDeselectAll}>取消选择</Button>
+                <Button 
+                  danger 
+                  icon={<Trash2 size={16} />}
+                  onClick={() => removeFavorite(selectedRows)}
+                >
+                  移除收藏
+                </Button>
+              </Space>
+            </div>
+          )}
+          
+          {/* 文件列表 */}
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <Spin size="large" />
+              <p>加载收藏中...</p>
+            </div>
+          ) : favorites.length > 0 ? (
+            <AntFileList
+              files={favorites as unknown as FileInfo[]}
+              selectedFiles={selectedRows}
+              onFileClick={handleOpenFile}
+              onFileSelect={handleSelectFile}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
+              areAllSelected={selectedRows.length === favorites.length && favorites.length > 0}
+              showCheckboxes={true}
+              fileUpdateTrigger={fileUpdateTrigger}
+              isLoading={loading}
+            />
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <span>
+                  当前收藏夹暂无收藏项目
+                  <br />
+                  <small style={{ color: '#999' }}>
+                    浏览文件时点击星标图标可添加收藏
+                  </small>
+                </span>
+              }
+            />
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 } 

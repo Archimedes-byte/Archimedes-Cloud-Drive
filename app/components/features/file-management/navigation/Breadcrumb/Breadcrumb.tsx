@@ -1,5 +1,6 @@
 import React, { useCallback, memo, useEffect } from 'react';
-import { Home, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Breadcrumb as AntBreadcrumb, Button, Space, Badge } from 'antd';
+import { Home, ChevronRight, ChevronLeft, FolderClosed, FileType } from 'lucide-react';
 import styles from '@/app/file-management/styles/shared.module.css';
 import { FolderPathItem } from '@/app/types';
 
@@ -10,6 +11,7 @@ interface BreadcrumbProps {
   onPathClick: (folderId: string | null) => void;
   onBackClick?: () => void;
   onClearFilter?: () => void;
+  selectedFileType?: string | null;
 }
 
 export const Breadcrumb = memo(function Breadcrumb({ 
@@ -18,7 +20,8 @@ export const Breadcrumb = memo(function Breadcrumb({
   onNavigate, 
   onPathClick,
   onBackClick,
-  onClearFilter
+  onClearFilter,
+  selectedFileType
 }: BreadcrumbProps) {
   // 向下兼容：如果有onNavigate但没有onPathClick，就使用onNavigate
   const handlePathClick = onPathClick || onNavigate;
@@ -52,49 +55,91 @@ export const Breadcrumb = memo(function Breadcrumb({
     return null;
   }
 
+  // 使用antd Breadcrumb组件创建面包屑项
+  const breadcrumbItems = [
+    {
+      title: (
+        <span 
+          className={styles.breadcrumbItem} 
+          onClick={handleHomeClick}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Home size={16} />
+          <span>主目录</span>
+        </span>
+      ),
+      key: 'root'
+    }
+  ];
+
+  // 添加文件夹路径项
+  safeFolderPath.forEach((folder, index) => {
+    breadcrumbItems.push({
+      title: (
+        <span 
+          className={styles.breadcrumbItem} 
+          onClick={() => handleFolderClick(folder.id)}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <FolderClosed size={14} />
+          <span>{folder.name}</span>
+        </span>
+      ),
+      key: `folder-${index}`
+    });
+  });
+
   return (
     <div className={styles.breadcrumb} data-path-length={safeFolderPath.length}>
       {onBackClick && safeFolderPath.length > 0 && (
-        <button 
-          className={styles.breadcrumbBackButton}
+        <Button 
+          icon={<ChevronLeft size={16} />}
+          size="small"
+          type="text"
           onClick={handleBackButtonClick}
           title="返回上一级"
           aria-label="返回上一级"
-        >
-          <ChevronLeft size={16} />
-        </button>
+          style={{ marginRight: '8px' }}
+        />
       )}
       
-      {showHome && (
-        <div className={styles.breadcrumbItem}>
-          <button
-            className={styles.breadcrumbLink}
-            onClick={handleHomeClick}
-            aria-label="根目录"
-          >
-            <Home size={16} className={styles.breadcrumbIcon} />
-            根目录
-          </button>
+      <AntBreadcrumb items={breadcrumbItems} separator={<ChevronRight size={14} />} />
+      
+      {/* 文件类型过滤器显示为单独标记，不会修改面包屑 */}
+      {selectedFileType && onClearFilter && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '8px' }}>
+          <Badge 
+            count={
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                padding: '4px 8px',
+                backgroundColor: 'var(--theme-primary, #3b82f6)',
+                borderRadius: '12px',
+                color: 'white'
+              }}>
+                <FileType size={14} style={{ marginRight: '4px' }} />
+                <span>{selectedFileType}</span>
+                <button 
+                  onClick={onClearFilter}
+                  style={{ 
+                    marginLeft: '6px', 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    color: 'white',
+                    fontSize: '14px',
+                    lineHeight: 1
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            }
+            offset={[0, 0]}
+          />
         </div>
       )}
-      
-      {safeFolderPath.map((folder, index) => (
-        <React.Fragment key={`folder-${folder.id}-${index}`}>
-          <span className={styles.breadcrumbSeparator}>
-            <ChevronRight size={14} />
-          </span>
-          <div className={styles.breadcrumbItem}>
-            <button
-              className={styles.breadcrumbLink}
-              onClick={() => handleFolderClick(folder.id)}
-              aria-label={`导航到${folder.name}`}
-              title={folder.name}
-            >
-              {folder.name}
-            </button>
-          </div>
-        </React.Fragment>
-      ))}
     </div>
   );
 }); 
