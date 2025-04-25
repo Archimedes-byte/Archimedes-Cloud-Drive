@@ -1,10 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Spin } from 'antd';
+import { Spin, Typography, Empty } from 'antd';
 import { DownloadCloud } from 'lucide-react';
 import { AntFileList } from '../../file-management/file-list/AntFileList';
 import { FileInfo } from '@/app/types';
+import styles from './RecentDownloads.module.css';
+
+const { Title, Text } = Typography;
 
 interface RecentDownloadsContentProps {
   loadingRecentDownloads: boolean;
@@ -18,18 +21,6 @@ interface RecentDownloadsContentProps {
   onDeselectAll: () => void;
   onToggleFavorite: (file: FileInfo, isFavorite: boolean) => void;
 }
-
-// 添加加载动画样式
-const spinnerStyle = `
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .loading-spinner {
-    animation: spin 1s linear infinite;
-  }
-`;
 
 export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   loadingRecentDownloads,
@@ -79,48 +70,32 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   const showContent = recentDownloads.length > 0;
 
   return (
-    <div>
-      {/* 添加样式标签 */}
-      <style dangerouslySetInnerHTML={{ __html: spinnerStyle }} />
-      
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        padding: '16px 0' 
-      }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DownloadCloud size={24} style={{ color: 'var(--theme-primary, #3b82f6)' }} />
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <Title level={2} className={styles.title}>
+          <DownloadCloud size={24} className={styles.titleIcon} />
           最近下载的文件
-          {effectiveIsLoading && <small style={{marginLeft: '10px', fontSize: '12px', color: '#888'}}>(刷新中...)</small>}
-        </h2>
+          {effectiveIsLoading && <Text className={styles.refreshing}>(刷新中...)</Text>}
+        </Title>
       </div>
       
       {showLoadingIndicator && (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div
-            className="loading-spinner"
-            style={{
-              width: '40px',
-              height: '40px',
-              margin: '0 auto 20px',
-              border: '3px solid rgba(52, 144, 220, 0.2)',
-              borderTop: '3px solid #3490dc',
-              borderRadius: '50%'
-            }}
+        <div className={styles.loadingContainer}>
+          <Spin 
+            size="large" 
+            tip="加载最近下载文件..."
           />
-          <p>加载最近下载文件... <span style={{color: 'gray', fontSize: '12px'}}>(loadingRecentDownloads={loadingRecentDownloads.toString()}, isLoading={isLoading.toString()})</span></p>
+          <div className={styles.debugInfo}>
+            (loadingRecentDownloads={loadingRecentDownloads.toString()}, isLoading={isLoading.toString()})
+          </div>
         </div>
       )}
       
       {showEmptyState && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px 0',
-          color: '#888'
-        }}>
-          <p>暂无最近下载的文件记录</p>
-        </div>
+        <Empty 
+          description="暂无最近下载的文件记录" 
+          className={styles.emptyState}
+        />
       )}
       
       {showContent && (

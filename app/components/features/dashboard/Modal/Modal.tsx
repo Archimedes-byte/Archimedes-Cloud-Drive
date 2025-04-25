@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { CloseOutlined } from '@ant-design/icons';
+import { Modal as AntModal } from '@/app/components/ui/ant';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -17,30 +18,21 @@ const Modal = ({
   children, 
   footer
 }: ModalProps) => {
-  if (!isOpen) return null;
-  
   return (
-    <>
-      <div className={styles.modalBackdrop} />
-      <div className={styles.modalOverlay} onClick={onClose}>
-        <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h2 className={styles.modalTitle}>{title}</h2>
-            <button className={styles.modalClose} onClick={onClose}>
-              <X size={18} />
-            </button>
-          </div>
-          <div className={styles.modalBody}>
-            {children}
-          </div>
-          {footer && (
-            <div className={styles.modalFooter}>
-              {footer}
-            </div>
-          )}
-        </div>
+    <AntModal
+      open={isOpen}
+      onCancel={onClose}
+      title={<div className={styles.modalTitle}>{title}</div>}
+      footer={footer}
+      closeIcon={<CloseOutlined className={styles.modalCloseIcon} />}
+      className={styles.customModal}
+      wrapClassName={styles.modalBackdrop}
+      centered
+    >
+      <div className={styles.modalBody}>
+        {children}
       </div>
-    </>
+    </AntModal>
   );
 };
 

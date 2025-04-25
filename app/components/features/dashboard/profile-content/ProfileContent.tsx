@@ -2,6 +2,8 @@ import React from 'react';
 import { Session } from 'next-auth';
 import { UserProfile } from '@/app/hooks/user/useProfile';
 import styles from './ProfileContent.module.css';
+import { Card, Typography, Spin, Divider } from '@/app/components/ui/ant';
+import { Descriptions } from 'antd';
 
 interface ProfileContentProps {
   session: Session;
@@ -36,56 +38,42 @@ const ProfileContent = ({ session, userProfile, isLoading }: ProfileContentProps
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Spin tip="数据加载中..." />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
-      {isLoading && (
-        <div className={styles.loadingMessage}>
-          <div className={styles.loadingSpinner}></div>
-          <span>数据加载中...</span>
-        </div>
-      )}
-      
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>个人信息</h2>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>用户名</span>
-          <p className={styles.fieldValue}>{userProfile.name || '未设置'}</p>
-        </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>个人简介</span>
-          <p className={styles.fieldValue}>{userProfile.bio || '未设置'}</p>
-        </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>所在地</span>
-          <p className={styles.fieldValue}>{userProfile.location || '未设置'}</p>
-        </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>个人网站</span>
-          <p className={styles.fieldValue}>
+      <Card className={styles.section}>
+        <Typography.Title level={4} className={styles.sectionTitle}>个人信息</Typography.Title>
+        <Descriptions column={1} bordered>
+          <Descriptions.Item label="用户名">{userProfile.name || '未设置'}</Descriptions.Item>
+          <Descriptions.Item label="个人简介">{userProfile.bio || '未设置'}</Descriptions.Item>
+          <Descriptions.Item label="所在地">{userProfile.location || '未设置'}</Descriptions.Item>
+          <Descriptions.Item label="个人网站">
             {userProfile.website ? (
               <a href={userProfile.website} target="_blank" rel="noopener noreferrer" className={styles.link}>
                 {userProfile.website}
               </a>
             ) : '未设置'}
-          </p>
-        </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>公司/组织</span>
-          <p className={styles.fieldValue}>{userProfile.company || '未设置'}</p>
-        </div>
-      </div>
+          </Descriptions.Item>
+          <Descriptions.Item label="公司/组织">{userProfile.company || '未设置'}</Descriptions.Item>
+        </Descriptions>
+      </Card>
       
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>账户信息</h2>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>邮箱</span>
-          <p className={styles.fieldValue}>{session.user?.email || '未设置'}</p>
-        </div>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>账户创建时间</span>
-          <p className={styles.fieldValue}>{formatDate(userProfile.createdAt)}</p>
-        </div>
-      </div>
+      <Divider />
+      
+      <Card className={styles.section}>
+        <Typography.Title level={4} className={styles.sectionTitle}>账户信息</Typography.Title>
+        <Descriptions column={1} bordered>
+          <Descriptions.Item label="邮箱">{session.user?.email || '未设置'}</Descriptions.Item>
+          <Descriptions.Item label="账户创建时间">{formatDate(userProfile.createdAt)}</Descriptions.Item>
+        </Descriptions>
+      </Card>
     </div>
   );
 };

@@ -1,9 +1,11 @@
 import React from 'react';
 import { 
-  X, Download, Edit, Move, Trash2, Share2 
-} from 'lucide-react';
+  CloseOutlined, DownloadOutlined, EditOutlined, 
+  SwapOutlined, DeleteOutlined, ShareAltOutlined 
+} from '@ant-design/icons';
+import { Button } from '@/app/components/ui/ant';
 import { FileInfo } from '@/app/types';
-import styles from '@/app/file-management/styles/shared.module.css';
+import buttonStyles from '@/app/components/features/file-management/buttons/styles/buttons.module.css';
 import { FolderDownloadButton } from '@/app/components/features/file-management/download/FolderDownloadButton';
 
 interface FileActionsProps {
@@ -33,10 +35,14 @@ export const FileActions: React.FC<FileActionsProps> = ({
   
   return (
     <>
-      <button className={styles.topButton} onClick={onClearSelection}>
-        <X className="w-4 h-4" />
+      <Button 
+        className={buttonStyles.topButton} 
+        onClick={onClearSelection}
+        icon={<CloseOutlined />}
+        type="text"
+      >
         取消选择
-      </button>
+      </Button>
       
       {selectedFolder ? (
         // 如果选择的是单个文件夹，使用增强下载组件
@@ -45,36 +51,55 @@ export const FileActions: React.FC<FileActionsProps> = ({
           folderName={selectedFolder.name}
           buttonText="下载"
           showIcon={true}
-          className={styles.topButton}
+          className={buttonStyles.topButton}
         />
       ) : (
         // 否则使用常规下载按钮
-        <button className={styles.topButton} onClick={onDownload}>
-          <Download className="w-4 h-4" />
+        <Button 
+          className={buttonStyles.topButton} 
+          onClick={onDownload}
+          icon={<DownloadOutlined />}
+          type="text"
+        >
           下载
-        </button>
+        </Button>
       )}
       
-      <button className={styles.topButton} onClick={onShare}>
-        <Share2 className="w-4 h-4" />
-        分享
-      </button>
-      
-      <button 
-        className={styles.topButton}
-        onClick={onRename}
+      <Button 
+        className={buttonStyles.topButton} 
+        onClick={onShare}
+        icon={<ShareAltOutlined />}
+        type="text"
       >
-        <Edit className="w-4 h-4" />
+        分享
+      </Button>
+      
+      <Button 
+        className={buttonStyles.topButton}
+        onClick={onRename}
+        icon={<EditOutlined />}
+        type="text"
+      >
         重命名
-      </button>
-      <button className={styles.topButton} onClick={onMove}>
-        <Move className="w-4 h-4" />
+      </Button>
+      
+      <Button 
+        className={buttonStyles.topButton} 
+        onClick={onMove}
+        icon={<SwapOutlined />}
+        type="text"
+      >
         移动
-      </button>
-      <button className={styles.topButton} onClick={onDelete}>
-        <Trash2 className="w-4 h-4" />
+      </Button>
+      
+      <Button 
+        className={buttonStyles.topButton} 
+        onClick={onDelete}
+        icon={<DeleteOutlined />}
+        type="text"
+      >
         删除
-      </button>
+      </Button>
     </>
   );
 }; 

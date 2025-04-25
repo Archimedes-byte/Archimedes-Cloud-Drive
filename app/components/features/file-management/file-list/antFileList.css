@@ -311,4 +311,227 @@
 .ant-file-table .ant-table-cell-fix-right-first::after,
 .ant-file-table .ant-table-cell-fix-left-last::after {
   display: none !important;
+}
+
+/* 文件表格样式 */
+
+/* 表格容器 */
+.ant-file-list-wrapper {
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+  position: relative;
+  border-radius: 8px;
+  background-color: white;
+}
+
+/* 行样式 */
+.ant-file-table .ant-table-tbody > tr.selected-row > td {
+  background-color: rgba(52, 144, 220, 0.1);
+  transition: background-color 0.3s;
+}
+
+.ant-file-table .ant-table-tbody > tr > td {
+  padding: 12px !important;
+  border-bottom: 1px solid #f0f7ff !important;
+  transition: all 0.2s ease;
+}
+
+.ant-file-table .ant-table-tbody > tr.editing-row > td {
+  background-color: rgba(247, 250, 255, 0.8);
+}
+
+.ant-file-table .ant-table-tbody > tr:hover > td {
+  background-color: #f9fafb;
+}
+
+.ant-file-table .ant-table-tbody > tr.selected-row:hover > td {
+  background-color: rgba(52, 144, 220, 0.13);
+}
+
+/* 表头样式 */
+.ant-file-table .ant-table-thead > tr > th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #4a5568;
+  padding: 12px !important;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* 文件名称样式 */
+.file-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-name {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+/* 文件图标颜色 */
+.ant-file-table .folder-icon {
+  color: #f6ad55 !important;
+}
+
+.ant-file-table .image-icon {
+  color: #38b2ac !important;
+}
+
+.ant-file-table .excel-icon {
+  color: #48bb78 !important;
+}
+
+.ant-file-table .word-icon {
+  color: #4299e1 !important;
+}
+
+.ant-file-table .powerpoint-icon {
+  color: #ed8936 !important;
+}
+
+.ant-file-table .pdf-icon {
+  color: #f56565 !important; /* PDF-红色 */
+}
+
+.ant-file-table .txt-icon {
+  color: #a0aec0 !important; /* 文本-灰色 */
+}
+
+.ant-file-table .audio-icon {
+  color: #9f7aea !important; /* 音频-紫色 */
+}
+
+.ant-file-table .video-icon {
+  color: #ed64a6 !important; /* 视频-粉色 */
+}
+
+.ant-file-table .archive-icon {
+  color: #ecc94b !important; /* 压缩包-黄色 */
+}
+
+/* 修改日期样式 */
+.ant-file-table .date-column {
+  color: #718096;
+  font-size: 13px;
+}
+
+/* 文件大小样式 */
+.ant-file-table .size-column {
+  color: #718096;
+  font-size: 13px;
+}
+
+/* 标签容器样式 */
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 所有标签弹出框样式 */
+.all-tags-container {
+  max-width: 300px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 更多标签按钮样式 */
+.more-tags-button {
+  cursor: pointer;
+}
+
+/* 自定义标签样式 */
+.ant-file-table .ant-tag {
+  margin-right: 0;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+/* 标签编辑容器样式 */
+.tag-edit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* 空状态样式 */
+.empty-state {
+  padding: 30px 0;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+  margin-bottom: 0;
+}
+
+.empty-state-text {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  color: #4a5568;
+}
+
+.empty-state-hint {
+  max-width: 300px;
+  margin: 0 auto;
+  color: #718096;
+}
+
+/* 收藏按钮样式 */
+.favorite-button {
+  padding: 4px;
+  transition: all 0.2s;
+  opacity: 0.7;
+}
+
+.favorite-button:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.favorite-button.favorited {
+  opacity: 1;
+}
+
+/* 复选框样式 */
+.ant-file-table .ant-checkbox-wrapper {
+  margin-right: 8px;
+}
+
+/* 基本动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .ant-file-list-wrapper {
+    max-height: calc(100vh - 180px);
+  }
+}
+
+@media (max-width: 640px) {
+  .file-name {
+    max-width: 200px;
+  }
 } 

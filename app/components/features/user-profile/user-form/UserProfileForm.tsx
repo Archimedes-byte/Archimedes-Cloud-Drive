@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
-import { User, MapPin, Globe, Briefcase } from 'lucide-react';
+import React, { useCallback } from 'react';
+import { UserOutlined, EnvironmentOutlined, GlobalOutlined, BankOutlined } from '@ant-design/icons';
 import { UserProfile, UserProfileInput } from '@/app/hooks/user/useProfile';
 import { useUserForm } from '@/app/hooks';
 import { FormField } from '@/app/components/common/form';
+import { Input, Button, Spin } from '@/app/components/ui/ant';
 import styles from './UserProfileForm.module.css';
 
 interface UserProfileFormProps {
@@ -18,12 +19,12 @@ interface UserProfileFormProps {
  * 用户资料表单组件
  * 使用useUserForm钩子处理表单状态和验证
  */
-const UserProfileForm = ({ 
+const UserProfileForm: React.FC<UserProfileFormProps> = ({ 
   userProfile, 
   onUpdate, 
   onComplete, 
   onCancel 
-}: UserProfileFormProps) => {
+}) => {
   const {
     formData,
     errors,
@@ -34,31 +35,52 @@ const UserProfileForm = ({
   } = useUserForm(userProfile, onUpdate);
   
   // 处理输入元素获取焦点时自动选中全部文本
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     e.target.select();
-  };
+  }, []);
   
   // 保存表单并通知完成
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     const success = await saveForm();
     if (success && onComplete) {
       onComplete();
     }
-  };
+  }, [saveForm, onComplete]);
   
   // 取消编辑
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     resetForm();
     if (onCancel) {
       onCancel();
     }
-  };
+  }, [resetForm, onCancel]);
+  
+  // 为各字段创建onChange处理函数
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleInputChange(e, 'name');
+  }, [handleInputChange]);
+  
+  const handleBioChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    handleInputChange(e, 'bio');
+  }, [handleInputChange]);
+  
+  const handleLocationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleInputChange(e, 'location');
+  }, [handleInputChange]);
+  
+  const handleWebsiteChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleInputChange(e, 'website');
+  }, [handleInputChange]);
+  
+  const handleCompanyChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleInputChange(e, 'company');
+  }, [handleInputChange]);
   
   // 如果没有表单数据，显示加载中或错误状态
   if (!formData) {
     return (
       <div className={styles.loading}>
-        加载中...
+        <Spin tip="加载中..." />
       </div>
     );
   }
@@ -66,73 +88,74 @@ const UserProfileForm = ({
   return (
     <div className={styles.container}>
       <div className={styles.form}>
-        <FormField label="用户名" icon={<User size={16} />}>
-          <input
-            type="text"
+        <FormField label="用户名" icon={<UserOutlined />}>
+          <Input
             value={formData.name || ''}
-            onChange={(e) => handleInputChange(e, 'name')}
+            onChange={handleNameChange}
             onFocus={handleFocus}
-            className={`${styles.input} ${errors.name ? styles.inputError : ''}`}
+            className={errors.name ? styles.inputError : ''}
             placeholder="请输入用户名"
+            status={errors.name ? 'error' : ''}
           />
           {errors.name && (
             <div className={styles.errorText}>{errors.name}</div>
           )}
         </FormField>
         
-        <FormField label="个人简介" icon={<Globe size={16} />}>
-          <textarea
+        <FormField label="个人简介" icon={<GlobalOutlined />}>
+          <Input.TextArea
             value={formData.bio || ''}
-            onChange={(e) => handleInputChange(e, 'bio')}
+            onChange={handleBioChange}
             onFocus={handleFocus}
-            className={`${styles.input} ${styles.textarea} ${errors.bio ? styles.inputError : ''}`}
+            className={errors.bio ? styles.inputError : ''}
             placeholder="介绍一下你自己..."
             rows={4}
+            maxLength={500}
+            showCount
+            status={errors.bio ? 'error' : ''}
           />
-          <div className={styles.charCount}>
-            {(formData.bio || '').length}/500
-          </div>
           {errors.bio && (
             <div className={styles.errorText}>{errors.bio}</div>
           )}
         </FormField>
         
-        <FormField label="所在地" icon={<MapPin size={16} />}>
-          <input
-            type="text"
+        <FormField label="所在地" icon={<EnvironmentOutlined />}>
+          <Input
             value={formData.location || ''}
-            onChange={(e) => handleInputChange(e, 'location')}
+            onChange={handleLocationChange}
             onFocus={handleFocus}
-            className={`${styles.input} ${errors.location ? styles.inputError : ''}`}
+            className={errors.location ? styles.inputError : ''}
             placeholder="城市，国家"
+            status={errors.location ? 'error' : ''}
           />
           {errors.location && (
             <div className={styles.errorText}>{errors.location}</div>
           )}
         </FormField>
         
-        <FormField label="个人网站" icon={<Globe size={16} />}>
-          <input
+        <FormField label="个人网站" icon={<GlobalOutlined />}>
+          <Input
             type="url"
             value={formData.website || ''}
-            onChange={(e) => handleInputChange(e, 'website')}
+            onChange={handleWebsiteChange}
             onFocus={handleFocus}
-            className={`${styles.input} ${errors.website ? styles.inputError : ''}`}
+            className={errors.website ? styles.inputError : ''}
             placeholder="https://example.com"
+            status={errors.website ? 'error' : ''}
           />
           {errors.website && (
             <div className={styles.errorText}>{errors.website}</div>
           )}
         </FormField>
         
-        <FormField label="公司/组织" icon={<Briefcase size={16} />}>
-          <input
-            type="text"
+        <FormField label="公司/组织" icon={<BankOutlined />}>
+          <Input
             value={formData.company || ''}
-            onChange={(e) => handleInputChange(e, 'company')}
+            onChange={handleCompanyChange}
             onFocus={handleFocus}
-            className={`${styles.input} ${errors.company ? styles.inputError : ''}`}
+            className={errors.company ? styles.inputError : ''}
             placeholder="请输入公司或组织名称"
+            status={errors.company ? 'error' : ''}
           />
           {errors.company && (
             <div className={styles.errorText}>{errors.company}</div>
@@ -141,25 +164,25 @@ const UserProfileForm = ({
       </div>
       
       <div className={styles.actions}>
-        <button
-          type="button"
+        <Button
           onClick={handleCancel}
           className={styles.cancelButton}
           disabled={isSaving}
         >
           取消
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          type="primary"
           onClick={handleSave}
           className={styles.saveButton}
           disabled={isSaving}
+          loading={isSaving}
         >
           {isSaving ? '保存中...' : '保存更改'}
-        </button>
+        </Button>
       </div>
     </div>
   );
 };
 
-export default UserProfileForm; 
+export default React.memo(UserProfileForm); 

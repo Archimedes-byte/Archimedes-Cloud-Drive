@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Download, Folder } from 'lucide-react';
-import { Button, message, Modal, Spin } from 'antd';
+import { DownloadOutlined, FolderOutlined } from '@ant-design/icons';
+import { Button, message, Modal, Spin, Typography, Space, Flex, Alert } from '@/app/components/ui/ant';
 import { downloadFolder } from '@/app/lib/storage/utils/download';
 import { useFileOperations } from '@/app/hooks/file/useFileOperations';
+import styles from './FolderDownloadButton.module.css';
 
 interface FolderDownloadButtonProps {
   folderId: string;
@@ -120,14 +121,14 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
       <Button
         className={className}
         onClick={handleClick}
-        icon={showIcon ? <Download size={16} /> : undefined}
+        icon={showIcon ? <DownloadOutlined /> : undefined}
         disabled={loading}
       >
         {buttonText}
       </Button>
 
       <Modal
-        title={<div style={{ display: 'flex', alignItems: 'center' }}><Folder style={{ marginRight: 8 }} /> 下载文件夹</div>}
+        title={<Flex align="center"><FolderOutlined className={styles.titleIcon} /> 下载文件夹</Flex>}
         open={showModal}
         onCancel={handleCancel}
         footer={[
@@ -152,27 +153,33 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
           </Button>,
         ]}
       >
-        <div style={{ padding: '20px 0' }}>
+        <div className={styles.modalContent}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Flex vertical align="center" className={styles.loadingContainer}>
               <Spin />
-              <p style={{ marginTop: 16 }}>正在准备下载，请稍候...</p>
-            </div>
+              <Typography.Paragraph className={styles.loadingText}>正在准备下载，请稍候...</Typography.Paragraph>
+            </Flex>
           ) : (
             <>
-              <p>您即将下载文件夹 <strong>"{folderName}"</strong></p>
-              <p>文件夹将被压缩为ZIP格式下载</p>
+              <Typography.Paragraph>您即将下载文件夹 <strong>"{folderName}"</strong></Typography.Paragraph>
+              <Typography.Paragraph>文件夹将被压缩为ZIP格式下载</Typography.Paragraph>
               
               {downloadAttempt > 0 && (
-                <div style={{ marginTop: 16, padding: 16, background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 4 }}>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>提示：</p>
-                  <p style={{ marginBottom: 0 }}>文件夹下载可能被浏览器安全策略阻止。您可以尝试：</p>
-                  <ul style={{ marginBottom: 0 }}>
-                    <li>再次点击"开始下载"按钮</li>
-                    <li>点击"在新窗口下载"按钮</li>
-                    <li>稍后再试或使用其他浏览器</li>
-                  </ul>
-                </div>
+                <Alert
+                  className={styles.warningAlert}
+                  type="warning"
+                  message={
+                    <Space direction="vertical" className={styles.warningContent}>
+                      <Typography.Paragraph strong>提示：</Typography.Paragraph>
+                      <Typography.Paragraph>文件夹下载可能被浏览器安全策略阻止。您可以尝试：</Typography.Paragraph>
+                      <ul className={styles.warningList}>
+                        <li>再次点击"开始下载"按钮</li>
+                        <li>点击"在新窗口下载"按钮</li>
+                        <li>稍后再试或使用其他浏览器</li>
+                      </ul>
+                    </Space>
+                  }
+                />
               )}
             </>
           )}

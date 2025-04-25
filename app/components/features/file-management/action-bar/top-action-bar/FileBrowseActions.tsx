@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Image as ImageIcon, FileText, Video, Music, File
 } from 'lucide-react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import buttonStyles from '@/app/components/features/file-management/buttons/styles/buttons.module.css';
 import { FileSortInterface, FileTypeEnum, SortDirectionEnum } from '@/app/types';
 import { SortDropdown } from '@/app/components/features/file-management/action-bar/sort-dropdown';
 
@@ -42,7 +42,7 @@ export const FileBrowseActions: React.FC<FileBrowseActionsProps> = ({
   return (
     <>
       <button 
-        className={styles.topButton}
+        className={buttonStyles.topButton}
         onClick={handleRootDirClick}
         disabled={isInRootFolder}
         style={isInRootFolder ? { pointerEvents: 'none' } : {}}
@@ -53,7 +53,7 @@ export const FileBrowseActions: React.FC<FileBrowseActionsProps> = ({
 
       {/* 添加当前过滤状态指示器 */}
       {selectedFileType && (
-        <div className={styles.topButton} style={{ cursor: 'default', background: '#f0f7ff', borderColor: '#60a5fa' }}>
+        <div className={buttonStyles.topButton} style={{ cursor: 'default', background: '#f0f7ff', borderColor: '#60a5fa' }}>
           {(() => {
             switch(selectedFileType) {
               case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" />;

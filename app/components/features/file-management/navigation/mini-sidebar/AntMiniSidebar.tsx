@@ -1,9 +1,12 @@
-import React, { useCallback, useMemo } from 'react';
+'use client';
+
+import React, { useCallback } from 'react';
 import { Layout, Avatar, Button, Tooltip, Divider, theme } from 'antd';
 import { 
   HomeOutlined, LogoutOutlined, BgColorsOutlined, 
   UserOutlined 
 } from '@ant-design/icons';
+import styles from './mini-sidebar.module.css';
 
 const { Sider } = Layout;
 const { useToken } = theme;
@@ -45,81 +48,15 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
   }, [userName, userEmail]);
 
   // 计算渐变背景 - 使用主题颜色
-  const gradientBackground = useMemo(() => 
-    `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
-  [token]);
-
-  // 侧边栏容器样式
-  const siderStyle = useMemo(() => ({
-    background: gradientBackground,
-    height: '100vh',
-    position: 'fixed' as const,
-    left: 0,
-    zIndex: 10,
-    display: 'flex' as const,
-    flexDirection: 'column' as const,
-    alignItems: 'center' as const,
-    padding: '20px 0',
-    boxShadow: token.boxShadowSecondary
-  }), [gradientBackground, token.boxShadowSecondary]);
-
-  // 分隔线样式
-  const dividerStyle = useMemo(() => ({ 
-    borderTop: '1px solid rgba(255, 255, 255, 0.2)', 
-    width: '40px', 
-    minWidth: '40px',
-    margin: '4px 0 16px' 
-  }), []);
-
-  // 按钮容器样式
-  const buttonContainerStyle = useMemo(() => ({ 
-    display: 'flex' as const, 
-    flexDirection: 'column' as const, 
-    alignItems: 'center' as const,
-    gap: '16px'
-  }), []);
-
-  // 按钮基础样式
-  const buttonBaseStyle = useMemo(() => ({ 
-    background: 'transparent', 
-    border: 'none',
-    display: 'flex' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    height: '40px',
-    width: '40px',
-    transition: 'all 0.3s'
-  }), []);
-
-  // 图标样式
-  const iconStyle = useMemo(() => ({
-    color: 'white', 
-    fontSize: '20px'
-  }), []);
-
-  // 头像样式
-  const avatarStyle = useMemo(() => ({ 
-    cursor: 'pointer',
-    border: '2px solid rgba(255, 255, 255, 0.5)',
-    transition: 'all 0.3s'
-  }), []);
-
-  // 默认头像样式
-  const defaultAvatarStyle = useMemo(() => ({ 
-    background: 'rgba(255, 255, 255, 0.2)', 
-    color: '#fff',
-    cursor: 'pointer',
-    border: '2px solid rgba(255, 255, 255, 0.5)',
-    transition: 'all 0.3s'
-  }), []);
+  const gradientBackground = `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`;
 
   return (
     <Sider
       width={72}
-      style={siderStyle}
-      className="custom-mini-sidebar"
+      style={{ background: gradientBackground, position: 'fixed', left: 0, boxShadow: token.boxShadowSecondary }}
+      className={styles.miniSidebar}
     >
-      <div style={{ position: 'relative', marginBottom: '20px' }}>
+      <div className={styles.avatarContainer}>
         <Tooltip title={userName || userEmail || '用户信息'} placement="right">
           <Button 
             type="text" 
@@ -131,12 +68,12 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
               <Avatar 
                 src={avatarUrl} 
                 size={38} 
-                style={avatarStyle}
+                className={styles.avatar}
               />
             ) : (
               <Avatar 
                 size={38} 
-                style={defaultAvatarStyle}
+                className={styles.avatarPlaceholder}
               >
                 {getAvatarText()}
               </Avatar>
@@ -145,17 +82,16 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
         </Tooltip>
       </div>
 
-      <Divider style={dividerStyle} />
+      <Divider className={styles.miniSidebarDivider} />
 
-      <div style={buttonContainerStyle}>
+      <div className={styles.buttonContainer}>
         <Tooltip title="主页" placement="right">
           <Button 
             type="text" 
             shape="circle" 
-            icon={<HomeOutlined style={iconStyle} />} 
+            icon={<HomeOutlined className={styles.iconStyle} />} 
             onClick={onHomeClick}
-            style={buttonBaseStyle}
-            className="mini-sidebar-button"
+            className={styles.miniSidebarButton}
           />
         </Tooltip>
         
@@ -163,10 +99,9 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
           <Button 
             type="text" 
             shape="circle" 
-            icon={<BgColorsOutlined style={iconStyle} />} 
+            icon={<BgColorsOutlined className={styles.iconStyle} />} 
             onClick={onThemeClick}
-            style={buttonBaseStyle}
-            className="mini-sidebar-button"
+            className={styles.miniSidebarButton}
           />
         </Tooltip>
       </div>
@@ -176,10 +111,9 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
           <Button 
             type="text" 
             shape="circle" 
-            icon={<LogoutOutlined style={iconStyle} />} 
+            icon={<LogoutOutlined className={styles.iconStyle} />} 
             onClick={onLogoutClick}
-            style={buttonBaseStyle}
-            className="mini-sidebar-button"
+            className={styles.miniSidebarButton}
           />
         </Tooltip>
       </div>

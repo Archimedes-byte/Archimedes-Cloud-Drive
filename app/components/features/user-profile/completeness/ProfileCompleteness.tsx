@@ -1,7 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { UserProfile } from '@/app/hooks/user/useProfile';
 import styles from './ProfileCompleteness.module.css';
-import { AlertCircle, CheckCircle, User, FileText, MapPin, Globe, Briefcase, Image } from 'lucide-react';
+import { 
+  ExclamationCircleOutlined, CheckCircleOutlined, UserOutlined, 
+  FileTextOutlined, EnvironmentOutlined, GlobalOutlined, 
+  BankOutlined, PictureOutlined 
+} from '@ant-design/icons';
 
 interface ProfileCompletenessProps {
   userProfile: UserProfile;
@@ -19,19 +23,23 @@ interface CheckItem {
   field: string; // 对应的字段名
 }
 
-const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: ProfileCompletenessProps) => {
+const ProfileCompleteness: React.FC<ProfileCompletenessProps> = ({ 
+  userProfile, 
+  onEditClick, 
+  onAvatarClick 
+}) => {
   const [completenessPercentage, setCompletenessPercentage] = useState(0);
   const [animation, setAnimation] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // 定义要检查的个人资料项目
-  const checkItems: CheckItem[] = [
+  // 使用useMemo定义要检查的个人资料项目，避免不必要的重新创建
+  const checkItems: CheckItem[] = useMemo(() => [
     {
       id: 'displayName',
       label: '设置显示名称',
       check: (profile) => !!profile.name,
       importance: 5,
-      icon: <User size={16} />,
+      icon: <UserOutlined />,
       description: '有个好名字让大家更容易记住你',
       field: 'name'
     },
@@ -40,7 +48,7 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
       label: '填写个人简介',
       check: (profile) => !!profile.bio, // 修改为只要有内容就算完成
       importance: 4,
-      icon: <FileText size={16} />,
+      icon: <FileTextOutlined />,
       description: '简单介绍一下自己，让别人了解你的兴趣和专长',
       field: 'bio'
     },
@@ -53,7 +61,7 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
         return hasAvatar;
       },
       importance: 4,
-      icon: <Image size={16} />,
+      icon: <PictureOutlined />,
       description: '一个个性化的头像能让你的档案更加生动',
       field: 'avatar'
     },
@@ -62,7 +70,7 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
       label: '添加所在地',
       check: (profile) => !!profile.location,
       importance: 3,
-      icon: <MapPin size={16} />,
+      icon: <EnvironmentOutlined />,
       description: '分享你的位置有助于找到附近的合作伙伴',
       field: 'location'
     },
@@ -71,7 +79,7 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
       label: '添加个人网站',
       check: (profile) => !!profile.website,
       importance: 2,
-      icon: <Globe size={16} />,
+      icon: <GlobalOutlined />,
       description: '展示你的个人网站或社交媒体链接',
       field: 'website'
     },
@@ -80,11 +88,11 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
       label: '添加公司/组织',
       check: (profile) => !!profile.company,
       importance: 3,
-      icon: <Briefcase size={16} />,
+      icon: <BankOutlined />,
       description: '分享你所在的公司或组织信息',
       field: 'company'
     }
-  ];
+  ], []);
 
   // 在userProfile变化时强制刷新
   useEffect(() => {
@@ -118,36 +126,40 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
     // 如果百分比有变化，触发动画效果
     if (newPercentage !== completenessPercentage) {
       setAnimation(true);
-      setTimeout(() => {
+      const timer1 = setTimeout(() => {
         setCompletenessPercentage(newPercentage);
-        setTimeout(() => setAnimation(false), 500);
+        const timer2 = setTimeout(() => setAnimation(false), 500);
+        return () => clearTimeout(timer2);
       }, 100);
+      return () => clearTimeout(timer1);
     }
   }, [userProfile, calculateCompleteness, completenessPercentage, refreshTrigger]);
 
-  // 按重要性排序未完成的项目
-  const incompleteItems = checkItems
+  // 按重要性排序未完成的项目 - 使用useMemo优化
+  const incompleteItems = useMemo(() => checkItems
     .filter(item => !item.check(userProfile))
-    .sort((a, b) => b.importance - a.importance);
+    .sort((a, b) => b.importance - a.importance), 
+    [checkItems, userProfile]
+  );
 
-  // 已完成的项目数量
+  // 已完成的项目数量 - 直接计算避免额外状态
   const completedCount = checkItems.length - incompleteItems.length;
 
   // 处理建议项点击事件
-  const handleSuggestionClick = (itemId: string) => {
+  const handleSuggestionClick = useCallback((itemId: string) => {
     if (itemId === 'avatar' && onAvatarClick) {
       onAvatarClick();
     } else if (onEditClick) {
       onEditClick();
     }
-  };
+  }, [onAvatarClick, onEditClick]);
 
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>
         个人资料完整度
         {completedCount === checkItems.length && (
-          <span className={styles.completeIcon}><CheckCircle size={18} /></span>
+          <span className={styles.completeIcon}><CheckCircleOutlined style={{ fontSize: 18 }} /></span>
         )}
       </h2>
       
@@ -164,7 +176,7 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
       {incompleteItems.length > 0 && (
         <div className={styles.suggestionsContainer}>
           <div className={styles.suggestionsHeader}>
-            <AlertCircle size={16} />
+            <ExclamationCircleOutlined style={{ fontSize: 16 }} />
             <span>完善以下信息以提高资料完整度：</span>
           </div>
           <ul className={styles.suggestionsList}>
@@ -190,7 +202,7 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
       
       {incompleteItems.length === 0 && (
         <div className={styles.completedMessage}>
-          <CheckCircle size={20} />
+          <CheckCircleOutlined style={{ fontSize: 20 }} />
           <span>太棒了！您的个人资料已经完善。</span>
         </div>
       )}
@@ -198,4 +210,4 @@ const ProfileCompleteness = ({ userProfile, onEditClick, onAvatarClick }: Profil
   );
 };
 
-export default ProfileCompleteness; 
+export default React.memo(ProfileCompleteness); 

@@ -3,9 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, CheckCircle } from 'lucide-react';
+import { 
+  EyeOutlined, EyeInvisibleOutlined, MailOutlined, 
+  LockOutlined, CheckCircleOutlined 
+} from '@ant-design/icons';
 import styles from './RegisterForm.module.css';
 import { FormField } from '@/app/components/common/form';
+import { Button, Input, Space, Alert, Typography } from '@/app/components/ui/ant';
 
 const RegisterForm: React.FC = () => {
   const router = useRouter();
@@ -83,23 +87,29 @@ const RegisterForm: React.FC = () => {
 
   return (
     <div className={styles.formContainer}>
-      <h2>注册新账户</h2>
+      <Typography.Title level={2}>注册新账户</Typography.Title>
       
       {error && (
-        <div className={`${styles.message} ${styles.error}`}>
-          {error}
-        </div>
+        <Alert
+          className={styles.message}
+          type="error"
+          message={error}
+          showIcon
+        />
       )}
 
       {success && (
-        <div className={`${styles.message} ${styles.success}`}>
-          {success}
-        </div>
+        <Alert
+          className={styles.message}
+          type="success"
+          message={success}
+          showIcon
+        />
       )}
 
       <form className={styles.registerForm} onSubmit={handleSubmit}>
-        <FormField label="邮箱" icon={<Mail size={16} />}>
-          <input
+        <FormField label="邮箱" icon={<MailOutlined />}>
+          <Input
             type="email"
             value={formData.email}
             onChange={(e) => handleChange(e, 'email')}
@@ -109,58 +119,44 @@ const RegisterForm: React.FC = () => {
           />
         </FormField>
 
-        <FormField label="密码" icon={<Lock size={16} />}>
-          <div className={styles.passwordContainer}>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={formData.password}
-              onChange={(e) => handleChange(e, 'password')}
-              required
-              placeholder="请输入密码（至少6个字符）"
-              className={styles.input}
-            />
-            <button 
-              type="button"
-              className={styles.passwordToggle}
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
+        <FormField label="密码" icon={<LockOutlined />}>
+          <Input.Password
+            value={formData.password}
+            onChange={(e) => handleChange(e, 'password')}
+            required
+            placeholder="请输入密码（至少6个字符）"
+            className={styles.input}
+            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+          />
         </FormField>
 
-        <FormField label="确认密码" icon={<CheckCircle size={16} />}>
-          <div className={styles.passwordContainer}>
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              value={formData.confirmPassword}
-              onChange={(e) => handleChange(e, 'confirmPassword')}
-              required
-              placeholder="请再次输入密码"
-              className={styles.input}
-            />
-            <button 
-              type="button"
-              className={styles.passwordToggle}
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
+        <FormField label="确认密码" icon={<CheckCircleOutlined />}>
+          <Input.Password
+            value={formData.confirmPassword}
+            onChange={(e) => handleChange(e, 'confirmPassword')}
+            required
+            placeholder="请再次输入密码"
+            className={styles.input}
+            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+          />
         </FormField>
 
-        <button 
-          type="submit" 
+        <Button 
+          type="primary"
+          htmlType="submit" 
           className={`${styles.button} ${isLoading ? styles.loading : ''}`}
-          disabled={isLoading}
+          loading={isLoading}
+          block
         >
-          <span>{isLoading ? '注册中...' : '注册'}</span>
-        </button>
+          {isLoading ? '注册中...' : '注册'}
+        </Button>
       </form>
 
       <div className={styles.link}>
-        <span>已有账户？</span>
-        <Link href="/auth/login">登录</Link>
+        <Space>
+          <span>已有账户？</span>
+          <Link href="/auth/login">登录</Link>
+        </Space>
       </div>
     </div>
   );

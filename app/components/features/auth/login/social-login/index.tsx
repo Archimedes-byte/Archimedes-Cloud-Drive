@@ -1,26 +1,27 @@
 'use client';
 
 import React from 'react';
-import { Github } from 'lucide-react';
+import { GithubOutlined } from '@ant-design/icons';
 import { useLogin } from '@/app/hooks/auth';
 import styles from './SocialLogin.module.css';
+import { Button, Divider } from '@/app/components/ui/ant';
 
 const SocialLogin: React.FC = () => {
   const { isLoading, handleGitHubLogin } = useLogin();
   
   return (
     <>
-      <div className={styles.divider}>或</div>
+      <Divider className={styles.divider}>或</Divider>
       
-      <button
-        type="button"
+      <Button
+        type="default"
         onClick={handleGitHubLogin}
         className={styles.socialButton}
         disabled={isLoading}
+        icon={<GithubOutlined />}
       >
-        <Github size={20} />
-        <span>使用 GitHub 登录</span>
-      </button>
+        使用 GitHub 登录
+      </Button>
     </>
   );
 };

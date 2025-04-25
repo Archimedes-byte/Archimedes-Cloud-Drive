@@ -1,0 +1,65 @@
+/* RecentDownloads 组件样式 */
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  color: var(--theme-primary, #3b82f6);
+}
+
+.refreshing {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #888;
+}
+
+.loadingContainer {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+  border: 3px solid rgba(52, 144, 220, 0.2);
+  border-top: 3px solid #3490dc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loadingText {
+  margin: 0;
+}
+
+.debugInfo {
+  color: gray;
+  font-size: 12px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 0;
+  color: #888;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 

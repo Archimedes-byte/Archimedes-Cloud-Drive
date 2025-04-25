@@ -20,7 +20,6 @@ export interface FileOperationResponse extends ApiResponse {
   };
 }
 
-
 export interface FileTypeStats {
   type: FileTypeEnum | string;
   size: number;
@@ -28,14 +27,17 @@ export interface FileTypeStats {
   percentage: number;
 }
 
-export interface StorageUsageResponse extends ApiResponse {
-  data: {
-    used: number;
-    total: number;
-    percentage: number;
-    typeStats?: FileTypeStats[];
-  };
-}
+/**
+ * @deprecated 此接口已移除，相关组件StorageUsage已不再使用
+ */
+// export interface StorageUsageResponse extends ApiResponse {
+//   data: {
+//     used: number;
+//     total: number;
+//     percentage: number;
+//     typeStats?: FileTypeStats[];
+//   };
+// }
 
 export interface UserInfo {
   id: string;

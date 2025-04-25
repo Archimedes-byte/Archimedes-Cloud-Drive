@@ -1,7 +1,7 @@
 import React, { useCallback, memo, useEffect } from 'react';
 import { Breadcrumb as AntBreadcrumb, Button, Space, Badge } from 'antd';
 import { Home, ChevronRight, ChevronLeft, FolderClosed, FileType } from 'lucide-react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import styles from '@/app/components/features/file-management/navigation/breadcrumb/breadcrumb.module.css';
 import { FolderPathItem } from '@/app/types';
 
 interface BreadcrumbProps {

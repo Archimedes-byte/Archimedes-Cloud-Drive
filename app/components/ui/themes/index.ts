@@ -1,12 +1,26 @@
-// 主题服务统一入口文件
+/**
+ * 主题配置导出文件
+ * 
+ * 此文件导出 Ant Design 主题配置及主题服务相关函数
+ */
 
-// 导出主题服务
-export * from './theme-service';
-export * from './theme-definitions';
-export * from './useTheme';
+// 导出主题配置
+export { default as customTheme } from './ant-theme'; 
 
-// 导出ThemePanel组件
-export { default as ThemePanel } from './components/ThemePanel';
+// 导出主题服务功能
+export {
+  addThemeChangeListener,
+  applyTheme,
+  createThemeChangeHandler,
+  getAllThemes,
+  getThemesByCategory,
+  getThemeStyle,
+  loadThemeFromStorage,
+  saveCustomTheme,
+  deleteCustomTheme,
+  clearCustomThemes,
+  reinitCustomThemes
+} from './theme-service';
 
-// 导出组件主题样式
-// export * from './components'; 
+// 导出主题组件
+export { ThemePanel } from './components'; 

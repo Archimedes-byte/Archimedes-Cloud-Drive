@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
-import { X, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
+import { 
+  CloseOutlined, RotateRightOutlined, 
+  ZoomInOutlined, ZoomOutOutlined 
+} from '@ant-design/icons';
 import 'react-image-crop/dist/ReactCrop.css';
 import styles from './AvatarCropper.module.css';
 
@@ -105,7 +108,7 @@ async function canvasCrop(
   return toBlob(canvas);
 }
 
-export default function AvatarCropper({ image, onClose, onCropComplete, inModal = false }: AvatarCropperProps) {
+const AvatarCropper: React.FC<AvatarCropperProps> = ({ image, onClose, onCropComplete, inModal = false }) => {
   const [imgSrc, setImgSrc] = useState<string>('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -181,6 +184,36 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
     updatePreview();
   }, [completedCrop, scale, rotate]);
 
+  // 处理裁剪变化
+  const handleCropChange = useCallback((_: unknown, percentageCrop: Crop) => {
+    setCrop(percentageCrop);
+  }, []);
+
+  // 处理裁剪完成
+  const handleComplete = useCallback((c: PixelCrop) => {
+    setCompletedCrop(c);
+  }, []);
+
+  // 处理缩小
+  const handleZoomOut = useCallback(() => {
+    setScale(prev => Math.max(prev - 0.1, 0.5));
+  }, []);
+
+  // 处理放大
+  const handleZoomIn = useCallback(() => {
+    setScale(prev => Math.min(prev + 0.1, 3));
+  }, []);
+
+  // 处理缩放
+  const handleZoomChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setScale(parseFloat(e.target.value));
+  }, []);
+
+  // 旋转图片
+  const handleRotate = useCallback(() => {
+    setRotate((prev) => (prev + 90) % 360);
+  }, []);
+
   // 处理裁剪完成
   const handleCropComplete = useCallback(async () => {
     if (!completedCrop || !imgRef.current) return;
@@ -202,16 +235,6 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
     }
   }, [completedCrop, scale, rotate, onCropComplete]);
 
-  // 旋转图片
-  const handleRotate = useCallback(() => {
-    setRotate((prev) => (prev + 90) % 360);
-  }, []);
-
-  // 处理缩放
-  const handleZoomChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setScale(parseFloat(e.target.value));
-  }, []);
-
   if (inModal) {
     // 在Modal中使用时的渲染方式
     return (
@@ -219,7 +242,7 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
         <div className={styles.header}>
           <h2 className={styles.title}>裁剪头像</h2>
           <button className={styles.closeButton} onClick={onClose}>
-            <X size={20} />
+            <CloseOutlined style={{ fontSize: '20px' }} />
           </button>
         </div>
 
@@ -227,8 +250,8 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
           {imgSrc ? (
             <ReactCrop
               crop={crop}
-              onChange={(_, percentageCrop) => setCrop(percentageCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
+              onChange={handleCropChange}
+              onComplete={handleComplete}
               aspect={aspect}
               circularCrop
             >
@@ -246,63 +269,75 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
               />
             </ReactCrop>
           ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <div className={styles.loadingContainer}>
               加载中...
             </div>
           )}
         </div>
 
-        <div className={styles.controls}>
-          <button 
-            className={styles.rotateButton} 
-            onClick={handleRotate}
-            title="旋转图片"
-          >
-            <RotateCw size={18} />
-          </button>
-        </div>
-
-        <div className={styles.zoomControl}>
-          <ZoomOut size={18} />
-          <input
-            type="range"
-            className={styles.slider}
-            min="0.5"
-            max="3"
-            step="0.01"
-            value={scale}
-            onChange={handleZoomChange}
-          />
-          <ZoomIn size={18} />
-        </div>
-
-        {previewUrl && (
-          <div className={styles.preview}>
-            <p className={styles.previewTitle}>预览效果</p>
-            <img
-              src={previewUrl}
-              alt="预览"
-              className={styles.previewImage}
-            />
+        {imgSrc && (
+          <div className={styles.controls}>
+            <div className={styles.previewContainer}>
+              {previewUrl && (
+                <div className={styles.preview}>
+                  <img 
+                    src={previewUrl} 
+                    alt="预览" 
+                    className={styles.previewImage}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className={styles.controlsGroup}>
+              <div className={styles.sliderControl}>
+                <button 
+                  className={styles.controlButton}
+                  onClick={handleZoomOut}
+                  title="缩小"
+                >
+                  <ZoomOutOutlined />
+                </button>
+                
+                <input
+                  type="range"
+                  value={scale}
+                  min="0.5"
+                  max="3"
+                  step="0.01"
+                  aria-label="缩放"
+                  onChange={handleZoomChange}
+                  className={styles.slider}
+                />
+                
+                <button 
+                  className={styles.controlButton}
+                  onClick={handleZoomIn}
+                  title="放大"
+                >
+                  <ZoomInOutlined />
+                </button>
+              </div>
+              
+              <button 
+                className={styles.rotateButton}
+                onClick={handleRotate}
+                title="旋转"
+              >
+                <RotateRightOutlined />
+                旋转
+              </button>
+            </div>
+            
+            <button 
+              className={styles.submitButton}
+              onClick={handleCropComplete}
+              disabled={isLoading}
+            >
+              {isLoading ? '处理中...' : '应用'}
+            </button>
           </div>
         )}
-
-        <div className={styles.actions}>
-          <button 
-            className={`${styles.button} ${styles.cancelButton}`} 
-            onClick={onClose}
-            disabled={isLoading}
-          >
-            取消
-          </button>
-          <button 
-            className={`${styles.button} ${styles.applyButton} ${isLoading ? styles.disabled : ''}`} 
-            onClick={handleCropComplete}
-            disabled={!completedCrop || isLoading}
-          >
-            {isLoading ? '处理中...' : '应用'}
-          </button>
-        </div>
       </div>
     );
   }
@@ -314,7 +349,7 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
         <div className={styles.header}>
           <h2 className={styles.title}>裁剪头像</h2>
           <button className={styles.closeButton} onClick={onClose}>
-            <X size={24} />
+            <CloseOutlined style={{ fontSize: '24px' }} />
           </button>
         </div>
 
@@ -322,8 +357,8 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
           {imgSrc ? (
             <ReactCrop
               crop={crop}
-              onChange={(_, percentageCrop) => setCrop(percentageCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
+              onChange={handleCropChange}
+              onComplete={handleComplete}
               aspect={aspect}
               circularCrop
             >
@@ -351,12 +386,18 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
             onClick={handleRotate}
             title="旋转图片"
           >
-            <RotateCw size={20} />
+            <RotateRightOutlined />
           </button>
         </div>
 
         <div className={styles.zoomControl}>
-          <ZoomOut size={20} />
+          <button 
+            className={styles.controlButton}
+            onClick={handleZoomOut}
+            title="缩小"
+          >
+            <ZoomOutOutlined />
+          </button>
           <input
             type="range"
             className={styles.slider}
@@ -366,7 +407,13 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
             value={scale}
             onChange={handleZoomChange}
           />
-          <ZoomIn size={20} />
+          <button 
+            className={styles.controlButton}
+            onClick={handleZoomIn}
+            title="放大"
+          >
+            <ZoomInOutlined />
+          </button>
         </div>
 
         {previewUrl && (
@@ -399,4 +446,6 @@ export default function AvatarCropper({ image, onClose, onCropComplete, inModal 
       </div>
     </div>
   );
-} 
+};
+
+export default React.memo(AvatarCropper); 

@@ -1,6 +1,7 @@
 'use client';
 
 import styles from '@/app/styles/AuthPages.module.css';
+import { Typography } from '@/app/components/ui/ant';
 
 /**
  * 认证页面通用的页脚组件
@@ -8,7 +9,7 @@ import styles from '@/app/styles/AuthPages.module.css';
 export default function AuthFooter() {
   return (
     <footer className={styles.footer}>
-      <p>© 2025 Archimedes' Cloud Drive. All rights reserved.</p>
+      <Typography.Paragraph>© 2025 Archimedes' Cloud Drive. All rights reserved.</Typography.Paragraph>
     </footer>
   );
 } 

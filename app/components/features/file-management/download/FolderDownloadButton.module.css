@@ -60,4 +60,34 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 新增样式，替换原内联样式 */
+.titleIcon {
+  margin-right: 8px;
+}
+
+.modalContent {
+  padding: 20px 0;
+}
+
+.loadingContainer {
+  padding: 20px;
+  text-align: center;
+}
+
+.loadingText {
+  margin-top: 16px;
+}
+
+.warningAlert {
+  margin-top: 16px;
+}
+
+.warningContent {
+  width: 100%;
+}
+
+.warningList {
+  margin-bottom: 0;
 } 

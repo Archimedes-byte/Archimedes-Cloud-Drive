@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Session } from 'next-auth';
 import { UserProfile } from '@/app/hooks/user/useProfile';
-import { Camera } from 'lucide-react';
+import { CameraOutlined } from '@ant-design/icons';
 import styles from './ProfileHeader.module.css';
 import { AvatarModal } from '@/app/components/features/user-profile/avatar';
+import { Button } from '@/app/components/ui/ant';
 
 interface ProfileHeaderProps {
   session: Session;
@@ -57,18 +58,28 @@ const ProfileHeader = ({
   }, [userProfile]);
 
   // 打开头像管理弹窗
-  const handleAvatarClick = () => {
+  const handleAvatarClick = useCallback(() => {
     setShowAvatarModal(true);
-  };
+  }, []);
 
   // 处理头像变更
-  const handleAvatarChange = (newAvatarUrl: string) => {
+  const handleAvatarChange = useCallback((newAvatarUrl: string) => {
     if (onAvatarChange) {
       onAvatarChange(newAvatarUrl);
     }
     // 强制刷新
     setRefreshKey(Date.now());
-  };
+  }, [onAvatarChange]);
+
+  // 关闭头像弹窗
+  const handleCloseAvatarModal = useCallback(() => {
+    setShowAvatarModal(false);
+  }, []);
+
+  // 处理头像加载错误
+  const handleAvatarError = useCallback(() => {
+    setAvatarError(true);
+  }, []);
 
   return (
     <div className={styles.header}>
@@ -84,7 +95,7 @@ const ProfileHeader = ({
               className={styles.avatarImage}
               priority
               unoptimized={true}
-              onError={() => setAvatarError(true)}
+              onError={handleAvatarError}
             />
           ) : (
             <div className={styles.avatarFallback}>
@@ -99,7 +110,7 @@ const ProfileHeader = ({
               onClick={handleAvatarClick}
               title="管理头像"
             >
-              <Camera size={24} />
+              <CameraOutlined style={{ fontSize: 24 }} />
             </button>
           </div>
         </div>
@@ -110,27 +121,28 @@ const ProfileHeader = ({
         <h1 className={styles.name}>{displayName}</h1>
         <p className={styles.email}>{session.user?.email || '未设置邮箱'}</p>
         <div className={styles.buttons}>
-          <button
+          <Button
             onClick={onEditClick}
             className={styles.editButton}
             disabled={isLoading}
+            type="primary"
           >
             编辑个人信息
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onPasswordClick}
             className={styles.passwordButton}
             disabled={isLoading}
           >
             设置密码
-          </button>
+          </Button>
         </div>
       </div>
       
       {/* 头像管理弹窗 */}
       <AvatarModal 
         isOpen={showAvatarModal}
-        onClose={() => setShowAvatarModal(false)}
+        onClose={handleCloseAvatarModal}
         currentAvatarUrl={effectiveAvatarUrl || null}
         userDisplayName={displayName}
         onAvatarChange={handleAvatarChange}
@@ -139,4 +151,4 @@ const ProfileHeader = ({
   );
 };
 
-export default ProfileHeader; 
+export default React.memo(ProfileHeader); 

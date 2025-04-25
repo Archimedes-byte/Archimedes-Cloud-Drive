@@ -1,8 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
+import { 
+  CheckCircleOutlined, CloseCircleOutlined, 
+  InfoCircleOutlined, WarningOutlined, CloseOutlined 
+} from '@ant-design/icons';
+import { Button } from '@/app/components/ui/ant';
 import styles from './Toaster.module.css';
-import { addThemeChangeListener, ThemeStyle } from '@/app/components/ui/themes';
+import { addThemeChangeListener } from '@/app/components/ui/themes';
+import type { ThemeStyle } from '@/app/components/ui/themes/theme-definitions';
 
 // 定义Toast类型
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -124,15 +130,15 @@ const ToastContainer: React.FC<{ themeStyle: ThemeStyle | null }> = ({ themeStyl
             {getToastIcon(toast.type)}
             <p>{toast.message}</p>
           </div>
-          <button 
+          <Button 
+            type="text"
             className={styles.closeButton}
             onClick={(e) => {
               e.stopPropagation();
               hideToast(toast.id);
             }}
-          >
-            ×
-          </button>
+            icon={<CloseOutlined />}
+          />
         </div>
       ))}
     </div>
@@ -143,13 +149,13 @@ const ToastContainer: React.FC<{ themeStyle: ThemeStyle | null }> = ({ themeStyl
 function getToastIcon(type: ToastType) {
   switch (type) {
     case 'success':
-      return <span className={styles.icon}>✓</span>;
+      return <CheckCircleOutlined className={styles.icon} />;
     case 'error':
-      return <span className={styles.icon}>✕</span>;
+      return <CloseCircleOutlined className={styles.icon} />;
     case 'warning':
-      return <span className={styles.icon}>⚠</span>;
+      return <WarningOutlined className={styles.icon} />;
     case 'info':
-      return <span className={styles.icon}>ℹ</span>;
+      return <InfoCircleOutlined className={styles.icon} />;
     default:
       return null;
   }

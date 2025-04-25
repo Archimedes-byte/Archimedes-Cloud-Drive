@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { 
   Upload, FolderUp
 } from 'lucide-react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import buttonStyles from '@/app/components/features/file-management/buttons/styles/buttons.module.css';
+import animationStyles from '@/app/components/features/file-management/shared/styles/animation.module.css';
 
 interface UploadActionsProps {
   setIsUploadModalOpen: (open: boolean) => void;
@@ -30,7 +31,7 @@ export const UploadActions: React.FC<UploadActionsProps> = ({
     <>
       {/* 上传文件按钮 */}
       <button 
-        className={styles.topButton}
+        className={buttonStyles.topButton}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -52,7 +53,7 @@ export const UploadActions: React.FC<UploadActionsProps> = ({
       
       {/* 上传文件夹按钮 */}
       <button 
-        className={styles.topButton}
+        className={buttonStyles.topButton}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -73,7 +74,7 @@ export const UploadActions: React.FC<UploadActionsProps> = ({
       </button>
       
       {/* 新建文件夹按钮 */}
-      <button className={styles.topButton} onClick={onCreateFolder}>
+      <button className={buttonStyles.topButton} onClick={onCreateFolder}>
         <span>📁</span>
         新建文件夹
       </button>
@@ -81,11 +82,11 @@ export const UploadActions: React.FC<UploadActionsProps> = ({
       {/* 刷新按钮 */}
       {onRefresh && (
         <button 
-          className={styles.topButton} 
+          className={buttonStyles.topButton} 
           onClick={onRefresh}
           disabled={isRefreshing}
         >
-          <span className={isRefreshing ? styles.rotating : ''}>🔄</span>
+          <span className={isRefreshing ? animationStyles.rotating : ''}>🔄</span>
           {isRefreshing ? '刷新中...' : '刷新'}
         </button>
       )}

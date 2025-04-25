@@ -19,27 +19,23 @@
  *   - user-profile/: 用户资料组件
  *   - auth/: 认证相关组件
  * 
- * 为保持向后兼容性，所有组件可以从根路径直接导入
+ * 统一组件库：
+ * - 所有基础UI组件统一使用Ant Design
+ * - 所有自定义组件封装基于Ant Design
+ * - UI组件请从 ./ui/ant 导入，不要直接从antd导入
  */
 
-// 从主要目录结构导出所有组件
-// UI组件
-export * from './ui';
+// 导出Ant Design UI组件 (这是基础组件的统一导出点)
+export * from './ui/ant';
 
-// 通用组件
+// 导出通用组件 
 export * from './common/form';
 export * from './common/media';
 
-// 业务功能组件
+// 导出业务功能组件
 export * from './features';
 
-// 注：不要在此处直接导出子组件，应从各自的目录进行导出
-// 这样可以避免重复导出和命名冲突
-
-// 导航组件 - 已迁移到file-management/navigation目录
-// export { default as Navbar } from './features/dashboard/navigation/navbar';
-
-// 文件管理组件
+// 业务组件导出 (保持向后兼容)
 export { default as UploadModal } from './features/file-management/upload/upload-modal';
 export { default as FileUpload } from './features/file-management/upload/file-upload';
 export { default as TopActionBar } from './features/file-management/action-bar/top-action-bar';
@@ -47,8 +43,7 @@ export { default as SortDropdown } from './features/file-management/action-bar/s
 export { default as NewFolderForm } from './features/file-management/folder-management/new-folder-form';
 export { TopActionBar as Toolbar } from './features/file-management/action-bar/top-action-bar';
 
-// 分析组件
-export { default as StorageUsage } from './features/dashboard/analytics/storage-usage';
+// 注：分析组件StorageUsage已被移除，不再导出
 
 // 媒体组件
 export { default as AudioVisualizer } from './common/media/audio-visualizer';

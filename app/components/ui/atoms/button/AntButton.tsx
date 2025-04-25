@@ -10,13 +10,15 @@ import './antButton.css';
  * 自定义按钮组件属性
  */
 export interface AntButtonProps {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'link' | 'ghost' | 'text';
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'link' | 'ghost' | 'text' | 
+            'default' | 'destructive' | 'outline'; // 兼容原Button组件的variant
   fullWidth?: boolean;
+  asChild?: boolean; // 兼容原Button组件的API
   className?: string;
   disabled?: boolean;
   loading?: boolean;
   onClick?: React.MouseEventHandler<HTMLElement>;
-  size?: 'large' | 'middle' | 'small';
+  size?: 'large' | 'middle' | 'small' | 'lg' | 'sm'; // 兼容原Button的size
   icon?: React.ReactNode;
   children?: React.ReactNode;
   htmlType?: 'button' | 'submit' | 'reset';
@@ -25,16 +27,20 @@ export interface AntButtonProps {
 
 /**
  * 基于Ant Design的按钮组件，支持系统主题样式
+ * 兼容原Button组件的API以及Ant Design的API
  */
 export const AntButton: React.FC<AntButtonProps> = ({
   variant = 'primary',
   fullWidth = false,
   className,
   children,
+  size,
+  asChild, // 忽略这个参数，仅为兼容性保留
   ...props
 }) => {
   // 确定按钮类型和类名
   const getTypeAndClass = () => {
+    // 将原Button的variant映射到AntdButton的type
     switch (variant) {
       case 'primary':
         return { type: 'primary' as const, className: 'ant-btn-custom-primary' };
@@ -43,6 +49,7 @@ export const AntButton: React.FC<AntButtonProps> = ({
       case 'success':
         return { type: 'primary' as const, className: 'ant-btn-custom-success' };
       case 'danger':
+      case 'destructive':
         return { type: 'primary' as const, className: 'ant-btn-custom-danger' };
       case 'link':
         return { type: 'link' as const, className: '' };
@@ -50,6 +57,9 @@ export const AntButton: React.FC<AntButtonProps> = ({
         return { type: 'default' as const, className: 'ant-btn-custom-ghost' };
       case 'text':
         return { type: 'text' as const, className: '' };
+      case 'outline':
+        return { type: 'default' as const, className: 'ant-btn-custom-outline' };
+      case 'default':
       default:
         return { type: 'primary' as const, className: 'ant-btn-custom-primary' };
     }
@@ -57,18 +67,33 @@ export const AntButton: React.FC<AntButtonProps> = ({
   
   const { type, className: variantClassName } = getTypeAndClass();
   
+  // 转换size属性
+  const convertSize = () => {
+    if (!size) return 'middle';
+    if (size === 'lg') return 'large';
+    if (size === 'sm') return 'small';
+    return size;
+  };
+  
   // 根据fullWidth属性添加宽度类
   const widthClass = fullWidth ? 'w-full' : '';
 
+  // 准备传递给AntdButton的属性
+  const antButtonProps: AntdButtonProps = {
+    ...props,
+    type: type,
+    className: cn(variantClassName, widthClass, className),
+    size: convertSize() as AntdButtonProps['size']
+  };
+
   return (
-    <AntdButton
-      type={type}
-      className={cn(variantClassName, widthClass, className)}
-      {...props}
-    >
+    <AntdButton {...antButtonProps}>
       {children}
     </AntdButton>
   );
 };
+
+// 为了兼容之前的代码，我们需要导出buttonVariants
+export const buttonVariants = () => ''; // 仅为兼容性保留，实际不会使用
 
 export default AntButton; 

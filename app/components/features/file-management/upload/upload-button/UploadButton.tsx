@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Folder, ChevronDown } from 'lucide-react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import styles from '@/app/components/features/file-management/upload/upload-modal/uploadModal.module.css';
+import buttonStyles from '@/app/components/features/file-management/buttons/styles/buttons.module.css';
+import dropdownStyles from '@/app/components/features/file-management/dropdown/styles/dropdown.module.css';
 
 interface UploadButtonProps {
   showDropdown: boolean;
@@ -48,25 +50,25 @@ export function UploadButton({
   return (
     <div className={styles.uploadOptionsContainer} ref={uploadDropdownRef}>
       <button
-        className={`${styles.uploadButton} ${showDropdown ? styles.activeButton : ''}`}
+        className={`${buttonStyles.uploadButton} ${showDropdown ? dropdownStyles.activeButton : ''}`}
         onClick={() => setShowDropdown(!showDropdown)}
       >
-        <Upload size={18} className={styles.buttonIcon} />
+        <Upload size={18} className={buttonStyles.buttonIcon} />
         上传文件
-        <ChevronDown size={16} className={styles.dropdownIcon} />
+        <ChevronDown size={16} className={dropdownStyles.dropdownIcon} />
       </button>
       
       {showDropdown && (
-        <div className={styles.dropdownMenu}>
+        <div className={dropdownStyles.dropdownMenu}>
           <div 
-            className={styles.dropdownItem}
+            className={dropdownStyles.dropdownItem}
             onClick={() => handleUploadClick('file')}
           >
             <Upload size={16} className="mr-2" />
             <span>上传文件</span>
           </div>
           <div 
-            className={styles.dropdownItem}
+            className={dropdownStyles.dropdownItem}
             onClick={() => handleUploadClick('folder')}
           >
             <Folder size={16} className="mr-2" />

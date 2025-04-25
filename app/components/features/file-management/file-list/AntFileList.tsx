@@ -297,6 +297,15 @@ export function AntFileList({
     );
   };
 
+  // 标签列渲染
+  const allTagsContent = (tags: string[]) => (
+    <div className="all-tags-container">
+      {tags.map(tag => (
+        <Tag key={tag} color="blue">{tag}</Tag>
+      ))}
+    </div>
+  );
+
   // Ant Design表格列定义
   const columns = [
     // 文件勾选列
@@ -402,6 +411,7 @@ export function AntFileList({
       title: '标签',
       dataIndex: 'tags',
       key: 'tags',
+      width: 220,
       render: (_: any, record: FileInfo) => {
         const isEditing = record.id === actualEditingFileId;
         
@@ -452,15 +462,6 @@ export function AntFileList({
         const visibleTags = record.tags.slice(0, 2);
         const remainingCount = record.tags.length - visibleTags.length;
         
-        // 定义所有标签的内容
-        const allTagsContent = (
-          <div style={{ maxWidth: '300px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {record.tags.map(tag => (
-              <Tag key={tag} color="blue">{tag}</Tag>
-            ))}
-          </div>
-        );
-        
         return (
           <div className="tag-container">
             {visibleTags.map(tag => (
@@ -468,12 +469,12 @@ export function AntFileList({
             ))}
             {remainingCount > 0 && (
               <Popover 
-                content={allTagsContent} 
+                content={allTagsContent(record.tags)} 
                 title="全部标签" 
                 trigger="click"
                 placement="right"
               >
-                <Tag color="default" style={{ cursor: 'pointer' }}>+{remainingCount}</Tag>
+                <Tag color="default" className="more-tags-button">+{remainingCount}</Tag>
               </Popover>
             )}
           </div>

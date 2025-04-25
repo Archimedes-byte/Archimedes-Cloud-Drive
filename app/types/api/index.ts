@@ -69,14 +69,3 @@ export interface FolderPathResponse extends ApiResponse {
     name: string;
   }>;
 }
-
-/**
- * 存储使用情况响应接口
- */
-export interface StorageUsageResponse extends ApiResponse {
-  usage: {
-    used: number;
-    total: number;
-    percentage: number;
-  };
-} 

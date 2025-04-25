@@ -1,0 +1,14 @@
+// 迁移前：使用内联样式
+<div style={{ display: 'flex', alignItems: 'center' }}>
+  <Folder style={{ marginRight: 8 }} /> 下载文件夹
+</div>
+
+// 迁移后：使用 CSS 模块和 Ant Design 组件
+<Flex align="center">
+  <FolderOutlined className={styles.titleIcon} /> 下载文件夹
+</Flex>
+
+// 相应的 CSS 模块
+.titleIcon {
+  margin-right: 8px;
+} 

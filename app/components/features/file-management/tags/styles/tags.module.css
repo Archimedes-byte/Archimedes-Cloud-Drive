@@ -1,0 +1,151 @@
+/* 标签样式模块 */
+
+.tagContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--theme-primary, #3b82f6);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tag:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.extraTagsCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  background-color: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tagsCell {
+  max-width: 300px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0;
+  max-width: 100%;
+}
+
+.tagsInputWrapper {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.tagsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.interactiveTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--theme-primary, #3b82f6);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.interactiveTag:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.emptyTagsHint {
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 8px 0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* 新文件夹标签样式 */
+.newFolderTagsContainer {
+  margin-bottom: 16px;
+}
+
+.tagsWrapper {
+  height: 10;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-height: 40px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.tagItem {
+  display: flex;
+  align-items: center;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--theme-primary, #3b82f6);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.removeTagButton {
+  margin-left: 4px;
+  color: var(--theme-primary, #3b82f6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.removeTagButton:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.tagInput {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  background: transparent;
+  min-width: 80px;
+} 

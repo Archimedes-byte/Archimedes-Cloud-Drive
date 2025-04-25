@@ -1,7 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect, DragEvent } from 'react';
-import { Camera, Upload, Trash2, X, ArrowLeft, FolderUp, RotateCw, ZoomIn, ZoomOut, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, DragEvent, useCallback } from 'react';
+import { 
+  CameraOutlined, UploadOutlined, DeleteOutlined, CloseOutlined, 
+  ArrowLeftOutlined, FolderOpenOutlined, RotateRightOutlined, 
+  ZoomInOutlined, ZoomOutOutlined, CheckOutlined 
+} from '@ant-design/icons';
 import styles from './AvatarCropper.module.css';
 import AvatarCropper from './AvatarCropper';
 
@@ -43,7 +47,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
   };
 
   // 处理文件选择
-  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -65,7 +69,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
 
     setSelectedFile(file);
     setIsEditing(true);
-  };
+  }, []);
 
   // 处理头像上传
   const handleCropComplete = async (croppedImage: Blob) => {
@@ -152,13 +156,13 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
   };
 
   // 处理拖拽进入
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, []);
   
   // 处理拖拽释放
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -182,20 +186,20 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
       setSelectedFile(file);
       setIsEditing(true);
     }
-  };
+  }, []);
 
   // 如果弹窗未打开，不渲染内容
   if (!isOpen) return null;
 
   // 处理点击关闭弹窗的背景区域
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       // 如果正在上传或者在裁剪状态，不允许通过点击背景关闭
       if (!uploading && !isEditing) {
         onClose();
       }
     }
-  };
+  }, [onClose, uploading, isEditing]);
 
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>
@@ -208,7 +212,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
                 onClick={() => setIsEditing(false)}
                 disabled={uploading}
               >
-                <ArrowLeft size={20} />
+                <ArrowLeftOutlined style={{ fontSize: '20px' }} />
                 返回
               </button>
               <button 
@@ -216,7 +220,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
                 onClick={onClose} 
                 disabled={uploading}
               >
-                <X size={20} />
+                <CloseOutlined style={{ fontSize: '20px' }} />
               </button>
             </div>
             
@@ -238,7 +242,7 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
                 onClick={onClose} 
                 disabled={uploading}
               >
-                <X size={20} />
+                <CloseOutlined style={{ fontSize: '20px' }} />
               </button>
             </div>
             
@@ -248,62 +252,55 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
                   {currentAvatarUrl ? (
                     <img 
                       className={styles.currentAvatar}
-                      src={currentAvatarUrl}
+                      src={`${currentAvatarUrl}?t=${Date.now()}`} // 添加时间戳避免缓存
                       alt="当前头像"
                     />
                   ) : (
-                    <div className={styles.avatarFallback}>
-                      <span>{nameInitial}</span>
+                    <div className={styles.avatarPlaceholder}>
+                      {nameInitial}
                     </div>
                   )}
                 </div>
-                
-                <div className={styles.uploadOptions}>
-                  <div 
-                    className={styles.dropArea}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  >
-                    <FolderUp size={32} className={styles.dropIcon} />
-                    <p className={styles.dropText}>拖放图片到此处</p>
-                  </div>
-                  
-                  <div className={styles.uploadButtons}>
-                    <button 
-                      className={styles.uploadButton}
-                      onClick={openFileSelector}
-                      disabled={uploading}
-                    >
-                      <Upload size={18} />
-                      选择图片
-                    </button>
-                    
-                    {currentAvatarUrl && (
-                      <button 
-                        className={styles.deleteButton}
-                        onClick={handleDeleteAvatar}
-                        disabled={uploading}
-                      >
-                        <Trash2 size={18} />
-                        删除头像
-                      </button>
-                    )}
+                <h3 className={styles.previewTitle}>当前头像</h3>
+              </div>
+              
+              <div className={styles.uploadSection}>
+                <div 
+                  className={styles.dropZone}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={openFileSelector}
+                >
+                  <div className={styles.dropZoneContent}>
+                    <UploadOutlined className={styles.uploadIcon} />
+                    <p className={styles.dropZoneText}>
+                      点击或拖放图片到此处
+                    </p>
+                    <span className={styles.dropZoneInfo}>
+                      支持JPEG、PNG、GIF或WEBP，最大2MB
+                    </span>
                   </div>
                 </div>
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelected}
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className={styles.fileInput}
+                />
+                
+                <div className={styles.actionButtons}>
+                  <button 
+                    className={`${styles.deleteButton} ${!currentAvatarUrl ? styles.disabled : ''}`}
+                    onClick={handleDeleteAvatar}
+                    disabled={!currentAvatarUrl || uploading}
+                  >
+                    <DeleteOutlined className={styles.deleteIcon} />
+                    删除当前头像
+                  </button>
+                </div>
               </div>
-              
-              <div className={styles.uploadInstructions}>
-                <p>支持JPG、PNG、GIF和WEBP格式，最大2MB</p>
-                <p>上传后可以调整和裁剪图片</p>
-              </div>
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleFileSelected}
-                style={{ display: 'none' }}
-              />
             </div>
           </>
         )}
@@ -312,4 +309,4 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
   );
 };
 
-export default AvatarModal; 
+export default React.memo(AvatarModal); 

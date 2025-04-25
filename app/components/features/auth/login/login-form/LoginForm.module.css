@@ -417,9 +417,9 @@
 /* 响应式适配 */
 @media (max-width: 992px) {
   .formContainer {
-    margin: 0 auto;
-    margin-bottom: 0;
-    max-height: calc(100vh - 150px);
+    margin-right: auto;
+    margin-left: auto;
+    max-width: 330px;
   }
 }
 
@@ -443,4 +443,11 @@
   .button {
     margin-top: 0.5rem;
   }
+}
+
+/* 隐藏的Google认证区域 */
+.hiddenGoogleAuth {
+  display: none;
+  position: absolute;
+  pointer-events: none;
 } 

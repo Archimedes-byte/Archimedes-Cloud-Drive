@@ -1,0 +1,111 @@
+/* 面包屑导航样式模块 */
+
+.breadcrumbBar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  font-size: 14px;
+  color: #64748b;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  padding: 4px 0;
+}
+
+.breadcrumb::-webkit-scrollbar {
+  display: none;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.breadcrumbLink {
+  display: inline-flex;
+  align-items: center;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumbLink:hover {
+  color: var(--theme-primary, #3b82f6);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.breadcrumbSeparator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  margin: 0 4px;
+  user-select: none;
+}
+
+.breadcrumbIcon {
+  margin-right: 4px;
+}
+
+.breadcrumbBackButton {
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-right: 8px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.breadcrumbBackButton:hover {
+  color: #1e293b;
+  background-color: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+/* 媒体查询适配 */
+@media (max-width: 768px) {
+  .breadcrumbBar {
+    padding: 8px 12px;
+  }
+  
+  .breadcrumb {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  .breadcrumb {
+    font-size: 12px;
+  }
+  
+  .breadcrumbLink {
+    max-width: 120px;
+  }
+} 

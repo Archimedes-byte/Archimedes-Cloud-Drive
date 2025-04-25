@@ -1,0 +1,22 @@
+// 迁移前
+const getPreviewStyle = () => {
+  return {
+    '--preview-primary': customTheme.primary,
+    '--preview-secondary': customTheme.secondary,
+    // 其他CSS变量...
+  } as React.CSSProperties;
+};
+
+// 迁移后仍可保留CSS变量方式，但在类名中使用
+const getPreviewStyle = () => {
+  return {
+    '--preview-primary': customTheme.primary,
+    '--preview-secondary': customTheme.secondary,
+    // 其他CSS变量...
+  } as React.CSSProperties;
+};
+
+// 在JSX中使用
+<div className={styles.themePreviewContainer} style={getPreviewStyle()}>
+  {/* 内容 */}
+</div> 

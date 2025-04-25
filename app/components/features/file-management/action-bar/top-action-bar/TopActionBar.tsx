@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import styles from '@/app/file-management/styles/shared.module.css';
+import layoutStyles from '@/app/components/features/file-management/layout/styles/layout.module.css';
 import { FileInfo, FileSortInterface, FileTypeEnum } from '@/app/types';
 import { FileActions } from './FileActions';
 import { FileBrowseActions } from './FileBrowseActions';
@@ -64,8 +64,8 @@ export const TopActionBar: React.FC<TopActionBarProps> = (props) => {
   }, [menuRef, props.setShowUploadDropdown]);
   
   return (
-    <div className={styles.topBar}>
-      <div className={styles.buttonGroup}>
+    <div className={layoutStyles.topBar}>
+      <div className={layoutStyles.buttonGroup}>
         {props.selectedFiles.length > 0 ? (
           // 文件选中状态显示文件操作按钮
           <FileActions 
