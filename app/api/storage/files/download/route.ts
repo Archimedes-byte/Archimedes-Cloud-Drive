@@ -8,7 +8,7 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 import { existsSync } from 'fs';
 import fs from 'fs/promises';
@@ -18,7 +18,7 @@ import mime from 'mime-types';
 import { FileInfo, FileTypeEnum } from '@/app/types';
 import JSZip from 'jszip';
 
-const storageService = new StorageService();
+const fileManagementService = new FileManagementService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 // 确保上传目录存在
@@ -179,13 +179,13 @@ async function getAllFilesInFolder(
 ): Promise<Array<{ fileInfo: FileInfo, relativePath: string }>> {
   try {
     // 获取文件夹信息
-    const folderInfo = await storageService.getFile(userId, folderId);
+    const folderInfo = await fileManagementService.getFile(userId, folderId);
     if (!folderInfo || !folderInfo.isFolder) {
       throw new Error(`ID为 ${folderId} 的项目不是文件夹或不存在`);
     }
     
     // 获取文件夹下的所有项目
-    const folderContentsResponse = await storageService.getFiles(userId, folderId);
+    const folderContentsResponse = await fileManagementService.getFiles(userId, folderId);
     const folderContents = folderContentsResponse.items || [];
     
     console.log(`文件夹 "${folderInfo.name}" (${folderId}) 包含 ${folderContents.length} 个项目`);
@@ -272,7 +272,7 @@ export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => 
     // 如果只下载一个文件
     if (fileIds.length === 1) {
       const fileId = fileIds[0];
-      const fileInfo = await storageService.getFile(req.user.id, fileId);
+      const fileInfo = await fileManagementService.getFile(req.user.id, fileId);
       
       if (!fileInfo) {
         return createApiErrorResponse(`文件不存在: ${fileId}`, 404);
@@ -430,7 +430,7 @@ export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => 
     // 添加文件到ZIP
     for (const fileId of fileIds) {
       try {
-        const fileInfo = await storageService.getFile(req.user.id, fileId);
+        const fileInfo = await fileManagementService.getFile(req.user.id, fileId);
         
         if (!fileInfo) {
           console.warn(`文件不存在: ${fileId}，跳过`);

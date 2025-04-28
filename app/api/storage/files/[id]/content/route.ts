@@ -8,13 +8,18 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, extname } from 'path';
 import path from 'path';
 import { FILE_CATEGORIES } from '@/app/utils/file/type';
+import { NextResponse } from 'next/server';
+import { existsSync } from 'fs';
+import fs from 'fs/promises';
+import { PrismaClient } from '@prisma/client';
 
-const storageService = new StorageService();
+const fileManagementService = new FileManagementService();
+const prisma = new PrismaClient();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 /**
@@ -38,6 +43,53 @@ function isTextFile(fileType: string, extension: string): boolean {
 }
 
 /**
+ * 查询文件信息处理函数
+ */
+async function getFileWithPermissionCheck(userId: string | null, fileId: string, shareCode?: string | null, extractCode?: string | null) {
+  if (!userId || !fileId) {
+    throw new Error('用户ID或文件ID无效');
+  }
+  
+  return await fileManagementService.getFile(userId, fileId);
+}
+
+/**
+ * 更新文件内容
+ */
+async function updateFileContent(userId: string, fileId: string, content: string) {
+  // 获取文件信息
+  const fileInfo = await fileManagementService.getFile(userId, fileId);
+  
+  if (!fileInfo || fileInfo.isFolder) {
+    throw new Error('文件不存在或为文件夹');
+  }
+  
+  // 获取文件路径
+  const filename = path.basename(fileInfo.url || '');
+  if (!filename) {
+    throw new Error('文件路径无效');
+  }
+  
+  const filePath = join(UPLOAD_DIR, filename);
+  
+  // 检查文件是否存在
+  if (!existsSync(filePath)) {
+    throw new Error('文件不存在或已被删除');
+  }
+  
+  // 写入文件内容
+  writeFileSync(filePath, content, 'utf-8');
+  
+  // 更新修改时间
+  await prisma.file.update({
+    where: { id: fileId },
+    data: { updatedAt: new Date() }
+  });
+  
+  return fileInfo;
+}
+
+/**
  * 获取文件内容处理（GET）
  */
 export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
@@ -50,7 +102,7 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
     }
     
     // 获取文件信息
-    const fileInfo = await storageService.getFile(req.user.id, fileId);
+    const fileInfo = await getFileWithPermissionCheck(req.user.id, fileId);
     
     if (fileInfo.isFolder) {
       return createApiErrorResponse('不能获取文件夹内容', 400);
@@ -91,7 +143,7 @@ export const PUT = withAuth<any>(async (req: AuthenticatedRequest) => {
     }
     
     // 获取文件信息
-    const fileInfo = await storageService.getFile(req.user.id, fileId);
+    const fileInfo = await getFileWithPermissionCheck(req.user.id, fileId);
     
     if (fileInfo.isFolder) {
       return createApiErrorResponse('不能更新文件夹内容', 400);
@@ -112,8 +164,8 @@ export const PUT = withAuth<any>(async (req: AuthenticatedRequest) => {
       return createApiErrorResponse('缺少内容参数', 400);
     }
     
-    // 使用服务层方法更新文件内容
-    await storageService.updateFileContent(req.user.id, fileId, requestBody.content);
+    // 使用本地方法更新文件内容
+    await updateFileContent(req.user.id, fileId, requestBody.content);
     
     return createApiResponse({ message: '文件内容已更新' });
   } catch (error: any) {

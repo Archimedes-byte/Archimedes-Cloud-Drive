@@ -8,13 +8,13 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 import { existsSync, readdirSync } from 'fs';
 import fs from 'fs/promises';
 import { join } from 'path';
 
-const storageService = new StorageService();
+const fileManagementService = new FileManagementService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 /**
@@ -56,7 +56,7 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
     
     // 如果提供了文件ID，获取文件信息
     if (fileId) {
-      const fileInfo = await storageService.getFile(req.user.id, fileId);
+      const fileInfo = await fileManagementService.getFile(req.user.id, fileId);
       
       if (!fileInfo) {
         return createApiErrorResponse(`文件不存在: ${fileId}`, 404);

@@ -188,7 +188,7 @@ export default function FavoriteModal({
           {getFileIcon()}
         </div>
         <div className={styles.fileNameContainer}>
-          <Text className={styles.fileName} ellipsis={{ tooltip: fileName }}>
+          <Text className={styles.fileName} ellipsis={true} title={fileName}>
             {fileName}
           </Text>
         </div>
@@ -222,7 +222,7 @@ export default function FavoriteModal({
                     <div className={styles.folderHeader}>
                       <FolderOpen className={styles.folderIcon} />
                       <div className={styles.folderNameContainer}>
-                        <Text className={styles.folderName} ellipsis={{ tooltip: folder.name }}>
+                        <Text className={styles.folderName} ellipsis={true} title={folder.name}>
                           {folder.name}
                         </Text>
                         {folder.isDefault && (

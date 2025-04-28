@@ -8,7 +8,7 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 import { existsSync, readFileSync } from 'fs';
 import { join, extname, basename } from 'path';
@@ -16,7 +16,7 @@ import { FILE_CATEGORIES } from '@/app/utils/file/type';
 import { getSignedUrl } from '@/app/lib/storage/file-handling';
 import { PrismaClient } from '@prisma/client';
 
-const storageService = new StorageService();
+const fileManagementService = new FileManagementService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 const prisma = new PrismaClient();
 
@@ -204,7 +204,7 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
         }
       } else if (req.user?.id) {
         // 常规访问，验证用户权限
-        fileInfo = await storageService.getFile(req.user.id, fileId);
+        fileInfo = await fileManagementService.getFile(req.user.id, fileId);
       } else {
         return createApiErrorResponse('未授权访问', 401);
       }

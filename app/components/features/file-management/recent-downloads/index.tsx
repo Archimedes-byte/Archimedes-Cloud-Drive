@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Spin, Typography, Empty } from 'antd';
 import { DownloadCloud } from 'lucide-react';
 import { AntFileList } from '../../file-management/file-list/AntFileList';
@@ -34,40 +34,13 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   onDeselectAll,
   onToggleFavorite
 }) => {
-  // 本地加载状态
-  const [isLoading, setIsLoading] = React.useState(loadingRecentDownloads);
+  // 使用useMemo避免不必要的重新计算
+  const files = useMemo(() => recentDownloads, [recentDownloads]);
   
-  // 同步props到本地状态
-  React.useEffect(() => {
-    if (isLoading !== loadingRecentDownloads) {
-      console.log('🔄 RecentDownloadsContent - 更新加载状态:', loadingRecentDownloads);
-      setIsLoading(loadingRecentDownloads);
-    }
-  }, [loadingRecentDownloads, isLoading]);
-  
-  // 当有数据时，确保不显示加载状态
-  React.useEffect(() => {
-    if (recentDownloads.length > 0 && isLoading) {
-      console.log('📥 有下载数据，关闭加载状态');
-      setIsLoading(false);
-    }
-  }, [recentDownloads, isLoading]);
-
-  // 添加调试日志
-  React.useEffect(() => {
-    console.log('📌 RecentDownloadsContent 渲染:');
-    console.log('- loadingRecentDownloads (props):', loadingRecentDownloads);
-    console.log('- isLoading (local):', isLoading);
-    console.log('- recentDownloads数量:', recentDownloads?.length || 0);
-  }, [loadingRecentDownloads, isLoading, recentDownloads]);
-
-  // 使用本地状态替代props状态
-  const effectiveIsLoading = isLoading;
-
-  // 更智能的加载状态逻辑
-  const showLoadingIndicator = effectiveIsLoading && recentDownloads.length === 0;
-  const showEmptyState = !effectiveIsLoading && recentDownloads.length === 0;
-  const showContent = recentDownloads.length > 0;
+  // 状态简化：使用计算属性而不是本地状态
+  const isLoading = loadingRecentDownloads && files.length === 0;
+  const isEmpty = !loadingRecentDownloads && files.length === 0;
+  const hasContent = files.length > 0;
 
   return (
     <div className={styles.container}>
@@ -75,38 +48,32 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
         <Title level={2} className={styles.title}>
           <DownloadCloud size={24} className={styles.titleIcon} />
           最近下载的文件
-          {effectiveIsLoading && <Text className={styles.refreshing}>(刷新中...)</Text>}
+          {loadingRecentDownloads && <Text className={styles.refreshing}>(刷新中...)</Text>}
         </Title>
       </div>
       
-      {showLoadingIndicator && (
+      {isLoading && (
         <div className={styles.loadingContainer}>
-          <Spin 
-            size="large" 
-            tip="加载最近下载文件..."
-          />
-          <div className={styles.debugInfo}>
-            (loadingRecentDownloads={loadingRecentDownloads.toString()}, isLoading={isLoading.toString()})
-          </div>
+          <Spin size="large" tip="加载最近下载文件..." />
         </div>
       )}
       
-      {showEmptyState && (
+      {isEmpty && (
         <Empty 
           description="暂无最近下载的文件记录" 
           className={styles.emptyState}
         />
       )}
       
-      {showContent && (
+      {hasContent && (
         <AntFileList 
-          files={recentDownloads}
+          files={files}
           selectedFiles={selectedFiles}
           onFileClick={onFileClick}
           onFileSelect={onFileSelect}
           onSelectAll={onSelectAll}
           onDeselectAll={onDeselectAll}
-          areAllSelected={false}
+          areAllSelected={files.length > 0 && selectedFiles.length === files.length}
           showCheckboxes={true}
           favoritedFileIds={favoritedFileIds}
           onToggleFavorite={onToggleFavorite}

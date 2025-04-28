@@ -158,7 +158,7 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
           {files.map(file => (
             <Space key={file.id} align="center">
               {getFileIcon(file)}
-              <Text ellipsis={{ tooltip: file.name }} style={{ maxWidth: 200 }}>
+              <Text ellipsis={true} title={file.name} style={{ maxWidth: 200 }}>
                 {file.name}
               </Text>
             </Space>

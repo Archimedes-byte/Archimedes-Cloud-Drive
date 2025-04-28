@@ -376,7 +376,8 @@ export function AntFileList({
             {renderFileIcon(record)}
             <Text
               className={`file-name ${record.isFolder ? '' : 'file-name-non-folder'}`}
-              ellipsis={{ tooltip: record.name }}
+              ellipsis={true}
+              title={record.name}
               onClick={(e) => {
                 e.stopPropagation();
                 onFileClick(record);

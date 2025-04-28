@@ -4,16 +4,16 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest, createApiErrorResponse } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import JSZip from 'jszip';
 import fs from 'fs/promises';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { existsSync } from 'fs';
 import path from 'path';
 import { FileInfo } from '@/app/types';
 import mime from 'mime-types';
 
-const storageService = new StorageService();
+const fileManagementService = new FileManagementService();
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 // 确保上传目录存在
@@ -159,7 +159,7 @@ export const GET = withAuth<NextResponse>(async (req: AuthenticatedRequest) => {
     console.log(`备用下载请求处理: ${fileId}`);
     
     // 获取文件信息
-    const fileInfo = await storageService.getFile(req.user.id, fileId);
+    const fileInfo = await fileManagementService.getFile(req.user.id, fileId);
     if (!fileInfo) {
       return createApiErrorResponse(`文件不存在: ${fileId}`, 404);
     }
@@ -170,7 +170,7 @@ export const GET = withAuth<NextResponse>(async (req: AuthenticatedRequest) => {
       
       try {
         // 获取文件夹下的文件，使用已有的getFiles方法
-        const folderContent = await storageService.getFiles(req.user.id, fileId);
+        const folderContent = await fileManagementService.getFiles(req.user.id, fileId);
         const folderFiles = folderContent.items || [];
         
         // 创建ZIP文件
