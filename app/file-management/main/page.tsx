@@ -1,5 +1,28 @@
-// @ts-nocheck
 'use client';
+
+/**
+ * 文件管理页面
+ * 
+ * 状态管理优化：
+ * 1. 已提取的状态管理Hooks
+ *   - useViewState: 视图状态管理（我的文件、收藏夹、最近文件等视图切换）
+ *   - useModalState: 模态窗口状态统一管理（已优化移除创建文件夹和分享链接相关状态）
+ *   - useUIState: UI状态管理（侧边栏、上传下拉菜单等）
+ *   - useShareManagement: 文件分享和分享链接管理（整合了原useFileShare和useShareLink）
+ *   - useRecentContent: 最近文件内容管理
+ *   - useThemeUI: 主题UI状态管理 (新增)
+ *   - useFavorites: 收藏状态管理 (新增)
+ *   - useFileSelection: 文件选择状态管理 (新增)
+ *   - useFolderCreation: 文件夹创建状态管理 (新增)
+ * 
+ * 2. 进一步优化点
+ *   - 文件移动相关逻辑: 可考虑整合到useFileOperations中，创建专门的useFileMoveOperations钩子
+ *   - 文件重命名逻辑: 可以提取handleRenameButtonClick到useFilePreview或创建专门的useFileRename钩子
+ *   - 文件预览增强: 扩展useFilePreview，包含更多的预览控制功能
+ *   - 上传状态管理: 创建专门的useFileUpload钩子，管理上传模态窗口和上传状态
+ *   - 页面初始化逻辑: 提取复杂的页面初始化逻辑到专门的hook
+ *   - 事件监听管理: 创建通用的事件监听hook，管理所有的事件订阅和清理
+ */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
@@ -33,16 +56,25 @@ import {
   useUIState, 
   useThemeManager, 
   useProfile,
-  useFileShare,
   useFileSearch,
   useViewState,
   useRecentContent,
-  useModalState
+  useModalState,
+  useThemeUI,
+  useFavorites,
+  useFileSelection,
+  useFolderCreation,
+  useShareManagement
 } from '@/app/hooks';
 
 // 导入类型
 import { FileInfo } from '@/app/types';
-import { FileTypeEnum, SortDirectionEnum } from '@/app/types/domains/fileTypes';
+import { FileTypeEnum } from '@/app/types/domains/fileTypes';
+
+// 导入组件用到的类型
+import { FileType } from '@/app/components/features/file-management/navigation/types';
+import { SearchType } from '@/app/hooks/file/useFileSearch';
+import { FileWithSize } from '@/app/hooks/file/useFiles';
 
 // 导入API客户端
 import { fileApi } from '@/app/lib/api/file-api';
@@ -53,34 +85,44 @@ interface FileManagementPageProps {
 
 export default function FileManagementPage({ initialShowShares = false }: FileManagementPageProps = {}) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   
   // 获取用户资料相关状态，包括加载状态
   const { 
     userProfile, 
-    isLoading: profileLoading, 
-    error: profileError,
-    fetchUserProfile, 
-    forceRefreshProfile,
     effectiveAvatarUrl
   } = useProfile();
 
-  // 使用主题管理hook
-  const { currentTheme, updateTheme } = useThemeManager();
+  // 使用主题UI管理hook (替换原来的useThemeManager和showThemePanel状态)
+  const {
+    currentTheme,
+    updateTheme,
+    showThemePanel,
+    setShowThemePanel,
+    toggleThemePanel
+  } = useThemeUI();
 
   // 使用双状态加载管理
   const {
-    loadingState,
-    error: loadingError,
-    isInitialLoading,
     isRefreshing,
-    isError: isLoadingError,
     startLoading,
     finishLoading
   } = useLoadingState({
     initialLoad: true,
     minLoadingTime: 800
   });
+  
+  // 使用文件选择管理hook (替换原来的selectedFiles和disabledFolderIds状态)
+  const {
+    selectedFiles,
+    disabledFolderIds,
+    setSelectedFiles,
+    updateDisabledFolderIds,
+    handleFileCheckboxChange,
+    selectAllFiles,
+    deselectAllFiles,
+    validateSelectionCount
+  } = useFileSelection();
   
   // 使用useFiles钩子获取文件列表和相关操作
   const {
@@ -90,25 +132,32 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     currentFolderId,
     folderPath,
     selectedFileType,
-    selectedFiles,
     sortOrder,
     fileUpdateTrigger,
     loadFiles,
-    toggleSelectFile: handleSelectFile,
     toggleSelectAll,
     changeSort,
     filterByFileType,
-    openFolder,
     refreshCurrentFolder,
     handleFileClick,
-    handleBackClick,
-    handleFileUpdate,
     setCurrentFolderId,
     setFolderPath,
     setSelectedFileType,
-    setSelectedFiles,
     setSortOrder
   } = useFiles();
+
+  // 使用收藏管理hook (替换原来的favoritedFileIds和favoriteModal相关状态)
+  const {
+    favoritedFileIds,
+    favoriteModalVisible,
+    selectedFileForFavorite,
+    loadFavoritedFileIds,
+    toggleFavorite,
+    handleFavoriteSuccess,
+    setFavoriteModalVisible,
+    setSelectedFileForFavorite,
+    closeFavoriteModal
+  } = useFavorites();
 
   // 使用ref跟踪初始化状态，避免重复加载
   const hasInitialized = useRef(false);
@@ -125,63 +174,57 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 使用UI状态管理
   const {
-    sidebarVisible,
-    myFilesExpanded,
-    quickAccessExpanded,
     showUploadDropdown,
-    setSidebarVisible,
-    setMyFilesExpanded,
-    setQuickAccessExpanded,
     setShowUploadDropdown,
     uploadDropdownRef
   } = useUIState();
 
-  // 使用模态窗口状态管理
+  // 使用文件夹创建钩子替换原有的模态窗口状态
   const {
-    // 状态
     isCreateFolderModalOpen,
-    isMoveModalOpen,
-    isMoveLoading,
-    isLinkInputVisible,
-    shareLink,
-    shareLinkPassword,
-    isUploadModalOpen,
-    isFolderUploadModalOpen,
-    
-    // 状态设置器
-    setIsCreateFolderModalOpen,
-    setIsMoveModalOpen,
-    setIsMoveLoading,
-    setIsLinkInputVisible,
-    setShareLink,
-    setShareLinkPassword,
-    setIsUploadModalOpen,
-    setIsFolderUploadModalOpen,
-    
-    // 模态窗口操作方法
     openCreateFolderModal,
     closeCreateFolderModal,
+    createFolder
+  } = useFolderCreation();
+
+  // 使用模态窗口状态管理
+  const {
+    isMoveModalOpen,
+    isMoveLoading,
+    isUploadModalOpen,
+    isFolderUploadModalOpen,
+    setIsMoveLoading,
     openMoveModal,
     closeMoveModal,
-    openLinkInputModal,
-    closeLinkInputModal,
-    openUploadModal,
     closeUploadModal,
-    openFolderUploadModal,
-    closeFolderUploadModal
+    closeFolderUploadModal,
+    setIsUploadModalOpen,
+    setIsFolderUploadModalOpen
   } = useModalState();
 
-  // 使用文件分享管理
+  // 使用文件分享管理（整合了原来的useFileShare和useShareLink）
   const {
+    // 分享创建相关
     isShareModalOpen,
     openShareModal,
     closeShareModal,
-    shareFiles
-  } = useFileShare();
+    shareFiles,
+    
+    // 分享链接验证相关
+    isLinkInputVisible,
+    shareLink,
+    shareLinkPassword,
+    isProcessing,
+    error,
+    setShareLink,
+    setShareLinkPassword,
+    openLinkInputModal,
+    closeLinkInputModal,
+    handleLinkSubmit
+  } = useShareManagement();
 
   // 使用视图状态管理
   const {
-    // 状态
     currentView,
     showMySharesContent,
     showFavoritesContent,
@@ -191,19 +234,9 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     selectedFavoriteFolderId,
     isCreateFavoriteModalOpen,
     favoriteFoldersRefreshTrigger,
-    
-    // 状态设置器
     setCurrentView,
-    setShowMySharesContent,
-    setShowFavoritesContent,
-    setShowRecentFilesContent,
-    setShowRecentDownloadsContent,
     setShowSearchView,
-    setSelectedFavoriteFolderId,
     setIsCreateFavoriteModalOpen,
-    setFavoriteFoldersRefreshTrigger,
-    
-    // 操作方法
     closeAllSpecialViews,
     handleViewMyShares,
     handleFavoritesClick,
@@ -222,18 +255,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     loadingRecentDownloads,
     fetchRecentFiles,
     fetchRecentDownloads,
-    refreshContent
   } = useRecentContent();
 
-  // 添加主题面板状态
-  const [showThemePanel, setShowThemePanel] = useState(false);
-  
-  // 添加收藏文件IDs状态
-  const [favoritedFileIds, setFavoritedFileIds] = useState<string[]>([]);
-  
-  // 文件夹选择相关状态
-  const [disabledFolderIds, setDisabledFolderIds] = useState<string[]>([]);
-  
   // 添加快捷键监听器
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -254,9 +277,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     createFolder: handleCreateFolder,
     downloadFiles: handleDownload,
     deleteFiles: handleDelete,
-    renameFile: handleRenameFile,
-    isLoading: fileOperationsLoading,
-    error: fileOperationsError
   } = useFileOperations([]);
 
   // 文件搜索钩子
@@ -265,31 +285,24 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     setSearchQuery,
     searchResults,
     isLoading: searchLoading,
-    error: searchError,
     searchType,
     setSearchType,
     enableRealTimeSearch,
     setEnableRealTimeSearch,
-    debounceDelay,
-    setDebounceDelay,
-    handleSearch,
-    updateFileInResults,
-    clearSearchHistory,
-    searchHistory
+    handleSearch: executeSearchFn,
   } = useFileSearch();
 
   // 文件预览和重命名
   const {
     previewFile,
-    setPreviewFile,
     handlePreview: handlePreviewFile,
     closePreview: handleClosePreview,
     isRenameModalOpen,
     setIsRenameModalOpen,
     fileToRename,
-    setFileToRename,
-    openRename: handleRenameButtonClick,
-    renameFile: handleConfirmEdit
+    openRename: handleOpenRename,
+    renameFile: handleConfirmEdit,
+    setFileToRename
   } = useFilePreview();
 
   // 处理上传成功
@@ -355,12 +368,18 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理文件项点击
   const handleFileItemClick = useCallback((file: FileInfo) => {
+    // 确保file是FileWithSize类型
+    const fileWithSize: FileWithSize = {
+      ...file,
+      size: file.size || 0
+    };
+    
     if (file.isFolder) {
       // 如果是文件夹，导航到该文件夹
-      handleFileClick(file);
+      handleFileClick(fileWithSize);
     } else {
       // 如果是文件，预览该文件
-      handlePreviewFile(file);
+      handlePreviewFile(fileWithSize);
     }
   }, [handleFileClick, handlePreviewFile]);
 
@@ -373,8 +392,13 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理文件选择变化
   const onFileCheckboxChange = useCallback((file: FileInfo, checked: boolean) => {
-    handleSelectFile(file.id, checked);
-  }, [handleSelectFile]);
+    // 如果选中，将文件ID添加到选择列表；否则从选择列表中移除
+    if (checked) {
+      setSelectedFiles(prev => [...prev, file.id]);
+    } else {
+      setSelectedFiles(prev => prev.filter(id => id !== file.id));
+    }
+  }, [setSelectedFiles]);
 
   // 全选文件
   const onSelectAllFiles = useCallback(() => {
@@ -398,117 +422,29 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 添加一个useEffect来初始加载收藏文件IDs
   useEffect(() => {
-    // 加载收藏文件ID列表
-    const loadFavoritedFileIds = async () => {
-      try {
-        console.log('加载收藏文件ID列表...');
-        // 使用fileApi获取所有收藏
-        const favorites = await fileApi.getFavorites();
-        if (favorites && favorites.items) {
-          // 从收藏列表中提取文件ID
-          const favoriteIds = favorites.items.map(item => item.id);
-          console.log(`加载了${favoriteIds.length}个收藏文件ID`);
-          setFavoritedFileIds(favoriteIds);
-        }
-      } catch (error) {
-        console.error('加载收藏文件ID列表失败:', error);
-      }
-    };
-
     // 初始化加载收藏列表
     if (status === 'authenticated') {
       loadFavoritedFileIds();
     }
-  }, [status]);
-
-  // 监听取消收藏事件
-  useEffect(() => {
-    // 收藏页面取消收藏后更新星标状态的处理函数
-    const handleUnfavoriteEvent = (event: Event) => {
-      const customEvent = event as CustomEvent<{fileIds: string[]}>;
-      const unfavoritedIds = customEvent.detail.fileIds;
-      
-      console.log('收到取消收藏事件，更新星标状态:', unfavoritedIds);
-      
-      // 更新收藏文件ID列表，移除已取消收藏的文件ID
-      setFavoritedFileIds(prevIds => 
-        prevIds.filter(id => !unfavoritedIds.includes(id))
-      );
-      
-      // 可选：刷新当前文件夹以确保UI状态同步
-      refreshCurrentFolder();
-    };
-    
-    // 添加事件监听器
-    window.addEventListener('unfavorite_files', handleUnfavoriteEvent);
-    
-    // 组件卸载时移除事件监听器
-    return () => {
-      window.removeEventListener('unfavorite_files', handleUnfavoriteEvent);
-    };
-  }, [refreshCurrentFolder]);
+  }, [status, loadFavoritedFileIds]);
 
   // 处理切换收藏
   const handleToggleFavorite = useCallback((file: FileInfo, isFavorite: boolean) => {
-    // 实现切换收藏功能
-    console.log('切换收藏状态', file, isFavorite);
-    
-    // 立即更新UI状态，确保星标即时显示变化
-    setFavoritedFileIds(prevIds => {
-      if (isFavorite) {
-        // 添加到收藏
-        if (!prevIds.includes(file.id)) {
-          return [...prevIds, file.id];
-        }
-      } else {
-        // 从收藏中移除
-        return prevIds.filter(id => id !== file.id);
-      }
-      return prevIds;
-    });
-    
-    // 调用API保存收藏状态
-    fileApi.toggleFavorite(file.id, isFavorite)
-      .then(result => {
-        console.log('收藏状态已保存', result);
-        // 刷新文件列表，确保状态同步
-        refreshCurrentFolder();
-      })
-      .catch(error => {
-        console.error('收藏操作失败', error);
-        message.error('收藏状态更新失败，请重试');
-        
-        // 恢复原始状态
-        setFavoritedFileIds(prevIds => {
-          if (isFavorite) {
-            // 如果添加收藏失败，从列表中移除
-            return prevIds.filter(id => id !== file.id);
-          } else {
-            // 如果移除收藏失败，添加回列表
-            if (!prevIds.includes(file.id)) {
-              return [...prevIds, file.id];
-            }
-          }
-          return prevIds;
-        });
-      });
-  }, [refreshCurrentFolder]);
+    toggleFavorite(file, isFavorite);
+    // 调用后可能需要刷新当前文件夹
+    refreshCurrentFolder();
+  }, [toggleFavorite, refreshCurrentFolder]);
 
   // 处理移动按钮点击
   const handleMoveButtonClick = useCallback(() => {
-    if (selectedFiles.length === 0) {
-      message.warning('请选择要移动的文件');
+    if (!validateSelectionCount(1, undefined, '移动')) {
       return;
     }
 
-    // 准备禁用的文件夹ID列表：当前所选文件(如果是文件夹)不能成为目标文件夹
-    const disabled = files
-      .filter(file => selectedFiles.includes(file.id) && file.isFolder)
-      .map(file => file.id);
-
-    setDisabledFolderIds(disabled);
+    // 更新禁用的文件夹ID列表
+    updateDisabledFolderIds(files);
     openMoveModal();
-  }, [files, selectedFiles, openMoveModal]);
+  }, [files, validateSelectionCount, updateDisabledFolderIds, openMoveModal]);
 
   // 处理移动文件
   const handleMove = useCallback(async (targetFolderId: string) => {
@@ -542,137 +478,48 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理分享按钮点击
   const handleShareButtonClick = useCallback(() => {
-    if (selectedFiles.length === 0) {
-      message.warning('请选择要分享的文件');
+    if (!validateSelectionCount(1, undefined, '分享')) {
       return;
     }
     openShareModal(selectedFiles);
-  }, [selectedFiles, openShareModal]);
+  }, [selectedFiles, validateSelectionCount, openShareModal]);
 
-  // 处理链接输入提交
-  const handleLinkSubmit = useCallback(async () => {
-    try {
-      if (!shareLink) {
-        message.warning('请输入分享链接');
-        return;
-      }
-
-      // 显示加载中提示
-      const loadingMessage = message.loading('正在验证分享链接...', 0);
-
-      // 调用API验证分享链接
-      const response = await fetch('/api/storage/share/open', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          shareLink,
-          extractCode: shareLinkPassword,
-        }),
-      });
-
-      // 关闭加载提示
-      loadingMessage();
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || '验证分享链接失败');
-      }
-
-      // 如果需要提取码但未提供或提取码错误
-      if (data.needsExtractCode) {
-        message.warning(data.error || '请提供正确的提取码');
-        return; // 保持弹窗打开，让用户输入提取码
-      }
-      
-      if (data.success) {
-        // 关闭链接输入弹窗
-        closeLinkInputModal();
-        
-        // 根据分享信息显示文件
-        const shareInfo = data.shareInfo;
-        message.success('分享链接验证成功，正在打开分享内容...');
-        
-        // 这里可以根据分享的内容跳转到相应的页面或显示相应的内容
-        // 例如，如果是单个文件，可以直接预览
-        if (shareInfo.files.length === 1 && !shareInfo.files[0].isFolder) {
-          // 修改为使用分享页面而不是直接预览
-          router.push(`/s/${shareInfo.shareCode}`);
-        } else {
-          // 如果是多个文件或文件夹，可以导航到特定的共享视图
-          // 这里需要根据实际应用逻辑进行实现
-          router.push(`/s/${shareInfo.shareCode}`);
-        }
-      } else {
-        message.error(data.error || '分享链接无效');
-      }
-    } catch (error) {
-      console.error('处理分享链接时出错:', error);
-      message.error((error as Error).message || '处理分享链接失败，请重试');
+  // 处理重命名文件
+  const handleRenameButtonClick = useCallback(() => {
+    if (!validateSelectionCount(1, 1, '重命名')) {
+      return;
     }
-  }, [shareLink, shareLinkPassword, closeLinkInputModal, handlePreviewFile, router]);
 
-  // 处理分享成功
-  const handleShareSuccess = useCallback((result: { shareLink: string, extractCode: string }) => {
-    openLinkInputModal(result.shareLink, result.extractCode);
-  }, [openLinkInputModal]);
-
-  // 添加收藏夹选择框的监听器
-  const [favoriteModalVisible, setFavoriteModalVisible] = useState(false);
-  const [selectedFileForFavorite, setSelectedFileForFavorite] = useState<{id: string, name: string} | null>(null);
-
-  useEffect(() => {
-    const handleOpenFavoriteModal = (event: Event) => {
-      const customEvent = event as CustomEvent<{fileId: string, fileName: string}>;
-      setSelectedFileForFavorite({
-        id: customEvent.detail.fileId,
-        name: customEvent.detail.fileName
-      });
-      setFavoriteModalVisible(true);
-    };
-
-    window.addEventListener('open_favorite_modal', handleOpenFavoriteModal);
-    return () => {
-      window.removeEventListener('open_favorite_modal', handleOpenFavoriteModal);
-    };
-  }, []);
-
-  // 处理收藏成功
-  const handleFavoriteSuccess = () => {
-    if (selectedFileForFavorite) {
-      setFavoritedFileIds(prev => [...prev, selectedFileForFavorite.id]);
+    const fileToEdit = files.find(file => file.id === selectedFiles[0]);
+    if (!fileToEdit) {
+      message.warning('找不到要重命名的文件');
+      return;
     }
-    setFavoriteModalVisible(false);
-    setSelectedFileForFavorite(null);
-  };
-
-  // 处理查看最近文件
-  const handleRecentFilesClick = useCallback(() => {
-    // 调用视图状态钩子处理视图切换，并在回调中重置路径
-    handleRecentClick(() => {
-      // 清除当前路径，回到根目录
-      setFolderPath([]);
-      setCurrentFolderId(null);
+    
+    // 打印调试信息以便追踪
+    console.log('准备重命名文件:', {
+      id: fileToEdit.id,
+      name: fileToEdit.name,
+      isFolder: fileToEdit.isFolder
     });
     
-    // 刷新最近访问文件列表
-    fetchRecentFiles();
-  }, [handleRecentClick, setFolderPath, setCurrentFolderId, fetchRecentFiles]);
-  
-  // 处理查看最近下载
-  const handleRecentDownloadsViewClick = useCallback(() => {
-    // 调用视图状态钩子处理视图切换，并在回调中重置路径
-    handleRecentDownloadsClick(() => {
-      // 清除当前路径，回到根目录
-      setFolderPath([]);
-      setCurrentFolderId(null);
-    });
+    // 先确保设置要重命名的文件，然后再打开模态框
+    setFileToRename(fileToEdit);
+    setIsRenameModalOpen(true);
+  }, [selectedFiles, files, validateSelectionCount, setFileToRename, setIsRenameModalOpen]);
+
+  // 处理搜索，封装executeSearchFn
+  const handleSearch = useCallback(async (query?: string, type?: SearchType) => {
+    // 确保搜索参数有效
+    const effectiveQuery = query || '';
+    const effectiveType = type || 'name';
     
-    // 刷新最近下载文件列表
-    fetchRecentDownloads();
-  }, [handleRecentDownloadsClick, setFolderPath, setCurrentFolderId, fetchRecentDownloads]);
+    // 执行搜索操作
+    console.log(`执行搜索: ${effectiveQuery}, 类型: ${effectiveType}`);
+    
+    // 调用搜索钩子的搜索函数
+    await executeSearchFn(effectiveQuery, effectiveType);
+  }, [executeSearchFn]);
 
   return (
     <>
@@ -681,23 +528,23 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
       </Head>
       
       <PageLayout 
-        selectedFileType={selectedFileType}
+        selectedFileType={selectedFileType as FileType}
         currentView={currentView as any}
         showThemePanel={showThemePanel}
         previewFile={previewFile}
-        currentTheme={currentTheme}
+        currentTheme={currentTheme || 'light'}
         searchType={searchType}
         favoriteFoldersRefreshTrigger={favoriteFoldersRefreshTrigger}
-        onTypeClick={(type: FileTypeEnum) => {
+        onTypeClick={(type) => {
           // 先关闭所有特殊视图
           closeAllSpecialViews();
-          // 设置当前视图
-          setCurrentView(type);
+          // 设置当前视图 - 使用类型断言
+          setCurrentView(type as any);
           // 清除当前路径，回到根目录
           setFolderPath([]);
           setCurrentFolderId(null);
-          // 应用文件类型过滤
-          filterByFileType(type);
+          // 应用文件类型过滤 - 转换FileType为FileTypeEnum
+          filterByFileType(type as unknown as FileTypeEnum);
           // 记录当前选择的类型，确保与侧边栏同步
           console.log('文件类型切换为:', type, '已重置面包屑路径');
         }}
@@ -706,7 +553,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           console.log(`处理搜索点击，查询: ${query}, 类型: ${type}`);
           
           // 调用视图状态钩子处理搜索视图，添加路径重置回调
-          handleSearchClick(query, type as 'name' | 'tag', () => {
+          handleSearchClick(query, type as any, () => {
             // 清除当前路径，回到根目录
             setFolderPath([]);
             setCurrentFolderId(null);
@@ -722,7 +569,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           // 如果有查询字符串，立即进行搜索
           if (query) {
             setSearchQuery(query);
-            handleSearch(query, type as 'name' | 'tag');
+            // 将字符串类型转换为要求的类型
+            handleSearch(query, type as any);
           }
         }}
         onSharesClick={() => {
@@ -750,16 +598,16 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           fetchRecentFiles();
         }}
         onRecentDownloadsClick={() => {
-          handleRecentDownloadsViewClick(() => {
-            // 清除当前路径，回到根目录
+          // 使用新的辅助函数，不再重复传递回调
+          handleRecentDownloadsClick(() => {
             setFolderPath([]);
             setCurrentFolderId(null);
           });
-          // 刷新最近下载文件
+          // 刷新最近下载文件列表
           fetchRecentDownloads();
         }}
         onThemeClick={() => {
-          setShowThemePanel(!showThemePanel);
+          toggleThemePanel();
           if (!showThemePanel) {
             setShowSearchView(false);
             if (previewFile) {
@@ -824,19 +672,33 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           
           // 模态窗口状态
           showUploadDropdown={showUploadDropdown}
-          uploadDropdownRef={uploadDropdownRef}
+          uploadDropdownRef={uploadDropdownRef as React.RefObject<HTMLDivElement>}
           
           // 事件处理函数
           onBreadcrumbPathClick={handleBreadcrumbPathClick}
           onBreadcrumbBackClick={handleBreadcrumbBackClick}
           onClearFilter={handleClearFilter}
           closeAllSpecialViews={closeAllSpecialViews}
-          onFileClick={handleFileClick}
-          onPreviewFile={handlePreviewFile}
+          onFileClick={(file) => {
+            // 确保file是FileWithSize类型
+            const fileWithSize: FileWithSize = {
+              ...file,
+              size: file.size || 0
+            };
+            handleFileClick(fileWithSize);
+          }}
+          onPreviewFile={(file) => {
+            // 确保file是FileWithSize类型
+            const fileWithSize: FileWithSize = {
+              ...file,
+              size: file.size || 0
+            };
+            handlePreviewFile(fileWithSize);
+          }}
           onFileItemClick={handleFileItemClick}
-          onFileCheckboxChange={onFileCheckboxChange}
-          onSelectAllFiles={onSelectAllFiles}
-          onDeselectAllFiles={onDeselectAllFiles}
+          onFileCheckboxChange={handleFileCheckboxChange}
+          onSelectAllFiles={() => selectAllFiles(files)}
+          onDeselectAllFiles={deselectAllFiles}
           onToggleFavorite={handleToggleFavorite}
           onFileContextMenu={handleFileContextMenu}
           onDownload={handleDownload}
@@ -846,7 +708,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           onCreateFolder={handleCreateFolderClick}
           onRename={handleRenameButtonClick}
           onMove={handleMoveButtonClick}
-          onSearch={handleSearch}
+          onSearch={(query, type) => handleSearch(query, type as any)}
           onSearchChange={setSearchQuery}
           onRealTimeSearchChange={setEnableRealTimeSearch}
           
@@ -866,6 +728,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         onSuccess={handleUploadSuccess}
         currentFolderId={currentFolderId}
         isFolderUpload={false}
+        onUploadSuccess={handleUploadSuccess}
+        withTags={true}
       />
       
       <UploadModal 
@@ -874,37 +738,8 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         onSuccess={handleUploadSuccess}
         currentFolderId={currentFolderId}
         isFolderUpload={true}
-      />
-
-      {/* 重命名模态窗口 */}
-      <RenameModal
-        isOpen={isRenameModalOpen}
-        onClose={() => setIsRenameModalOpen(false)}
-        onRename={(newName, tags) => {
-          if (!fileToRename) {
-            message.warning('未选择要重命名的文件');
-            return;
-          }
-          
-          handleConfirmEdit(newName, tags)
-            .then(success => {
-              if (success) {
-                console.log('重命名成功，刷新文件列表');
-                // 清空选择状态，避免后续操作引起混乱
-                setSelectedFiles([]);
-                // 添加手动刷新调用，确保文件列表得到更新
-                refreshCurrentFolder();
-              } else {
-                console.error('重命名失败');
-              }
-            })
-            .catch(err => {
-              console.error('重命名过程出错:', err);
-            });
-        }}
-        initialName={fileToRename?.name || ''}
-        initialTags={fileToRename?.tags || []}
-        fileType={fileToRename?.isFolder ? 'folder' : 'file'}
+        onUploadSuccess={handleUploadSuccess}
+        withTags={true}
       />
 
       {/* 文件预览组件应该位于整个应用的最外层，确保它覆盖其他所有内容 */}
@@ -912,9 +747,9 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         <FilePreview
           file={previewFile}
           onClose={handleClosePreview}
-          onDownload={(file) => {
-            if (file && file.id) {
-              handleDownload([file.id]);
+          onDownload={() => {
+            if (previewFile && previewFile.id) {
+              handleDownload([previewFile.id]);
             } else {
               message.warning('无法下载此文件，文件ID不存在');
             }
@@ -939,7 +774,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         onClose={closeShareModal}
         selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
         onShare={shareFiles}
-        onShareSuccess={handleShareSuccess}
       />
       
       {/* 链接输入模态窗口 */}
@@ -965,45 +799,50 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         isOpen={isCreateFolderModalOpen}
         onClose={closeCreateFolderModal}
         onCreateFolder={async (name, tags) => {
-          startLoading(true);
-          
-          try {
-            const folderId = await handleCreateFolder(
-              name,
-              currentFolderId,
-              tags
-            );
-            
-            if (folderId) {
-              await loadFiles(currentFolderId, selectedFileType, true);
-              message.success('文件夹创建成功');
-            } else {
-              message.error('创建文件夹失败，请检查文件夹名称或重试');
-            }
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '创建文件夹时发生错误';
-            
-            if (errorMessage.includes('已存在') || errorMessage.includes('同名')) {
-              message.warning('文件夹名称已存在，请使用其他名称');
-            } else {
-              message.error(errorMessage);
-            }
-            throw error;
-          } finally {
-            finishLoading();
+          const folderId = await createFolder(name, currentFolderId, tags);
+          if (folderId) {
+            await loadFiles(currentFolderId, selectedFileType, true);
           }
         }}
       />
 
+      {/* 添加重命名模态窗口 */}
+      <RenameModal
+        isOpen={isRenameModalOpen}
+        onClose={() => setIsRenameModalOpen(false)}
+        onRename={(newName, tags) => {
+          if (!fileToRename) {
+            message.warning('未选择要重命名的文件');
+            return;
+          }
+          
+          handleConfirmEdit(newName, tags)
+            .then(success => {
+              if (success) {
+                console.log('重命名成功，刷新文件列表');
+                // 清空选择状态，避免后续操作引起混乱
+                setSelectedFiles([]);
+                // 刷新文件列表
+                refreshCurrentFolder();
+              } else {
+                console.error('重命名失败');
+              }
+            })
+            .catch(err => {
+              console.error('重命名过程出错:', err);
+            });
+        }}
+        initialName={fileToRename?.name || ''}
+        initialTags={fileToRename?.tags || []}
+        fileType={fileToRename?.isFolder ? 'folder' : 'file'}
+      />
+      
       {/* 收藏夹选择框 */}
       <FavoriteModal
         fileId={selectedFileForFavorite?.id || ''}
         fileName={selectedFileForFavorite?.name || ''}
         visible={favoriteModalVisible}
-        onClose={() => {
-          setFavoriteModalVisible(false);
-          setSelectedFileForFavorite(null);
-        }}
+        onClose={closeFavoriteModal}
         onSuccess={handleFavoriteSuccess}
       />
     </>

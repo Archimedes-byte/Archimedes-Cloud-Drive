@@ -6,15 +6,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
-import { StorageService } from '@/app/services/storage-service';
+import { FileUploadService } from '@/app/services/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { FileInfo } from '@/app/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 export const maxDuration = 60;
 
-const storageService = new StorageService();
+const uploadService = new FileUploadService();
 
 /**
  * 文件上传处理 - 直接处理而不是转发
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
     if (isFolderUpload && pathsMap.size > 0) {
       console.log('[上传] 开始处理文件夹上传');
       const folderCache = new Map<string, string>(); // 路径到文件夹ID的映射
-      const results = [];
+      const results: FileInfo[] = [];
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i] as File;
@@ -194,45 +195,35 @@ export async function POST(request: NextRequest) {
                 // 如果不存在，则创建文件夹
                 if (!folder) {
                   console.log(`[上传] 需要创建新文件夹: ${folderName}`);
-                  const newFolderId = uuidv4();
+                  // 创建文件夹
+                  const folderInfo = await uploadService.createFolder(
+                    user.id,
+                    folderName,
+                    currentParentId,
+                    tags
+                  );
                   
-                  // 构建文件夹路径
-                  const parentFolder = currentParentId ? 
-                    await prisma.file.findUnique({ 
-                      where: { id: currentParentId },
-                      select: { path: true } 
-                    }) : null;
+                  // 使用创建的文件夹信息更新folder引用
+                  folder = {
+                    id: folderInfo.id,
+                    path: folderInfo.path || '/',
+                    // 添加其他必要的字段，以满足后续使用需求
+                    name: folderInfo.name,
+                    isFolder: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                  } as any;
                   
-                  const folderPath = parentFolder ? 
-                    `${parentFolder.path === '/' ? '' : parentFolder.path}/${folderName}` : 
-                    `/${folderName}`;
-                  
-                  console.log(`[上传] 创建文件夹: ${folderName}, 路径: ${folderPath}`);
-                  folder = await prisma.file.create({
-                    data: {
-                      id: newFolderId,
-                      name: folderName,
-                      filename: folderName,
-                      path: folderPath,
-                      type: 'folder',
-                      size: 0,
-                      isFolder: true,
-                      uploaderId: user.id,
-                      parentId: currentParentId,
-                      tags: [],
-                      url: null,
-                      updatedAt: new Date()
-                    }
-                  });
-                  console.log(`[上传] 文件夹创建成功, ID: ${folder.id}`);
+                  console.log(`[上传] 文件夹创建成功, ID: ${folderInfo.id}`);
                 } else {
                   console.log(`[上传] 文件夹已存在, ID: ${folder.id}`);
                 }
                 
+                // 此时folder一定不为null，因为要么从数据库找到，要么新创建
                 // 更新当前父文件夹ID和缓存
-                currentParentId = folder.id;
-                folderCache.set(currentPath, folder.id);
-                console.log(`[上传] 更新文件夹缓存: ${currentPath} -> ${folder.id}`);
+                currentParentId = folder!.id;
+                folderCache.set(currentPath, folder!.id);
+                console.log(`[上传] 更新文件夹缓存: ${currentPath} -> ${folder!.id}`);
               }
             }
           }
@@ -248,16 +239,76 @@ export async function POST(request: NextRequest) {
           console.time(`[上传] 文件 ${i+1}/${files.length} 处理时间`);
           
           // 传递原始文件名作为可选参数
-          const result = await storageService.uploadFile(
-            user.id, 
-            file, 
-            currentParentId, 
-            tags, 
-            fileName // 传递原始文件名参数
+          const fileInfo = await uploadService.uploadFile(
+            user.id,
+            file,
+            currentParentId,
+            tags,
+            fileName
           );
-          
           console.timeEnd(`[上传] 文件 ${i+1}/${files.length} 处理时间`);
-          console.log(`[上传] 文件上传成功: ${fileName}, 文件ID: ${result.id}`);
+          
+          console.log(`[上传] 文件上传成功，ID: ${fileInfo.id}`);
+          results.push(fileInfo);
+        } catch (error) {
+          console.error(`[上传] 上传文件 ${file.name} 失败:`, error);
+        }
+      }
+      
+      console.log(`[上传] 文件夹上传处理完成，成功上传 ${results.length}/${files.length} 个文件`);
+      const elapsedTime = Date.now() - startTime;
+      console.log(`[上传] 总耗时: ${elapsedTime}ms`);
+      
+      return NextResponse.json({ 
+        success: true, 
+        data: results,
+        stats: {
+          totalFiles: files.length,
+          uploadedFiles: results.length,
+          elapsedTime: elapsedTime
+        }
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+    }
+    
+    // 常规文件上传处理
+    console.log('[上传] 开始常规文件上传处理');
+    if (files.length === 1) {
+      // 单个文件上传
+      const file = files[0] as File;
+      console.log(`[上传] 上传单个文件: ${file.name}`);
+      
+      const result = await uploadService.uploadFile(user.id, file, folderId, tags);
+      
+      const elapsedTime = Date.now() - startTime;
+      console.log(`[上传] 单个文件上传完成，ID: ${result.id}，耗时: ${elapsedTime}ms`);
+      
+      return NextResponse.json({ 
+        success: true, 
+        data: result 
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+    } else {
+      // 批量上传
+      console.log(`[上传] 开始批量上传 ${files.length} 个文件`);
+      const results: FileInfo[] = [];
+      
+      for (const fileData of files) {
+        const file = fileData as File;
+        try {
+          console.log(`[上传] 上传文件: ${file.name}`);
+          console.time(`[上传] 文件 ${file.name} 处理时间`);
+          
+          const result = await uploadService.uploadFile(user.id, file, folderId, tags);
+          
+          console.timeEnd(`[上传] 文件 ${file.name} 处理时间`);
+          console.log(`[上传] 文件上传成功，ID: ${result.id}`);
           
           results.push(result);
         } catch (error: any) {
@@ -266,103 +317,36 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      const elapsed = Date.now() - startTime;
-      console.log(`[上传] 文件夹上传处理完成, 成功文件数: ${results.length}/${files.length}, 耗时: ${elapsed}ms`);
+      const elapsedTime = Date.now() - startTime;
+      console.log(`[上传] 批量上传完成，成功上传 ${results.length}/${files.length} 个文件，总耗时: ${elapsedTime}ms`);
       
       return NextResponse.json({ 
         success: true, 
-        data: results 
+        data: results,
+        stats: {
+          totalFiles: files.length,
+          uploadedFiles: results.length,
+          elapsedTime: elapsedTime
+        }
       }, {
         headers: {
           'Content-Type': 'application/json',
-        },
+        }
       });
     }
-    
-    // 处理单个文件上传（非文件夹模式）
-    if (files.length === 1) {
-      const file = files[0] as File;
-      console.log(`[上传] 开始上传单个文件: ${file.name}`);
-      console.time('[上传] 单个文件处理时间');
-      
-      const result = await storageService.uploadFile(user.id, file, folderId, tags);
-      
-      console.timeEnd('[上传] 单个文件处理时间');
-      console.log(`[上传] 单个文件上传成功, 文件ID: ${result.id}`);
-      
-      const elapsed = Date.now() - startTime;
-      console.log(`[上传] 单个文件上传处理完成, 耗时: ${elapsed}ms`);
-      
-      return NextResponse.json({ 
-        success: true, 
-        data: result 
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    }
-    
-    // 处理批量上传（非文件夹模式）
-    console.log(`[上传] 开始批量上传 ${files.length} 个文件`);
-    const results = [];
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i] as File;
-      try {
-        console.log(`[上传] 处理批量文件 ${i+1}/${files.length}: ${file.name}`);
-        console.time(`[上传] 批量文件 ${i+1}/${files.length} 处理时间`);
-        
-        const result = await storageService.uploadFile(user.id, file, folderId, tags);
-        
-        console.timeEnd(`[上传] 批量文件 ${i+1}/${files.length} 处理时间`);
-        console.log(`[上传] 批量文件上传成功, 文件ID: ${result.id}`);
-        
-        results.push(result);
-      } catch (error: any) {
-        console.error(`[上传] 上传文件 ${file.name} 失败:`, error);
-        // 继续处理其他文件
-      }
-    }
-    
-    const elapsed = Date.now() - startTime;
-    console.log(`[上传] 批量上传处理完成, 成功文件数: ${results.length}/${files.length}, 耗时: ${elapsed}ms`);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: results 
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
   } catch (error: any) {
-    const elapsed = Date.now() - startTime;
-    console.error(`[上传] 文件上传失败, 耗时: ${elapsed}ms, 错误:`, error);
-    
-    // 详细记录错误信息
-    console.error('[上传] 错误详情:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code
-    });
+    const elapsedTime = Date.now() - startTime;
+    console.error(`[上传] 文件上传过程出错，耗时: ${elapsedTime}ms，错误:`, error);
     
     return NextResponse.json({ 
       success: false, 
       error: '文件上传失败', 
-      message: error.message || '未知错误',
-      details: process.env.NODE_ENV === 'development' ? {
-        stack: error.stack,
-        code: error.code
-      } : undefined
+      message: error.message || '未知错误' 
     }, { 
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-      },
+      }
     });
-  } finally {
-    console.log('===== 文件上传处理结束 =====');
   }
 } 

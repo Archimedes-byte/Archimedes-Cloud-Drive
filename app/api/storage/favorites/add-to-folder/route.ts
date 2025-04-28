@@ -8,9 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 // 定义响应类型
 interface AddToFolderResponse {
@@ -30,7 +30,7 @@ export const POST = withAuth<AddToFolderResponse>(async (req: AuthenticatedReque
     // 处理单个文件或多个文件
     if (fileId) {
       // 单个文件
-      const success = await storageService.addToFavoriteFolder(
+      const success = await favoriteService.addToFolder(
         req.user.id, 
         fileId, 
         folderId
@@ -39,7 +39,7 @@ export const POST = withAuth<AddToFolderResponse>(async (req: AuthenticatedReque
       return createApiResponse({ success });
     } else if (fileIds && Array.isArray(fileIds) && fileIds.length > 0) {
       // 多个文件
-      const count = await storageService.addBatchToFavoriteFolder(
+      const count = await favoriteService.addBatchToFolder(
         req.user.id, 
         fileIds, 
         folderId

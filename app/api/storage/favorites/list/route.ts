@@ -8,10 +8,10 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 /**
  * 获取收藏列表
@@ -19,13 +19,13 @@ const storageService = new StorageService();
 export const GET = withAuth<{ items: FileInfo[]; total: number; page: number; pageSize: number }>(
   async (req: AuthenticatedRequest) => {
     try {
-      // 获取查询参数
-      const { searchParams } = new URL(req.url);
-      const page = searchParams.has('page') ? parseInt(searchParams.get('page')!) : 1;
-      const pageSize = searchParams.has('pageSize') ? parseInt(searchParams.get('pageSize')!) : 50;
+      // 解析分页参数
+      const url = new URL(req.url);
+      const page = parseInt(url.searchParams.get('page') || '1', 10);
+      const pageSize = parseInt(url.searchParams.get('pageSize') || '50', 10);
       
       // 获取收藏列表
-      const result = await storageService.getFavorites(
+      const result = await favoriteService.getAllFavoriteFiles(
         req.user.id,
         page,
         pageSize

@@ -8,10 +8,10 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 /**
  * POST方法：获取收藏夹中的文件列表
@@ -29,7 +29,7 @@ export const POST = withAuth<{ items: FileInfo[]; total: number; page: number; p
       }
       
       // 获取收藏夹中的文件列表
-      const result = await storageService.getFavoriteFilesInFolder(
+      const result = await favoriteService.getFolderFiles(
         req.user.id,
         folderId,
         page,

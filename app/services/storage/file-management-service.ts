@@ -31,7 +31,8 @@ export class FileManagementService {
     page = 1,
     pageSize = 50,
     sortBy = 'createdAt',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    includeFolder = false
   ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
     try {
       // 构建基础查询条件
@@ -44,7 +45,7 @@ export class FileManagementService {
       if (type) {
         where = {
           ...where,
-          ...buildFileTypeFilter(type),
+          ...buildFileTypeFilter(type, includeFolder),
         };
       } else {
         // 如果没有指定类型，则显示当前文件夹下的内容
@@ -135,53 +136,90 @@ export class FileManagementService {
 
   /**
    * 搜索文件
+   * @param userId 用户ID
+   * @param query 搜索关键词
+   * @param type 文件类型过滤
+   * @param tags 标签过滤
+   * @param includeFolder 是否包含文件夹
+   * @param searchMode 搜索模式: 'name'=按名称搜索, 'tag'=按标签搜索
    */
   async searchFiles(
     userId: string,
     query: string,
     type?: string | null,
-    tags?: string[]
+    tags?: string[],
+    includeFolder: boolean = true,
+    searchMode: 'name' | 'tag' = 'name'
   ): Promise<FileInfo[]> {
     try {
+      console.log(`[文件管理] 开始搜索, 模式: ${searchMode}, 关键词: "${query}", 包含文件夹: ${includeFolder}`);
+      
       // 构建基础查询条件
       const where: any = {
         uploaderId: userId,
         isDeleted: false,
       };
 
-      // 添加搜索条件
-      where.OR = [
-        { name: { contains: query, mode: 'insensitive' } },
-        { filename: { contains: query, mode: 'insensitive' } },
-      ];
+      // 根据搜索模式构建查询条件
+      if (searchMode === 'tag') {
+        // 按标签搜索: 将查询词作为标签查找
+        where.tags = {
+          hasSome: [query.trim()],
+        };
+        console.log(`[文件管理] 标签搜索: "${query}"`);
+      } else {
+        // 按名称搜索: 只在显示名称中查找，不再查找filename字段
+        where.name = { contains: query.trim(), mode: 'insensitive' };
+        console.log(`[文件管理] 名称搜索: "${query}" (仅匹配显示名称)`);
+      }
 
-      // 如果指定了类型，进行类型筛选
+      // 如果不包含文件夹，添加过滤条件
+      if (!includeFolder) {
+        where.isFolder = false;
+        console.log('[文件管理] 只搜索文件,不包含文件夹');
+      }
+
+      // 如果指定了文件类型，添加类型过滤
       if (type) {
-        const typeFilter = buildFileTypeFilter(type);
+        const typeFilter = buildFileTypeFilter(type, includeFolder);
         where.AND = where.AND || [];
         where.AND.push(typeFilter);
+        console.log(`[文件管理] 添加类型过滤: ${type}, 包含文件夹: ${includeFolder}`);
       }
 
-      // 如果指定了标签，添加标签过滤
+      // 如果提供了额外标签过滤(与搜索标签不同)
       if (tags && tags.length > 0) {
-        where.tags = {
-          hasSome: tags,
-        };
+        // 使用AND条件避免覆盖之前的查询
+        where.AND = where.AND || [];
+        where.AND.push({
+          tags: {
+            hasSome: tags.map(t => t.trim()).filter(t => t)
+          }
+        });
+        console.log(`[文件管理] 添加额外标签过滤: ${tags.join(', ')}`);
       }
+
+      console.log('[文件管理] 最终查询条件:', JSON.stringify(where, null, 2));
 
       // 执行查询
       const files = await prisma.file.findMany({
         where,
         orderBy: [
-          { isFolder: 'desc' },
-          { updatedAt: 'desc' }
+          { isFolder: 'desc' },  // 文件夹优先显示
+          { updatedAt: 'desc' }  // 按更新时间排序
         ],
         take: 100, // 最多返回100条
       });
 
+      // 记录结果信息
+      const folderCount = files.filter(f => f.isFolder).length;
+      const fileCount = files.length - folderCount;
+      console.log(`[文件管理] 搜索完成, 结果: ${files.length}项 (文件夹:${folderCount}, 文件:${fileCount})`);
+
+      // 返回结果
       return files.map(mapFileEntityToFileInfo);
     } catch (error) {
-      console.error('搜索文件失败:', error);
+      console.error('[文件管理] 搜索文件失败:', error);
       throw createFileError('access', '搜索文件失败');
     }
   }
@@ -191,16 +229,52 @@ export class FileManagementService {
    */
   async getFile(userId: string, fileId: string): Promise<FileInfo> {
     try {
+      // 首先检查文件是否存在
       const file = await prisma.file.findFirst({
         where: {
           id: fileId,
-          uploaderId: userId,
           isDeleted: false,
         },
       });
 
       if (!file) {
-        throw createFileError('access', '文件不存在或无权访问');
+        throw createFileError('access', '文件不存在');
+      }
+
+      // 检查文件权限
+      const hasAccess = await prisma.fileShareFile.findFirst({
+        where: {
+          fileId,
+          share: {
+            OR: [
+              { userId }, // 用户是分享者
+              { 
+                AND: [
+                  { expiresAt: { gt: new Date() } }, // 未过期
+                  { accessLimit: { gt: 0 } }, // 有访问限制
+                ]
+              }
+            ]
+          }
+        },
+      });
+
+      // 如果用户不是上传者且没有分享权限
+      if (file.uploaderId !== userId && !hasAccess) {
+        // 检查是否有有效的分享链接
+        const hasShareLink = await prisma.fileShareFile.findFirst({
+          where: {
+            fileId,
+            share: {
+              expiresAt: { gt: new Date() },
+              accessLimit: { gt: 0 }
+            }
+          }
+        });
+
+        if (!hasShareLink) {
+          throw createFileError('access', '无权访问此文件');
+        }
       }
 
       return mapFileEntityToFileInfo(file);

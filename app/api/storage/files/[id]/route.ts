@@ -8,10 +8,10 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
 
-const storageService = new StorageService();
+const managementService = new FileManagementService();
 
 /**
  * 获取单个文件信息
@@ -26,7 +26,7 @@ export const GET = withAuth<FileInfo>(async (req: AuthenticatedRequest) => {
     }
     
     // 获取文件信息
-    const file = await storageService.getFile(req.user.id, fileId);
+    const file = await managementService.getFile(req.user.id, fileId);
     
     return createApiResponse(file);
   } catch (error: any) {
@@ -56,7 +56,7 @@ export const PATCH = withAuth<FileInfo>(async (req: AuthenticatedRequest) => {
     }
     
     // 更新文件信息
-    const updatedFile = await storageService.updateFile(req.user.id, fileId, { 
+    const updatedFile = await managementService.updateFile(req.user.id, fileId, { 
       name, 
       tags,
       preserveOriginalType
@@ -82,7 +82,7 @@ export const DELETE = withAuth<{ success: boolean }>(async (req: AuthenticatedRe
     }
     
     // 删除文件
-    const result = await storageService.deleteFiles(req.user.id, [fileId]);
+    const result = await managementService.deleteFiles(req.user.id, [fileId]);
     
     if (result === 0) {
       return createApiErrorResponse('文件删除失败或不存在', 404);

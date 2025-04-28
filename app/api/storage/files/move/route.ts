@@ -8,9 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const managementService = new FileManagementService();
 
 /**
  * 移动文件到目标文件夹
@@ -31,7 +31,7 @@ export const POST = withAuth<{ movedCount: number }>(async (req: AuthenticatedRe
     }
     
     // 执行文件移动
-    const movedCount = await storageService.moveFiles(req.user.id, fileIds, targetFolderId);
+    const movedCount = await managementService.moveFiles(req.user.id, fileIds, targetFolderId);
     
     return createApiResponse({ movedCount });
   } catch (error: any) {

@@ -156,9 +156,16 @@ export interface FileListRequest {
  * 文件搜索请求参数
  */
 export interface FileSearchRequest {
+  /** 搜索关键词 */
   query: string;
+  /** 文件类型过滤 */
   type?: string;
+  /** 标签过滤 */
   tags?: string[];
+  /** 是否包含文件夹 */
+  includeFolder?: boolean;
+  /** 搜索模式: name=按名称搜索, tag=按标签搜索 */
+  searchMode?: 'name' | 'tag';
 }
 
 /**
@@ -223,15 +230,71 @@ export const fileApi = {
 
   // 搜索文件
   async searchFiles(params: FileSearchRequest): Promise<FileInfo[]> {
-    const queryParams = new URLSearchParams();
-    queryParams.append('query', params.query);
-    if (params.type) queryParams.append('type', params.type);
-    if (params.tags?.length) queryParams.append('tags', JSON.stringify(params.tags));
+    // 验证必需参数
+    if (!params.query || !params.query.trim()) {
+      throw new Error('搜索关键词不能为空');
+    }
 
-    // 使用新的API路径
-    const response = await fetch(`${API_PATHS.STORAGE.FILES.SEARCH}?${queryParams.toString()}`);
+    // 构建查询参数
+    const queryParams = new URLSearchParams();
+    queryParams.append('query', params.query.trim());
     
-    return handleResponse<FileInfo[]>(response);
+    // 添加可选参数
+    if (params.type) {
+      queryParams.append('type', params.type);
+    }
+    
+    if (params.tags?.length) {
+      // 过滤空标签并移除前后空格
+      const validTags = params.tags
+        .filter(tag => tag && typeof tag === 'string')
+        .map(tag => tag.trim())
+        .filter(tag => tag);
+        
+      if (validTags.length > 0) {
+        queryParams.append('tags', JSON.stringify(validTags));
+      }
+    }
+    
+    // 设置是否包含文件夹，默认为true
+    const includeFolder = params.includeFolder !== false;
+    queryParams.append('includeFolder', includeFolder.toString());
+    
+    // 设置搜索模式，默认为按名称搜索
+    const searchMode = params.searchMode === 'tag' ? 'tag' : 'name';
+    queryParams.append('searchMode', searchMode);
+
+    // 记录搜索请求参数
+    console.log('[API] 搜索请求:', {
+      query: params.query.trim(),
+      searchMode,
+      type: params.type || '(全部)',
+      includeFolder,
+      tagsCount: params.tags?.length || 0
+    });
+
+    // 构建API请求URL
+    const url = `${API_PATHS.STORAGE.FILES.SEARCH}?${queryParams.toString()}`;
+    
+    try {
+      // 发送请求
+      const response = await fetch(url);
+      const result = await handleResponse<FileInfo[]>(response);
+      
+      // 记录结果统计
+      const folderCount = result.filter(f => f.isFolder).length;
+      console.log('[API] 搜索结果:', {
+        total: result.length,
+        folders: folderCount,
+        files: result.length - folderCount,
+        mode: searchMode
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('[API] 搜索请求失败:', error);
+      throw error;
+    }
   },
 
   // 上传文件
@@ -535,43 +598,21 @@ export const fileApi = {
     return [];
   },
   
-  // 添加到收藏
-  async addToFavorites(fileIds: string[]): Promise<{ count: number }> {
-    const response = await fetch(API_PATHS.STORAGE.FAVORITES.ADD, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileIds }),
-    });
-    
-    return handleResponse<{ count: number }>(response);
-  },
-  
-  // 从收藏中移除
-  async removeFromFavorites(fileIds: string[]): Promise<{ count: number }> {
-    const response = await fetch(API_PATHS.STORAGE.FAVORITES.REMOVE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileIds }),
-    });
-    
-    return handleResponse<{ count: number }>(response);
-  },
-  
   // 切换收藏状态
   async toggleFavorite(fileId: string, isFavorite: boolean): Promise<{ success: boolean, count: number }> {
     if (isFavorite) {
       // 添加到收藏
-      const result = await this.addToFavorites([fileId]);
+      const result = await this.addBatchToFavoriteFolder([fileId]);
       return { success: true, count: result.count };
     } else {
       // 从收藏中移除
-      const result = await this.removeFromFavorites([fileId]);
+      const result = await this.removeBatchFromFavoriteFolder([fileId]);
       return { success: true, count: result.count };
     }
   },
   
-  // 获取收藏列表
-  async getFavorites(page = 1, pageSize = 50): Promise<PaginatedResponse<FileInfo>> {
+  // 获取所有收藏文件列表
+  async getAllFavoriteFiles(page = 1, pageSize = 50): Promise<PaginatedResponse<FileInfo>> {
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
     queryParams.append('pageSize', pageSize.toString());
@@ -590,7 +631,7 @@ export const fileApi = {
     const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.LIST);
     return handleResponse<{ folders: FavoriteFolderInfo[] }>(response);
   },
-  
+
   // 创建收藏夹
   async createFavoriteFolder(
     name: string, 

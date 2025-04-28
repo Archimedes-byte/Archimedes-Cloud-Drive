@@ -8,11 +8,11 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 /**
  * PATCH方法：更新收藏夹信息
@@ -50,7 +50,7 @@ export const PATCH = withAuth(async (req: AuthenticatedRequest) => {
     }
     
     // 更新收藏夹
-    const folder = await storageService.updateFavoriteFolder(
+    const folder = await favoriteService.updateFavoriteFolder(
       req.user.id, 
       folderId, 
       updateData
@@ -78,7 +78,7 @@ export const DELETE = withAuth(async (req: AuthenticatedRequest) => {
     }
     
     // 删除收藏夹
-    const success = await storageService.deleteFavoriteFolder(
+    const success = await favoriteService.deleteFavoriteFolder(
       req.user.id, 
       folderId
     );

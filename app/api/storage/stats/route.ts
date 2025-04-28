@@ -8,9 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileStatsService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const statsService = new FileStatsService();
 
 /**
  * 获取存储统计信息
@@ -23,7 +23,7 @@ export const GET = withAuth<{
 }>(async (req: AuthenticatedRequest) => {
   try {
     // 获取存储统计信息
-    const stats = await storageService.getStorageStats(req.user.id);
+    const stats = await statsService.getStorageStats(req.user.id);
     
     return createApiResponse(stats);
   } catch (error: any) {

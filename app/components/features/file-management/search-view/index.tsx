@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ExtendedFile } from '@/app/types';
 import { getFileIcon } from '@/app/utils/file/type';
 import { 
@@ -218,25 +218,23 @@ export const SearchView: React.FC<SearchViewProps> = ({
     }
   };
 
-  // 排序结果
-  const sortedResults = [...searchResults].sort((a, b) => {
-    const multiplier = sortOrder === 'asc' ? 1 : -1;
+  // 计算排序后的结果
+  const sortedResults = useMemo(() => {
+    const sortableResults = [...searchResults];
     
-    switch (sortBy) {
-      case 'name':
-        return multiplier * (a.name || '').localeCompare(b.name || '');
-      case 'date':
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return multiplier * (dateA - dateB);
-      case 'size':
-        const sizeA = a.size || 0;
-        const sizeB = b.size || 0;
-        return multiplier * (sizeA - sizeB);
-      default:
-        return 0;
-    }
-  });
+    // 按类型排序: 先显示文件夹，再显示文件
+    sortableResults.sort((a, b) => {
+      // 首先按文件夹/文件排序
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      
+      // 然后按照更新时间降序
+      return new Date(b.updatedAt || b.createdAt || 0).getTime() - 
+             new Date(a.updatedAt || a.createdAt || 0).getTime();
+    });
+    
+    return sortableResults;
+  }, [searchResults]);
 
   return (
     <div className={styles['search-view']}>

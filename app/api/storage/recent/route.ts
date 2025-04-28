@@ -8,10 +8,10 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileStatsService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
 
-const storageService = new StorageService();
+const statsService = new FileStatsService();
 
 // 定义API响应类型
 interface RecentFilesResponse {
@@ -33,7 +33,7 @@ export const GET = withAuth<RecentFilesResponse>(async (req: AuthenticatedReques
     console.log(`[API:recent] 获取最近访问文件, 用户ID: ${req.user.id}, 限制: ${safeLimit}`);
     
     // 获取最近文件
-    const recentFiles = await storageService.getRecentFiles(req.user.id, safeLimit);
+    const recentFiles = await statsService.getRecentFiles(req.user.id, safeLimit);
     
     console.log(`[API:recent] 找到 ${recentFiles.length} 个最近访问文件`);
     

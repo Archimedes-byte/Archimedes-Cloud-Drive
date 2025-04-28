@@ -656,38 +656,6 @@ export class FavoriteService {
   }
 
   /**
-   * 将自定义添加文件到标签的功能保留，用于兼容旧版收藏功能
-   * 注意：由于模型中没有isFavorite字段，我们使用tags数组存储收藏状态
-   */
-  async addToFavorites(userId: string, fileIds: string[]): Promise<number> {
-    // 获取默认收藏夹
-    const defaultFolder = await this.getOrCreateDefaultFolder(userId);
-    
-    // 将文件添加到默认收藏夹
-    return this.addBatchToFolder(userId, fileIds, defaultFolder.id);
-  }
-
-  /**
-   * 将自定义移除文件的功能保留，用于兼容旧版收藏功能
-   * 注意：与新版不同，这里会从所有收藏夹中移除
-   */
-  async removeFromFavorites(userId: string, fileIds: string[]): Promise<number> {
-    // 从所有收藏夹中移除
-    return this.removeBatchFromFolder(userId, fileIds);
-  }
-
-  /**
-   * 将自定义获取收藏文件列表的功能保留，用于兼容旧版收藏功能
-   */
-  async getFavorites(
-    userId: string,
-    page = 1,
-    pageSize = 50
-  ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
-    return this.getAllFavoriteFiles(userId, page, pageSize);
-  }
-
-  /**
    * 修复多个默认收藏夹问题
    * 确保每个用户只有一个默认收藏夹
    */

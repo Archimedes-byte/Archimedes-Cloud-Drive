@@ -334,18 +334,22 @@ export function filterFilesByType<T extends { isFolder: boolean; name: string; t
 /**
  * 构建数据库查询条件获取特定类型的文件
  * @param type 文件类型
+ * @param includeFolder 是否在非文件夹类型中也包含文件夹，默认为 false
  * @returns 查询条件对象
  */
-export function buildFileTypeFilter(type: string) {
+export function buildFileTypeFilter(type: string, includeFolder: boolean = false) {
   const where: any = { isDeleted: false };
   
+  // 文件夹类型特殊处理
   if (type === FILE_CATEGORIES.FOLDER) {
     where.isFolder = true;
     return where;
   }
   
-  // 文件查询（非文件夹）
-  where.isFolder = false;
+  // 只有在不包含文件夹时才添加 isFolder: false 条件
+  if (!includeFolder) {
+    where.isFolder = false;
+  }
   
   // 根据不同类型构建查询条件
   if (type === FILE_CATEGORIES.IMAGE) {

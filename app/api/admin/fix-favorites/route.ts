@@ -7,10 +7,10 @@ import {
   AuthenticatedRequest,
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 // 允许访问此API的管理员邮箱列表
 const ADMIN_EMAILS = ['admin@example.com']; // 请替换为实际的管理员邮箱
@@ -29,7 +29,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     }
     
     // 执行批量修复
-    const result = await storageService.batchFixAllUsersDefaultFolders();
+    const result = await favoriteService.batchFixAllUsersDefaultFolders();
     
     return NextResponse.json({
       success: true,

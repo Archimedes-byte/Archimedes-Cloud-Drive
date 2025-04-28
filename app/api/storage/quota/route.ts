@@ -8,10 +8,10 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileStatsService } from '@/app/services/storage';
 import { prisma } from '@/app/lib/database';
 
-const storageService = new StorageService();
+const statsService = new FileStatsService();
 
 /**
  * 获取存储配额信息
@@ -37,7 +37,7 @@ export const GET = withAuth<{
     
     // 如果数据库中的使用量为0，可能是未更新过，尝试通过文件统计计算
     if (usedSpace === 0) {
-      const stats = await storageService.getStorageStats(req.user.id);
+      const stats = await statsService.getStorageStats(req.user.id);
       usedSpace = stats.usedSize;
       
       // 更新用户的存储使用量

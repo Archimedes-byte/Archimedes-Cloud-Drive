@@ -122,21 +122,39 @@ export const useFileSearch = ({
     try {
       setIsLoading(true);
       setError(null);
-      console.log(`正在执行搜索，查询: ${query}, 类型: ${type}, 调用ID: ${callId}`);
+      console.log(`[搜索] 执行搜索: 类型=${type}, 关键词="${query.trim()}", 调用ID=${callId}`);
       
       // 使用fileApi客户端执行搜索
       const results = await fileApi.searchFiles({
         query: query.trim(),
-        type
+        type,
+        includeFolder: true,  // 明确设置为true，确保包含文件夹
+        searchMode: type === 'tag' ? 'tag' : 'name'  // 将SearchType转换为新的searchMode参数
       });
       
       // 如果这不是最新的搜索调用，丢弃结果
       if (callId !== (debouncedSearchRef.current?.getCallId() || 0)) {
-        console.log(`搜索结果已过时(ID:${callId})，丢弃结果`);
+        console.log(`[搜索] 结果已过时(ID:${callId})，丢弃结果`);
         return;
       }
       
-      setSearchResults(results);
+      // 对结果进行分析
+      const folderCount = results.filter(r => r.isFolder).length;
+      const fileCount = results.length - folderCount;
+      console.log(`[搜索] 结果(ID:${callId}): 共${results.length}项，包含${folderCount}个文件夹，${fileCount}个文件`);
+      
+      // 文件夹优先显示处理（服务端已处理，这里是双重保障）
+      const sortedResults = [...results].sort((a, b) => {
+        // 首先按文件夹/文件排序
+        if (a.isFolder && !b.isFolder) return -1;
+        if (!a.isFolder && b.isFolder) return 1;
+        
+        // 然后按更新时间排序
+        return new Date(b.updatedAt || b.createdAt || 0).getTime() - 
+               new Date(a.updatedAt || a.createdAt || 0).getTime();
+      });
+      
+      setSearchResults(sortedResults);
       
       // 添加到搜索历史（不重复添加）
       if (query.trim()) {

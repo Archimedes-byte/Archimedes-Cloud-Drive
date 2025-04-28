@@ -8,9 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 /**
  * 从收藏中移除文件
@@ -18,8 +18,7 @@ const storageService = new StorageService();
 export const POST = withAuth<{ count: number }>(async (req: AuthenticatedRequest) => {
   try {
     // 获取请求体数据
-    const body = await req.json().catch(() => ({}));
-    const { fileIds } = body;
+    const { fileIds } = await req.json();
     
     // 验证文件ID数组
     if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
@@ -33,8 +32,8 @@ export const POST = withAuth<{ count: number }>(async (req: AuthenticatedRequest
       fileIds: fileIds
     });
     
-    // 从收藏中移除
-    const count = await storageService.removeFromFavorites(req.user.id, fileIds);
+    // 移除收藏 - 使用新版移除API（不指定收藏夹ID表示从所有收藏夹中移除）
+    const count = await favoriteService.removeBatchFromFolder(req.user.id, fileIds);
     
     return createApiResponse({ count });
   } catch (error: any) {

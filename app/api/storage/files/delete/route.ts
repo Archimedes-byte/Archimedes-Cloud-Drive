@@ -8,9 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const managementService = new FileManagementService();
 
 /**
  * 批量删除文件
@@ -26,7 +26,7 @@ export const POST = withAuth<{ deletedCount: number }>(async (req: Authenticated
     }
     
     // 执行批量删除
-    const deletedCount = await storageService.deleteFiles(req.user.id, fileIds);
+    const deletedCount = await managementService.deleteFiles(req.user.id, fileIds);
     
     return createApiResponse({ deletedCount });
   } catch (error: any) {

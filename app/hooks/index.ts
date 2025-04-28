@@ -7,6 +7,7 @@
 export * from './core/useLoadingState';
 export * from './core/useUIState';
 export * from './core/useThemeManager';
+export * from './core/useThemeUI';
 export * from './core/useModalState';
 
 // 用户相关hooks
@@ -21,11 +22,26 @@ export * from './file/useFileOperations';
 export * from './file/useFileUpload';
 export * from './file/useFileSearch';
 export * from './file/useFilePreview';
-export * from './file/useFileShare';
 export * from './file/useShareView';
 export * from './file/useRecentContent';
 export * from './file/useViewState';
+export * from './file/useFavorites';
+export * from './file/useFileSelection';
+export * from './file/useFolderCreation';
+export * from './file/useFileRename';
+export * from './file/useFileMoveOperations';
+export * from './file/usePageInitialization';
+export * from './file/useShareManagement';
+
+// 导出Zustand状态管理
+export { default as useFileStore } from '@/app/store/fileStore';
 
 // 认证相关hooks
 export * from './auth/useAuth';
-export * from './auth'; 
+export * from './auth';
+
+// 新增的common文件夹中的钩子
+export * from './common';
+
+// 导出文件工具函数
+export * from '@/app/lib/file'; 

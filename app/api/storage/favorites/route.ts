@@ -8,11 +8,11 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
 import { NextResponse } from 'next/server';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 /**
  * POST方法：获取收藏列表
@@ -21,28 +21,17 @@ const storageService = new StorageService();
 export const POST = withAuth<{ items: FileInfo[]; total: number; page: number; pageSize: number }>(
   async (req: AuthenticatedRequest) => {
     try {
-      // 获取请求体中的分页参数（如果有）
-      const body = await req.json().catch(() => ({}));
-      const page = body.page || 1;
-      const pageSize = body.pageSize || 50;
+      // 获取请求体数据
+      const { page = 1, pageSize = 50 } = await req.json();
       
       // 获取收藏列表
-      const result = await storageService.getFavorites(
+      const result = await favoriteService.getAllFavoriteFiles(
         req.user.id,
         page,
         pageSize
       );
       
-      // 修改返回格式，让客户端能正确处理
-      return NextResponse.json({
-        success: true,
-        data: {
-          items: result.items,
-          total: result.total,
-          page: result.page,
-          pageSize: result.pageSize
-        }
-      });
+      return createApiResponse(result);
     } catch (error: any) {
       console.error('获取收藏列表失败:', error);
       return createApiErrorResponse(error.message || '获取收藏列表失败', 500);
@@ -69,8 +58,8 @@ export const DELETE = withAuth<{ deletedCount: number }>(
         fileIds: fileIds
       });
       
-      // 删除收藏
-      const count = await storageService.removeFromFavorites(req.user.id, fileIds);
+      // 使用新版API从所有收藏夹中移除收藏
+      const count = await favoriteService.removeBatchFromFolder(req.user.id, fileIds);
       
       // 使用与其他API一致的返回格式
       return NextResponse.json({

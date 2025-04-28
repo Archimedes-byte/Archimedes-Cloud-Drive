@@ -10,11 +10,11 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService } from '@/app/services/storage';
 import path from 'path';
 import fs from 'fs/promises';
 
-const storageService = new StorageService();
+const managementService = new FileManagementService();
 
 // 重命名请求接口
 interface RenameFileRequest {
@@ -51,10 +51,10 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     }
     
     // 调用服务层进行文件重命名
-    const result = await storageService.renameFile(
+    const result = await managementService.renameFile(
+      req.user.id,
       fileId,
       newName.trim(),
-      req.user.id,
       tags
     );
     

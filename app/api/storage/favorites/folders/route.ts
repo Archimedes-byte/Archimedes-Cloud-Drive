@@ -8,10 +8,10 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 /**
  * GET方法：获取收藏夹列表
@@ -19,10 +19,10 @@ const storageService = new StorageService();
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
     // 修复可能存在的多个默认收藏夹问题
-    await storageService.fixMultipleDefaultFolders(req.user.id);
+    await favoriteService.fixMultipleDefaultFolders(req.user.id);
     
     // 获取用户的收藏夹列表
-    const folders = await storageService.getFavoriteFolders(req.user.id);
+    const folders = await favoriteService.getFavoriteFolders(req.user.id);
     
     return createApiResponse({ folders });
   } catch (error: any) {
@@ -46,7 +46,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     }
     
     // 创建新收藏夹
-    const folder = await storageService.createFavoriteFolder(
+    const folder = await favoriteService.createFavoriteFolder(
       req.user.id, 
       name.trim(), 
       description, 

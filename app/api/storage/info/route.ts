@@ -8,11 +8,11 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FileStatsService } from '@/app/services/storage';
 import { prisma } from '@/app/lib/database';
 import { FileInfo } from '@/app/types';
 
-const storageService = new StorageService();
+const statsService = new FileStatsService();
 
 /**
  * 获取存储信息
@@ -33,7 +33,7 @@ export const GET = withAuth<{
 }>(async (req: AuthenticatedRequest) => {
   try {
     // 获取统计信息
-    const stats = await storageService.getStorageStats(req.user.id);
+    const stats = await statsService.getStorageStats(req.user.id);
     
     // 获取用户配额信息
     const user = await prisma.user.findUnique({
@@ -56,7 +56,7 @@ export const GET = withAuth<{
     }
     
     // 获取最近文件
-    const recentFiles = await storageService.getRecentFiles(req.user.id, 5);
+    const recentFiles = await statsService.getRecentFiles(req.user.id, 5);
     
     return createApiResponse({
       stats: {

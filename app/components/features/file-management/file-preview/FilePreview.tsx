@@ -9,6 +9,7 @@ import { ExtendedFile, FileInfo } from '@/app/types';
 import styles from './FilePreview.module.css';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { FileIcon } from '@/app/utils/file/icon-map';
+import { useSearchParams } from 'next/navigation';
 
 interface FilePreviewProps {
   file: ExtendedFile | FileInfo | null;
@@ -21,6 +22,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const searchParams = useSearchParams();
   
   // 保存fetchPreviewUrl的引用以便在重试按钮中使用
   const fetchPreviewUrlRef = useRef<(() => Promise<void>) | null>(null);
@@ -152,8 +154,20 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
         if (isPreviewableFile(file.type, extension)) {
           console.log('文件类型支持预览，正在获取预览URL');
           
-          // 构建请求URL
-          const requestUrl = `${API_PATHS.STORAGE.FILES.PREVIEW(file.id)}?format=json`;
+          // 检查当前是否在分享页面，读取URL参数中的分享码和提取码
+          const isSharePage = window.location.pathname.startsWith('/s/');
+          const shareCodeFromPath = isSharePage ? window.location.pathname.split('/')[2] : '';
+          const extractCodeFromParams = searchParams.get('code') || '';
+          
+          // 构建请求URL，添加分享参数
+          let requestUrl = `${API_PATHS.STORAGE.FILES.PREVIEW(file.id)}?format=json`;
+          
+          // 如果是分享页面且有分享码和提取码，则添加到URL
+          if (isSharePage && shareCodeFromPath && extractCodeFromParams) {
+            requestUrl += `&shareCode=${encodeURIComponent(shareCodeFromPath)}&extractCode=${encodeURIComponent(extractCodeFromParams)}`;
+            console.log('分享环境预览，添加分享参数:', { shareCode: shareCodeFromPath, extractCode: extractCodeFromParams });
+          }
+          
           console.log('预览请求URL:', requestUrl);
           
           // 使用新API并添加format=json参数获取JSON格式的预览URL

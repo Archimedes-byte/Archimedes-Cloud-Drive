@@ -6,9 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
-import { StorageService } from '@/app/services/storage-service';
+import { FileManagementService, FileUploadService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const managementService = new FileManagementService();
+const uploadService = new FileUploadService();
 
 /**
  * 获取文件列表
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     const hasTimestamp = searchParams.has('_t');
 
     // 获取文件列表
-    const result = await storageService.getFiles(
+    const result = await managementService.getFiles(
       user.id,
       folderId,
       type,
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
     // 处理单个文件上传
     if (files.length === 1) {
       const file = files[0] as File;
-      const result = await storageService.uploadFile(user.id, file, folderId, tags);
+      const result = await uploadService.uploadFile(user.id, file, folderId, tags);
       return NextResponse.json({ 
         success: true, 
         data: result 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
     for (const fileData of files) {
       const file = fileData as File;
       try {
-        const result = await storageService.uploadFile(user.id, file, folderId, tags);
+        const result = await uploadService.uploadFile(user.id, file, folderId, tags);
         results.push(result);
       } catch (error: any) {
         console.error(`上传文件 ${file.name} 失败:`, error);

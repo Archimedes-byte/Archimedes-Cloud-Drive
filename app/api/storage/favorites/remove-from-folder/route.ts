@@ -8,9 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { StorageService } from '@/app/services/storage-service';
+import { FavoriteService } from '@/app/services/storage';
 
-const storageService = new StorageService();
+const favoriteService = new FavoriteService();
 
 // 定义响应类型
 interface RemoveFromFolderResponse {
@@ -30,7 +30,7 @@ export const POST = withAuth<RemoveFromFolderResponse>(async (req: Authenticated
     // 处理单个文件或多个文件
     if (fileId) {
       // 单个文件
-      const success = await storageService.removeFromFavoriteFolder(
+      const success = await favoriteService.removeFromFolder(
         req.user.id, 
         fileId, 
         folderId
@@ -39,7 +39,7 @@ export const POST = withAuth<RemoveFromFolderResponse>(async (req: Authenticated
       return createApiResponse({ success });
     } else if (fileIds && Array.isArray(fileIds) && fileIds.length > 0) {
       // 多个文件
-      const count = await storageService.removeBatchFromFavoriteFolder(
+      const count = await favoriteService.removeBatchFromFolder(
         req.user.id, 
         fileIds, 
         folderId
