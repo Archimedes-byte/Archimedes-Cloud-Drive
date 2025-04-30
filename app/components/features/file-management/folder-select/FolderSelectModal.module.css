@@ -2,18 +2,25 @@
   border-radius: 12px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .folderSelectModal :global(.ant-modal-header) {
   padding: 20px 24px;
   border-bottom: 1px solid #f0f0f0;
-  background-color: #f9fbfe;
+  background-color: rgba(249, 251, 254, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .folderSelectModal :global(.ant-modal-footer) {
   border-top: 1px solid #f0f0f0;
   padding: 16px 24px;
-  background-color: #f9fbfe;
+  background-color: rgba(249, 251, 254, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .folderSelectModal :global(.ant-modal-body) {
@@ -45,7 +52,9 @@
   display: flex;
   padding: 12px 24px;
   border-bottom: 1px solid #f0f0f0;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   align-items: center;
   justify-content: space-between;
 }
@@ -80,7 +89,9 @@
   flex-wrap: wrap;
   align-items: center;
   padding: 12px 24px;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -119,7 +130,9 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px 24px;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   position: relative;
   min-height: 300px;
 }
@@ -140,21 +153,22 @@
   transition: all 0.2s;
   position: relative;
   border: 1px solid transparent;
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
 .folderItem:hover {
-  background-color: #f0f7ff;
+  background-color: rgba(240, 247, 255, 0.8);
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .folderSelected {
-  background-color: #e6f4ff;
+  background-color: rgba(230, 244, 255, 0.8);
   border: 1px solid #91caff;
 }
 
 .folderSelected:hover {
-  background-color: #bae0ff;
+  background-color: rgba(186, 224, 255, 0.8);
 }
 
 .folderDisabled {
@@ -213,6 +227,7 @@
   align-items: center;
   min-height: 200px;
   padding: 20px;
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 .errorMessage {

@@ -4,7 +4,7 @@ import React, { ReactNode } from 'react';
 import { FileInfo } from '@/app/types';
 import { Sidebar, FileType } from '../navigation/sidebar/Sidebar';
 import MiniSidebar from '../navigation/mini-sidebar/MiniSidebar';
-import { ThemePanel } from '@/app/components/ui/themes';
+import { ThemePanel } from '@/app/theme';
 import styles from '../styles/layout/page-layout.module.css';
 
 // 添加ViewType类型定义，与Sidebar中一致

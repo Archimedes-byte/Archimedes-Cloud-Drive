@@ -63,11 +63,12 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
   return (
     <div className={styles.sortDropdown} ref={dropdownRef}>
       <button 
-        className={styles.topButton}
+        className={`${styles.topButton} text-white`}
         onClick={() => setShowDropdown(!showDropdown)}
         style={{ 
-          background: showDropdown ? '#f0f7ff' : 'white',
-          borderColor: showDropdown ? '#60a5fa' : '#e8e8e8'
+          background: showDropdown ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+          borderColor: showDropdown ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.2)',
+          color: 'white'
         }}
       >
         <span>↕️</span>
@@ -80,7 +81,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
             onClick={() => handleSortClick('name', sortOrder.field === 'name' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
             style={{ 
               fontWeight: sortOrder.field === 'name' ? 'bold' : 'normal',
-              background: sortOrder.field === 'name' ? '#f0f7ff' : 'transparent'
+              background: sortOrder.field === 'name' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
             }}
           >
             <span>📝</span>
@@ -91,7 +92,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
             onClick={() => handleSortClick('size', sortOrder.field === 'size' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
             style={{ 
               fontWeight: sortOrder.field === 'size' ? 'bold' : 'normal',
-              background: sortOrder.field === 'size' ? '#f0f7ff' : 'transparent'
+              background: sortOrder.field === 'size' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
             }}
           >
             <span>📊</span>
@@ -102,7 +103,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
             onClick={() => handleSortClick('createdAt', sortOrder.field === 'createdAt' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
             style={{ 
               fontWeight: sortOrder.field === 'createdAt' ? 'bold' : 'normal',
-              background: sortOrder.field === 'createdAt' ? '#f0f7ff' : 'transparent'
+              background: sortOrder.field === 'createdAt' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
             }}
           >
             <span>🕒</span>

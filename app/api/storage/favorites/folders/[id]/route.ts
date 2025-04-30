@@ -9,8 +9,6 @@ import {
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { FavoriteService } from '@/app/services/storage';
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 
 const favoriteService = new FavoriteService();
 

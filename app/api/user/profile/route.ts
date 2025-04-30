@@ -7,7 +7,6 @@ import { authOptions } from '@/app/lib/auth'
 
 // 从前端获取的用户资料接口
 interface UserProfileInput {
-  displayName?: string
   bio?: string
   location?: string
   website?: string
@@ -35,20 +34,15 @@ interface UserProfileResponse {
 
 // 获取用户资料
 export async function GET() {
-  console.log('GET /api/user/profile 请求开始')
   try {
     const session = await getServerSession(authOptions)
-    console.log('获取到用户会话:', session ? '成功' : '失败', '邮箱:', session?.user?.email || '无')
     
     if (!session?.user?.email) {
-      console.log('未授权访问: 没有找到用户邮箱')
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
       )
     }
-
-    console.log('查询用户信息，邮箱:', session.user.email)
     
     // 使用 try-catch 包装数据库操作
     try {
@@ -63,7 +57,6 @@ export async function GET() {
       })
 
       if (!user) {
-        console.log('用户不存在，尝试通过其他方式检索或创建用户')
         return NextResponse.json(
           { success: false, error: '用户不存在，请先完成注册流程' },
           { status: 404 }
@@ -72,13 +65,10 @@ export async function GET() {
 
       // 检查用户资料是否存在
       if (!user.profile) {
-        console.log('用户资料不存在，创建默认资料')
-        
         // 为用户创建默认资料
         await prisma.userProfile.create({
           data: {
             userId: user.id,
-            displayName: user.name || user.email.split('@')[0],
             theme: 'default'
           }
         })
@@ -133,7 +123,6 @@ export async function GET() {
         updatedAt: user.updatedAt.toISOString()
       }
 
-      console.log('成功获取用户信息:', user.id)
       return NextResponse.json({
         success: true,
         profile: userProfile
@@ -156,13 +145,10 @@ export async function GET() {
 
 // 更新用户资料
 export async function PUT(request: NextRequest) {
-  console.log('PUT /api/user/profile 请求开始')
   try {
     const session = await getServerSession(authOptions)
-    console.log('获取到用户会话:', session ? '成功' : '失败')
     
     if (!session?.user?.email) {
-      console.log('未授权访问: 没有找到用户邮箱')
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
@@ -170,7 +156,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json() as UserProfileInput
-    console.log('接收到的数据:', data)
 
     // 获取用户
     const user = await prisma.user.findUnique({
@@ -195,14 +180,11 @@ export async function PUT(request: NextRequest) {
         id: user.id
       },
       data: {
-        name: data.displayName || user.name
+        name: user.name
       }
     })
 
     // 更新或创建用户资料
-    console.log('开始更新用户资料，用户ID:', user.id);
-    console.log('当前用户Profile数据:', user.profile || '无');
-    
     const profile = await prisma.userProfile.upsert({
       where: {
         userId: user.id
@@ -210,7 +192,6 @@ export async function PUT(request: NextRequest) {
       update: {
         avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : user.profile?.avatarUrl,
         theme: data.theme !== undefined ? data.theme : user.profile?.theme,
-        displayName: data.displayName || user.profile?.displayName || user.name,
         bio: data.bio !== undefined ? data.bio : user.profile?.bio,
         location: data.location !== undefined ? data.location : user.profile?.location,
         website: data.website !== undefined ? data.website : user.profile?.website,
@@ -218,7 +199,6 @@ export async function PUT(request: NextRequest) {
       },
       create: {
         userId: user.id,
-        displayName: data.displayName || user.name || '',
         avatarUrl: data.avatarUrl,
         theme: data.theme,
         bio: data.bio || '',
@@ -227,8 +207,6 @@ export async function PUT(request: NextRequest) {
         company: data.company || ''
       }
     });
-    
-    console.log('用户资料更新/创建成功:', profile);
 
     // 构建用户资料响应
     const userProfile: UserProfileResponse = {
@@ -247,7 +225,6 @@ export async function PUT(request: NextRequest) {
       updatedAt: updatedUser.updatedAt.toISOString()
     }
 
-    console.log('成功更新用户信息:', user.id)
     return NextResponse.json({
       success: true,
       profile: userProfile

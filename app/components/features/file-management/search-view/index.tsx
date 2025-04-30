@@ -528,46 +528,6 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   实时搜索结果
                 </span>
               )}
-              {onSelectAll && onDeselectAll && selectedFiles && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={onSelectAll}
-                    style={{
-                      background: 'none',
-                      border: '1px solid rgba(226, 232, 240, 0.8)',
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      color: '#5e6c84',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Download size={12} />
-                    全选
-                  </button>
-                  <button
-                    onClick={onDeselectAll}
-                    style={{
-                      background: 'none',
-                      border: '1px solid rgba(226, 232, 240, 0.8)',
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      color: '#5e6c84',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <X size={12} />
-                    取消选择
-                  </button>
-                </div>
-              )}
             </div>
           </div>
           <div className={styles['table-responsive']}>
@@ -575,6 +535,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               <thead>
                 <tr>
                   <th className={styles['th-filename']}>文件名</th>
+                  <th className={styles['th-path']}>所在路径</th>
                   <th className={styles['th-size']}>大小</th>
                   <th className={styles['th-date']}>上传时间</th>
                   <th className={styles['th-tags']}>标签</th>
@@ -617,6 +578,15 @@ export const SearchView: React.FC<SearchViewProps> = ({
                           )}
                         </span>
                       </div>
+                    </td>
+                    <td className={styles['path-cell']}>
+                      {file.path ? (
+                        <div className={styles['path-info']}>
+                          <span>{file.path}</span>
+                        </div>
+                      ) : (
+                        <span>根目录</span>
+                      )}
                     </td>
                     <td className={styles['size-cell']}>{formatFileSize(file.size)}</td>
                     <td className={styles['date-cell']}>

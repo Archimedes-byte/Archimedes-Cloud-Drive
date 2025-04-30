@@ -539,16 +539,18 @@
 
 .file-name {
   font-weight: 500;
-  color: var(--tech-text);
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 250px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  color: #1a202c;
+  font-size: 14px;
 }
 
-.file-row:hover .file-name {
-  color: var(--tech-primary);
+.file-name:hover {
+  color: var(--theme-primary, #3b82f6);
+  text-decoration: underline;
 }
 
 .size-cell {
@@ -735,4 +737,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 路径单元格样式 */
+.path-cell {
+  color: #718096;
+  font-size: 13px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.path-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 设置表头 */
+.th-path {
+  width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 } 

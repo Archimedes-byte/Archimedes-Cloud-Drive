@@ -24,7 +24,7 @@
  *   - 事件监听管理: 创建通用的事件监听hook，管理所有的事件订阅和清理
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { message } from 'antd';
@@ -54,7 +54,6 @@ import {
   useFilePreview,
   useLoadingState, 
   useUIState, 
-  useThemeManager, 
   useProfile,
   useFileSearch,
   useViewState,
@@ -83,7 +82,7 @@ interface FileManagementPageProps {
   initialShowShares?: boolean;
 }
 
-export default function FileManagementPage({ initialShowShares = false }: FileManagementPageProps = {}) {
+export default function FileManagementPage({ initialShowShares = false }: FileManagementPageProps) {
   const router = useRouter();
   const { status } = useSession();
   
@@ -104,10 +103,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 使用双状态加载管理
   const {
-    isRefreshing,
-    startLoading,
-    finishLoading
-  } = useLoadingState({
+    isRefreshing  } = useLoadingState({
     initialLoad: true,
     minLoadingTime: 800
   });
@@ -135,7 +131,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     sortOrder,
     fileUpdateTrigger,
     loadFiles,
-    toggleSelectAll,
     changeSort,
     filterByFileType,
     refreshCurrentFolder,
@@ -154,8 +149,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     loadFavoritedFileIds,
     toggleFavorite,
     handleFavoriteSuccess,
-    setFavoriteModalVisible,
-    setSelectedFileForFavorite,
     closeFavoriteModal
   } = useFavorites();
 
@@ -214,8 +207,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     isLinkInputVisible,
     shareLink,
     shareLinkPassword,
-    isProcessing,
-    error,
     setShareLink,
     setShareLinkPassword,
     openLinkInputModal,
@@ -274,7 +265,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   
   // 文件操作钩子
   const {
-    createFolder: handleCreateFolder,
     downloadFiles: handleDownload,
     deleteFiles: handleDelete,
   } = useFileOperations([]);
@@ -300,7 +290,6 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     isRenameModalOpen,
     setIsRenameModalOpen,
     fileToRename,
-    openRename: handleOpenRename,
     renameFile: handleConfirmEdit,
     setFileToRename
   } = useFilePreview();
@@ -391,24 +380,10 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   }, []);
 
   // 处理文件选择变化
-  const onFileCheckboxChange = useCallback((file: FileInfo, checked: boolean) => {
-    // 如果选中，将文件ID添加到选择列表；否则从选择列表中移除
-    if (checked) {
-      setSelectedFiles(prev => [...prev, file.id]);
-    } else {
-      setSelectedFiles(prev => prev.filter(id => id !== file.id));
-    }
-  }, [setSelectedFiles]);
 
   // 全选文件
-  const onSelectAllFiles = useCallback(() => {
-    toggleSelectAll(true);
-  }, [toggleSelectAll]);
 
   // 取消全选
-  const onDeselectAllFiles = useCallback(() => {
-    setSelectedFiles([]);
-  }, [setSelectedFiles]);
 
   // 处理刷新文件列表
   const handleRefreshFiles = useCallback(() => {

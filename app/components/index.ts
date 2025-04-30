@@ -40,6 +40,8 @@ export { default as UploadModal } from './features/file-management/upload/upload
 export { default as FileUpload } from './features/file-management/upload/file-upload';
 export { default as TopActionBar } from './features/file-management/action-bar/top-action-bar';
 export { default as SortDropdown } from './features/file-management/action-bar/sort-dropdown';
+export { default as MenuBar } from './features/file-management/action-bar/menu-bar';
+export { default as UploadDropdown } from './features/file-management/action-bar/upload-dropdown';
 export { default as NewFolderForm } from './features/file-management/folder-management/new-folder-form';
 export { TopActionBar as Toolbar } from './features/file-management/action-bar/top-action-bar';
 

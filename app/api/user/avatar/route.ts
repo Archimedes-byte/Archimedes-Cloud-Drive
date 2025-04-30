@@ -11,7 +11,6 @@ import fs from 'fs';
 const ensureUploadDir = async () => {
   const uploadDir = join(process.cwd(), 'public', 'uploads', 'avatars');
   if (!fs.existsSync(uploadDir)) {
-    console.log('创建头像上传目录:', uploadDir);
     await mkdir(uploadDir, { recursive: true });
   }
   return uploadDir;
@@ -133,9 +132,6 @@ export async function POST(request: NextRequest) {
     const filePath = join(uploadDir, fileName);
     const fileUrl = `/uploads/avatars/${fileName}`;
 
-    console.log('准备写入文件:', filePath);
-    console.log('对应的URL:', fileUrl);
-
     // 读取文件内容
     const buffer = Buffer.from(await file.arrayBuffer());
     
@@ -143,7 +139,6 @@ export async function POST(request: NextRequest) {
     try {
       const oldAvatarPath = await getUserAvatarPath(user.id);
       if (oldAvatarPath && fs.existsSync(oldAvatarPath)) {
-        console.log('删除旧头像文件:', oldAvatarPath);
         await unlink(oldAvatarPath);
       }
     } catch (deleteError) {
@@ -154,7 +149,6 @@ export async function POST(request: NextRequest) {
     // 写入文件
     try {
       await writeFile(filePath, buffer);
-      console.log('文件写入成功:', filePath);
     } catch (writeError) {
       console.error('文件写入失败:', writeError);
       return NextResponse.json(
@@ -169,8 +163,7 @@ export async function POST(request: NextRequest) {
       update: { avatarUrl: fileUrl },
       create: {
         userId: user.id,
-        avatarUrl: fileUrl,
-        displayName: session.user.name || ''
+        avatarUrl: fileUrl
       }
     });
 
@@ -215,7 +208,6 @@ export async function DELETE() {
     try {
       const avatarPath = await getUserAvatarPath(user.id);
       if (avatarPath && fs.existsSync(avatarPath)) {
-        console.log('删除头像文件:', avatarPath);
         await unlink(avatarPath);
       }
     } catch (deleteError) {

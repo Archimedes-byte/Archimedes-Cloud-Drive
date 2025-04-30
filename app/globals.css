@@ -2,39 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    /* 基础系统变量 */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    
-    /* 主题颜色变量 */
-    --theme-primary: #3b82f6;
-    --theme-secondary: #2c5282;
-    --theme-accent: #60a5fa;
-    --theme-success: #10b981;
-    --theme-warning: #f59e0b;
-    --theme-error: #ef4444;
-    --theme-info: #3b82f6;
-    
-    /* 背景和界面变量 */
-    --theme-background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%);
-    --theme-card: rgba(255, 255, 255, 0.9);
-    --theme-border: #e2e8f0;
-    --theme-text: #1a202c;
-    
-    /* 阴影变量 */
-    --theme-card-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
-    --theme-button-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-    --theme-button-hover-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-    
-    /* 辅助变量 */
-    --background-start-rgb: 240, 247, 255;
-    --background-end-rgb: 230, 240, 253;
-    --foreground-rgb: 24, 24, 27;
-    --transition-speed: 0.3s;
-  }
+/* 
+ * 主题变量已移至 app/shared/themes/variables.css
+ * 请使用该文件中定义的CSS变量
+ */
 
+@layer base {
   body {
     @apply bg-gray-50 text-gray-900 min-h-screen;
     background: rgb(var(--background-start-rgb));
@@ -78,5 +51,12 @@
 @keyframes slideDown {
   from { transform: translateY(-10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* 纯色系统样式覆盖 */
+:root.pure-color-theme {
+  --theme-secondary: var(--theme-primary);
+  --theme-accent: var(--theme-primary);
+  --theme-background: var(--theme-primary);
 }
 

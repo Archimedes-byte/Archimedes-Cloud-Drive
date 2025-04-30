@@ -7,8 +7,8 @@ import {
 } from '@ant-design/icons';
 import { Button } from '@/app/components/ui/ant';
 import styles from './Toaster.module.css';
-import { addThemeChangeListener } from '@/app/components/ui/themes';
-import type { ThemeStyle } from '@/app/components/ui/themes/theme-definitions';
+import { addThemeChangeListener } from '@/app/theme';
+import type { ThemeStyle } from '@/app/theme/theme-definitions';
 
 // 定义Toast类型
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

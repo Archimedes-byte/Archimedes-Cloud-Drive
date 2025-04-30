@@ -1,14 +1,53 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+// 导入useSession用于获取当前用户ID
+import { useSession } from 'next-auth/react';
 // 修改API导入路径为正确的路径
-import { getTodayFiles, getYesterdayFiles, getPastWeekFiles, getOlderFiles } from '@/app/api/files/recent';
-import { addFavorite, removeFavorite, getBatchFavoriteStatus } from '@/app/api/files/favorites';
+import { FileStatsService, FavoriteService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
 // 使用刚创建的TimeSection组件
 import { TimeSection } from './time-section';
 import { Button } from 'antd';
 import { AntFileList } from '../file-list/AntFileList';
+
+// 创建服务实例
+const fileStatsService = new FileStatsService();
+const favoriteService = new FavoriteService();
+
+// 添加函数用于按照时间段分组文件
+const groupFilesByDate = (files: FileInfo[]) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const oneWeekAgo = new Date(today);
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  
+  const todayFiles: FileInfo[] = [];
+  const yesterdayFiles: FileInfo[] = [];
+  const pastWeekFiles: FileInfo[] = [];
+  const olderFiles: FileInfo[] = [];
+  
+  files.forEach(file => {
+    const fileDate = new Date(file.updatedAt || file.createdAt || new Date());
+    fileDate.setHours(0, 0, 0, 0);
+    
+    if (fileDate.getTime() === today.getTime()) {
+      todayFiles.push(file);
+    } else if (fileDate.getTime() === yesterday.getTime()) {
+      yesterdayFiles.push(file);
+    } else if (fileDate >= oneWeekAgo) {
+      pastWeekFiles.push(file);
+    } else {
+      olderFiles.push(file);
+    }
+  });
+  
+  return { todayFiles, yesterdayFiles, pastWeekFiles, olderFiles };
+};
 
 // 添加加载动画样式
 const spinnerStyle = `
@@ -46,6 +85,8 @@ export function RecentFilesContent({
   onDeselectAll?: () => void;
   onToggleFavorite?: (file: FileInfo, isFavorite: boolean) => void;
 }) {
+  // 获取当前用户会话
+  const { data: session } = useSession();
   const [todayFiles, setTodayFiles] = useState<FileInfo[]>([]);
   const [yesterdayFiles, setYesterdayFiles] = useState<FileInfo[]>([]);
   const [pastWeekFiles, setPastWeekFiles] = useState<FileInfo[]>([]);
@@ -95,10 +136,19 @@ export function RecentFilesContent({
     const loadRecentFiles = async () => {
       setIsLoading(true);
       try {
-        const today = await getTodayFiles();
-        const yesterday = await getYesterdayFiles();
-        const pastWeek = await getPastWeekFiles();
-        const older = await getOlderFiles();
+        // 确保session中有用户ID
+        if (!session?.user?.id) {
+          console.log('用户未登录或者会话中没有用户ID，跳过加载');
+          setIsLoading(false);
+          return;
+        }
+        
+        // 获取最近文件
+        const recentFiles = await fileStatsService.getRecentFiles(session.user.id, 20);
+        
+        // 按日期分组
+        const { todayFiles: today, yesterdayFiles: yesterday, pastWeekFiles: pastWeek, olderFiles: older } = 
+          groupFilesByDate(recentFiles);
         
         setTodayFiles(today);
         setYesterdayFiles(yesterday);
@@ -106,17 +156,18 @@ export function RecentFilesContent({
         setOlderFiles(older);
         
         // 获取所有文件的ID
-        const allFileIds = [
-          ...today.map((f: FileInfo) => f.id),
-          ...yesterday.map((f: FileInfo) => f.id),
-          ...pastWeek.map((f: FileInfo) => f.id),
-          ...older.map((f: FileInfo) => f.id)
-        ];
+        const allFileIds = recentFiles.map(f => f.id);
         
         // 批量获取收藏状态
         if (allFileIds.length > 0) {
-          const favoriteStatus = await getBatchFavoriteStatus(allFileIds);
-          setLocalFavoritedFileIds(favoriteStatus);
+          // 检查每个文件是否在收藏夹中
+          const favoriteIds: string[] = [];
+          for (const fileId of allFileIds) {
+            if (await favoriteService.isInFavorites(session.user.id, fileId)) {
+              favoriteIds.push(fileId);
+            }
+          }
+          setLocalFavoritedFileIds(favoriteIds);
         }
       } catch (error) {
         console.error('Error loading recent files:', error);
@@ -126,7 +177,7 @@ export function RecentFilesContent({
     };
     
     loadRecentFiles();
-  }, [recentFiles]);
+  }, [recentFiles, session]);
 
   // 处理文件点击
   const handleFileClick = (file: FileInfo) => {
@@ -183,11 +234,17 @@ export function RecentFilesContent({
       onToggleFavorite(file, isFavorite);
     } else {
       try {
+        // 确保有会话
+        if (!session?.user?.id) {
+          console.error('无法修改收藏状态：未登录');
+          return;
+        }
+        
         if (isFavorite) {
-          await addFavorite(file.id);
+          await favoriteService.addToFolder(session.user.id, file.id);
           setLocalFavoritedFileIds(prev => [...prev, file.id]);
         } else {
-          await removeFavorite(file.id);
+          await favoriteService.removeFromFolder(session.user.id, file.id);
           setLocalFavoritedFileIds(prev => prev.filter(id => id !== file.id));
         }
         setLocalFileUpdateTrigger(prev => prev + 1);

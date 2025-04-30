@@ -12,7 +12,7 @@ import { AntFileList } from '../file-list';
 import { SearchContainer } from '../search-view/search-container';
 import { RecentFilesContent } from '../recent-files';
 import { RecentDownloadsContent } from '../recent-downloads';
-import { TopActionBar } from '../action-bar/top-action-bar';
+import MenuBar from '../action-bar/menu-bar';
 import { FavoritesContent } from '../favorites';
 import { SharesContent } from '../shares';
 
@@ -291,7 +291,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   // 否则渲染标准文件列表组件
   return (
     <div className={styles.fileAreaContainer}>
-      <TopActionBar 
+      <MenuBar 
         selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
         onClearSelection={() => onDeselectAllFiles()}
         onDownload={() => onDownload(selectedFiles)}
@@ -322,24 +322,19 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
             onRename(selectedFile);
           }
         }}
-        onRefresh={onRefreshFiles}
         onClearFilter={onClearFilter}
         sortOrder={sortOrder}
         onSortChange={(newSortOrder) => {
           setSortOrder(newSortOrder);
           changeSort(newSortOrder.field, newSortOrder.direction);
         }}
-        isRefreshing={isRefreshing}
-        onUploadClick={() => setIsUploadModalOpen(true)}
-        onFolderUploadClick={() => setIsFolderUploadModalOpen(true)}
         selectedFileType={selectedFileType}
         showSearchView={showSearchView}
         isInRootFolder={currentFolderId === null && folderPath.length === 0 && selectedFileType === null && !showSearchView}
-        showUploadDropdown={showUploadDropdown}
-        setShowUploadDropdown={setShowUploadDropdown}
         setIsUploadModalOpen={setIsUploadModalOpen}
         setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
-        uploadDropdownRef={uploadDropdownRef}
+        onUploadClick={() => setIsUploadModalOpen(true)}
+        onFolderUploadClick={() => setIsFolderUploadModalOpen(true)}
       />
       
       {renderBreadcrumb()}

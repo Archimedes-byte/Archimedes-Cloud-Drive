@@ -1,7 +1,7 @@
 // 定义主题接口
 export interface ThemeStyle {
   primary: string;
-  secondary: string;
+  secondary?: string;
   accent?: string;
   background: string;
   card?: string;
@@ -61,8 +61,8 @@ function createTheme(
   name: string,
   colors: {
     primary: string;
-    secondary: string;
-    accent: string;
+    secondary?: string;
+    accent?: string;
     background: string;
   },
   category: string = '基础色彩',
@@ -89,6 +89,34 @@ export const themeDefinitions: Record<string, ThemeStyle> = {
       background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%)'
     },
     '基础色彩'
+  ),
+  
+  // 添加一个纯色系统主题
+  pure_blue: createTheme(
+    '纯蓝', 
+    {
+      primary: '#3b82f6',
+      background: '#3b82f6'
+    },
+    '纯色系统'
+  ),
+  
+  pure_red: createTheme(
+    '纯红', 
+    {
+      primary: '#ef4444',
+      background: '#ef4444'
+    },
+    '纯色系统'
+  ),
+  
+  pure_green: createTheme(
+    '纯绿', 
+    {
+      primary: '#10b981',
+      background: '#10b981'
+    },
+    '纯色系统'
   ),
   
   violet: createTheme(
@@ -269,4 +297,5 @@ export const themeCategories = {
   '渐变主题': ['ocean', 'sunset', 'forest', 'galaxy'],
   '季节主题': ['spring', 'summer', 'autumn', 'winter'],
   '柔和主题': ['pastel_pink', 'pastel_blue', 'pastel_lavender'],
+  '纯色系统': ['pure_blue', 'pure_red', 'pure_green'],
 }; 

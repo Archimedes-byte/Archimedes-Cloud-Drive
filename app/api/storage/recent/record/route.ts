@@ -9,7 +9,6 @@ import {
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { prisma } from '@/app/lib/database';
-import { NextResponse } from 'next/server';
 
 /**
  * POST方法：记录文件访问历史
@@ -28,7 +27,7 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       return createApiErrorResponse('文件ID不能为空', 400);
     }
     
-    // 查找文件并验证所有权
+    // 查找文件并验证文件存在
     const file = await prisma.file.findFirst({
       where: {
         id: fileId,

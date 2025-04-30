@@ -14,7 +14,7 @@ import {
   loadThemeFromStorage,
   reinitCustomThemes,
   THEME_STORAGE_KEY
-} from '@/app/components/ui/themes'
+} from '@/app/theme'
 import { createProfileUpdate } from '@/app/utils/user/profile'
 
 // 导入组件
@@ -28,6 +28,11 @@ import ProfileCompleteness from '@/app/components/features/user-profile/complete
 import modalStyles from '@/app/components/features/dashboard/modal/Modal.module.css'
 import styles from './dashboard.module.css' 
 
+import {
+  useTheme,
+  ThemePanel
+} from '@/app/theme'
+
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession({
@@ -40,6 +45,7 @@ export default function DashboardPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [manualThemeApplied, setManualThemeApplied] = useState(false)
+  const [dashboardTheme, setDashboardTheme] = useState<string | null>(null)
   
   // 使用Ref代替直接DOM操作
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -126,135 +132,74 @@ export default function DashboardPage() {
     
     // 确保theme是字符串
     const userTheme = userProfile.theme as string;
-    const isCustomTheme = userTheme.startsWith('custom_');
-    console.log(`Dashboard页面：主题应用 - 当前主题=${currentTheme}, 用户配置主题=${userTheme}, 是否自定义=${isCustomTheme}`);
+    console.log(`Dashboard页面：主题初始化 - 用户配置主题=${userTheme}`);
     
     // 检查本地存储的主题
     const storedTheme = loadThemeFromStorage();
-    const isStoredCustomTheme = storedTheme && storedTheme.startsWith('custom_');
     
     // 优先级调整：
-    // 1. 如果本地已存储自定义主题，且当前已手动应用了自定义主题，则保持此状态
-    if (isStoredCustomTheme && manualThemeApplied) {
-      console.log(`Dashboard页面：保持当前手动应用的自定义主题 ${storedTheme}`);
-      return;
-    }
-    
-    // 2. 如果用户配置是自定义主题，应用它
-    if (isCustomTheme) {
-      // 防止重复应用相同主题
-      if (userTheme === currentTheme) {
-        console.log(`Dashboard页面：跳过重复应用相同自定义主题 ${userTheme}`);
-        return;
-      }
+    // 1. 用户数据库中的主题优先级最高
+    if (userTheme) {
+      console.log(`Dashboard页面：应用用户数据库中的主题 ${userTheme}`);
       
-      console.log(`Dashboard页面：应用用户配置的自定义主题 ${userTheme}`);
-      
-      // 主题加载与应用
-      const applyUserTheme = async () => {
-        try {
-          // 重新初始化自定义主题，确保内存中有最新数据
+      // 尝试应用主题
+      try {
+        // 如果是自定义主题，确保先重新初始化
+        if (userTheme.startsWith('custom_')) {
           reinitCustomThemes();
-          
-          // 1. 先尝试通过钩子应用
-          const success = await updateTheme(userTheme);
-          
-          // 2. 如果通过钩子应用失败，尝试直接应用
-          if (!success) {
-            console.log('Dashboard页面：钩子应用自定义主题失败，尝试直接应用');
-            
-            // 直接应用主题
-            const themeStyle = applyThemeDirectly(userTheme);
-            if (themeStyle) {
-              console.log('Dashboard页面：直接应用自定义主题成功');
-              // 设置标记，表示已手动应用自定义主题
-              setManualThemeApplied(true);
-              
-              // 确保localStorage和body属性都正确设置
-              localStorage.setItem(THEME_STORAGE_KEY, userTheme);
-              document.body.dataset.theme = userTheme;
-            } else {
-              console.error('Dashboard页面：直接应用自定义主题失败');
-            }
-          } else {
-            console.log('Dashboard页面：钩子应用自定义主题成功');
-            // 设置标记，表示通过钩子成功应用了自定义主题
-            setManualThemeApplied(true);
-          }
-        } catch (error) {
-          console.error('Dashboard页面：应用自定义主题失败:', error);
         }
-      };
-      
-      applyUserTheme();
-      return;
-    }
-    
-    // 3. 系统主题处理 - 只有在没有已应用的自定义主题时才应用系统主题
-    // 检查是否有映射关系，可能是自定义主题映射为系统主题的情况
-    try {
-      const themeMapping = JSON.parse(localStorage.getItem('theme-id-mapping') || '{}');
-      
-      // 如果当前系统主题是某个自定义主题的映射，优先应用自定义主题
-      if (themeMapping[userTheme]) {
-        const originalCustomTheme = themeMapping[userTheme];
-        console.log(`Dashboard页面：发现系统主题${userTheme}是自定义主题${originalCustomTheme}的映射，优先应用自定义主题`);
         
-        // 确保映射的自定义主题是字符串类型
-        if (typeof originalCustomTheme === 'string') {
-          // 尝试直接应用自定义主题
-          const themeStyle = applyThemeDirectly(originalCustomTheme);
-          if (themeStyle) {
-            console.log(`Dashboard页面：成功应用映射的自定义主题 ${originalCustomTheme}`);
-            setManualThemeApplied(true);
-            return;
-          }
+        // 应用主题
+        const themeStyle = applyThemeDirectly(userTheme);
+        if (themeStyle) {
+          setDashboardTheme(userTheme);
+          console.log(`Dashboard页面：成功应用主题 ${userTheme}`);
+          
+          // 确保记录主题到localStorage和body属性
+          localStorage.setItem(THEME_STORAGE_KEY, userTheme);
+          document.body.dataset.theme = userTheme;
+        } else {
+          console.error(`Dashboard页面：应用主题 ${userTheme} 失败`);
+          
+          // 如果主题应用失败，尝试使用默认主题
+          applyThemeDirectly('default');
+          setDashboardTheme('default');
         }
+      } catch (error) {
+        console.error('Dashboard页面：应用主题出错:', error);
       }
-    } catch (error) {
-      console.error('Dashboard页面：检查主题映射失败:', error);
-    }
-    
-    // 如果本地已存储自定义主题，且当前没有应用过自定义主题，检查是否需要应用本地主题
-    if (isStoredCustomTheme && !manualThemeApplied && storedTheme) {
-      console.log(`Dashboard页面：检测到本地存储的自定义主题 ${storedTheme}，尝试应用`);
+    } 
+    // 2. 如果用户数据库中没有主题，但本地存储中有，使用本地存储的主题
+    else if (storedTheme) {
+      console.log(`Dashboard页面：使用本地存储的主题 ${storedTheme}`);
       
-      // 尝试直接应用本地存储的自定义主题
-      const themeStyle = applyThemeDirectly(storedTheme, false);
-      if (themeStyle) {
-        console.log(`Dashboard页面：成功应用本地存储的自定义主题 ${storedTheme}`);
-        document.body.dataset.theme = storedTheme;
-        setManualThemeApplied(true);
-        return;
+      // 尝试应用主题并保存到数据库
+      try {
+        const themeStyle = applyThemeDirectly(storedTheme);
+        if (themeStyle) {
+          setDashboardTheme(storedTheme);
+          console.log(`Dashboard页面：成功应用本地存储的主题 ${storedTheme}`);
+          
+          // 保存主题到用户数据库
+          updateTheme(storedTheme).then(success => {
+            if (success) {
+              console.log(`Dashboard页面：本地主题 ${storedTheme} 已同步到数据库`);
+            } else {
+              console.warn(`Dashboard页面：本地主题 ${storedTheme} 同步到数据库失败`);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Dashboard页面：应用本地主题出错:', error);
       }
     }
-    
-    // 如果没有自定义主题或自定义主题应用失败，才应用系统主题
-    // 防止重复应用相同主题
-    if (userTheme === currentTheme) {
-      console.log(`Dashboard页面：跳过重复应用相同系统主题 ${userTheme}`);
-      return;
+    // 3. 如果用户数据库和本地存储都没有主题，使用默认主题
+    else {
+      console.log('Dashboard页面：没有找到用户主题设置，使用默认主题');
+      applyThemeDirectly('default');
+      setDashboardTheme('default');
     }
-    
-    // 如果已经手动应用了自定义主题，提示切换到系统主题
-    if (manualThemeApplied) {
-      console.log(`Dashboard页面：检测到需要切换到系统主题 ${userTheme}，但已手动应用自定义主题，保持自定义主题状态`);
-      // 注意：这里不再重置manualThemeApplied，保持自定义主题优先
-      return;
-    }
-    
-    console.log(`Dashboard页面：开始应用系统主题 ${userTheme}`);
-    
-    // 应用系统主题
-    updateTheme(userTheme).then(success => {
-      if (success) {
-        console.log(`Dashboard页面：已应用系统主题 ${userTheme}`);
-      } else {
-        console.error(`Dashboard页面：应用系统主题 ${userTheme} 失败`);
-      }
-    });
-    
-  }, [userProfile?.theme, currentTheme, updateTheme, themeLoading, manualThemeApplied]);
+  }, [userProfile?.theme, updateTheme, themeLoading]);
   
   // 页面加载时，确保文档主题类处于正确状态
   useEffect(() => {

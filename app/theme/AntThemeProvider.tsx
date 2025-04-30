@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ConfigProvider } from 'antd';
-import { customTheme } from './index';
+import { customTheme } from '@/app/theme';
 
 /**
  * Ant Design 主题提供者组件
@@ -10,7 +10,7 @@ import { customTheme } from './index';
  * 
  * 用法示例:
  * ```tsx
- * import { AntThemeProvider } from '@/app/components/ui/themes/AntThemeProvider';
+ * import { AntThemeProvider } from '@/app/theme/AntThemeProvider';
  * 
  * function App({ children }) {
  *   return (

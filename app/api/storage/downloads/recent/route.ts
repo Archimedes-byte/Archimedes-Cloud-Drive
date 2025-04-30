@@ -9,7 +9,8 @@ import {
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { prisma } from '@/app/lib/database';
-import { FileInfo, mapFileEntityToFileInfo } from '@/app/types';
+import { FileInfo } from '@/app/types';
+import { mapFileEntityToFileInfo } from '@/app/services/storage';
 
 // 定义API响应类型
 interface RecentDownloadsResponse {

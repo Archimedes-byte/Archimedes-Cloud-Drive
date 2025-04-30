@@ -80,6 +80,7 @@ interface AntFileListProps {
   favoritedFileIds?: string[];
   onToggleFavorite?: (file: FileInfo, isFavorite: boolean) => void;
   fileUpdateTrigger?: number;
+  showPath?: boolean;
 }
 
 export function AntFileList({
@@ -114,7 +115,8 @@ export function AntFileList({
   areAllSelected,
   favoritedFileIds = [],
   onToggleFavorite,
-  fileUpdateTrigger = 0
+  fileUpdateTrigger = 0,
+  showPath = false
 }: AntFileListProps) {
   const actualEditingFileId = editingFileId || editingFile;
 
@@ -396,6 +398,30 @@ export function AntFileList({
         );
       },
     },
+    
+    // 路径列 - 仅在搜索结果中显示
+    ...(showPath ? [
+      {
+        title: '所在位置',
+        dataIndex: 'path',
+        key: 'path',
+        width: 220,
+        render: (_: any, record: FileInfo) => {
+          const path = record.path || '-';
+          if (!path || path === '-') return <Text type="secondary">-</Text>;
+          
+          return (
+            <Text 
+              ellipsis={true} 
+              title={path}
+              style={{ color: '#718096', fontSize: '13px' }}
+            >
+              {path}
+            </Text>
+          );
+        },
+      }
+    ] : []),
     
     // 标签列
     {

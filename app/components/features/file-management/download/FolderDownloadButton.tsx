@@ -3,6 +3,7 @@ import { DownloadOutlined, FolderOutlined } from '@ant-design/icons';
 import { Button, message, Modal, Spin, Typography, Space, Flex, Alert, Tooltip } from '@/app/components/ui/ant';
 import { downloadFolder } from '@/app/lib/storage/utils/download';
 import { useFileOperations } from '@/app/hooks/file/useFileOperations';
+import { fileApi } from '@/app/lib/api/file-api';
 import { Edit, MoreHorizontal } from 'lucide-react';
 import styles from './FolderDownloadButton.module.css';
 
@@ -35,16 +36,33 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [downloadAttempt, setDownloadAttempt] = useState(0);
+  const [checkingFolder, setCheckingFolder] = useState(false);
   const { downloadFiles } = useFileOperations();
 
   /**
    * 处理下载按钮点击
-   * 显示确认模态框
+   * 显示确认模态框，并检查文件夹是否为空
    */
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowModal(true);
+    
+    // 先检查文件夹是否为空
+    try {
+      setCheckingFolder(true);
+      const response = await fileApi.getFiles({ folderId, pageSize: 1 });
+      if (response && response.items && response.items.length === 0) {
+        message.warning(`文件夹 "${folderName}" 为空，无法下载空文件夹`);
+        setCheckingFolder(false);
+        return;
+      }
+      setCheckingFolder(false);
+      setShowModal(true);
+    } catch (error) {
+      console.error('检查文件夹内容失败:', error);
+      setCheckingFolder(false);
+      setShowModal(true); // 出错时仍然显示模态框，让用户尝试下载
+    }
   };
 
   /**
@@ -60,7 +78,7 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
       const success = await downloadFiles([folderId]);
       
       if (success) {
-        message.success(`"${folderName}" 文件夹下载已开始`);
+        // 下载成功后关闭模态框 - 不再显示多余的消息(downloadFileHelper已经显示了成功消息)
         setShowModal(false);
         return;
       }
@@ -70,7 +88,7 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
       const fallbackSuccess = await downloadFolder(folderId, `${folderName}.zip`);
       
       if (fallbackSuccess) {
-        message.success(`"${folderName}" 文件夹下载已开始`);
+        // 下载成功后关闭模态框 - 不再显示多余的消息(downloadFileHelper已经显示了成功消息)
         setShowModal(false);
         return;
       }
@@ -99,139 +117,12 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
     setShowModal(false);
     setDownloadAttempt(0);
   };
-
-  /**
-   * 处理打开新窗口下载
-   * 在新窗口中尝试下载，避免当前窗口的限制
-   */
-  const handleNewWindowDownload = () => {
-    try {
-      // 构建下载URL
-      const downloadUrl = `/api/debug/folder-download-page?id=${folderId}&name=${encodeURIComponent(folderName)}`;
-      
-      // 在新窗口中打开
-      const newWindow = window.open(downloadUrl, '_blank');
-      
-      if (!newWindow) {
-        message.warning('无法打开新窗口，请检查浏览器设置');
-      } else {
-        setShowModal(false);
-        message.info('已在新窗口中启动下载');
-      }
-    } catch (error) {
-      console.error('打开新窗口下载失败:', error);
-      message.error('打开新窗口失败');
-    }
-  };
-
-  // 渲染按钮模式（原 FolderDownloadButton）
-  if (mode === 'button') {
-    return (
-      <>
-        <Button
-          className={className}
-          onClick={handleClick}
-          icon={showIcon ? <DownloadOutlined /> : undefined}
-          disabled={loading}
-        >
-          {buttonText}
-        </Button>
-
-        <Modal
-          title={<Flex align="center"><FolderOutlined className={styles.titleIcon} /> 下载文件夹</Flex>}
-          open={showModal}
-          onCancel={handleCancel}
-          footer={[
-            <Button key="cancel" onClick={handleCancel}>
-              取消
-            </Button>,
-            <Button 
-              key="newwindow" 
-              type="default" 
-              onClick={handleNewWindowDownload}
-              disabled={loading}
-            >
-              在新窗口下载
-            </Button>,
-            <Button 
-              key="download" 
-              type="primary" 
-              onClick={startDownload} 
-              loading={loading}
-            >
-              开始下载
-            </Button>,
-          ]}
-        >
-          <div className={styles.modalContent}>
-            {loading ? (
-              <Flex vertical align="center" className={styles.loadingContainer}>
-                <Spin />
-                <Typography.Paragraph className={styles.loadingText}>正在准备下载，请稍候...</Typography.Paragraph>
-              </Flex>
-            ) : (
-              <>
-                <Typography.Paragraph>您即将下载文件夹 <strong>"{folderName}"</strong></Typography.Paragraph>
-                <Typography.Paragraph>文件夹将被压缩为ZIP格式下载</Typography.Paragraph>
-                
-                {downloadAttempt > 0 && (
-                  <Alert
-                    className={styles.warningAlert}
-                    type="warning"
-                    message={
-                      <Space direction="vertical" className={styles.warningContent}>
-                        <Typography.Paragraph strong>提示：</Typography.Paragraph>
-                        <Typography.Paragraph>文件夹下载可能被浏览器安全策略阻止。您可以尝试：</Typography.Paragraph>
-                        <ul className={styles.warningList}>
-                          <li>再次点击"开始下载"按钮</li>
-                          <li>点击"在新窗口下载"按钮</li>
-                          <li>稍后再试或使用其他浏览器</li>
-                        </ul>
-                      </Space>
-                    }
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </Modal>
-      </>
-    );
-  }
   
-  // 渲染操作按钮组模式（原 FolderActionButtons）
-  return (
-    <div className={`${styles.container} ${className}`}>
-      <Tooltip title="下载文件夹" placement="top">
-        <div className={styles.actionButton} onClick={handleClick}>
-          <Button
-            className={styles.iconButton}
-            onClick={(e) => e.stopPropagation()}
-            icon={<DownloadOutlined />}
-            type="text"
-          />
-        </div>
-      </Tooltip>
-      
-      {onRename && (
-        <Tooltip title="重命名" placement="top">
-          <div className={styles.actionButton} onClick={onRename}>
-            <Edit size={16} />
-          </div>
-        </Tooltip>
-      )}
-      
-      {onContextMenu && (
-        <Tooltip title="更多操作" placement="top">
-          <div 
-            className={styles.actionButton} 
-            onClick={onContextMenu}
-          >
-            <MoreHorizontal size={16} />
-          </div>
-        </Tooltip>
-      )}
-      
+  /**
+   * 渲染下载模态框
+   */
+  const renderDownloadModal = () => {
+    return (
       <Modal
         title={<Flex align="center"><FolderOutlined className={styles.titleIcon} /> 下载文件夹</Flex>}
         open={showModal}
@@ -239,14 +130,6 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
         footer={[
           <Button key="cancel" onClick={handleCancel}>
             取消
-          </Button>,
-          <Button 
-            key="newwindow" 
-            type="default" 
-            onClick={handleNewWindowDownload}
-            disabled={loading}
-          >
-            在新窗口下载
           </Button>,
           <Button 
             key="download" 
@@ -279,7 +162,6 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
                       <Typography.Paragraph>文件夹下载可能被浏览器安全策略阻止。您可以尝试：</Typography.Paragraph>
                       <ul className={styles.warningList}>
                         <li>再次点击"开始下载"按钮</li>
-                        <li>点击"在新窗口下载"按钮</li>
                         <li>稍后再试或使用其他浏览器</li>
                       </ul>
                     </Space>
@@ -290,6 +172,62 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
           )}
         </div>
       </Modal>
+    );
+  };
+
+  // 渲染按钮模式（原 FolderDownloadButton）
+  if (mode === 'button') {
+    return (
+      <>
+        <Button
+          className={className}
+          onClick={handleClick}
+          icon={showIcon ? <DownloadOutlined /> : undefined}
+          disabled={loading || checkingFolder}
+        >
+          {checkingFolder ? '检查文件夹...' : buttonText}
+        </Button>
+
+        {renderDownloadModal()}
+      </>
+    );
+  }
+  
+  // 渲染操作按钮组模式（原 FolderActionButtons）
+  return (
+    <div className={`${styles.container} ${className}`}>
+      <Tooltip title={checkingFolder ? '检查文件夹...' : '下载文件夹'} placement="top">
+        <div className={styles.actionButton} onClick={handleClick}>
+          <Button
+            className={styles.iconButton}
+            onClick={(e) => e.stopPropagation()}
+            icon={<DownloadOutlined />}
+            type="text"
+            disabled={loading || checkingFolder}
+          />
+        </div>
+      </Tooltip>
+      
+      {onRename && (
+        <Tooltip title="重命名" placement="top">
+          <div className={styles.actionButton} onClick={onRename}>
+            <Edit size={16} />
+          </div>
+        </Tooltip>
+      )}
+      
+      {onContextMenu && (
+        <Tooltip title="更多操作" placement="top">
+          <div 
+            className={styles.actionButton} 
+            onClick={onContextMenu}
+          >
+            <MoreHorizontal size={16} />
+          </div>
+        </Tooltip>
+      )}
+      
+      {renderDownloadModal()}
     </div>
   );
 }; 

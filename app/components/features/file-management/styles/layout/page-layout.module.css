@@ -2,7 +2,10 @@
   flex: 1; 
   overflow-y: auto;
   padding: 16px;
-  background-color: var(--theme-bg, #ffffff);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .pageLayout {
@@ -11,6 +14,13 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
+  background: var(--theme-file-manager-background, var(--theme-background, linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%)));
+  transition: background 0.3s ease;
+}
+
+/* 为主题应用添加特定样式 */
+:global(.theme-file-manager-applied) .pageLayout {
+  background: var(--theme-file-manager-background, var(--theme-background, linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%)));
 }
 
 .fileAreaContainer {
@@ -27,6 +37,12 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
 .breadcrumbItem {

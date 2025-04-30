@@ -25,5 +25,11 @@ export {
   reinitCustomThemes
 } from './theme-service';
 
+// 导出主题钩子
+export { useTheme } from './useTheme';
+
 // 导出主题组件
+export { default as AntThemeProvider } from './AntThemeProvider';
+
+// 导出ThemePanel组件
 export { ThemePanel } from './components'; 

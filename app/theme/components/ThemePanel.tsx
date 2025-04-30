@@ -20,9 +20,8 @@ interface ThemePanelProps {
 // 默认自定义主题模板
 const defaultCustomTheme: ThemeStyle = {
   primary: '#3b82f6',
-  secondary: '#2c5282',
-  accent: '#60a5fa',
-  background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%)',
+  secondary: '',
+  background: '#f0f7ff',
   card: 'rgba(255, 255, 255, 0.9)',
   text: '#1a202c',
   category: '自定义主题',
@@ -36,15 +35,6 @@ const defaultCustomTheme: ThemeStyle = {
   warningLight: 'rgba(236, 201, 75, 0.2)',
   infoLight: 'rgba(66, 153, 225, 0.2)'
 };
-
-// 可用字体列表
-const availableFonts = [
-  { id: 'system', name: '系统默认字体', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  { id: 'serif', name: '衬线字体', value: 'Georgia, Cambria, "Times New Roman", Times, serif' },
-  { id: 'sans', name: '无衬线字体', value: 'Arial, Helvetica, sans-serif' },
-  { id: 'mono', name: '等宽字体', value: '"Courier New", Courier, monospace' },
-  { id: 'rounded', name: '圆角字体', value: '"Varela Round", "Nunito", sans-serif' }
-];
 
 const ThemePanel: React.FC<ThemePanelProps> = ({ 
   currentTheme, 
@@ -60,8 +50,8 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [customTheme, setCustomTheme] = useState<ThemeStyle>({...defaultCustomTheme});
   const [customThemeName, setCustomThemeName] = useState('我的自定义主题');
-  const [selectedFont, setSelectedFont] = useState(availableFonts[0].id);
   const [showPreview, setShowPreview] = useState(false);
+  const [hasSecondaryColor, setHasSecondaryColor] = useState(false);
   
   // 删除主题状态
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -78,7 +68,9 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         primary: themeStyle.primary,
         secondary: themeStyle.secondary,
         background: themeStyle.background,
-        preview: `linear-gradient(135deg, ${themeStyle.primary} 0%, ${themeStyle.secondary} 100%)`,
+        preview: themeStyle.secondary ? 
+          `linear-gradient(135deg, ${themeStyle.primary} 0%, ${themeStyle.secondary} 100%)` : 
+          themeStyle.primary,
         accent: themeStyle.accent,
         // 直接使用主题服务中定义的分类
         category: themeStyle.category || '其他主题',
@@ -97,6 +89,40 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       setSelectedTheme(currentTheme);
     }
   }, [currentTheme]);
+
+  // 当isCustomizing变为true时，初始化自定义主题状态
+  useEffect(() => {
+    if (isCustomizing) {
+      // 重置自定义主题为默认值
+      const initialTheme = {...defaultCustomTheme};
+      setCustomTheme(initialTheme);
+      setCustomThemeName('我的自定义主题');
+      setShowPreview(false);
+      // 检查是否有次要色调并相应更新状态
+      setHasSecondaryColor(!!initialTheme.secondary && initialTheme.secondary !== '');
+    }
+  }, [isCustomizing]);
+
+  // 当主题的主色调变化时，如果有次要色调则更新背景渐变
+  useEffect(() => {
+    if (hasSecondaryColor && customTheme.secondary && customTheme.secondary !== '') {
+      // 更新背景为渐变色
+      setCustomTheme(prev => ({
+        ...prev,
+        background: `linear-gradient(135deg, ${prev.primary} 0%, ${prev.secondary || prev.primary} 100%)`
+      }));
+    } else if (!hasSecondaryColor) {
+      // 更新背景为纯色
+      setCustomTheme(prev => {
+        const newTheme = { ...prev };
+        delete newTheme.secondary;
+        return {
+          ...newTheme,
+          background: prev.primary
+        };
+      });
+    }
+  }, [customTheme.primary, customTheme.secondary, hasSecondaryColor]);
 
   // 处理主题选择
   const handleThemeSelect = async (themeId: string) => {
@@ -175,7 +201,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         // 增强搜索：ID中的关键字、颜色值、类型
         const idMatch = theme.id.toLowerCase().includes(query);
         const primaryColorMatch = theme.primary.toLowerCase().includes(query);
-        const secondaryColorMatch = theme.secondary.toLowerCase().includes(query);
+        const secondaryColorMatch = theme.secondary ? theme.secondary.toLowerCase().includes(query) : false;
         const typeMatch = theme.isCustom ? 
           '自定义'.includes(query) || 'custom'.includes(query) : 
           '预设'.includes(query) || 'preset'.includes(query);
@@ -212,23 +238,127 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     }
   };
 
-  // 处理字体变更
-  const handleFontChange = (fontId: string) => {
-    setSelectedFont(fontId);
-    // 在这里我们不直接修改customTheme，而是保存字体ID，应用时再获取字体值
+  // 处理添加/移除次要色调
+  const toggleSecondaryColor = () => {
+    if (hasSecondaryColor) {
+      // 如果已有次要色调，移除它
+      setCustomTheme((prev: ThemeStyle) => {
+        // 创建新对象，同时移除secondary属性
+        const newTheme = { ...prev };
+        delete newTheme.secondary;
+        return {
+          ...newTheme,
+          background: prev.primary // 更新背景为纯色
+        };
+      });
+      setHasSecondaryColor(false);
+    } else {
+      // 如果没有次要色调，添加默认值并设置渐变背景
+      const secondaryColor = getComplementaryColor(customTheme.primary);
+      setCustomTheme((prev: ThemeStyle) => ({
+        ...prev,
+        secondary: secondaryColor,
+        background: `linear-gradient(135deg, ${prev.primary} 0%, ${secondaryColor} 100%)`
+      }));
+      setHasSecondaryColor(true);
+    }
+    
+    // 自动开启预览
+    if (!showPreview) {
+      setShowPreview(true);
+    }
+  };
+
+  // 计算互补色函数
+  const getComplementaryColor = (hexColor: string): string => {
+    // 移除#号
+    const hex = hexColor.replace('#', '');
+    
+    // 将十六进制转换为RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    // 计算HSL
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    
+    if (max === min) {
+      h = s = 0; // 灰色
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+        default: h = 0;
+      }
+      
+      h /= 6;
+    }
+    
+    // 创建互补色 - 在HSL空间中旋转色相180度
+    h = (h + 0.5) % 1;
+    
+    // 将HSL转回RGB
+    let r1, g1, b1;
+    
+    if (s === 0) {
+      r1 = g1 = b1 = l; // 灰色
+    } else {
+      const hue2rgb = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      
+      r1 = hue2rgb(p, q, h + 1/3);
+      g1 = hue2rgb(p, q, h);
+      b1 = hue2rgb(p, q, h - 1/3);
+    }
+    
+    // 转回十六进制
+    const toHex = (x: number) => {
+      const hex = Math.round(x * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    return `#${toHex(r1)}${toHex(g1)}${toHex(b1)}`;
   };
 
   // 应用自定义主题
   const applyCustomTheme = async () => {
-    const selectedFontValue = availableFonts.find(f => f.id === selectedFont)?.value || availableFonts[0].value;
-    
     // 创建完整的自定义主题对象
     const fullCustomTheme: ThemeStyle = {
       ...customTheme,
       name: customThemeName,
-      // 添加字体属性
-      fontFamily: selectedFontValue
     };
+    
+    // 更新背景色和次要色调
+    if (hasSecondaryColor && customTheme.secondary) {
+      fullCustomTheme.background = `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`;
+      console.log("应用渐变色主题:", fullCustomTheme);
+    } else {
+      // 纯色系统 - 完全移除次要色调和渐变背景
+      fullCustomTheme.background = customTheme.primary;
+      
+      // 显式删除次要色调和强调色，确保不会被混入
+      delete fullCustomTheme.secondary;
+      delete fullCustomTheme.accent;
+      
+      // 输出日志确认设置
+      console.log("应用纯色主题:", fullCustomTheme);
+      console.log("次要色调是否存在:", 'secondary' in fullCustomTheme);
+    }
     
     // 获取当前用户ID，用于创建用户特定的自定义主题ID
     let userId = '';
@@ -244,8 +374,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       }
     }
     
-    // 生成唯一ID - 使用简短的格式
-    // 使用6位时间戳和3位随机数，确保ID简短
+    // 生成唯一ID
     const timestamp = Date.now().toString().slice(-6);
     const randomNum = Math.floor(Math.random() * 1000);
     const customThemeId = `custom_${userId}_${timestamp}_${randomNum}`;
@@ -296,23 +425,48 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
 
   // 自定义主题预览
   const getPreviewStyle = () => {
-    const selectedFontValue = availableFonts.find(f => f.id === selectedFont)?.value || availableFonts[0].value;
+    // 强制检查是否为纯色系统
+    const isPureColorSystem = !hasSecondaryColor || !customTheme.secondary;
     
+    // 纯色系统下使用主色调作为背景
+    // 渐变色系统下确保使用完整的渐变表达式
+    const previewBackground = isPureColorSystem
+      ? customTheme.primary
+      : `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`;
+
+    console.log("预览样式:", {
+      isPureColorSystem,
+      primary: customTheme.primary,
+      secondary: customTheme.secondary,
+      background: previewBackground
+    });
+
+    // 纯色系统下所有次要色调相关的变量都使用主色调
     return {
       '--preview-primary': customTheme.primary,
-      '--preview-secondary': customTheme.secondary,
-      '--preview-accent': customTheme.accent,
-      '--preview-background': customTheme.background,
+      '--preview-secondary': isPureColorSystem ? customTheme.primary : customTheme.secondary,
+      '--preview-accent': isPureColorSystem ? customTheme.primary : (customTheme.accent || customTheme.primary),
+      '--preview-background': previewBackground,
+      '--preview-card': customTheme.card,
       '--preview-text': customTheme.text,
-      '--preview-font': selectedFontValue
     } as React.CSSProperties;
   };
 
   // 自定义主题的实时预览背景
   const getCustomThemePreviewStyle = () => {
-    return {
-      background: `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`,
-    } as React.CSSProperties;
+    // 同样强制检查是否为纯色系统
+    const isPureColorSystem = !hasSecondaryColor || !customTheme.secondary;
+    
+    const backgroundStyle = isPureColorSystem
+      ? { background: customTheme.primary } 
+      : { background: `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)` };
+    
+    console.log("预览按钮样式:", {
+      isPureColorSystem,
+      backgroundStyle
+    });
+    
+    return backgroundStyle as React.CSSProperties;
   };
 
   // 处理删除主题
@@ -351,66 +505,6 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       setShowDeleteConfirm(false);
       setThemeToDelete(null);
     }
-  };
-
-  // 自定义主题字体选择界面渲染
-  const renderFontOptions = () => (
-    <div className={styles.fontOptions}>
-      {availableFonts.map(font => (
-        <button
-          key={font.id}
-          className={`${styles.fontOption} ${selectedFont === font.id ? styles.selected : ''}`}
-          onClick={() => handleFontChange(font.id)}
-          style={{ fontFamily: font.value }}
-        >
-          <span className={styles.fontName}>{font.name}</span>
-          <span className={styles.fontSample} style={{ color: customTheme.primary }}>Aa 中文示例</span>
-          {selectedFont === font.id && (
-            <span className={styles.fontCheckmark} style={{ background: customTheme.primary }}>
-              <Check size={14} />
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-
-  // 渲染删除确认对话框
-  const renderDeleteConfirmDialog = () => {
-    const themeToDeleteName = themes.find(t => t.id === themeToDelete)?.name || themeToDelete;
-    
-    return (
-      <div className={styles.deleteConfirmOverlay}>
-        <div className={styles.deleteConfirmDialog}>
-          <div className={styles.deleteConfirmHeader}>
-            <AlertCircle size={24} className={styles.deleteConfirmIcon} />
-            <h3>确认删除主题</h3>
-          </div>
-          <div className={styles.deleteConfirmContent}>
-            <p>您确定要删除自定义主题 <strong>"{themeToDeleteName}"</strong> 吗？</p>
-            <p>此操作无法撤销，删除后将无法恢复。</p>
-          </div>
-          <div className={styles.deleteConfirmActions}>
-            <button 
-              className={styles.cancelButton}
-              onClick={() => {
-                setShowDeleteConfirm(false);
-                setThemeToDelete(null);
-              }}
-            >
-              取消
-            </button>
-            <button 
-              className={styles.deleteButton}
-              onClick={confirmDeleteTheme}
-            >
-              <Trash size={16} />
-              确认删除
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   // 渲染自定义主题界面
@@ -475,54 +569,34 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
                 </div>
               </div>
               
-              <div className={styles.colorOption}>
-                <label>次要色调</label>
-                <div className={styles.colorInputWrapper}>
-                  <input 
-                    type="color" 
-                    value={customTheme.secondary}
-                    onChange={(e) => handleColorChange(e.target.value, 'secondary')}
-                    className={styles.colorInput}
-                  />
-                  <span className={styles.colorValue}>{customTheme.secondary}</span>
+              {hasSecondaryColor && customTheme.secondary && (
+                <div className={styles.colorOption}>
+                  <label>次要色调</label>
+                  <div className={styles.colorInputWrapper}>
+                    <input 
+                      type="color" 
+                      value={customTheme.secondary}
+                      onChange={(e) => handleColorChange(e.target.value, 'secondary')}
+                      className={styles.colorInput}
+                    />
+                    <span className={styles.colorValue}>{customTheme.secondary}</span>
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className={styles.colorOption}>
-                <label>强调色</label>
-                <div className={styles.colorInputWrapper}>
-                  <input 
-                    type="color" 
-                    value={customTheme.accent || '#60a5fa'}
-                    onChange={(e) => handleColorChange(e.target.value, 'accent')}
-                    className={styles.colorInput}
-                  />
-                  <span className={styles.colorValue}>{customTheme.accent || '#60a5fa'}</span>
-                </div>
-              </div>
-              
-              <div className={styles.colorOption}>
-                <label>文字颜色</label>
-                <div className={styles.colorInputWrapper}>
-                  <input 
-                    type="color" 
-                    value={customTheme.text || '#1a202c'}
-                    onChange={(e) => handleColorChange(e.target.value, 'text')}
-                    className={styles.colorInput}
-                  />
-                  <span className={styles.colorValue}>{customTheme.text || '#1a202c'}</span>
+                <button 
+                  className={styles.addSecondaryColorButton}
+                  onClick={toggleSecondaryColor}
+                  title={hasSecondaryColor ? "移除次要色调" : "添加次要色调"}
+                >
+                  {hasSecondaryColor ? "移除次要色调" : "➕ 添加次要色调"}
+                </button>
+                <div className={styles.secondaryColorHint}>
+                  {hasSecondaryColor ? "渐变色系统" : "纯色系统"}
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className={styles.fontSection}>
-            <h3 className={styles.sectionTitle}>
-              <Type size={16} />
-              字体样式
-            </h3>
-            
-            {renderFontOptions()}
           </div>
         </div>
         
@@ -640,6 +714,44 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       </button>
     </div>
   );
+
+  // 渲染删除确认对话框
+  const renderDeleteConfirmDialog = () => {
+    const themeToDeleteName = themes.find(t => t.id === themeToDelete)?.name || themeToDelete;
+    
+    return (
+      <div className={styles.deleteConfirmOverlay}>
+        <div className={styles.deleteConfirmDialog}>
+          <div className={styles.deleteConfirmHeader}>
+            <AlertCircle size={24} className={styles.deleteConfirmIcon} />
+            <h3>确认删除主题</h3>
+          </div>
+          <div className={styles.deleteConfirmContent}>
+            <p>您确定要删除自定义主题 <strong>"{themeToDeleteName}"</strong> 吗？</p>
+            <p>此操作无法撤销，删除后将无法恢复。</p>
+          </div>
+          <div className={styles.deleteConfirmActions}>
+            <button 
+              className={styles.cancelButton}
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setThemeToDelete(null);
+              }}
+            >
+              取消
+            </button>
+            <button 
+              className={styles.deleteButton}
+              onClick={confirmDeleteTheme}
+            >
+              <Trash size={16} />
+              确认删除
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // 渲染主界面
   const renderMainUI = () => (

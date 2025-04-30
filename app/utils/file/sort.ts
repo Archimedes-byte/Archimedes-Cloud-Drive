@@ -32,7 +32,7 @@ export function sortFiles<T extends {
   }
 
   return [...fileList].sort((a, b) => {
-    // 文件夹始终排在前面（如果有isFolder属性）
+    // 文件夹始终排在前面，无论排序类型或方向如何
     if (a.isFolder !== undefined && b.isFolder !== undefined && a.isFolder !== b.isFolder) {
       return a.isFolder ? -1 : 1;
     }
@@ -41,7 +41,7 @@ export function sortFiles<T extends {
     let comparison = 0;
     switch (sortConfig.field) {
       case 'name':
-        comparison = a.name.localeCompare(b.name);
+        comparison = a.name.localeCompare(b.name, undefined, {sensitivity: 'accent'});
         break;
       case 'size':
         const sizeA = a.size || 0;

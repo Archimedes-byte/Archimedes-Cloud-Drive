@@ -90,49 +90,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             }}>
               找到 {searchResults.length} 个结果
             </div>
-            
-            <div style={{ display: 'flex', gap: '12px' }}>
-              {onSelectAll && onDeselectAll && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={onSelectAll}
-                    style={{
-                      background: 'none',
-                      border: '1px solid rgba(226, 232, 240, 0.8)',
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '12px',
-                      color: '#5e6c84',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Download size={12} />
-                    全选
-                  </button>
-                  <button
-                    onClick={onDeselectAll}
-                    style={{
-                      background: 'none',
-                      border: '1px solid rgba(226, 232, 240, 0.8)',
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '12px',
-                      color: '#5e6c84',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <X size={12} />
-                    取消选择
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
           
           <AntFileList 
@@ -149,6 +106,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             fileUpdateTrigger={fileUpdateTrigger}
             onFileContextMenu={onFileContextMenu}
             isLoading={false}
+            showPath={true}
           />
         </>
       ) : searchQuery && !searchLoading ? (

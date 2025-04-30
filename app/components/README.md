@@ -25,7 +25,7 @@ import { Button } from '@/app/components/ui';
 
 ```tsx
 // app/layout.tsx 或根组件
-import { AntThemeProvider } from '@/app/components/ui/themes/AntThemeProvider';
+import { AntThemeProvider } from '@/app/theme';
 
 export default function RootLayout({ children }) {
   return (
