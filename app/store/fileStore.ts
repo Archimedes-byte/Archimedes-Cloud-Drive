@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { FolderPathItem, FileInfo, FileTypeEnum, FileSortInterface, SortDirectionEnum } from '@/app/types';
 import { fileApi } from '@/app/lib/api/file-api';
-import { handleApiError } from '@/app/lib/file/fileUtils';
+import { handleError, safeAsync } from '@/app/utils/error';
 import { sortFiles } from '@/app/utils/file/sort';
 import { filterFilesByType } from '@/app/utils/file/type';
 
@@ -82,8 +82,8 @@ const useFileStore = create<FileState>((set, get) => ({
       error: null,
       ...(type === null ? { currentFolderId: folderId } : {})
     });
-    
-    try {
+
+    const result = await safeAsync(async () => {
       // 使用fileApi获取文件列表
       const timestamp = Date.now();
       const result = await fileApi.getFiles({
@@ -123,11 +123,19 @@ const useFileStore = create<FileState>((set, get) => ({
       if (type === null && folderId) {
         get().loadFolderPath(folderId);
       }
-    } catch (error) {
-      const errorMessage = handleApiError(error, '加载文件列表失败', false);
+      
+      return true;
+    }, {
+      showError: false,
+      errorMessage: '加载文件列表失败',
+      fallbackValue: false,
+      logLevel: 'error'
+    });
+    
+    if (!result) {
       set({
         isLoading: false,
-        error: errorMessage
+        error: '加载文件列表失败'
       });
     }
   },
@@ -141,7 +149,7 @@ const useFileStore = create<FileState>((set, get) => ({
       error: null
     });
     
-    try {
+    const result = await safeAsync(async () => {
       const recentFiles = await fileApi.getRecentFiles(limit);
       set({
         files: recentFiles,
@@ -150,11 +158,17 @@ const useFileStore = create<FileState>((set, get) => ({
         folderPath: [],
         selectedFileType: null
       });
-    } catch (error) {
-      const errorMessage = handleApiError(error, '加载最近文件失败', false);
+      return true;
+    }, {
+      showError: false,
+      errorMessage: '加载最近文件失败',
+      fallbackValue: false
+    });
+    
+    if (!result) {
       set({
         isLoading: false,
-        error: errorMessage
+        error: '加载最近文件失败'
       });
     }
   },
@@ -172,7 +186,7 @@ const useFileStore = create<FileState>((set, get) => ({
       error: null
     });
     
-    try {
+    const result = await safeAsync(async () => {
       const searchResults = await fileApi.searchFiles({
         query,
         type: type || undefined,
@@ -186,11 +200,17 @@ const useFileStore = create<FileState>((set, get) => ({
         folderPath: [],
         selectedFileType: type || null
       });
-    } catch (error) {
-      const errorMessage = handleApiError(error, '搜索文件失败', false);
+      return true;
+    }, {
+      showError: false,
+      errorMessage: '搜索文件失败',
+      fallbackValue: false
+    });
+    
+    if (!result) {
       set({
         isLoading: false,
-        error: errorMessage
+        error: '搜索文件失败'
       });
     }
   },
@@ -280,24 +300,27 @@ const useFileStore = create<FileState>((set, get) => ({
       return false;
     }
     
-    try {
+    const result = await safeAsync(async () => {
       await fileApi.deleteFiles(fileIds);
       
-      // 从文件列表中移除已删除的文件
+      // 删除后，从当前文件列表中移除这些文件
       set(state => ({
         files: state.files.filter(file => !fileIds.includes(file.id)),
         selectedFileIds: state.selectedFileIds.filter(id => !fileIds.includes(id))
       }));
       
+      // 执行成功回调
       if (onSuccess) {
         onSuccess();
       }
       
       return true;
-    } catch (error) {
-      handleApiError(error, '删除文件失败');
-      return false;
-    }
+    }, {
+      errorMessage: '删除文件失败',
+      fallbackValue: false as boolean
+    });
+    
+    return result === null ? false : result;
   },
   
   /**
@@ -308,68 +331,62 @@ const useFileStore = create<FileState>((set, get) => ({
       return false;
     }
     
-    try {
+    const result = await safeAsync(async () => {
       await fileApi.moveFiles(fileIds, targetFolderId);
       
-      // 如果当前文件夹是目标文件夹，重新加载文件
-      if (get().currentFolderId === targetFolderId) {
-        await get().loadFiles(targetFolderId, null, true);
-      } else {
-        // 否则从文件列表中移除已移动的文件
-        set(state => ({
-          files: state.files.filter(file => !fileIds.includes(file.id)),
-          selectedFileIds: state.selectedFileIds.filter(id => !fileIds.includes(id))
-        }));
-      }
+      // 移动后，从当前文件列表中移除这些文件
+      set(state => ({
+        files: state.files.filter(file => !fileIds.includes(file.id)),
+        selectedFileIds: state.selectedFileIds.filter(id => !fileIds.includes(id))
+      }));
       
       return true;
-    } catch (error) {
-      handleApiError(error, '移动文件失败');
-      return false;
-    }
+    }, {
+      errorMessage: '移动文件失败',
+      fallbackValue: false as boolean
+    });
+    
+    return result === null ? false : result;
   },
   
   /**
    * 重命名文件
    */
   renameFile: async (fileId: string, newName: string) => {
-    try {
-      // 调用API重命名
+    return await safeAsync(async () => {
       const updatedFile = await fileApi.updateFile(fileId, newName);
       
-      // 更新状态中的文件
+      // 更新状态中的文件名
       set(state => ({
         files: state.files.map(file => 
-          file.id === fileId ? { ...file, name: updatedFile.name } : file
+          file.id === fileId ? { ...file, name: newName } : file
         )
       }));
       
       return updatedFile;
-    } catch (error) {
-      handleApiError(error, '重命名文件失败');
-      return null;
-    }
+    }, {
+      errorMessage: '重命名文件失败',
+      fallbackValue: null
+    });
   },
   
   /**
    * 创建文件夹
    */
-  createFolder: async (name: string, parentId: string | null, tags: string[] = []) => {
-    try {
+  createFolder: async (name: string, parentId: string | null, tags?: string[]) => {
+    return await safeAsync(async () => {
       const newFolder = await fileApi.createFolder(name, parentId, tags);
       
-      // 如果创建的文件夹在当前打开的文件夹中，更新文件列表
+      // 重新加载当前文件夹内容
       if (get().currentFolderId === parentId) {
-        set(state => ({
-          files: [...state.files, newFolder]
-        }));
+        get().loadFiles(parentId, null, true);
       }
       
       return newFolder.id;
-    } catch (error) {
-      handleApiError(error, '创建文件夹失败');
-      return null;
-    }
+    }, {
+      errorMessage: '创建文件夹失败',
+      fallbackValue: null
+    });
   },
   
   /**

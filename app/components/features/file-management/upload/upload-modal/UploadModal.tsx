@@ -6,6 +6,7 @@ import { InboxOutlined, TagOutlined, EditOutlined, DeleteOutlined } from '@ant-d
 import { UploadModalProps } from '@/app/types/domains/file-management';
 import { API_PATHS } from '@/app/lib/api/paths';
 import styles from './uploadModal.module.css';
+import { formatFileSize } from '@/app/utils/file/formatter';
 
 // 定义扩展的文件类型
 interface ExtendedUploadFile {
@@ -17,39 +18,6 @@ interface ExtendedUploadFile {
   originFileObj?: File;
   originalName?: string;
 }
-
-/**
- * 格式化文件大小，自动选择合适的单位
- * @param bytes 文件大小（字节）
- * @returns 格式化后的文件大小字符串，带单位
- */
-const formatFileSize = (bytes?: number): string => {
-  if (bytes === undefined || bytes === null) return '0 B';
-  if (bytes === 0) return '0 B';
-  
-  // 定义单位数组，支持中英文单位
-  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-  
-  // 计算应该使用的单位索引
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  
-  // 防止索引超出范围
-  const unitIndex = Math.min(i, units.length - 1);
-  
-  // 如果文件小于1KB，使用B为单位不需要小数点
-  if (unitIndex === 0) {
-    return `${bytes} ${units[unitIndex]}`;
-  }
-  
-  // 计算转换后的值
-  const size = bytes / Math.pow(1024, unitIndex);
-  
-  // 根据大小决定保留的小数位数
-  // 如果大于100，只保留1位小数；否则保留2位小数
-  const decimalPlaces = size >= 100 ? 1 : 2;
-  
-  return `${size.toFixed(decimalPlaces)} ${units[unitIndex]}`;
-};
 
 /**
  * 文件上传模态框组件
@@ -757,7 +725,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                           </span>
                         )}
                         <span style={{ fontSize: '12px', color: '#999', display: 'block' }}>
-                          ({formatFileSize(file.size)})
+                          ({file.size ? formatFileSize(file.size) : '未知大小'})
                         </span>
                       </span>
                     )}

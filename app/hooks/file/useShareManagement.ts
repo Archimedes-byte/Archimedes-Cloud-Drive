@@ -3,7 +3,8 @@ import { message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { fileApi } from '@/app/lib/api/file-api';
 import { ShareOptions, ShareItem } from '@/app/types/domains/share';
-import { handleApiError, copyToClipboard } from '@/app/lib/file/fileUtils';
+import { copyToClipboard } from '@/app/lib/file/fileUtils';
+import { handleError, safeAsync } from '@/app/utils/error';
 
 /**
  * API 返回的分享结果类型
@@ -134,7 +135,7 @@ export function useShareManagement(): ShareManagementHook {
       message.success('文件分享成功');
       return result;
     } catch (error) {
-      handleApiError(error, '分享失败，请重试');
+      handleError(error, true, 'error', '分享失败，请重试');
       throw error;
     } finally {
       setIsSharing(false);
@@ -153,7 +154,7 @@ export function useShareManagement(): ShareManagementHook {
       setSharedFiles(shares);
       return shares;
     } catch (error) {
-      handleApiError(error, '获取分享列表失败，请重试');
+      handleError(error, true, 'error', '获取分享列表失败，请重试');
       return [];
     } finally {
       setIsLoadingSharedFiles(false);
@@ -174,7 +175,7 @@ export function useShareManagement(): ShareManagementHook {
       loadSharedFiles();
       return true;
     } catch (error) {
-      handleApiError(error, '删除分享记录失败，请重试');
+      handleError(error, true, 'error', '删除分享记录失败，请重试');
       return false;
     }
   }, [loadSharedFiles]);
@@ -198,9 +199,10 @@ export function useShareManagement(): ShareManagementHook {
         ? `分享链接：${fullShareUrl}\n提取码：${extractCode}` 
         : `分享链接：${fullShareUrl}`;
       
-      copyToClipboard(textToCopy, '分享链接已复制到剪贴板');
+      copyToClipboard(textToCopy);
+      message.success('已复制分享链接到剪贴板');
     } catch (error) {
-      handleApiError(error, '复制分享链接失败，请手动复制');
+      handleError(error, true, 'error', '复制分享链接失败，请手动复制');
     }
   }, []);
 
@@ -228,72 +230,87 @@ export function useShareManagement(): ShareManagementHook {
 
   /**
    * 处理链接提交
-   * @returns 是否成功处理
+   * @returns 操作是否成功
    */
   const handleLinkSubmit = useCallback(async (): Promise<boolean> => {
+    // 验证输入
+    if (!shareLink.trim()) {
+      setError('请输入分享链接');
+      return false;
+    }
+    
+    setIsProcessing(true);
+    setError(null);
+    
     try {
-      if (!shareLink) {
-        message.warning('请输入分享链接');
+      // 从链接中提取分享码
+      // 支持多种格式：完整URL或只有path部分
+      const url = new URL(
+        shareLink.includes('://') ? shareLink : `https://example.com${shareLink.startsWith('/') ? '' : '/'}${shareLink}`
+      );
+      
+      // 提取路径部分
+      const path = url.pathname;
+      const segments = path.split('/').filter(Boolean);
+      
+      // 如果路径中包含"s"或"share"关键词，尝试获取分享码
+      let shareCode = '';
+      
+      if (segments.includes('s')) {
+        const sIndex = segments.indexOf('s');
+        if (segments.length > sIndex + 1) {
+          shareCode = segments[sIndex + 1];
+        }
+      } else if (segments.includes('share')) {
+        const shareIndex = segments.indexOf('share');
+        if (segments.length > shareIndex + 1) {
+          shareCode = segments[shareIndex + 1];
+        }
+      } else if (segments.length > 0) {
+        // 尝试使用最后一个路径部分作为分享码
+        shareCode = segments[segments.length - 1];
+      }
+      
+      if (!shareCode) {
+        setError('无法从链接中提取分享码，请检查链接格式');
         return false;
       }
-
-      setIsProcessing(true);
-      setError(null);
       
-      // 显示加载中提示
-      const loadingMessage = message.loading('正在验证分享链接...', 0);
-
-      // 调用API验证分享链接
-      const response = await fetch('/api/storage/share/open', {
+      if (!shareLinkPassword) {
+        setError('请输入提取码');
+        return false;
+      }
+      
+      // 验证分享链接和提取码
+      const response = await fetch('/api/storage/share/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          shareLink,
-          extractCode: shareLinkPassword,
+          shareCode,
+          extractCode: shareLinkPassword
         }),
       });
-
-      // 关闭加载提示
-      loadingMessage();
-
+      
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || '验证分享链接失败');
-      }
-
-      // 如果需要提取码但未提供或提取码错误
-      if (data.needsExtractCode) {
-        setError(data.error || '请提供正确的提取码');
-        message.warning(data.error || '请提供正确的提取码');
-        return false; // 保持弹窗打开，让用户输入提取码
-      }
-      
-      if (data.success) {
-        // 关闭链接输入弹窗
-        closeLinkInputModal();
-        
-        // 根据分享信息显示文件
-        const shareInfo = data.shareInfo;
-        message.success('分享链接验证成功，正在打开分享内容...');
-        
-        // 导航到分享页面
-        router.push(`/s/${shareInfo.shareCode}`);
-        return true;
-      } else {
-        setError(data.error || '分享链接无效');
-        message.error(data.error || '分享链接无效');
+      if (!data.success) {
+        setError(data.error || '验证失败，请检查链接和提取码');
         return false;
       }
+      
+      // 验证成功，关闭对话框并导航到分享页面
+      closeLinkInputModal();
+      router.push(`/share/${shareCode}?code=${encodeURIComponent(shareLinkPassword)}`);
+      return true;
     } catch (error) {
-      handleApiError(error, '处理分享链接失败，请重试');
+      handleError(error, true, 'error', '处理分享链接失败，请重试');
       return false;
     } finally {
       setIsProcessing(false);
     }
-  }, [shareLink, shareLinkPassword, closeLinkInputModal, router]);
+  }, [shareLink, shareLinkPassword, router, closeLinkInputModal]);
 
   return {
     // 分享创建相关

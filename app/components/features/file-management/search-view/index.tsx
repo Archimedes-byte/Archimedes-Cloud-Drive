@@ -10,6 +10,9 @@ import {
 import styles from './SearchView.module.css';
 import { createCancelableDebounce } from '@/app/utils/function/debounce';
 import { FileIcon } from '@/app/utils/file/icon-map';
+import { file } from '@/app/utils';
+import { formatToLocalDateTime } from '@/app/utils/date';
+import { formatFileSize } from '@/app/utils/file/formatter';
 
 export interface SearchViewProps {
   searchType: 'name' | 'tag';
@@ -143,38 +146,6 @@ export const SearchView: React.FC<SearchViewProps> = ({
         />
       </span>
     );
-  };
-
-  const formatFileSize = (size: number | undefined) => {
-    if (!size) return '-';
-
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  };
-
-  const formatDate = (dateValue: string | Date | undefined) => {
-    if (!dateValue) return '-';
-
-    try {
-      // 如果已经是Date对象，直接使用
-      const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-
-      // 检查日期是否有效
-      if (isNaN(date.getTime())) return '-';
-
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(date);
-    } catch (error) {
-      console.error('日期格式化错误:', error);
-      return '-';
-    }
   };
 
   // 文件行点击处理函数
@@ -588,11 +559,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
                         <span>根目录</span>
                       )}
                     </td>
-                    <td className={styles['size-cell']}>{formatFileSize(file.size)}</td>
+                    <td className={styles['size-cell']}>{file.size !== undefined ? formatFileSize(file.size) : '-'}</td>
                     <td className={styles['date-cell']}>
                       <div className={styles['date-info']}>
                         <Calendar size={14} className={styles['date-icon']} />
-                        <span>{formatDate(file.createdAt)}</span>
+                        <span>{formatToLocalDateTime(file.createdAt)}</span>
                       </div>
                     </td>
                     <td className={styles['tags-cell']}>

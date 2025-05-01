@@ -10,6 +10,8 @@ import styles from './FilePreview.module.css';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { FileIcon } from '@/app/utils/file/icon-map';
 import { useSearchParams } from 'next/navigation';
+import { file } from '@/app/utils';
+import { formatFileSize } from '@/app/utils/file/formatter';
 
 interface FilePreviewProps {
   file: ExtendedFile | FileInfo | null;
@@ -501,7 +503,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
           </div>
           <div className={styles.fileInfoItem}>
             <div className={styles.fileInfoLabel}>文件大小</div>
-            <div className={styles.fileInfoValue}>{formatFileSize(file.size)}</div>
+            <div className={styles.fileInfoValue}>{file.size ? formatFileSize(file.size) : '未知大小'}</div>
           </div>
           {file.createdAt && (
             <div className={styles.fileInfoItem}>
@@ -550,17 +552,6 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
       </div>
     </div>
   );
-};
-
-// 辅助函数
-const formatFileSize = (bytes?: number): string => {
-  if (bytes === undefined || bytes === null) return '未知大小';
-  if (bytes === 0) return '0 B';
-  
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  
-  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
 };
 
 const formatDate = (dateString: string | Date): string => {

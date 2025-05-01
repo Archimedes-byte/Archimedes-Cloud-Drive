@@ -1,69 +1,81 @@
-# 文件工具函数目录 (File Utilities)
+# 文件工具模块
 
-此目录包含与文件处理相关的所有工具函数，按照功能领域组织。通过集中管理和分类组织，避免了代码重复和跨文件的功能冗余。
+## 概述
+
+此模块提供了一系列文件处理相关的实用函数，包括文件类型判断、格式化、路径处理、排序和转换等功能。
 
 ## 目录结构
 
-- `index.ts` - 集中导出所有文件工具函数
-- `type.ts` - 文件类型处理（类型识别、分类、过滤等）
-- `path.ts` - 文件路径处理（路径解析、合并、规范化等）
-- `sort.ts` - 文件排序功能（按名称、日期、大小等排序）
-- `format.ts` - 文件格式化（大小、日期等格式化）
-- `converter.ts` - 文件转换功能（格式转换等）
+- `index.ts` - 主入口文件，导出所有文件工具函数
+- `type.ts` - 文件类型判断相关工具
+- `formatter.ts` - 文件格式化相关工具（大小、日期等）
+- `path.ts` - 文件路径处理工具
+- `sort.ts` - 文件排序工具
+- `converter.ts` - 文件转换工具
+- `icon-map.tsx` - 文件图标映射
 
-## 使用指南
+## 主要功能
 
-### 导入规范
+### 文件类型判断 (`type.ts`)
 
-为保持一致性，所有文件工具函数应通过统一入口导入：
+- `getFileIcon()` - 根据文件类型获取图标
+- `getFileType()` - 获取用户友好的文件类型描述
+- `getFileCategory()` - 获取文件分类
+- `getFileExtension()` - 获取文件扩展名
+- `getFileNameAndExtension()` - 分离文件名和扩展名
+- `isImageFile()`, `isDocumentFile()` 等 - 快速判断文件类型
+
+### 文件格式化 (`formatter.ts`)
+
+- `formatFileSize()` - 格式化文件大小（如 "10.5 MB"）
+- `formatDate()` - 格式化日期
+- `getRelativeTimeString()` - 获取相对时间描述（如 "3分钟前"）
+
+### 文件路径处理 (`path.ts`)
+
+- `joinPath()` - 连接路径片段
+- `getDirectoryPath()` - 获取目录路径
+- `getBasename()` - 获取文件基本名称
+- `normalizePath()` - 规范化路径
+
+### 文件排序 (`sort.ts`)
+
+- `sortFiles()` - 通用文件排序函数
+- `sortByName()` - 按名称排序
+- `sortBySize()` - 按大小排序
+- `sortByDate()` - 按日期排序
+
+## 使用示例
 
 ```typescript
-// 推荐：从统一入口导入
-import { getFileType, sortFiles, formatFileSize } from '@/app/utils/file';
+import { file } from '@/app/utils';
 
-// 不推荐：直接从子模块导入
-import { getFileType } from '@/app/utils/file/type';
-import { sortFiles } from '@/app/utils/file/sort';
+// 文件类型判断
+const fileType = file.getFileCategory('image/png', 'png');
+const icon = file.getFileIcon('image/png', 'png', false);
+
+// 文件格式化
+const size = file.formatFileSize(1024 * 1024); // "1 MB"
+const date = file.formatDate(new Date()); // "2023-05-20 14:30"
+
+// 文件路径处理
+const path = file.joinPath('documents', 'reports', 'annual.pdf');
 ```
-
-### 功能分类
-
-#### 文件类型处理 (type.ts)
-
-- `getFileCategory` - 根据MIME类型和扩展名确定文件分类
-- `getFileIcon` - 获取文件对应的图标名称
-- `getFileType` - 处理文件类型显示
-- `filterFilesByType` - 根据文件类型过滤文件列表
-- `buildFileTypeFilter` - 构建数据库查询条件获取特定类型的文件
-
-#### 文件路径处理 (path.ts)
-
-- `getFileNameAndExtension` - 获取文件名和后缀
-- `getFilePath` - 获取文件所在目录路径
-- `getExtension` - 获取文件扩展名
-- `getBaseName` - 获取不带扩展名的文件名
-- `joinPath` - 合并路径片段
-- `normalizePath` - 规范化路径
-- `isValidPath` - 检查是否是有效的文件路径
-
-#### 文件排序功能 (sort.ts)
-
-- `sortFiles` - 排序文件列表
-
-#### 文件格式化 (format.ts)
-
-- `formatFileSize` - 格式化文件大小
-- `formatDate` - 格式化文件日期
-
-#### 文件转换功能 (converter.ts)
-
-- `convertBytesToBase64` - 转换二进制数据为Base64
-- `convertBase64ToBlob` - 转换Base64为Blob对象
 
 ## 注意事项
 
-1. 所有新功能应放在合适的模块中，避免功能重复
-2. 修改现有功能时，确保不破坏现有API
-3. 添加适当的JSDoc文档注释
-4. 保持函数的纯函数特性，避免副作用
-5. 避免在工具函数中直接依赖业务逻辑 
+1. 使用命名空间导入以避免命名冲突：
+   ```typescript
+   import { file } from '@/app/utils';
+   ```
+
+2. 不要直接从子模块导入函数，应始终从主入口导入：
+   ```typescript
+   // 正确
+   import { file } from '@/app/utils';
+   
+   // 错误
+   import { formatFileSize } from '@/app/utils/file/formatter';
+   ```
+
+3. 此模块已替代了旧的存储模块中的重复函数，所有文件处理相关功能现在都应从此模块导入。 

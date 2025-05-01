@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { FileInfo } from '@/app/types';
 import { createFileError } from '@/app/utils/error';
 import { mapFileEntityToFileInfo } from './file-upload-service';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 /**
  * 文件统计和分析服务类
@@ -246,6 +247,131 @@ export class FileStatsService {
     } catch (error) {
       console.error('获取收藏文件失败:', error);
       throw createFileError('access', '获取收藏文件失败');
+    }
+  }
+
+  /**
+   * 记录文件下载历史
+   * @param userId 用户ID
+   * @param fileId 文件ID
+   * @returns 操作是否成功
+   */
+  async recordFileDownload(userId: string, fileId: string): Promise<boolean> {
+    try {
+      console.log(`[文件统计] 记录文件下载历史: ${fileId}`);
+      
+      // 检查文件是否存在且属于用户
+      const file = await prisma.file.findFirst({
+        where: {
+          id: fileId,
+          uploaderId: userId,
+          isDeleted: false
+        }
+      });
+      
+      if (!file) {
+        console.warn(`[文件统计] 无法记录下载历史: 找不到文件 ${fileId}`);
+        return false;
+      }
+      
+      // 使用现有的API接口记录下载
+      try {
+        const response = await fetch(API_PATHS.STORAGE.DOWNLOADS.RECORD, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            fileId, 
+            userId 
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`记录下载失败: ${response.status}`);
+        }
+      } catch (err) {
+        console.error('[文件统计] 通过API记录下载历史失败:', err);
+        // 接口调用失败，尝试使用更新文件时间的备用方案
+        
+        // 更新文件的访问时间
+        await prisma.file.update({
+          where: { id: fileId },
+          data: { 
+            updatedAt: new Date()
+          }
+        });
+      }
+      
+      console.log(`[文件统计] 文件下载记录已保存: ${fileId}`);
+      return true;
+    } catch (error) {
+      console.error('[文件统计] 记录下载历史失败:', error);
+      // 这个操作失败不应该影响用户体验
+      return false;
+    }
+  }
+  
+  /**
+   * 获取最近下载的文件
+   * @param userId 用户ID
+   * @param limit 限制数量
+   * @returns 文件信息列表
+   */
+  async getRecentDownloads(userId: string, limit = 10): Promise<FileInfo[]> {
+    try {
+      // 使用API获取最近下载
+      const response = await fetch(`${API_PATHS.STORAGE.DOWNLOADS.RECENT}?limit=${limit}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`获取最近下载失败: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.items || [];
+    } catch (error) {
+      console.error('[文件统计] 获取最近下载失败:', error);
+      throw createFileError('access', '获取最近下载失败');
+    }
+  }
+  
+  /**
+   * 下载文件获取Blob
+   * 客户端方法，获取单个或多个文件的Blob
+   * 
+   * @param fileIds 要下载的文件ID列表
+   * @returns 文件Blob
+   */
+  async downloadFiles(fileIds: string[]): Promise<Blob> {
+    try {
+      // 验证输入
+      if (!fileIds || !fileIds.length) {
+        throw createFileError('download', '需要提供要下载的文件ID');
+      }
+      
+      // 使用API下载文件
+      const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileIds }),
+      });
+      
+      if (!response.ok) {
+        throw createFileError('download', `下载请求失败: ${response.status}`);
+      }
+      
+      // 获取blob并返回
+      return await response.blob();
+    } catch (error) {
+      console.error('[文件统计] 下载文件失败:', error);
+      throw createFileError('download', error instanceof Error ? error.message : '下载文件失败');
     }
   }
 } 

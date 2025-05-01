@@ -4,6 +4,8 @@
  * 这个文件包含处理认证过程中可能出现的网络错误的辅助函数
  */
 
+import { isNetworkError, withRetry } from '@/app/utils/error';
+
 // 定义自己的错误类型接口
 interface NetworkError extends Error {
   code?: string;
@@ -14,29 +16,6 @@ interface NetworkError extends Error {
     };
   };
 }
-
-/**
- * 检测是否为网络连接错误
- */
-export const isNetworkError = (error: any): boolean => {
-  if (!error) return false;
-  
-  // 检查常见的网络错误类型
-  const errorMessage = error.message?.toLowerCase() || '';
-  const networkErrorPatterns = [
-    'econnreset',
-    'etimedout',
-    'network error',
-    'socket hang up',
-    'connection refused',
-    'timeout',
-    '连接重置',
-    '连接超时',
-    '网络错误'
-  ];
-  
-  return networkErrorPatterns.some(pattern => errorMessage.includes(pattern));
-};
 
 /**
  * 获取格式化的错误信息
@@ -69,25 +48,4 @@ export const getFormattedAuthError = (error: any): { code: string; message: stri
   }
   
   return { code, message };
-};
-
-/**
- * 尝试重新连接的辅助函数
- */
-export const retryWithDelay = async <T>(
-  fn: () => Promise<T>,
-  retries: number = 3,
-  delay: number = 1000
-): Promise<T> => {
-  try {
-    return await fn();
-  } catch (error) {
-    if (retries <= 0 || !isNetworkError(error)) {
-      throw error;
-    }
-    
-    console.log(`认证请求失败，${retries}秒后重试...`, error);
-    await new Promise(resolve => setTimeout(resolve, delay));
-    return retryWithDelay(fn, retries - 1, delay);
-  }
 }; 

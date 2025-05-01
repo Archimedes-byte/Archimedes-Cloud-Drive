@@ -6,7 +6,7 @@
 
 import { ApiClient, ApiClientConfig, RequestConfig } from './api-client';
 import { ApiDataResponse } from '@/app/types/api';
-import { formatError, handleError } from '@/app/utils/error';
+import { withErrorHandling } from '@/app/utils/error';
 
 /**
  * API服务接口
@@ -155,25 +155,4 @@ export function createBaseApiService(client: ApiClient): ApiService {
 /**
  * 创建API服务工厂实例
  */
-export const apiServiceFactory = ApiServiceFactory.getInstance();
-
-/**
- * 通用错误处理的异步API调用包装器
- * @param apiCall API调用函数
- * @param showError 是否显示错误消息
- */
-export async function withErrorHandling<T>(
-  apiCall: () => Promise<ApiDataResponse<T>>,
-  showError: boolean = true
-): Promise<T | null> {
-  try {
-    const response = await apiCall();
-    if (!response.success) {
-      throw new Error(response.error || '请求失败');
-    }
-    return response.data;
-  } catch (error) {
-    handleError(error, showError);
-    return null;
-  }
-} 
+export const apiServiceFactory = ApiServiceFactory.getInstance(); 

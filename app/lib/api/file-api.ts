@@ -4,6 +4,13 @@
  */
 import { ExtendedFile, FileInfo } from '@/app/types';
 import { API_PATHS } from '@/app/lib/api/paths';
+import { 
+  ApiError, 
+  formatError, 
+  handleError, 
+  isNetworkError, 
+  handleApiResponse 
+} from '@/app/utils/error';
 
 /**
  * 定义收藏夹类型
@@ -27,114 +34,6 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   error?: string;
-}
-
-/**
- * API错误类
- */
-class ApiError extends Error {
-  constructor(
-    message: string, 
-    public status: number,
-    public code?: string 
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
-/**
- * 统一处理API响应
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let errorMessage = `请求失败: ${response.status} ${response.statusText}`;
-    let errorCode;
-    
-    try {
-      // 检查内容类型
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorData.message || errorMessage;
-        errorCode = errorData.code;
-        
-        // 记录详细的错误信息到控制台
-        console.error('API请求失败，服务器返回:', {
-          status: response.status,
-          errorData,
-          url: response.url
-        });
-      } else {
-        // 非JSON响应
-        const textResponse = await response.text();
-        console.error('API请求失败，非JSON响应:', {
-          status: response.status,
-          text: textResponse.substring(0, 200), // 只记录前200个字符，避免日志过大
-          url: response.url
-        });
-      }
-    } catch (e) {
-      // 解析错误响应失败，使用默认错误信息
-      console.error('解析API错误响应失败:', e);
-    }
-    
-    throw new ApiError(errorMessage, response.status, errorCode);
-  }
-
-  try {
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      console.warn('响应不是JSON格式:', {
-        contentType,
-        url: response.url,
-        status: response.status
-      });
-      
-      // 如果不是JSON但状态码是成功的，返回一个简单的成功对象
-      return { success: true } as unknown as T;
-    }
-    
-    const data = await response.json();
-    
-    // 处理不同的响应格式
-    if (data.success === false) {
-      throw new ApiError(
-        data.error || data.message || '请求失败',
-        response.status,
-        data.code?.toString()
-      );
-    }
-    
-    // 处理嵌套的数据结构
-    let resultData: any;
-    
-    if (data.data !== undefined) {
-      // 标准API响应格式 { success: true, data: ... }
-      resultData = data.data;
-    } else if (data.folder !== undefined) {
-      // 文件夹API响应格式 { folder: ... }
-      resultData = data.folder;
-    } else if (data.file !== undefined) {
-      // 文件API响应格式 { file: ... }
-      resultData = data.file;
-    } else if (data.items !== undefined) {
-      // 列表API响应格式 { items: [...], total: ... }
-      resultData = data;
-    } else {
-      // 其他格式，直接返回数据
-      resultData = data;
-    }
-    
-    return resultData as T;
-  } catch (e) {
-    if (e instanceof ApiError) {
-      throw e; // 重新抛出已经创建的API错误
-    }
-    console.error('解析API响应JSON失败:', e);
-    throw new ApiError('解析API响应失败: ' + (e instanceof Error ? e.message : '未知错误'), 500);
-  }
 }
 
 /**
@@ -218,7 +117,7 @@ export const fileApi = {
       cache: 'no-store'
     });
     
-    const result = await handleResponse<PaginatedResponse<FileInfo>>(response);
+    const result = await handleApiResponse<PaginatedResponse<FileInfo>>(response);
     console.log('获取文件列表响应:', {
       items: result.items.length,
       total: result.total,
@@ -279,7 +178,7 @@ export const fileApi = {
     try {
       // 发送请求
       const response = await fetch(url);
-      const result = await handleResponse<FileInfo[]>(response);
+      const result = await handleApiResponse<FileInfo[]>(response);
       
       // 记录结果统计
       const folderCount = result.filter(f => f.isFolder).length;
@@ -323,7 +222,7 @@ export const fileApi = {
       body: formData,
     });
 
-    return handleResponse<FileInfo[]>(response);
+    return handleApiResponse<FileInfo[]>(response);
   },
 
   // 删除文件
@@ -335,7 +234,7 @@ export const fileApi = {
       body: JSON.stringify({ fileIds }),
     });
 
-    return handleResponse<{ deletedCount: number }>(response);
+    return handleApiResponse<{ deletedCount: number }>(response);
   },
 
   // 移动文件
@@ -347,7 +246,7 @@ export const fileApi = {
       body: JSON.stringify({ fileIds, targetFolderId }),
     });
 
-    return handleResponse<{ movedCount: number }>(response);
+    return handleApiResponse<{ movedCount: number }>(response);
   },
 
   // 更新文件
@@ -368,7 +267,7 @@ export const fileApi = {
       }),
     });
 
-    return handleResponse<FileInfo>(response);
+    return handleApiResponse<FileInfo>(response);
   },
 
   // 下载文件
@@ -499,7 +398,7 @@ export const fileApi = {
     // 使用新的API路径
     const response = await fetch(`${API_PATHS.STORAGE.FOLDERS.LIST}?${queryParams.toString()}`);
     
-    return handleResponse<PaginatedResponse<FileInfo>>(response);
+    return handleApiResponse<PaginatedResponse<FileInfo>>(response);
   },
   
   // 获取单个文件信息
@@ -507,7 +406,7 @@ export const fileApi = {
     // 使用新的API路径
     const response = await fetch(API_PATHS.STORAGE.FILES.GET(fileId));
     
-    return handleResponse<FileInfo>(response);
+    return handleApiResponse<FileInfo>(response);
   },
   
   // 获取存储统计信息
@@ -520,7 +419,7 @@ export const fileApi = {
     // 使用新的API路径
     const response = await fetch(API_PATHS.STORAGE.STATS.USAGE);
     
-    return handleResponse<{
+    return handleApiResponse<{
       totalSize: number;
       usedSize: number;
       fileCount: number;
@@ -544,7 +443,7 @@ export const fileApi = {
       cache: 'no-store'
     });
     
-    const result = await handleResponse<any>(response);
+    const result = await handleApiResponse<any>(response);
     console.log('获取最近访问文件，原始响应:', result);
     
     // 特殊处理响应格式，确保返回正确的数据结构
@@ -579,7 +478,7 @@ export const fileApi = {
       cache: 'no-store'
     });
     
-    const result = await handleResponse<any>(response);
+    const result = await handleApiResponse<any>(response);
     console.log('获取最近下载文件，原始响应:', result);
     
     // 特殊处理响应格式，确保返回正确的数据结构
@@ -623,13 +522,13 @@ export const fileApi = {
     // 使用LIST路径的GET请求
     const response = await fetch(`${API_PATHS.STORAGE.FAVORITES.LIST}?${queryParams.toString()}`);
     
-    return handleResponse<PaginatedResponse<FileInfo>>(response);
+    return handleApiResponse<PaginatedResponse<FileInfo>>(response);
   },
 
   // 获取收藏夹列表
   async getFavoriteFolders(): Promise<{ folders: FavoriteFolderInfo[] }> {
     const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.LIST);
-    return handleResponse<{ folders: FavoriteFolderInfo[] }>(response);
+    return handleApiResponse<{ folders: FavoriteFolderInfo[] }>(response);
   },
 
   // 创建收藏夹
@@ -644,7 +543,7 @@ export const fileApi = {
       body: JSON.stringify({ name, description, isDefault }),
     });
     
-    return handleResponse<{ folder: FavoriteFolderInfo }>(response);
+    return handleApiResponse<{ folder: FavoriteFolderInfo }>(response);
   },
   
   // 更新收藏夹
@@ -662,7 +561,7 @@ export const fileApi = {
       body: JSON.stringify(data),
     });
     
-    return handleResponse<{ folder: FavoriteFolderInfo }>(response);
+    return handleApiResponse<{ folder: FavoriteFolderInfo }>(response);
   },
   
   // 删除收藏夹
@@ -671,7 +570,7 @@ export const fileApi = {
       method: 'DELETE',
     });
     
-    return handleResponse<{ success: boolean; message: string }>(response);
+    return handleApiResponse<{ success: boolean; message: string }>(response);
   },
   
   // 添加文件到收藏夹
@@ -685,7 +584,7 @@ export const fileApi = {
       body: JSON.stringify({ fileId, folderId }),
     });
     
-    return handleResponse<{ success: boolean }>(response);
+    return handleApiResponse<{ success: boolean }>(response);
   },
   
   // 批量添加文件到收藏夹
@@ -699,7 +598,7 @@ export const fileApi = {
       body: JSON.stringify({ fileIds, folderId }),
     });
     
-    return handleResponse<{ count: number }>(response);
+    return handleApiResponse<{ count: number }>(response);
   },
   
   // 从收藏夹中移除文件
@@ -713,7 +612,7 @@ export const fileApi = {
       body: JSON.stringify({ fileId, folderId }),
     });
     
-    return handleResponse<{ success: boolean }>(response);
+    return handleApiResponse<{ success: boolean }>(response);
   },
   
   // 批量从收藏夹中移除文件
@@ -727,7 +626,7 @@ export const fileApi = {
       body: JSON.stringify({ fileIds, folderId }),
     });
     
-    return handleResponse<{ count: number }>(response);
+    return handleApiResponse<{ count: number }>(response);
   },
   
   // 获取收藏夹中的文件列表
@@ -742,7 +641,7 @@ export const fileApi = {
       body: JSON.stringify({ folderId, page, pageSize }),
     });
     
-    return handleResponse<{
+    return handleApiResponse<{
       items: FileInfo[];
       total: number;
       page: number;
@@ -764,13 +663,13 @@ export const fileApi = {
       body: JSON.stringify(options),
     });
 
-    return handleResponse<{ shareLink: string; extractCode: string }>(response);
+    return handleApiResponse<{ shareLink: string; extractCode: string }>(response);
   },
 
   // 获取分享列表
   async getSharedFiles(): Promise<any[]> {
     const response = await fetch(API_PATHS.STORAGE.SHARE.ROOT);
-    return handleResponse<any[]>(response);
+    return handleApiResponse<any[]>(response);
   },
 
   // 删除分享
@@ -781,7 +680,7 @@ export const fileApi = {
       body: JSON.stringify({ shareIds }),
     });
 
-    return handleResponse<{ deletedCount: number }>(response);
+    return handleApiResponse<{ deletedCount: number }>(response);
   },
 
   // 记录文件访问历史
@@ -793,7 +692,7 @@ export const fileApi = {
         body: JSON.stringify({ fileId }),
       });
       
-      return handleResponse<{ success: boolean }>(response);
+      return handleApiResponse<{ success: boolean }>(response);
     } catch (error) {
       console.error('记录文件访问历史失败:', error);
       // 即使失败也不影响用户体验，返回成功
@@ -810,7 +709,7 @@ export const fileApi = {
         body: JSON.stringify({ fileId }),
       });
       
-      return handleResponse<{ success: boolean }>(response);
+      return handleApiResponse<{ success: boolean }>(response);
     } catch (error) {
       console.error('记录文件下载历史失败:', error);
       // 即使失败也不影响用户体验，返回成功

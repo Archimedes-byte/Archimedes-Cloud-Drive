@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button as AntdButton } from 'antd';
 import type { ButtonProps as AntdButtonProps } from 'antd';
-import { cn } from '@/app/utils';
+import { cn } from '@/app/utils/format';
 import './antButton.css';
 import { useTheme } from '@/app/theme';
 

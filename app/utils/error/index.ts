@@ -1,11 +1,20 @@
 /**
- * 错误处理工具集中导出
+ * 统一错误处理模块
  * 
- * 整合了错误处理相关的功能，包括：
+ * 提供全局统一的错误处理机制，包括：
  * - 错误类型定义
- * - 错误处理函数
- * - 错误格式化工具
+ * - 错误标准化
+ * - 错误展示
+ * - 错误日志记录
  * - 重试机制
+ * - 安全的异步操作
+ * 
+ * 使用方式：
+ * 1. 错误标准化：formatError(anyError)
+ * 2. 标准错误处理：handleError(error, showMessage)
+ * 3. 安全异步调用：await safeAsync(asyncFn, options)
+ * 4. 带重试机制：await withRetry(asyncFn, options)
+ * 5. 网络错误判断：isNetworkError(error)
  */
 
 import { message } from 'antd';
@@ -188,6 +197,45 @@ export function isAppError(error: any): error is AppError {
 }
 
 /**
+ * 检测是否为网络错误
+ */
+export function isNetworkError(error: any): boolean {
+  if (!error) return false;
+  
+  // 检查是否为NetworkError实例
+  if (error instanceof NetworkError) return true;
+  
+  // 检查是否是具有网络错误类型的AppError
+  if (error instanceof AppError && error.type === ErrorType.NETWORK) return true;
+  
+  // 检查常见的网络错误消息模式
+  const errorMessage = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+  const networkErrorPatterns = [
+    'network error',
+    'networkerror',
+    'failed to fetch',
+    'internet disconnected',
+    'net::err',
+    'aborted',
+    'cannot connect',
+    'connection refused',
+    'connection failed',
+    'socket hang up',
+    'socket timeout',
+    'timeout',
+    'econnreset',
+    'econnaborted',
+    'etimedout',
+    '网络错误',
+    '连接失败',
+    '连接超时',
+    '连接被拒绝'
+  ];
+  
+  return networkErrorPatterns.some(pattern => errorMessage.includes(pattern));
+}
+
+/**
  * 格式化任意错误为标准AppError
  */
 export function formatError(error: any): AppError {
@@ -197,18 +245,61 @@ export function formatError(error: any): AppError {
   }
   
   // 网络错误
-  if (error instanceof TypeError && error.message.includes('fetch')) {
-    return new NetworkError(error.message);
+  if (isNetworkError(error)) {
+    return new NetworkError(
+      typeof error.message === 'string' ? error.message : '网络连接失败，请检查网络设置',
+      { originalError: error }
+    );
   }
   
-  // API响应错误
+  // API响应错误（常见格式）
   if (error && typeof error === 'object') {
-    // 检查标准API错误格式
-    if (error.error || error.message) {
+    // 包含状态码的HTTP错误
+    if ('status' in error || 'statusCode' in error) {
+      const statusCode = (error.status as number) || (error.statusCode as number);
+      const message = error.message || error.error || '请求失败';
+      const code = error.code;
+      
+      if (statusCode === 404) {
+        return new NotFoundError(message, { originalError: error });
+      }
+      
+      if (statusCode === 401 || statusCode === 403) {
+        return new PermissionError(message, { originalError: error });
+      }
+      
+      if (statusCode === 400) {
+        return new ValidationError(message, { originalError: error });
+      }
+      
+      if (statusCode === 408 || statusCode === 504) {
+        return new TimeoutError(message, { originalError: error });
+      }
+      
+      return new ApiError(message, statusCode, code, { originalError: error });
+    }
+    
+    // 标准API错误格式 { error, message, code, etc. }
+    if ('error' in error || 'message' in error) {
       const errorMessage = error.error || error.message || '请求失败';
       const statusCode = error.status || error.statusCode;
       const errorCode = error.code;
-      return new ApiError(errorMessage, statusCode, errorCode, error);
+      return new ApiError(errorMessage, statusCode, errorCode, { originalError: error });
+    }
+    
+    // 文件错误
+    if (error.type && typeof error.type === 'string' && error.type.startsWith('file_')) {
+      // 尝试从错误类型中提取文件错误类型
+      const fileErrorType = error.type as string;
+      const fileErrorTypeMap: Record<string, ErrorType> = {
+        'file_upload': ErrorType.FILE_UPLOAD,
+        'file_download': ErrorType.FILE_DOWNLOAD,
+        'file_delete': ErrorType.FILE_DELETE,
+        'file_access': ErrorType.FILE_ACCESS
+      };
+      
+      const errorType = fileErrorTypeMap[fileErrorType] || ErrorType.UNKNOWN;
+      return new FileError(error.message || '文件操作失败', errorType, { originalError: error });
     }
   }
   
@@ -227,28 +318,54 @@ export function formatError(error: any): AppError {
 }
 
 /**
- * 处理错误并显示消息
+ * 统一的错误处理函数
+ * 标准化错误，显示通知，记录日志
+ * 
+ * @param error 任何类型的错误
+ * @param showMessage 是否显示错误消息通知
+ * @param logLevel 日志级别
+ * @param defaultMessage 默认错误消息
+ * @returns 标准化的AppError对象
  */
 export function handleError(
   error: any,
   showMessage = true,
-  logLevel: 'error' | 'warn' | 'info' = 'error'
+  logLevel: 'error' | 'warn' | 'info' = 'error',
+  defaultMessage = '操作失败，请重试'
 ): AppError {
   // 标准化错误对象
   const appError = formatError(error);
   
+  // 如果提供了默认消息且错误消息为空或未定义，使用默认消息
+  if (defaultMessage && (!appError.message || appError.message === '发生未知错误')) {
+    appError.message = defaultMessage;
+  }
+  
   // 显示错误消息
   if (showMessage) {
-    message.error(appError.message);
+    // 针对不同类型的错误给出不同的处理建议
+    let messageContent = appError.message;
+    
+    // 对于网络错误，添加建议
+    if (appError instanceof NetworkError) {
+      messageContent = `${messageContent}，请检查网络连接`;
+    }
+    
+    // 对于超时错误，添加建议
+    if (appError instanceof TimeoutError) {
+      messageContent = `${messageContent}，请稍后重试`;
+    }
+    
+    message.error(messageContent);
   }
   
   // 记录错误日志
   if (logLevel === 'error') {
-    console.error('应用错误:', appError);
+    console.error('[错误]', appError.message, appError);
   } else if (logLevel === 'warn') {
-    console.warn('应用警告:', appError);
+    console.warn('[警告]', appError.message, appError);
   } else {
-    console.info('应用信息:', appError);
+    console.info('[信息]', appError.message, appError);
   }
   
   return appError;
@@ -256,6 +373,10 @@ export function handleError(
 
 /**
  * 带有重试功能的错误处理
+ * 
+ * @param fn 要执行的异步函数
+ * @param options 重试选项
+ * @returns 函数执行结果Promise
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
@@ -264,13 +385,15 @@ export async function withRetry<T>(
     delay?: number;
     onRetry?: (error: any, attempt: number) => void;
     shouldRetry?: (error: any) => boolean;
+    progressiveDelay?: boolean;
   } = {}
 ): Promise<T> {
   const {
     retries = 3,
     delay = 1000,
     onRetry,
-    shouldRetry = () => true
+    shouldRetry = (error) => isNetworkError(error) || (error instanceof TimeoutError),
+    progressiveDelay = true
   } = options;
   
   let lastError: any;
@@ -283,7 +406,14 @@ export async function withRetry<T>(
       
       // 最后一次重试失败
       if (attempt === retries) {
-        throw formatError(error);
+        const formattedError = formatError(error);
+        // 添加重试信息到错误详情
+        formattedError.details = {
+          ...formattedError.details,
+          retries: retries,
+          attempts: attempt + 1
+        };
+        throw formattedError;
       }
       
       // 检查是否应该重试
@@ -296,8 +426,8 @@ export async function withRetry<T>(
         onRetry(error, attempt + 1);
       }
       
-      // 等待后重试，增加延迟时间
-      const waitTime = delay * Math.pow(2, attempt);
+      // 等待后重试，可选择性地增加延迟时间
+      const waitTime = progressiveDelay ? delay * Math.pow(2, attempt) : delay;
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
   }
@@ -308,10 +438,116 @@ export async function withRetry<T>(
 
 /**
  * 处理异步操作的包装器，提供统一的错误处理
+ * 
+ * @param asyncFn 异步函数
+ * @param errorOptions 错误处理选项
+ * @returns 处理后的Promise
  */
 export async function safeAsync<T>(
   asyncFn: () => Promise<T>,
   errorOptions: {
+    showError?: boolean;
+    errorMessage?: string;
+    fallbackValue?: T;
+    rethrow?: boolean;
+    logLevel?: 'error' | 'warn' | 'info';
+  } = {}
+): Promise<T | null> {
+  const {
+    showError = true,
+    errorMessage,
+    fallbackValue = null as unknown as T,
+    rethrow = false,
+    logLevel = 'error'
+  } = errorOptions;
+  
+  try {
+    return await asyncFn();
+  } catch (error) {
+    const appError = formatError(error);
+    
+    // 自定义错误消息
+    if (errorMessage) {
+      appError.message = errorMessage;
+    }
+    
+    // 处理错误
+    handleError(appError, showError, logLevel);
+    
+    // 是否重新抛出错误
+    if (rethrow) {
+      throw appError;
+    }
+    
+    // 返回后备值
+    return fallbackValue;
+  }
+}
+
+/**
+ * 创建支持超时的fetch请求
+ * 
+ * @param url 请求URL
+ * @param options 请求选项
+ * @param timeout 超时时间（毫秒）
+ * @returns 响应Promise
+ */
+export async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout = 15000
+): Promise<Response> {
+  // 创建AbortController用于超时取消
+  const controller = new AbortController();
+  const { signal } = controller;
+  
+  // 合并原有signal和新创建的signal
+  const finalOptions: RequestInit = {
+    ...options,
+    signal
+  };
+  
+  // 创建超时Promise
+  const timeoutPromise = new Promise<Response>((_, reject) => {
+    const id = setTimeout(() => {
+      controller.abort();
+      reject(new TimeoutError(`请求超时，超过${timeout}ms未响应`));
+    }, timeout);
+    
+    // 如果signal已经被触发，清除超时
+    if (signal) {
+      signal.addEventListener('abort', () => clearTimeout(id));
+    }
+  });
+  
+  // 创建实际fetch请求Promise
+  const fetchPromise = fetch(url, finalOptions);
+  
+  // 使用Promise.race竞争，谁先完成用谁的结果
+  return Promise.race([fetchPromise, timeoutPromise]);
+}
+
+/**
+ * API响应数据接口
+ */
+export interface ApiDataResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+  message?: string;
+  code?: string | number;
+}
+
+/**
+ * 通用错误处理的异步API调用包装器
+ * 
+ * @param apiCall API调用函数
+ * @param options 错误处理选项
+ * @returns 响应数据或null
+ */
+export async function withErrorHandling<T>(
+  apiCall: () => Promise<ApiDataResponse<T> | T>,
+  options: {
     showError?: boolean;
     errorMessage?: string;
     fallbackValue?: T;
@@ -323,10 +559,26 @@ export async function safeAsync<T>(
     errorMessage,
     fallbackValue = null as unknown as T,
     rethrow = false
-  } = errorOptions;
+  } = options;
   
   try {
-    return await asyncFn();
+    const response = await apiCall();
+    
+    // 检查是否是API标准响应格式
+    if (response && typeof response === 'object' && 'success' in response) {
+      const apiResponse = response as ApiDataResponse<T>;
+      if (!apiResponse.success) {
+        throw new ApiError(
+          apiResponse.error || apiResponse.message || '请求失败',
+          undefined,
+          apiResponse.code
+        );
+      }
+      return apiResponse.data;
+    }
+    
+    // 不是标准API响应，直接返回数据
+    return response as T;
   } catch (error) {
     const appError = formatError(error);
     
@@ -346,4 +598,32 @@ export async function safeAsync<T>(
     // 返回后备值
     return fallbackValue;
   }
+}
+
+/**
+ * 统一处理API响应结果
+ * 根据响应状态进行错误处理或返回响应数据
+ * 
+ * @param response fetch API的Response对象
+ * @param errorMessage 错误提示消息
+ * @returns 解析后的响应数据
+ * @throws 当响应不成功时抛出错误
+ */
+export async function handleApiResponse<T>(response: Response, errorMessage = '请求失败'): Promise<T> {
+  if (!response.ok) {
+    // 尝试获取错误详情
+    let errorDetail = '';
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.message || errorData.error || `状态码: ${response.status}`;
+    } catch (e) {
+      errorDetail = `状态码: ${response.status}`;
+    }
+    
+    // 创建并抛出错误
+    throw createFileError('access', `${errorMessage}: ${errorDetail}`);
+  }
+  
+  // 成功响应，返回数据
+  return await response.json() as T;
 }

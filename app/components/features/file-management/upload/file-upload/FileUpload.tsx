@@ -2,8 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import { Progress } from '@/app/components/ui/atoms/progress';
+import { FileUploadService } from '@/app/services/storage';
 import { mapFileEntityToFileInfo } from '@/app/types';
-import { uploadFile } from '@/app/lib/storage/service/uploadService';
 
 interface FileUploadProps {
   onUploadComplete: (file?: any) => void;
@@ -26,6 +26,8 @@ export function FileUpload({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 创建上传服务实例
+  const uploadService = new FileUploadService();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -39,35 +41,62 @@ export function FileUpload({
     const file = files[0];
 
     try {
-      // 使用上传服务模块
-      uploadFile(file, {
-        folderId,
-        tags,
-        onProgress: (progress) => {
-          setProgress(progress);
-        },
-        onSuccess: (response) => {
-          // 使用类型映射函数转换API响应为FileInfo
-          const fileInfo = mapFileEntityToFileInfo ? mapFileEntityToFileInfo(response) : response;
-          onUploadComplete(fileInfo);
-          setProgress(100);
-          setUploading(false);
+      // 创建进度回调
+      const onProgressUpdate = (progress: number) => {
+        setProgress(progress);
+      };
+      
+      // 构建自定义上传处理
+      const uploadHandler = () => {
+        return new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const formData = new FormData();
           
-          // 清空文件输入
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+          formData.append('file', file);
+          if (folderId) {
+            formData.append('folderId', folderId);
           }
-        },
-        onError: (error) => {
-          setError(error.message);
-          setUploading(false);
+          if (tags && tags.length > 0) {
+            formData.append('tags', JSON.stringify(tags));
+          }
           
-          // 清空文件输入
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-        }
-      });
+          xhr.open('POST', '/api/storage/files/upload', true);
+          
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percentage = Math.round((e.loaded / e.total) * 100);
+              onProgressUpdate(percentage);
+            }
+          };
+          
+          xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                const fileInfo = response.data;
+                onUploadComplete(fileInfo);
+                setProgress(100);
+                resolve();
+              } catch (err) {
+                reject(new Error('解析响应失败'));
+              }
+            } else {
+              reject(new Error(`上传失败: ${xhr.status}`));
+            }
+          };
+          
+          xhr.onerror = () => reject(new Error('网络错误'));
+          xhr.send(formData);
+        });
+      };
+      
+      await uploadHandler();
+      setUploading(false);
+      
+      // 清空文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '上传失败');
       setUploading(false);

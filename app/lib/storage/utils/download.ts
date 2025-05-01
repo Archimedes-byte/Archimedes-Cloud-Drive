@@ -4,6 +4,7 @@
  */
 import { API_PATHS } from '@/app/lib/api/paths';
 import { message } from 'antd';
+import { handleApiResponse } from '@/app/utils/error';
 
 // 最大重试次数
 const MAX_RETRY_COUNT = 3;
@@ -11,266 +12,167 @@ const MAX_RETRY_COUNT = 3;
 const RETRY_BASE_DELAY = 1000;
 
 /**
- * 文件夹下载增强方法
- * 使用多种技术确保文件夹ZIP下载的可靠性
+ * 直接下载Blob
+ * 处理已获取的Blob对象，创建下载链接并触发下载
  * 
- * @param folderId 文件夹ID
- * @param fileName 可选的文件名
- * @returns 是否成功触发下载
+ * @param blob 要下载的Blob对象
+ * @param fileName 文件名
+ * @param contentType 内容类型 (可选，默认使用blob的类型)
+ * @returns 是否下载成功
  */
-export async function downloadFolder(folderId: string, fileName?: string): Promise<boolean> {
-  console.log(`开始下载文件夹: ${folderId}`);
-  
-  // 重试计数器
-  let retryCount = 0;
-  let lastError: Error | null = null;
-  
-  // 使用重试逻辑来提高成功率
-  while (retryCount < MAX_RETRY_COUNT) {
-    try {
-      if (retryCount > 0) {
-        // 如果是重试，显示正在重试的消息
-        message.info(`正在重试下载 (${retryCount}/${MAX_RETRY_COUNT})...`);
-        // 使用指数退避策略
-        await new Promise(resolve => setTimeout(resolve, RETRY_BASE_DELAY * Math.pow(2, retryCount - 1)));
-      }
-      
-      // 构建请求
-      const request: RequestInit = {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache' 
-        },
-        body: JSON.stringify({ 
-          fileIds: [folderId],
-          isFolder: true  // 添加isFolder标志表明这是文件夹下载
-        }),
-        // 随着重试增加超时时间
-        signal: AbortSignal.timeout(120000 + retryCount * 30000), // 每次重试增加30秒
-        credentials: 'include' // 确保包含凭证
-      };
-      
-      // 发起请求
-      console.log(`发送下载请求... (尝试 ${retryCount + 1}/${MAX_RETRY_COUNT})`);
-      const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, request);
-      
-      // 检查网络错误
-      if (!response) {
-        throw new Error("网络请求失败，未收到响应");
-      }
-      
-      // 详细记录错误状态
-      if (!response.ok) {
-        // 尝试解析错误信息
-        let errorMessage = `服务器响应错误: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.error || errorData.message) {
-            errorMessage = errorData.error || errorData.message;
-          }
-        } catch (e) {
-          // 无法解析JSON，使用默认错误信息
-        }
-        
-        throw new Error(errorMessage);
-      }
-      
-      // 获取文件Blob
-      const blob = await response.blob();
-      if (blob.size === 0) {
-        throw new Error('下载的文件为空');
-      }
-      
-      // 设置文件名
-      let downloadFileName = fileName || '下载文件.zip';
-      if (!downloadFileName.toLowerCase().endsWith('.zip')) {
-        downloadFileName += '.zip';
-      }
-      
-      // 创建blob URL
-      const blobUrl = URL.createObjectURL(blob);
-      
-      try {
-        // 标准的下载方法
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = downloadFileName;
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        link.click();
-        
-        // 给浏览器一些时间处理下载
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        try {
-          document.body.removeChild(link);
-        } catch (e) {
-          // 忽略清理错误
-        }
-        
-        console.log('下载成功启动');
-        return true;
-      } finally {
-        // 确保清理blob URL
-        URL.revokeObjectURL(blobUrl);
-      }
-    } catch (error: any) {
-      lastError = error;
-      console.error(`下载尝试 ${retryCount + 1} 失败:`, error);
-      retryCount++;
-      
-      // 如果已经是最后一次尝试，则跳出循环
-      if (retryCount >= MAX_RETRY_COUNT) {
-        console.error('所有下载尝试均失败');
-        break;
-      }
-    }
-  }
-  
-  // 所有常规方法都失败后，尝试备用方法
+export async function downloadBlob(
+  blob: Blob, 
+  fileName: string = '下载文件',
+  contentType?: string
+): Promise<boolean> {
   try {
-    console.log('尝试备用下载方法...');
-    message.info('正在切换到备用下载方式，请稍候...');
+    console.log(`[下载工具] 开始下载Blob: ${fileName} (${blob.size} 字节)`);
     
-    // 尝试使用备用下载API - 只保留一种备用方法
-    const downloadUrl = `/api/storage/files/download-alt?t=${Date.now()}`;
-    const response = await fetch(downloadUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      },
-      body: JSON.stringify({
-        fileIds: [folderId],
-        isFolder: true
-      }),
-      credentials: 'include'
-    });
+    // 确保内容类型正确
+    const finalContentType = contentType || blob.type || 'application/octet-stream';
     
-    if (!response.ok) {
-      throw new Error(`备用API响应错误: ${response.status}`);
-    }
+    // 创建带正确内容类型的新Blob
+    const finalBlob = new Blob([blob], { type: finalContentType });
     
-    const blob = await response.blob();
-    if (blob.size === 0) {
-      throw new Error('备用下载返回的文件为空');
-    }
+    // 创建下载链接
+    const blobUrl = URL.createObjectURL(finalBlob);
     
-    // 设置文件名
-    let downloadFileName = fileName || '下载文件.zip';
-    if (!downloadFileName.toLowerCase().endsWith('.zip')) {
-      downloadFileName += '.zip';
-    }
-    
-    // 下载文件
-    const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.download = downloadFileName;
+    link.download = fileName;
+    link.style.display = 'none';
+    
+    // 触发下载
     document.body.appendChild(link);
     link.click();
     
+    // 延迟清理，确保浏览器有足够时间处理下载
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    document.body.removeChild(link);
+    // 清理
+    try {
+      document.body.removeChild(link);
+    } catch (e) {
+      // 忽略移除链接时的错误
+    }
+    
+    // 释放URL对象
     URL.revokeObjectURL(blobUrl);
     
-    console.log('备用方式下载成功');
+    console.log(`[下载工具] Blob下载成功: ${fileName}`);
     return true;
-  } catch (backupError) {
-    console.error('备用下载方法失败:', backupError);
-    message.error(`下载失败: ${lastError?.message || '网络错误'}`);
+  } catch (error) {
+    console.error('[下载工具] 下载Blob失败:', error);
+    message.error('下载文件失败');
     return false;
   }
 }
 
 /**
- * 下载文件
- * 处理单个文件的下载请求
+ * 下载文件夹（将作为zip包下载）
  * 
+ * @param folderId 文件夹ID
+ * @param folderName 可选的文件夹名
+ * @returns 是否成功触发下载
+ */
+export async function downloadFolder(folderId: string, folderName?: string): Promise<boolean> {
+  console.log(`[下载工具] 开始下载文件夹: ${folderId}`);
+  
+  try {
+    // 使用文件下载API，但标记为文件夹
+    const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD}?folderId=${folderId}`;
+    
+    // 创建一个隐藏的a标签进行下载
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    
+    // 如果提供了文件夹名，设置下载文件名
+    let fileName = folderName || `folder_${folderId}`;
+    if (!fileName.toLowerCase().endsWith('.zip')) {
+      fileName += '.zip';
+    }
+    link.download = fileName;
+    
+    // 触发点击事件
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log(`[下载工具] 文件夹下载请求已发送: ${folderId}`);
+    return true;
+  } catch (error) {
+    console.error('[下载工具] 下载文件夹失败:', error);
+    return false;
+  }
+}
+
+/**
+ * 下载单个文件
  * @param fileId 文件ID
- * @param fileName 可选的自定义文件名
+ * @param fileName 可选的文件名
  * @returns 是否下载成功
  */
 export async function downloadFile(fileId: string, fileName?: string): Promise<boolean> {
   try {
-    // 使用正确的文件下载API路径
-    const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD}?t=${Date.now()}`;
+    console.log(`[下载工具] 开始下载文件: ${fileId}`);
     
-    console.log(`[downloadFile] 开始下载文件, ID: ${fileId}, URL: ${downloadUrl}`);
+    // 构建下载链接 - 使用标准下载API并传递单个fileId
+    const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD}?fileId=${fileId}`;
     
-    // 修改为POST请求，并在body中传递fileId
-    const response = await fetch(downloadUrl, {
+    // 创建一个隐藏的a标签进行下载
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.target = '_blank';
+    
+    // 如果提供了文件名，设置下载文件名
+    if (fileName) {
+      link.download = fileName;
+    }
+    
+    // 触发点击事件
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log(`[下载工具] 文件下载请求已发送: ${fileId}`);
+    return true;
+  } catch (error) {
+    console.error('[下载工具] 下载文件失败:', error);
+    return false;
+  }
+}
+
+/**
+ * 获取文件Blob对象
+ * @param fileIds 要下载的文件ID列表
+ * @returns 文件Blob对象
+ */
+export async function getFileBlob(fileIds: string[]): Promise<Blob> {
+  if (!fileIds || !fileIds.length) {
+    throw new Error('需要提供要下载的文件ID');
+  }
+  
+  try {
+    console.log(`[下载工具] 开始获取文件Blob: ${fileIds.join(', ')}`);
+    
+    // 发送API请求获取文件
+    const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
       },
-      body: JSON.stringify({ fileIds: [fileId] }), // 使用与多文件下载相同的参数格式
-      credentials: 'include'
+      body: JSON.stringify({ fileIds }),
     });
-
-    if (!response || !response.ok) {
-      throw new Error(`文件下载请求失败: ${response?.status || 'Failed to fetch'}`);
+    
+    // 验证响应状态
+    if (!response.ok) {
+      throw new Error(`下载请求失败: ${response.status}`);
     }
     
-    // 获取文件名
-    let downloadFileName = fileName;
-    if (!downloadFileName) {
-      // 尝试从Content-Disposition头获取文件名
-      const contentDisposition = response.headers.get('Content-Disposition');
-      if (contentDisposition) {
-        const matches = /filename="?([^"]*)"?/i.exec(contentDisposition);
-        if (matches && matches[1]) {
-          downloadFileName = decodeURIComponent(matches[1]);
-        }
-      }
-      
-      // 如果还是没有文件名，使用默认名称
-      if (!downloadFileName) {
-        downloadFileName = '下载文件';
-      }
-    }
-    
-    // 获取文件blob
-    const blob = await response.blob();
-    if (blob.size === 0) {
-      throw new Error('下载的文件为空');
-    }
-    
-    const blobUrl = URL.createObjectURL(blob);
-    
-    try {
-      // 创建并触发下载
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = downloadFileName;
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      link.click();
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      try {
-        document.body.removeChild(link);
-      } catch (e) {
-        // 忽略清理错误
-      }
-      
-      return true;
-    } finally {
-      // 清理blob URL
-      URL.revokeObjectURL(blobUrl);
-    }
-  } catch (error: any) {
-    console.error(`文件下载尝试失败:`, error);
-    message.error(`下载失败: ${error?.message || 'Failed to fetch'}`);
-    return false;
+    // 获取blob并返回
+    return await response.blob();
+  } catch (error) {
+    console.error('[下载工具] 获取文件Blob失败:', error);
+    throw error;
   }
 } 
