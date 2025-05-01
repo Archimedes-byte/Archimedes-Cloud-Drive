@@ -568,6 +568,21 @@ const UploadModal: React.FC<UploadModalProps> = ({
       cancelText="取消"
       confirmLoading={uploading}
       width={600}
+      footer={[
+        <Button key="cancel" onClick={handleClose}>
+          取消
+        </Button>,
+        <Button 
+          key="upload" 
+          type="primary" 
+          onClick={handleUpload} 
+          disabled={fileList.length === 0 || uploading}
+          loading={uploading}
+          style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6' }}
+        >
+          {uploading ? '上传中...' : '开始上传'}
+        </Button>
+      ]}
     >
       {uploading ? (
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -593,7 +608,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                 <Button 
                   type="primary" 
                   onClick={handleUpload}
-                  style={{ marginRight: '10px' }}
+                  style={{ marginRight: '10px', backgroundColor: '#3b82f6', borderColor: '#3b82f6' }}
                 >
                   重试上传
                 </Button>
@@ -641,11 +656,9 @@ const UploadModal: React.FC<UploadModalProps> = ({
                 : '支持单个或批量上传文件，最大支持同时选择50个文件'}
             </p>
             <Button 
-              type="primary" 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                triggerFileInput(); 
-              }}
+              type="primary"
+              onClick={triggerFileInput}
+              style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: 'white' }}
             >
               选择{isFolderUpload ? '文件夹' : '文件'}
             </Button>
@@ -701,7 +714,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                           type="primary" 
                           size="small" 
                           onClick={saveEditFileName}
-                          style={{ marginRight: '4px' }}
+                          style={{ marginRight: '4px', backgroundColor: '#3b82f6', borderColor: '#3b82f6' }}
                         >
                           保存
                         </Button>

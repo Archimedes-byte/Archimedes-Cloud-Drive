@@ -134,6 +134,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
               height: '42px',
               borderRadius: '8px',
               padding: '0 16px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none'
             }}
           >
             搜索

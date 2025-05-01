@@ -19,7 +19,6 @@ import type { SortOrder } from 'antd/es/table/interface';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 import { FileInfo } from '@/app/types';
 import { AntFileList } from '../file-list';
-import { Breadcrumb } from '../navigation/breadcrumb';
 import { FolderManagement } from '../folder-management';
 import { FileIcon } from '@/app/utils/file/icon-map';
 
@@ -394,36 +393,6 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
     />;
   };
 
-  // 渲染面包屑
-  const renderBreadcrumb = () => {
-    // 创建面包屑路径
-    const folderPath = selectedFolder !== 'all' 
-      ? folders.filter(folder => folder.id === selectedFolder)
-          .map(folder => ({ id: folder.id, name: folder.name }))
-      : [];
-      
-    return (
-      <div className={styles.breadcrumbContainer}>
-        <Breadcrumb 
-          folderPath={folderPath}
-          showHome={true}
-          onPathClick={(folderId) => {
-            if (folderId === null) {
-              // 点击主目录
-              setSelectedFolder('all');
-              fetchFavorites();
-            } else {
-              // 点击特定文件夹
-              setSelectedFolder(folderId);
-              fetchFolderFiles(folderId);
-            }
-          }}
-          onBackClick={handleNavigateBack}
-        />
-      </div>
-    );
-  };
-
   // 处理切换收藏状态
   const handleToggleFavorite = async (file: FileInfo, isFavorite: boolean) => {
     if (!isFavorite) {
@@ -571,8 +540,6 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
             </div>
           </div>
           
-          {renderBreadcrumb()}
-
           {/* 批量操作工具栏 */}
           {selectedRows.length > 0 && (
             <div className={styles.batchActions}>

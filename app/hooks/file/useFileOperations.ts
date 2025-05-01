@@ -30,6 +30,8 @@ export interface FileOperations {
   renameFile: (fileId: string, newName: string, onSuccess?: (updatedFile: FileInfo) => void) => Promise<boolean>;
   /** 创建文件夹 */
   createFolder: (name: string, parentId: string | null, tags?: string[]) => Promise<string | null>;
+  /** 获取文件信息 */
+  getFilesInfo: (fileIds: string[]) => Promise<FileInfo[]>;
   /** 是否正在加载 */
   isLoading: boolean;
   /** 错误信息 */
@@ -419,6 +421,33 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
     }
   }, [storeCreateFolder]);
 
+  /**
+   * 获取多个文件的详细信息
+   * @param fileIds 文件ID列表
+   * @returns 包含文件详细信息的Promise
+   */
+  const getFilesInfo = useCallback(async (fileIds: string[]): Promise<FileInfo[]> => {
+    if (!fileIds.length) return [];
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 并行请求所有文件信息
+      const filesInfoPromises = fileIds.map(fileId => fileApi.getFile(fileId));
+      const filesInfo = await Promise.all(filesInfoPromises);
+      
+      // 过滤掉可能的null结果
+      return filesInfo.filter(Boolean) as FileInfo[];
+    } catch (error) {
+      console.error('获取文件信息失败:', error);
+      setError('获取文件信息失败');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     selectedFileIds,
     selectFile,
@@ -429,6 +458,7 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
     deleteFiles,
     renameFile,
     createFolder,
+    getFilesInfo,
     isLoading,
     error
   };

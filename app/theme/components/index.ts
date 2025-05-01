@@ -2,4 +2,4 @@
 
 // 导出主题面板组件
 import ThemePanel from '../components/ThemePanel';
-export { ThemePanel }; 
+export { default as ThemePanel } from './ThemePanel'; 

@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import styles from './SortDropdown.module.css';
+import React, { useCallback } from 'react';
+import { BaseDropdown } from '../shared';
+import sharedStyles from '../shared/shared-dropdown.module.css';
 import { FileSortInterface, SortDirectionEnum, SortField } from '@/app/types';
+import { SwapOutlined } from '@ant-design/icons';
 
 interface SortDropdownProps {
   sortOrder: FileSortInterface;
@@ -11,20 +13,6 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
   sortOrder,
   onSortChange
 }) => {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   // 根据当前排序字段获取显示文本
   const getSortFieldText = () => {
     switch(sortOrder.field) {
@@ -39,9 +27,6 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
   const handleSortClick = useCallback(
     (field: SortField, direction: SortDirectionEnum) => {
       console.log('排序选项被点击:', { field, direction });
-      
-      // 关闭排序下拉菜单
-      setShowDropdown(false);
       
       // 创建新的排序选项
       const newSortOrder: FileSortInterface = {
@@ -60,58 +45,65 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
     [onSortChange]
   );
 
-  return (
-    <div className={styles.sortDropdown} ref={dropdownRef}>
-      <button 
-        className={`${styles.topButton} text-white`}
-        onClick={() => setShowDropdown(!showDropdown)}
+  // 自定义触发按钮
+  const trigger = (
+    <button 
+      className={`${sharedStyles.triggerButton} text-white`}
+    >
+      <SwapOutlined className="text-white" />
+      排序: {getSortFieldText()} {sortOrder.direction === SortDirectionEnum.ASC ? '↑' : '↓'}
+    </button>
+  );
+
+  // 下拉菜单内容
+  const dropdownContent = (
+    <>
+      <div 
+        className={sharedStyles.dropdownItem}
+        onClick={() => handleSortClick('name', sortOrder.field === 'name' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
         style={{ 
-          background: showDropdown ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-          borderColor: showDropdown ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.2)',
-          color: 'white'
+          fontWeight: sortOrder.field === 'name' ? 'bold' : 'normal',
+          background: sortOrder.field === 'name' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
         }}
       >
-        <span>↕️</span>
-        排序: {getSortFieldText()} {sortOrder.direction === SortDirectionEnum.ASC ? '↑' : '↓'}
-      </button>
-      {showDropdown && (
-        <div className={styles.dropdownMenu}>
-          <div 
-            className={styles.dropdownItem}
-            onClick={() => handleSortClick('name', sortOrder.field === 'name' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
-            style={{ 
-              fontWeight: sortOrder.field === 'name' ? 'bold' : 'normal',
-              background: sortOrder.field === 'name' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
-            }}
-          >
-            <span>📝</span>
-            按文件名{sortOrder.field === 'name' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
-          </div>
-          <div 
-            className={styles.dropdownItem}
-            onClick={() => handleSortClick('size', sortOrder.field === 'size' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
-            style={{ 
-              fontWeight: sortOrder.field === 'size' ? 'bold' : 'normal',
-              background: sortOrder.field === 'size' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
-            }}
-          >
-            <span>📊</span>
-            按大小{sortOrder.field === 'size' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
-          </div>
-          <div 
-            className={styles.dropdownItem}
-            onClick={() => handleSortClick('createdAt', sortOrder.field === 'createdAt' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
-            style={{ 
-              fontWeight: sortOrder.field === 'createdAt' ? 'bold' : 'normal',
-              background: sortOrder.field === 'createdAt' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
-            }}
-          >
-            <span>🕒</span>
-            按时间{sortOrder.field === 'createdAt' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
-          </div>
-        </div>
-      )}
-    </div>
+        <span>📝</span>
+        按文件名{sortOrder.field === 'name' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
+      </div>
+      <div 
+        className={sharedStyles.dropdownItem}
+        onClick={() => handleSortClick('size', sortOrder.field === 'size' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
+        style={{ 
+          fontWeight: sortOrder.field === 'size' ? 'bold' : 'normal',
+          background: sortOrder.field === 'size' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+        }}
+      >
+        <span>📊</span>
+        按大小{sortOrder.field === 'size' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
+      </div>
+      <div 
+        className={sharedStyles.dropdownItem}
+        onClick={() => handleSortClick('createdAt', sortOrder.field === 'createdAt' && sortOrder.direction === SortDirectionEnum.ASC ? SortDirectionEnum.DESC : SortDirectionEnum.ASC)}
+        style={{ 
+          fontWeight: sortOrder.field === 'createdAt' ? 'bold' : 'normal',
+          background: sortOrder.field === 'createdAt' ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+        }}
+      >
+        <span>🕒</span>
+        按时间{sortOrder.field === 'createdAt' ? (sortOrder.direction === SortDirectionEnum.ASC ? ' ↑' : ' ↓') : ''}
+      </div>
+    </>
+  );
+
+  return (
+    <BaseDropdown
+      trigger={trigger}
+      placement="bottom-left"
+      usePortal={false}
+      menuWidth={160}
+      dropdownMenuClassName="sortDropdownMenu"
+    >
+      {dropdownContent}
+    </BaseDropdown>
   );
 };
 

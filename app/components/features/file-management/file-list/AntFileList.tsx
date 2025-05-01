@@ -38,7 +38,6 @@ import { getFileNameAndExtension } from '@/app/utils/file/path';
 import { FileInfo } from '@/app/types';
 import { formatFileSize } from '@/app/utils/file/format';
 import { createCancelableDebounce } from '@/app/utils/function/debounce';
-import { themeTokens } from '@/app/theme';
 import './antFileList.css'; // 将创建一个包含少量覆盖样式的CSS文件
 import { FileIcon } from '@/app/utils/file/icon-map';
 
@@ -248,7 +247,7 @@ export function AntFileList({
           isFolder={isFolder} 
           extension={extension} 
           mimeType={fileType} 
-          size={20} 
+          size={24}
           className="file-type-icon"
         />
       </span>
@@ -342,6 +341,14 @@ export function AntFileList({
       title: '名称',
       dataIndex: 'name',
       key: 'name',
+      className: 'name-column',
+      ellipsis: true,
+      sorter: (a, b) => {
+        // 文件夹总是排在文件前面
+        if (a.isFolder && !b.isFolder) return -1;
+        if (!a.isFolder && b.isFolder) return 1;
+        return a.name.localeCompare(b.name);
+      },
       render: (_: any, record: FileInfo) => {
         const isEditing = record.id === actualEditingFileId;
         
@@ -352,51 +359,22 @@ export function AntFileList({
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onKeyDown={(e) => handleEditKeyDown(e, record.id)}
-              onBlur={() => {/* 保持聚焦 */}}
-              addonAfter={
-                <Space>
-                  <Button 
-                    type="text" 
-                    size="small" 
-                    icon={<CheckOutlined />} 
-                    onClick={() => onConfirmEdit?.(record.id, editName, editTags)}
-                  />
-                  <Button 
-                    type="text" 
-                    size="small" 
-                    icon={<CloseOutlined />} 
-                    onClick={() => onCancelEdit?.()}
-                  />
-                </Space>
-              }
+              autoFocus
             />
           );
         }
         
+        /* 直接显示文件名，不再分解扩展名 */
         return (
-          <Space>
+          <div className="file-name-wrapper" onClick={() => onFileClick(record)}>
             {renderFileIcon(record)}
-            <Text
-              className={`file-name ${record.isFolder ? '' : 'file-name-non-folder'}`}
-              ellipsis={true}
-              title={record.name}
-              onClick={(e) => {
-                e.stopPropagation();
-                onFileClick(record);
-              }}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                onFileDoubleClick?.(record);
-              }}
-              onContextMenu={(e) => {
-                onFileContextMenu?.(e, record);
-              }}
-            >
+            <div className="file-name" title={record.name}>
               {record.name}
-            </Text>
-          </Space>
+            </div>
+          </div>
         );
       },
+      width: '40%',
     },
     
     // 路径列 - 仅在搜索结果中显示
@@ -596,7 +574,8 @@ export function AntFileList({
           size="middle"
           bordered={false}
           tableLayout="fixed"
-          style={{ height: '100%' }}
+          style={{ height: '100%', width: '100%' }}
+          scroll={{ x: '100%' }}
         />
       </Spin>
     </div>

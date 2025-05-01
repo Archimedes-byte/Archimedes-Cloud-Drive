@@ -23,6 +23,11 @@ export interface ThemeStyle {
   errorLight?: string;
   warningLight?: string;
   infoLight?: string;
+  
+  // 深色模式属性
+  darkBackground?: string;  // 深色模式背景
+  darkText?: string;        // 深色模式文本颜色
+  darkCard?: string;        // 深色模式卡片背景
 }
 
 /**
@@ -44,7 +49,12 @@ const baseThemeTemplate: Partial<ThemeStyle> = {
   successLight: 'rgba(72, 187, 120, 0.2)',
   errorLight: 'rgba(245, 101, 101, 0.2)',
   warningLight: 'rgba(236, 201, 75, 0.2)',
-  infoLight: 'rgba(66, 153, 225, 0.2)'
+  infoLight: 'rgba(66, 153, 225, 0.2)',
+  
+  // 深色模式默认值
+  darkBackground: '#1a202c',
+  darkText: '#f7fafc',
+  darkCard: 'rgba(26, 32, 44, 0.9)'
 };
 
 /**

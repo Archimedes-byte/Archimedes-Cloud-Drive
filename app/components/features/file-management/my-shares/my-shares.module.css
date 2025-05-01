@@ -41,11 +41,4 @@
 .loadingText {
   margin-top: 16px;
   color: rgba(0, 0, 0, 0.45);
-}
-
-/* 适配深色模式 */
-@media (prefers-color-scheme: dark) {
-  .loadingText {
-    color: rgba(255, 255, 255, 0.65);
-  }
 } 

@@ -247,20 +247,18 @@
 }
 
 .search-button {
-  width: 120px;
-  min-width: 120px;
   height: 48px;
+  min-width: 120px;
+  background: #3b82f6 !important; /* 使用重要标志强制使用浅色背景 */
+  color: white !important;
+  border: none !important;
+  border-radius: 0 10px 10px 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  white-space: nowrap;
-  background: var(--theme-primary);
-  background-size: 200% 200%;
-  color: white;
-  padding: 0 1.25rem;
-  border: none;
-  border-radius: 0 10px 10px 0;
+  gap: 6px;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s;
@@ -269,9 +267,9 @@
 }
 
 .search-button:hover {
-  background-size: 150% 150%;
+  background: #2563eb !important; /* 使用重要标志强制使用浅色背景 */
   transform: translateY(-2px);
-  box-shadow: var(--theme-button-hover-shadow);
+  box-shadow: 0 4px 10px rgba(52, 144, 220, 0.4);
 }
 
 .button-icon {

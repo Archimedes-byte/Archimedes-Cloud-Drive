@@ -22,37 +22,106 @@
   overflow-x: auto;
   scrollbar-width: none;
   white-space: nowrap;
-  padding: 4px 0;
+  padding: 8px 0;
+  position: relative;
+  /* 添加精美的背景效果 */
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(249, 250, 251, 0.85));
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.breadcrumb:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
 .breadcrumb::-webkit-scrollbar {
   display: none;
 }
 
+/* 重写ant design面包屑样式 */
+.breadcrumb :global(.ant-breadcrumb) {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb :global(.ant-breadcrumb ol) {
+  display: flex;
+  align-items: center;
+  list-style: none; /* 移除列表样式 */
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumb :global(.ant-breadcrumb-item) {
+  display: flex;
+  align-items: center;
+  margin-right: 0; /* 移除默认间距 */
+}
+
+.breadcrumb :global(.ant-breadcrumb-separator) {
+  margin: 0 6px;
+  color: #94a3b8;
+  opacity: 0.7;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+}
+
+.breadcrumb :global(.ant-breadcrumb-link) {
+  display: flex;
+  align-items: center;
+}
+
 .breadcrumbItem {
   display: flex;
   align-items: center;
   white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  position: relative;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.breadcrumbItem:hover {
+  background-color: rgba(59, 130, 246, 0.08);
+  color: var(--theme-primary, #3b82f6);
+  transform: translateY(-1px);
+}
+
+/* 添加动态下划线效果 */
+.breadcrumbItem:after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background-color: var(--theme-primary, #3b82f6);
+  transition: all 0.25s ease;
+  opacity: 0;
+}
+
+.breadcrumbItem:hover:after {
+  width: 80%;
+  left: 10%;
+  opacity: 0.7;
 }
 
 .breadcrumbLink {
   display: inline-flex;
   align-items: center;
-  color: #64748b;
-  font-weight: 500;
+  color: inherit;
+  font-weight: inherit;
   transition: all 0.2s ease;
-  padding: 4px 8px;
-  border-radius: 6px;
   text-decoration: none;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.breadcrumbLink:hover {
-  color: var(--theme-primary, #3b82f6);
-  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .breadcrumbSeparator {
@@ -65,7 +134,13 @@
 }
 
 .breadcrumbIcon {
-  margin-right: 4px;
+  margin-right: 6px;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.breadcrumbItem:hover .breadcrumbIcon {
+  color: var(--theme-primary, #3b82f6);
 }
 
 .breadcrumbBackButton {
@@ -78,15 +153,18 @@
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin-right: 8px;
-  transition: all 0.2s ease;
+  margin-right: 10px;
+  transition: all 0.25s ease;
   flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .breadcrumbBackButton:hover {
   color: #1e293b;
   background-color: #f1f5f9;
   transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
 
 /* 媒体查询适配 */
@@ -97,12 +175,14 @@
   
   .breadcrumb {
     font-size: 13px;
+    padding: 6px 10px;
   }
 }
 
 @media (max-width: 640px) {
   .breadcrumb {
     font-size: 12px;
+    padding: 5px 8px;
   }
   
   .breadcrumbLink {

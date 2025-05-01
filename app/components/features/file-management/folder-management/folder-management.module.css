@@ -68,15 +68,15 @@
 }
 
 .folderIcon {
-  color: #1677ff;
+  color: var(--theme-primary, #3b82f6);
   margin-right: 10px;
 }
 
 .defaultBadge {
   margin-left: 10px;
   padding: 2px 8px;
-  background-color: #e6f7ff;
-  color: #1677ff;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--theme-primary, #3b82f6);
   border-radius: 4px;
   font-size: 12px;
 }

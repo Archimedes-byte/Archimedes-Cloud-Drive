@@ -1,36 +1,13 @@
-/* UploadDropdown组件样式 */
+/* UploadDropdown组件特有样式 */
 
-.uploadDropdown {
-  position: relative;
-  display: inline-block;
+/* 可以保留组件特定的自定义样式（如果有的话） */
+
+/* 下拉菜单位置统一 */
+:global(.uploadDropdownMenu) {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  margin-top: 4px !important;
+  z-index: 1000 !important;
+  transform: none !important;
 }
-
-.dropdownMenu {
-  /* Portal渲染方式下部分样式将通过内联方式设置 */
-  background: rgba(30, 41, 59, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 8px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  color: white;
-  backdrop-filter: blur(10px);
-}
-
-.dropdownItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 16px;
-  text-align: left;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  color: white;
-}
-
-.dropdownItem:hover {
-  background: rgba(255, 255, 255, 0.1);
-} 

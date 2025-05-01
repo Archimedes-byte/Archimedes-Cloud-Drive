@@ -1,7 +1,8 @@
 import React from 'react';
 import { 
   CloseOutlined, DownloadOutlined, EditOutlined, 
-  SwapOutlined, DeleteOutlined, ShareAltOutlined 
+  SwapOutlined, DeleteOutlined, ShareAltOutlined,
+  FolderOutlined 
 } from '@ant-design/icons';
 import { Button, Tag } from '@/app/components/ui/ant';
 import { 
@@ -13,6 +14,7 @@ import SortDropdown from '@/app/components/features/file-management/action-bar/s
 import UploadDropdown from '@/app/components/features/file-management/action-bar/upload-dropdown';
 import { FolderDownloadButton } from '@/app/components/features/file-management/download/FolderDownloadButton';
 import layoutStyles from '@/app/components/features/file-management/styles/layout/layout.module.css';
+import sharedStyles from '../shared/shared-dropdown.module.css';
 
 export interface MenuBarProps {
   // 选中文件相关
@@ -40,6 +42,9 @@ export interface MenuBarProps {
   onUploadClick?: () => void;
   onFolderUploadClick?: () => void;
   onCreateFolder?: () => void;
+  
+  // 文件夹下载相关
+  onRequestDownload?: (fileInfo: FileInfo) => void;
 }
 
 /**
@@ -72,6 +77,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onUploadClick,
   onFolderUploadClick,
   onCreateFolder = () => {},
+  
+  // 文件夹下载相关
+  onRequestDownload = () => {},
 }) => {
   // 检查是否选中了文件
   const hasSelectedFiles = selectedFiles.length > 0;
@@ -79,158 +87,154 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   // 检查是否只选择了一个文件夹
   const selectedFolder = selectedFiles.length === 1 && selectedFiles[0].isFolder ? selectedFiles[0] : null;
   
+  // 自定义按钮样式类
+  const buttonClassName = `${sharedStyles.triggerButton} text-white`;
+  
   return (
     <div className={layoutStyles.topBar}>
-      <div className={`${layoutStyles.buttonGroup} ${layoutStyles.fixedWidthContainer}`}>
-        {hasSelectedFiles ? (
-          // 文件选中状态的菜单栏
-          <div className={layoutStyles.unifiedActionContainer}>
-            {/* 取消选择按钮 */}
-            <Button 
-              variant="text"
+      <div className={layoutStyles.actionContainer}>
+        {/* 左侧按钮组 */}
+        <div className={layoutStyles.browseActionsContainer}>
+          {hasSelectedFiles ? (
+            // 文件选中状态的左侧按钮
+            <button 
+              className={buttonClassName}
               onClick={onClearSelection}
-              icon={<CloseOutlined className="text-white" />}
-              style={{ minWidth: '100px', color: 'white' }}
-              className="text-white hover:bg-white/10"
             >
+              <CloseOutlined className="text-white" />
               取消选择
-            </Button>
-            
-            {/* 分隔 */}
-            <div className={layoutStyles.spacer}></div>
-            
-            {/* 文件操作按钮 */}
-            {selectedFolder ? (
-              // 如果选择的是单个文件夹，使用增强下载组件
-              <FolderDownloadButton
-                folderId={selectedFolder.id}
-                folderName={selectedFolder.name}
-                buttonText="下载"
-                showIcon={true}
-                className="text-white hover:bg-white/10"
-              />
-            ) : (
-              // 否则使用常规下载按钮
-              <Button 
-                variant="text"
-                onClick={onDownload}
-                icon={<DownloadOutlined className="text-white" />}
-                style={{ minWidth: '80px', color: 'white' }}
-                className="text-white hover:bg-white/10"
-              >
-                下载
-              </Button>
-            )}
-            
-            <Button 
-              variant="text"
-              onClick={onShare}
-              icon={<ShareAltOutlined className="text-white" />}
-              style={{ minWidth: '80px', color: 'white' }}
-              className="text-white hover:bg-white/10"
-            >
-              分享
-            </Button>
-            
-            <Button 
-              variant="text"
-              onClick={onRename}
-              icon={<EditOutlined className="text-white" />}
-              style={{ minWidth: '80px', color: 'white' }}
-              className="text-white hover:bg-white/10"
-            >
-              重命名
-            </Button>
-            
-            <Button 
-              variant="text"
-              onClick={onMove}
-              icon={<SwapOutlined className="text-white" />}
-              style={{ minWidth: '80px', color: 'white' }}
-              className="text-white hover:bg-white/10"
-            >
-              移动
-            </Button>
-            
-            <Button 
-              variant="text"
-              onClick={onDelete}
-              icon={<DeleteOutlined className="text-white" />}
-              style={{ minWidth: '80px', color: 'white' }}
-              className="text-white hover:bg-white/10"
-            >
-              删除
-            </Button>
-          </div>
-        ) : (
-          // 未选中文件时的菜单栏
-          <div className={layoutStyles.unifiedActionContainer}>
-            {/* 文件浏览相关按钮 */}
-            <Button 
-              variant="text"
-              onClick={() => {
-                if (!isInRootFolder) {
-                  onClearFilter();
-                }
-              }}
-              disabled={isInRootFolder}
-              icon={<span>📁</span>}
-              style={{ minWidth: '80px', color: 'white' }}
-              className="text-white hover:bg-white/10"
-            >
-              {showSearchView ? '返回文件列表' : (selectedFileType ? '清除过滤' : '根目录')}
-            </Button>
-
-            {/* 添加当前过滤状态指示器 */}
-            {selectedFileType && (
-              <Tag color="blue" style={{ padding: '4px 8px', height: 'auto', display: 'flex', alignItems: 'center' }}>
-                {(() => {
-                  switch(selectedFileType) {
-                    case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" />;
-                    case FileTypeEnum.DOCUMENT: return <FileText className="w-4 h-4 mr-2" />;
-                    case FileTypeEnum.VIDEO: return <Video className="w-4 h-4 mr-2" />;
-                    case FileTypeEnum.AUDIO: return <Music className="w-4 h-4 mr-2" />;
-                    default: return <File className="w-4 h-4 mr-2" />;
+            </button>
+          ) : (
+            // 未选中状态的左侧按钮
+            <>
+              <button 
+                className={buttonClassName}
+                onClick={() => {
+                  // 如果在搜索视图或有过滤器，则执行清除过滤
+                  if (showSearchView || selectedFileType) {
+                    onClearFilter();
+                  } else if (!isInRootFolder) {
+                    // 否则，如果不在根目录，则导航到根目录
+                    onClearFilter(); // 这个函数在不显示搜索视图且没有文件类型选中时会返回根目录
                   }
-                })()}
-                当前浏览：
-                {selectedFileType === FileTypeEnum.IMAGE && '仅图片'}
-                {selectedFileType === FileTypeEnum.DOCUMENT && '仅文档'}
-                {selectedFileType === FileTypeEnum.VIDEO && '仅视频'}
-                {selectedFileType === FileTypeEnum.AUDIO && '仅音频'}
-                {selectedFileType === FileTypeEnum.UNKNOWN && '其他文件'}
-              </Tag>
-            )}
+                }}
+                style={isInRootFolder ? { opacity: 0.7 } : {}}
+                disabled={isInRootFolder && !selectedFileType && !showSearchView}
+              >
+                <FolderOutlined className="text-white" />
+                {showSearchView ? '返回文件列表' : (selectedFileType ? '清除过滤' : '根目录')}
+              </button>
 
-            {/* 排序下拉菜单 */}
-            <SortDropdown 
-              sortOrder={sortOrder}
-              onSortChange={onSortChange}
-            />
-            
-            {/* 弹性间隔 */}
-            <div className={layoutStyles.spacer}></div>
-            
-            {/* 上传下拉菜单按钮 */}
-            <UploadDropdown
-              setIsUploadModalOpen={setIsUploadModalOpen}
-              setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
-              onUploadClick={onUploadClick}
-              onFolderUploadClick={onFolderUploadClick}
-            />
-            
-            {/* 新建文件夹按钮 */}
-            <Button 
-              variant="text"
-              onClick={onCreateFolder} 
-              icon={<span>📁</span>}
-              style={{ minWidth: '80px', color: 'white' }}
-              className="text-white hover:bg-white/10"
-            >
-              新建文件夹
-            </Button>
-          </div>
-        )}
+              {/* 当前过滤状态指示器 */}
+              {selectedFileType && (
+                <Tag color="blue" style={{ padding: '4px 8px', height: 'auto', display: 'flex', alignItems: 'center' }}>
+                  {(() => {
+                    switch(selectedFileType) {
+                      case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" />;
+                      case FileTypeEnum.DOCUMENT: return <FileText className="w-4 h-4 mr-2" />;
+                      case FileTypeEnum.VIDEO: return <Video className="w-4 h-4 mr-2" />;
+                      case FileTypeEnum.AUDIO: return <Music className="w-4 h-4 mr-2" />;
+                      default: return <File className="w-4 h-4 mr-2" />;
+                    }
+                  })()}
+                  当前浏览：
+                  {selectedFileType === FileTypeEnum.IMAGE && '仅图片'}
+                  {selectedFileType === FileTypeEnum.DOCUMENT && '仅文档'}
+                  {selectedFileType === FileTypeEnum.VIDEO && '仅视频'}
+                  {selectedFileType === FileTypeEnum.AUDIO && '仅音频'}
+                  {selectedFileType === FileTypeEnum.UNKNOWN && '其他文件'}
+                </Tag>
+              )}
+
+              {/* 排序下拉菜单 */}
+              <SortDropdown 
+                sortOrder={sortOrder}
+                onSortChange={onSortChange}
+              />
+            </>
+          )}
+        </div>
+          
+        {/* 右侧按钮组 */}
+        <div className={layoutStyles.actionsGroup}>
+          {hasSelectedFiles ? (
+            // 选中文件状态下的右侧操作按钮
+            <>
+              {selectedFolder ? (
+                // 如果选择的是单个文件夹，使用增强下载组件
+                <FolderDownloadButton
+                  folderId={selectedFolder.id}
+                  folderName={selectedFolder.name}
+                  buttonText="下载"
+                  showIcon={true}
+                  className={buttonClassName}
+                  onRequestDownload={onRequestDownload}
+                />
+              ) : (
+                // 否则使用常规下载按钮
+                <button 
+                  className={buttonClassName}
+                  onClick={onDownload}
+                >
+                  <DownloadOutlined className="text-white" />
+                  下载
+                </button>
+              )}
+              
+              <button 
+                className={buttonClassName}
+                onClick={onShare}
+              >
+                <ShareAltOutlined className="text-white" />
+                分享
+              </button>
+              
+              <button 
+                className={buttonClassName}
+                onClick={onRename}
+              >
+                <EditOutlined className="text-white" />
+                重命名
+              </button>
+              
+              <button 
+                className={buttonClassName}
+                onClick={onMove}
+              >
+                <SwapOutlined className="text-white" />
+                移动
+              </button>
+              
+              <button 
+                className={buttonClassName}
+                onClick={onDelete}
+              >
+                <DeleteOutlined className="text-white" />
+                删除
+              </button>
+            </>
+          ) : (
+            // 未选中文件状态下的右侧操作按钮
+            <>
+              {/* 上传下拉菜单按钮 */}
+              <UploadDropdown
+                setIsUploadModalOpen={setIsUploadModalOpen}
+                setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
+                onUploadClick={onUploadClick}
+                onFolderUploadClick={onFolderUploadClick}
+              />
+              
+              {/* 新建文件夹按钮 */}
+              <button 
+                className={buttonClassName}
+                onClick={onCreateFolder}
+              >
+                <FolderOutlined className="text-white" />
+                新建文件夹
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

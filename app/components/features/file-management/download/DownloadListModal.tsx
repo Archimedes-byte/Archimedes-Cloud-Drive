@@ -1,0 +1,208 @@
+import React, { useState } from 'react';
+import { Modal, Typography, Button, List, Space, Spin, Alert, Flex, Checkbox } from 'antd';
+import { DownloadOutlined, FileOutlined, FolderOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FileInfo } from '@/app/types';
+import styles from './DownloadListModal.module.css';
+
+export interface DownloadListModalProps {
+  /**
+   * 是否显示模态框
+   */
+  visible: boolean;
+  /**
+   * 所有要下载的文件信息列表
+   */
+  fileList: FileInfo[];
+  /**
+   * 取消操作回调
+   */
+  onCancel: () => void;
+  /**
+   * 确认下载回调
+   */
+  onDownload: () => void;
+  /**
+   * 是否处于下载中状态
+   */
+  loading?: boolean;
+  /**
+   * 更新文件列表回调
+   */
+  onUpdateFileList?: (files: FileInfo[]) => void;
+}
+
+/**
+ * 下载列表模态框组件
+ * 在下载前展示所有要下载的文件和文件夹列表
+ */
+export const DownloadListModal: React.FC<DownloadListModalProps> = ({
+  visible,
+  fileList,
+  onCancel,
+  onDownload,
+  loading = false,
+  onUpdateFileList
+}) => {
+  // 计算文件夹和文件数量
+  const folderCount = fileList.filter(file => file.isFolder).length;
+  const fileCount = fileList.length - folderCount;
+  
+  // 文件选择状态
+  const [selectedFiles, setSelectedFiles] = useState<{[key: string]: boolean}>({});
+  
+  // 渲染文件图标
+  const renderFileIcon = (isFolder: boolean) => {
+    return isFolder 
+      ? <FolderOutlined className={styles.folderIcon} /> 
+      : <FileOutlined className={styles.fileIcon} />;
+  };
+  
+  // 处理文件选择
+  const handleFileSelect = (fileId: string, checked: boolean) => {
+    setSelectedFiles(prev => ({
+      ...prev,
+      [fileId]: checked
+    }));
+  };
+  
+  // 删除选中文件
+  const handleDeleteSelected = () => {
+    // 过滤掉被选中的文件
+    const updatedFileList = fileList.filter(file => !selectedFiles[file.id]);
+    
+    // 重置选择状态
+    setSelectedFiles({});
+    
+    // 更新文件列表
+    if (onUpdateFileList) {
+      onUpdateFileList(updatedFileList);
+    }
+  };
+  
+  // 计算是否有文件被选中
+  const hasSelectedFiles = Object.values(selectedFiles).some(selected => selected);
+  
+  // 渲染文件列表
+  const renderFileList = () => {
+    if (fileList.length === 0) {
+      return (
+        <Alert
+          type="warning"
+          message="没有选择任何文件或文件夹"
+          description="请先选择需要下载的文件或文件夹"
+        />
+      );
+    }
+    
+    return (
+      <List
+        className={styles.fileList}
+        itemLayout="horizontal"
+        dataSource={fileList}
+        renderItem={file => (
+          <List.Item className={styles.fileItem}>
+            <Flex align="center" style={{ width: '100%' }}>
+              <Checkbox 
+                checked={selectedFiles[file.id] || false}
+                onChange={(e) => handleFileSelect(file.id, e.target.checked)}
+                className={styles.fileCheckbox}
+              />
+              <Space className={styles.fileInfo}>
+                {renderFileIcon(file.isFolder)}
+                <Typography.Text ellipsis className={styles.fileName}>
+                  {file.name}
+                </Typography.Text>
+                {file.isFolder && (
+                  <Typography.Text type="secondary" className={styles.folderLabel}>
+                    文件夹
+                  </Typography.Text>
+                )}
+              </Space>
+            </Flex>
+          </List.Item>
+        )}
+      />
+    );
+  };
+  
+  // 确保loading是一个布尔值
+  const isLoading = loading === true;
+  
+  return (
+    <Modal
+      title={
+        <Flex align="center">
+          <DownloadOutlined className={styles.titleIcon} />
+          <span>文件下载</span>
+        </Flex>
+      }
+      open={visible}
+      onCancel={onCancel}
+      footer={[
+        <Button 
+          key="delete" 
+          danger
+          icon={<DeleteOutlined />}
+          onClick={handleDeleteSelected}
+          disabled={!hasSelectedFiles || isLoading}
+        >
+          删除选中
+        </Button>,
+        <Button key="cancel" onClick={onCancel}>
+          取消
+        </Button>,
+        <Button 
+          key="download" 
+          type="primary" 
+          onClick={onDownload} 
+          loading={Boolean(isLoading)}
+          icon={<DownloadOutlined />}
+          style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6' }}
+        >
+          开始下载
+        </Button>
+      ]}
+      width={520}
+    >
+      <div className={styles.modalContent}>
+        {isLoading ? (
+          <Flex vertical align="center" className={styles.loadingContainer}>
+            <Spin />
+            <Typography.Paragraph className={styles.loadingText}>
+              正在准备下载，请稍候...
+            </Typography.Paragraph>
+          </Flex>
+        ) : (
+          <>
+            <Typography.Paragraph className={styles.summaryText}>
+              您选择了 {fileList.length} 个项目下载
+              {folderCount > 0 && fileCount > 0 && (
+                <span>（{folderCount} 个文件夹和 {fileCount} 个文件）</span>
+              )}
+            </Typography.Paragraph>
+            
+            <Typography.Paragraph>
+              {folderCount > 0 ? "文件夹将被压缩为ZIP格式下载" : ""}
+            </Typography.Paragraph>
+            
+            <div className={styles.listContainer}>
+              <Flex justify="space-between" align="center">
+                <Typography.Title level={5} className={styles.listTitle}>
+                  下载列表
+                </Typography.Title>
+                {fileList.length > 0 && (
+                  <Typography.Text type="secondary" className={styles.selectTip}>
+                    勾选可删除
+                  </Typography.Text>
+                )}
+              </Flex>
+              {renderFileList()}
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+export default DownloadListModal; 

@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { Home, LogOut, Palette } from 'lucide-react';
-import { Button, Avatar, Flex } from 'antd';
+import { Button, Avatar, Flex, Tooltip } from 'antd';
 import styles from './mini-sidebar.module.css';
+import { useTheme } from '@/app/theme';
 
 interface MiniSidebarProps {
   avatarUrl: string | null;
@@ -24,6 +25,9 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
   currentTheme = 'default',
   onThemeClick
 }) => {
+  // 使用主题钩子
+  const { themeStyle } = useTheme();
+
   // 优化回调函数，避免不必要的重新创建
   const handleAvatarClick = useCallback(() => {
     onAvatarClick();

@@ -1,5 +1,5 @@
 import React, { useCallback, memo, useEffect } from 'react';
-import { Breadcrumb as AntBreadcrumb, Button, Space, Badge } from 'antd';
+import { Breadcrumb as AntBreadcrumb, Button, Space, Badge, Tooltip } from 'antd';
 import { Home, ChevronRight, ChevronLeft, FolderClosed, FileType } from 'lucide-react';
 import styles from '@/app/components/features/file-management/navigation/breadcrumb/breadcrumb.module.css';
 import { FolderPathItem } from '@/app/types';
@@ -55,55 +55,71 @@ export const Breadcrumb = memo(function Breadcrumb({
     return null;
   }
 
-  // 使用antd Breadcrumb组件创建面包屑项
+  // 构建面包屑项 - 使用AntD V5版本的items格式
   const breadcrumbItems = [
     {
       title: (
-        <span 
-          className={styles.breadcrumbItem} 
-          onClick={handleHomeClick}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <Home size={16} />
-          <span>主目录</span>
-        </span>
-      ),
-      key: 'root'
+        <Tooltip title="返回主目录">
+          <div 
+            onClick={handleHomeClick}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            className={styles.breadcrumbItem}
+          >
+            <Home size={16} className={styles.breadcrumbIcon} />
+            <span>主目录</span>
+          </div>
+        </Tooltip>
+      )
     }
   ];
 
   // 添加文件夹路径项
   safeFolderPath.forEach((folder, index) => {
+    // 判断是否为最后一个路径项，最后一个应显示为当前位置
+    const isLastItem = index === safeFolderPath.length - 1;
+    
     breadcrumbItems.push({
       title: (
-        <span 
-          className={styles.breadcrumbItem} 
-          onClick={() => handleFolderClick(folder.id)}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <FolderClosed size={14} />
-          <span>{folder.name}</span>
-        </span>
-      ),
-      key: `folder-${index}`
+        <Tooltip title={isLastItem ? "当前位置" : `跳转到 ${folder.name}`}>
+          <div 
+            onClick={() => handleFolderClick(folder.id)}
+            style={{ 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              fontWeight: isLastItem ? '600' : '500',
+              color: isLastItem ? 'var(--theme-primary, #3b82f6)' : undefined
+            }}
+            className={styles.breadcrumbItem}
+          >
+            <FolderClosed size={14} className={styles.breadcrumbIcon} />
+            <span>{folder.name}</span>
+          </div>
+        </Tooltip>
+      )
     });
   });
 
   return (
     <div className={styles.breadcrumb} data-path-length={safeFolderPath.length}>
       {onBackClick && safeFolderPath.length > 0 && (
-        <Button 
-          icon={<ChevronLeft size={16} />}
-          size="small"
-          type="text"
-          onClick={handleBackButtonClick}
-          title="返回上一级"
-          aria-label="返回上一级"
-          style={{ marginRight: '8px' }}
-        />
+        <Tooltip title="返回上一级">
+          <Button 
+            icon={<ChevronLeft size={16} />}
+            size="small"
+            type="text"
+            onClick={handleBackButtonClick}
+            aria-label="返回上一级"
+            className={styles.breadcrumbBackButton}
+          />
+        </Tooltip>
       )}
       
-      <AntBreadcrumb items={breadcrumbItems} separator={<ChevronRight size={14} />} />
+      <AntBreadcrumb 
+        items={breadcrumbItems} 
+        separator={<ChevronRight size={14} className={styles.breadcrumbSeparator} />} 
+      />
       
       {/* 文件类型过滤器显示为单独标记，不会修改面包屑 */}
       {selectedFileType && onClearFilter && (
@@ -116,7 +132,9 @@ export const Breadcrumb = memo(function Breadcrumb({
                 padding: '4px 8px',
                 backgroundColor: 'var(--theme-primary, #3b82f6)',
                 borderRadius: '12px',
-                color: 'white'
+                color: 'white',
+                boxShadow: '0 2px 5px rgba(59, 130, 246, 0.3)',
+                transition: 'all 0.3s ease'
               }}>
                 <FileType size={14} style={{ marginRight: '4px' }} />
                 <span>{selectedFileType}</span>
@@ -129,8 +147,12 @@ export const Breadcrumb = memo(function Breadcrumb({
                     cursor: 'pointer', 
                     color: 'white',
                     fontSize: '14px',
-                    lineHeight: 1
+                    lineHeight: 1,
+                    opacity: 0.8,
+                    transition: 'opacity 0.2s ease'
                   }}
+                  onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseOut={(e) => e.currentTarget.style.opacity = '0.8'}
                 >
                   ×
                 </button>

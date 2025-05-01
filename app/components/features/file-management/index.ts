@@ -24,4 +24,5 @@ export { FavoritesContent, FavoriteModal, CreateFavoriteModal } from './favorite
 export { default as UploadModal } from './upload/upload-modal';
 export { CreateFolderModal } from './folder-management/create-folder-modal';
 export { default as FolderSelectModal } from './folder-select/FolderSelectModal';
-export { SharesContent } from './shares'; 
+export { SharesContent } from './shares';
+export { DownloadListModal } from './download/DownloadListModal'; 

@@ -21,7 +21,7 @@ export const folderIcon = <Folder size={24} color="#2878ff" />;
  * 文件类型与图标颜色映射
  */
 export const FILE_ICON_COLORS = {
-  folder: '#2878ff',
+  folder: '#ff9900',
   image: '#13C2C2',
   video: '#722ED1',
   audio: '#EB2F96',

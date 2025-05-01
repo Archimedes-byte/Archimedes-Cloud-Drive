@@ -91,33 +91,52 @@ export function clearCustomThemes(): boolean {
  * 用于在组件中订阅主题变更事件
  * 
  * @param callback 主题变更回调
- * @returns 事件处理函数
+ * @returns 移除监听器的函数
  */
-export function createThemeChangeHandler(callback: (theme: string) => void) {
-  return function themeChangeHandler(e: Event) {
-    const customEvent = e as CustomEvent;
-    if (customEvent.detail && customEvent.detail.theme) {
-      callback(customEvent.detail.theme);
-    }
+export function createThemeChangeHandler(callback: (event: CustomEvent) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  
+  const handleThemeChange = (e: Event) => {
+    callback(e as CustomEvent);
   };
+  
+  window.addEventListener(THEME_CHANGE_EVENT, handleThemeChange);
+  
+  // 返回移除监听器的函数
+  return () => {
+    window.removeEventListener(THEME_CHANGE_EVENT, handleThemeChange);
+  };
+}
+
+/**
+ * 主题事件详情接口
+ */
+interface ThemeEventDetails {
+  theme: string;
+  styles: ThemeStyle;
 }
 
 /**
  * 通知主题变更事件
  * 在主题发生变化时通知所有监听者
  * 
- * @param themeId 变更后的主题ID
- * @param themeStyle 变更后的主题样式
+ * @param details 事件详情部分内容
  */
-function notifyThemeChange(themeId: string, themeStyle: ThemeStyle) {
+function notifyThemeChange(details: Partial<ThemeEventDetails>): void {
   if (typeof window === 'undefined') return;
+  
+  // 确保默认值
+  const currentTheme = details.theme || (lastAppliedTheme ? lastAppliedTheme : 'default');
+  
+  // 创建完整的事件详情
+  const fullDetails: ThemeEventDetails = {
+    theme: currentTheme,
+    styles: details.styles || getThemeStyle(currentTheme)
+  };
   
   // 创建并派发自定义事件
   const event = new CustomEvent(THEME_CHANGE_EVENT, {
-    detail: {
-      theme: themeId,
-      styles: themeStyle
-    }
+    detail: fullDetails
   });
   
   window.dispatchEvent(event);
@@ -125,48 +144,35 @@ function notifyThemeChange(themeId: string, themeStyle: ThemeStyle) {
 
 /**
  * 应用主题
- * 将主题样式应用到文档根元素
- * 
- * @param themeId 要应用的主题ID
- * @param persist 是否保存到localStorage
- * @returns 应用的主题样式
+ * @param themeId 主题ID
+ * @returns 应用的主题样式对象
  */
-export function applyTheme(themeId: string = 'default', persist: boolean = true): ThemeStyle {
-  // 防止重复应用相同主题
-  if (lastAppliedTheme === themeId) {
-    return getThemeStyle(themeId);
-  }
-  
-  // 防止重入
-  if (isApplyingTheme) {
-    console.warn('主题正在应用中，请稍后再试');
-    return getThemeStyle(themeId);
-  }
-  
+export function applyTheme(themeId: string): ThemeStyle | null {
   try {
-    isApplyingTheme = true;
-    lastAppliedTheme = themeId;
-    
     // 获取并应用主题样式
     const style = applyPresetTheme(themeId);
+    if (!style) return null;
     
-    // 是否持久化存储主题设置
-    if (persist && typeof window !== 'undefined') {
+    // 添加到localStorage
+    if (typeof window !== 'undefined') {
       localStorage.setItem(THEME_STORAGE_KEY, themeId);
     }
     
-    // 通知主题变更
-    notifyThemeChange(themeId, style);
-    
-    // 输出日志
-    console.log(`已应用主题: ${themeId}`);
+    // 触发主题变更事件
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent(THEME_CHANGE_EVENT, {
+        detail: {
+          theme: themeId,
+          styles: style
+        }
+      });
+      window.dispatchEvent(event);
+    }
     
     return style;
   } catch (error) {
-    console.error('应用主题失败:', error);
-    return getThemeStyle('default');
-  } finally {
-    isApplyingTheme = false;
+    console.error('应用主题时出错:', error);
+    return null;
   }
 }
 
@@ -174,25 +180,24 @@ export function applyTheme(themeId: string = 'default', persist: boolean = true)
  * 保存自定义主题
  * @param id 主题ID
  * @param theme 主题样式
- * @returns 保存是否成功
+ * @returns 是否保存成功
  */
 export function saveCustomTheme(id: string, theme: ThemeStyle): boolean {
   if (typeof window === 'undefined') return false;
   
   try {
-    // 对主题ID添加custom_前缀以区分
-    const themeId = id.startsWith('custom_') ? id : `custom_${id}`;
+    // 确保主题对象有有效的名称
+    if (!theme.name) {
+      theme.name = id;
+    }
     
-    // 更新自定义主题集合
-    customThemes[themeId] = {
-      ...theme,
-      name: theme.name || id
-    };
+    // 将自定义主题添加到内存中
+    customThemes[id] = theme;
     
-    // 保存到localStorage
+    // 序列化并保存到localStorage
     localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
     
-    console.log(`自定义主题已保存: ${themeId}`);
+    console.log(`自定义主题 ${id} 已保存`);
     return true;
   } catch (error) {
     console.error('保存自定义主题失败:', error);
@@ -203,30 +208,31 @@ export function saveCustomTheme(id: string, theme: ThemeStyle): boolean {
 /**
  * 删除自定义主题
  * @param id 主题ID
- * @returns 删除是否成功
+ * @returns 是否删除成功
  */
 export function deleteCustomTheme(id: string): boolean {
   if (typeof window === 'undefined') return false;
   
   try {
-    // 检查是不是自定义主题
-    if (!id.startsWith('custom_')) {
-      console.warn('只能删除自定义主题');
-      return false;
-    }
-    
-    // 如果该主题存在，则删除
-    if (customThemes[id]) {
-      delete customThemes[id];
-      
-      // 保存更新后的自定义主题集合
-      localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
-      
-      console.log(`自定义主题已删除: ${id}`);
+    // 如果主题不存在，返回成功
+    if (!customThemes[id]) {
       return true;
     }
     
-    return false;
+    // 从内存中删除主题
+    delete customThemes[id];
+    
+    // 更新localStorage
+    localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+    
+    console.log(`自定义主题 ${id} 已删除`);
+    
+    // 如果当前使用的是被删除的主题，切换到默认主题
+    if (lastAppliedTheme === id) {
+      applyTheme('default');
+    }
+    
+    return true;
   } catch (error) {
     console.error('删除自定义主题失败:', error);
     return false;
@@ -234,26 +240,29 @@ export function deleteCustomTheme(id: string): boolean {
 }
 
 /**
- * 检查主题ID是否存在
+ * 检查主题是否存在
  * @param themeId 主题ID
  * @returns 主题是否存在
  */
 export function themeExists(themeId: string): boolean {
-  return !!themeDefinitions[themeId] || !!(themeId.startsWith('custom_') && customThemes[themeId]);
+  return themeId in themeDefinitions || themeId in customThemes;
 }
 
 /**
- * 获取主题样式对象
+ * 获取主题样式
  * @param themeId 主题ID
  * @returns 主题样式对象
  */
 export function getThemeStyle(themeId: string = 'default'): ThemeStyle {
-  // 先检查是否是自定义主题
-  if (themeId.startsWith('custom_') && customThemes[themeId]) {
+  if (themeDefinitions[themeId]) {
+    return themeDefinitions[themeId];
+  }
+  
+  if (customThemes[themeId]) {
     return customThemes[themeId];
   }
   
-  return themeDefinitions[themeId] || themeDefinitions.default;
+  return themeDefinitions['default'];
 }
 
 /**
@@ -262,45 +271,42 @@ export function getThemeStyle(themeId: string = 'default'): ThemeStyle {
  * @returns 应用的主题样式
  */
 function applyPresetTheme(themeId: string): ThemeStyle {
+  if (typeof document === 'undefined') {
+    return getThemeStyle(themeId);
+  }
+  
+  // 获取主题样式
   const style = getThemeStyle(themeId);
   
-  // 先移除所有主题相关CSS变量，确保干净的开始
-  const cssVarsToCleanup = [
-    '--theme-primary',
-    '--theme-secondary',
-    '--theme-accent',
-    '--theme-background',
-    '--theme-gradient-start',
-    '--theme-gradient-end',
-    '--theme-card',
-    '--theme-text'
-  ];
+  // 应用CSS变量到根元素
+  document.documentElement.style.setProperty('--theme-primary', style.primary || '#3b82f6');
+  document.documentElement.style.setProperty('--theme-secondary', style.secondary || '#6366f1');
+  document.documentElement.style.setProperty('--theme-accent', style.accent || '#8b5cf6');
+  document.documentElement.style.setProperty('--theme-success', style.success || '#22c55e');
+  document.documentElement.style.setProperty('--theme-warning', style.warning || '#eab308');
+  document.documentElement.style.setProperty('--theme-error', style.error || '#ef4444');
+  document.documentElement.style.setProperty('--theme-info', style.info || '#3b82f6');
   
-  // 彻底清理所有主题变量
-  cssVarsToCleanup.forEach(varName => {
-    document.documentElement.style.removeProperty(varName);
-  });
+  // 应用背景
+  document.documentElement.style.setProperty('--theme-background', style.background || 'linear-gradient(to right, #f0f9ff, #e0f2fe)');
   
-  console.log('应用主题样式:', style);
-  console.log('是否存在次要色调:', !!style.secondary);
+  // 应用文本和卡片颜色
+  document.documentElement.style.setProperty('--theme-text', style.text || '#1e293b');
+  document.documentElement.style.setProperty('--theme-card', style.card || 'rgba(255, 255, 255, 0.8)');
+  document.documentElement.style.setProperty('--theme-border', '#e2e8f0');
   
-  // 应用主题样式到CSS变量
-  Object.entries(style).forEach(([key, value]) => {
-    if (typeof value === 'string' && value) {
-      // 只设置有实际值的属性
-      if (key !== 'secondary' || (key === 'secondary' && value)) {
-        document.documentElement.style.setProperty(`--theme-${key}`, value);
-      }
-    }
-  });
+  // 应用阴影
+  document.documentElement.style.setProperty('--theme-card-shadow', '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)');
+  document.documentElement.style.setProperty('--theme-button-shadow', '0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04)');
+  document.documentElement.style.setProperty('--theme-button-hover-shadow', '0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05)');
   
-  // 对纯色系统进行特殊处理
-  if (!style.secondary || style.secondary === '') {
+  // 更新文档根样式
+  document.documentElement.style.setProperty('--background', '#ffffff');
+  document.documentElement.style.setProperty('--foreground', style.text || '#1e293b');
+  
+  // 特殊处理纯色系统
+  if (style.category === '纯色系统') {
     console.log('检测到纯色系统，正在应用纯色设置');
-    
-    // 强制移除次要色调相关变量
-    document.documentElement.style.removeProperty('--theme-secondary');
-    document.documentElement.style.removeProperty('--theme-accent');
     
     // 纯色系统 - 背景应该设置为纯色
     if (style.background && style.background.includes('gradient')) {
@@ -372,16 +378,21 @@ export function loadThemeFromStorage(): string | null {
 
 /**
  * 添加主题变更事件监听
- * @param callback 回调函数
+ * @param callback 回调函数，接收主题ID和样式
  * @returns 移除监听器的函数
  */
-export function addThemeChangeListener(callback: (themeId: string, themeStyle: ThemeStyle) => void): () => void {
+export function addThemeChangeListener(
+  callback: (themeId: string, themeStyle: ThemeStyle) => void
+): () => void {
   if (typeof window === 'undefined') return () => {};
   
   const handleThemeChange = (e: Event) => {
     const customEvent = e as CustomEvent;
-    if (customEvent.detail && customEvent.detail.theme) {
-      callback(customEvent.detail.theme, customEvent.detail.styles);
+    if (customEvent.detail) {
+      const themeId = customEvent.detail.theme || lastAppliedTheme || 'default';
+      const style = customEvent.detail.styles || getThemeStyle(themeId);
+      
+      callback(themeId, style);
     }
   };
   

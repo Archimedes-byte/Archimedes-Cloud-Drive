@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
-import { ConfigProvider } from 'antd';
-import { customTheme } from '@/app/theme';
+import React, { useEffect, useState } from 'react';
+import { ConfigProvider, theme } from 'antd';
+import { getAntTheme } from '@/app/theme/ant-theme';
+import { useTheme } from './useTheme';
 
 /**
  * Ant Design 主题提供者组件
@@ -22,8 +23,19 @@ import { customTheme } from '@/app/theme';
  * ```
  */
 export function AntThemeProvider({ children }: { children: React.ReactNode }) {
+  // 使用主题钩子获取当前主题
+  const { themeStyle } = useTheme();
+  
+  // 生成Ant Design主题配置
+  const antTheme = getAntTheme(themeStyle);
+  
   return (
-    <ConfigProvider theme={customTheme}>
+    <ConfigProvider 
+      theme={{
+        ...antTheme,
+        algorithm: theme.defaultAlgorithm
+      }}
+    >
       {children}
     </ConfigProvider>
   );

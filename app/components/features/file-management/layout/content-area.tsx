@@ -92,6 +92,9 @@ interface ContentAreaProps {
   onSearchChange: (query: string) => void;
   onRealTimeSearchChange: (enable: boolean) => void;
   
+  // 文件夹下载处理
+  onRequestDownload?: (fileInfo: FileInfo) => void;
+  
   // 模态窗口操作
   setShowUploadDropdown: (show: boolean) => void;
   setIsUploadModalOpen: (isOpen: boolean) => void;
@@ -168,6 +171,9 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   onSearch,
   onSearchChange,
   onRealTimeSearchChange,
+  
+  // 文件夹下载处理
+  onRequestDownload,
   
   // 模态窗口操作
   setShowUploadDropdown,
@@ -335,6 +341,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
         setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
         onUploadClick={() => setIsUploadModalOpen(true)}
         onFolderUploadClick={() => setIsFolderUploadModalOpen(true)}
+        onRequestDownload={onRequestDownload}
       />
       
       {renderBreadcrumb()}

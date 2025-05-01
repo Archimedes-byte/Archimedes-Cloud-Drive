@@ -53,7 +53,7 @@
 /* 顶部栏 */
 .topBar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 16px 20px;
   background: rgba(255, 255, 255, 0.15);
@@ -105,38 +105,24 @@
   flex-wrap: wrap;
   align-items: center;
   width: 100%;
-  justify-content: flex-start;
 }
 
 /* 固定宽度容器 - 确保菜单栏布局一致 */
 .fixedWidthContainer {
   width: 100%;
   min-height: 56px;
-}
-
-/* 统一的操作容器 - 所有按钮在同一行 */
-.unifiedActionContainer {
   display: flex;
-  width: 100%;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-  z-index: 900;
-  overflow: visible;
-}
-
-/* 弹性空白间隔 */
-.spacer {
-  flex: 1;
-  min-width: 20px;
 }
 
 /* 操作容器 - 统一勾选和未勾选状态下的菜单栏 */
 .actionContainer {
   display: flex;
   width: 100%;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 10;
 }
 
 /* 浏览操作容器 */
@@ -144,7 +130,9 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  flex-grow: 1;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  position: relative;
 }
 
 /* 上传操作容器 */
@@ -152,10 +140,12 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   position: relative;
-  z-index: 900;
+  z-index: 10;
   overflow: visible;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 /* 操作按钮组 */
@@ -163,14 +153,15 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-left: auto;
+  flex-wrap: nowrap;
+  position: relative;
+  justify-content: flex-start;
 }
 
 /* 操作按钮 */
 .actionButtons {
   display: flex;
-  gap: 8px;
-  margin-left: auto;
+  gap: 12px;
 }
 
 /* 文件区域容器 */
@@ -220,6 +211,10 @@
   .mainContent {
     padding: 1rem;
   }
+  
+  .actionContainer {
+    flex-wrap: nowrap;
+  }
 }
 
 @media (max-width: 768px) {
@@ -244,23 +239,15 @@
     gap: 8px;
   }
   
-  .unifiedActionContainer {
+  .actionContainer {
     flex-wrap: wrap;
     gap: 8px;
-    justify-content: flex-start;
   }
   
-  .spacer {
-    display: none; /* 在小屏幕上隐藏间隔 */
-  }
-  
+  .browseActionsContainer, 
   .actionsGroup {
     flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  
-  .actionButtons {
-    flex-wrap: wrap;
+    gap: 8px;
   }
 }
 
@@ -269,5 +256,21 @@
     padding: 0.8rem;
     margin: 0.3rem;
     border-radius: 12px;
+  }
+  
+  .topBar {
+    padding: 12px 16px;
+  }
+  
+  .actionContainer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .actionsGroup {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+    justify-content: flex-start;
   }
 } 

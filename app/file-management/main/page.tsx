@@ -24,7 +24,7 @@
  *   - 事件监听管理: 创建通用的事件监听hook，管理所有的事件订阅和清理
  */
 
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { message } from 'antd';
@@ -42,6 +42,7 @@ import {
   ShareModal,
   LinkInputModal,
   FavoriteModal,
+  DownloadListModal,
 } from '@/app/components/features/file-management';
 
 // 导入ContentArea组件
@@ -265,7 +266,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
   
   // 文件操作钩子
   const {
-    downloadFiles: handleDownload,
+    downloadFiles,
     deleteFiles: handleDelete,
   } = useFileOperations([]);
 
@@ -346,14 +347,23 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   // 处理清除过滤器
   const handleClearFilter = useCallback(() => {
-    // 清空选中的文件类型
-    setSelectedFileType(null);
-    // 关闭所有特殊视图并重置当前视图状态
-    closeAllSpecialViews();
-    // 重新加载文件，不应用过滤器
-    loadFiles(currentFolderId, null);
-    console.log('已清除过滤器，重置视图状态');
-  }, [setSelectedFileType, closeAllSpecialViews, loadFiles, currentFolderId]);
+    // 如果有文件类型过滤或处于搜索视图状态，清除这些过滤器
+    if (selectedFileType || showSearchView) {
+      // 清空选中的文件类型
+      setSelectedFileType(null);
+      // 关闭所有特殊视图并重置当前视图状态
+      closeAllSpecialViews();
+      // 重新加载文件，不应用过滤器
+      loadFiles(currentFolderId, null);
+      console.log('已清除过滤器，重置视图状态');
+    } else if (currentFolderId !== null || folderPath.length > 0) {
+      // 如果没有过滤器但不在根目录，则返回根目录
+      setFolderPath([]);
+      setCurrentFolderId(null);
+      loadFiles(null, null);
+      console.log('返回根目录');
+    }
+  }, [selectedFileType, showSearchView, setSelectedFileType, closeAllSpecialViews, loadFiles, currentFolderId, folderPath, setFolderPath, setCurrentFolderId]);
 
   // 处理文件项点击
   const handleFileItemClick = useCallback((file: FileInfo) => {
@@ -496,6 +506,93 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     await executeSearchFn(effectiveQuery, effectiveType);
   }, [executeSearchFn]);
 
+  // 添加下载相关状态
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [filesToDownload, setFilesToDownload] = useState<FileInfo[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // 获取文件信息函数
+  const getFilesInfo = async (fileIds: string[]): Promise<FileInfo[]> => {
+    if (!fileIds.length) return [];
+    
+    try {
+      // 并行请求所有文件信息
+      const filesInfoPromises = fileIds.map(fileId => fileApi.getFile(fileId));
+      const filesInfo = await Promise.all(filesInfoPromises);
+      
+      // 过滤掉可能的null结果
+      return filesInfo.filter(Boolean) as FileInfo[];
+    } catch (error) {
+      console.error('获取文件信息失败:', error);
+      return [];
+    }
+  };
+
+  // 修改handleDownload函数
+  const handleDownload = useCallback(async (fileIds: string[]) => {
+    if (fileIds.length === 0) {
+      message.warning('请选择要下载的文件');
+      return;
+    }
+
+    try {
+      // 获取所有要下载的文件信息
+      const filesInfo = await getFilesInfo(fileIds);
+      
+      if (filesInfo.length === 0) {
+        message.error('获取文件信息失败');
+        return;
+      }
+      
+      // 设置要下载的文件列表并显示模态框
+      setFilesToDownload(filesInfo);
+      setIsDownloadModalOpen(true);
+    } catch (error) {
+      console.error('准备下载过程出错:', error);
+      message.error('准备下载过程出错');
+    }
+  }, []);
+
+  // 添加实际执行下载的函数
+  const executeDownload = useCallback(async () => {
+    if (filesToDownload.length === 0) {
+      message.warning('没有选择要下载的文件');
+      return;
+    }
+    
+    try {
+      setIsDownloading(true);
+      
+      // 提取文件ID列表
+      const fileIds = filesToDownload.map(file => file.id);
+      
+      // 执行下载
+      const success = await downloadFiles(fileIds);
+      
+      if (success) {
+        // 下载成功后关闭模态框
+        setIsDownloadModalOpen(false);
+      }
+    } catch (error) {
+      console.error('下载过程出错:', error);
+      message.error('下载过程出错');
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [filesToDownload, downloadFiles]);
+
+  // 添加更新下载文件列表的函数
+  const handleUpdateFileList = useCallback((files: FileInfo[]) => {
+    setFilesToDownload(files);
+  }, []);
+
+  // 添加一个处理特定文件下载的函数
+  const handleSingleFileDownload = useCallback((fileInfo: FileInfo) => {
+    // 设置要下载的文件为当前文件
+    setFilesToDownload([fileInfo]);
+    setIsDownloadModalOpen(true);
+  }, []);
+
   return (
     <>
       <Head>
@@ -629,7 +726,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           // 搜索相关
           searchQuery={searchQuery}
           searchType={searchType}
-          searchResults={searchResults}
+          searchResults={searchResults || []}
           searchLoading={searchLoading}
           enableRealTimeSearch={enableRealTimeSearch}
           
@@ -686,6 +783,7 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
           onSearch={(query, type) => handleSearch(query, type as any)}
           onSearchChange={setSearchQuery}
           onRealTimeSearchChange={setEnableRealTimeSearch}
+          onRequestDownload={handleSingleFileDownload}
           
           // 模态窗口操作
           setShowUploadDropdown={setShowUploadDropdown}
@@ -819,6 +917,16 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         visible={favoriteModalVisible}
         onClose={closeFavoriteModal}
         onSuccess={handleFavoriteSuccess}
+      />
+
+      {/* 下载列表模态框 */}
+      <DownloadListModal
+        visible={isDownloadModalOpen}
+        fileList={filesToDownload}
+        onCancel={() => setIsDownloadModalOpen(false)}
+        onDownload={executeDownload}
+        loading={isDownloading}
+        onUpdateFileList={handleUpdateFileList}
       />
     </>
   );

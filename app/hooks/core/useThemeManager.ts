@@ -24,7 +24,7 @@ export interface ThemeManagerHook {
   /** 更新主题（同步到用户设置） */
   updateTheme: (themeId: string) => Promise<boolean>;
   /** 应用主题（本地应用） */
-  applyTheme: (themeId: string, isDark?: boolean) => boolean;
+  applyTheme: (themeId: string) => boolean;
   /** 获取所有可用主题 */
   getAllThemes: () => Array<{id: string, name: string, category: string}>;
   /** 按分类获取主题 */
@@ -186,13 +186,8 @@ export const useThemeManager = ({
         // 尝试从API或本地存储获取主题
         const themeId = await loadUserThemeFromAPI() || defaultTheme;
         
-        // 检测系统深色模式偏好
-        const prefersDarkMode = typeof window !== 'undefined' && 
-          window.matchMedia && 
-          window.matchMedia('(prefers-color-scheme: dark)').matches;
-          
         // 应用主题
-        const result = applyTheme(themeId, prefersDarkMode);
+        const result = applyTheme(themeId);
         
         if (result) {
           setCurrentTheme(themeId);
@@ -201,7 +196,7 @@ export const useThemeManager = ({
         } else {
           // 如果应用失败，使用默认主题
           console.warn(`应用主题 ${themeId} 失败，使用默认主题`);
-          const defaultResult = applyTheme(defaultTheme, prefersDarkMode);
+          const defaultResult = applyTheme(defaultTheme);
           
           if (defaultResult) {
             setCurrentTheme(defaultTheme);
@@ -237,30 +232,29 @@ export const useThemeManager = ({
     setIsLoading(true);
     
     try {
-      // 检测系统深色模式偏好
-      const prefersDarkMode = typeof window !== 'undefined' && 
-        window.matchMedia && 
-        window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
       // 应用主题
-      const result = applyTheme(themeId, prefersDarkMode);
+      const result = applyTheme(themeId);
       
       if (!result) {
         console.error(`应用主题 ${themeId} 失败`);
         return false;
       }
       
+      // 保存到localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+      }
+      
       // 更新状态
       setCurrentTheme(themeId);
       setThemeStyle(result);
       
-      // 同步到本地存储
-      localStorage.setItem(THEME_STORAGE_KEY, themeId);
-      
       // 如果用户已登录，同步到服务器
-      setIsSyncedToServer(false);
       if (status === 'authenticated') {
-        await saveUserTheme(themeId);
+        const saved = await saveUserTheme(themeId);
+        if (!saved) {
+          console.warn(`主题 ${themeId} 已在本地应用，但未能保存到服务器`);
+        }
       }
       
       return true;
@@ -270,39 +264,28 @@ export const useThemeManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [status, saveUserTheme]);
+  }, [saveUserTheme, status]);
   
   /**
-   * 应用主题 - 只在本地应用，不同步到服务器
+   * 本地应用主题，不同步到服务器
    */
-  const applyThemeLocal = useCallback((themeId: string, isDark?: boolean): boolean => {
-    try {
-      // 检测系统深色模式偏好(如果未提供isDark参数)
-      const prefersDarkMode = isDark !== undefined ? isDark : 
-        (typeof window !== 'undefined' && 
-        window.matchMedia && 
-        window.matchMedia('(prefers-color-scheme: dark)').matches);
-      
-      // 应用主题
-      const result = applyTheme(themeId, prefersDarkMode);
-      
-      if (!result) {
-        console.error(`应用主题 ${themeId} 失败`);
-        return false;
-      }
-      
-      // 更新状态
+  const applyThemeLocal = useCallback((themeId: string): boolean => {
+    // 应用主题
+    const result = applyTheme(themeId);
+    
+    if (result) {
       setCurrentTheme(themeId);
       setThemeStyle(result);
       
-      // 同步到本地存储
-      localStorage.setItem(THEME_STORAGE_KEY, themeId);
+      // 保存到localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+      }
       
       return true;
-    } catch (error) {
-      console.error('应用主题失败:', error);
-      return false;
     }
+    
+    return false;
   }, []);
   
   return {

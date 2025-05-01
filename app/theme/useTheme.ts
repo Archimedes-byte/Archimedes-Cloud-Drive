@@ -65,7 +65,7 @@ export function useTheme(options: UseThemeOptions = {}): UseThemeReturn {
     
     try {
       // 应用主题到DOM
-      applyTheme(themeId, true);
+      applyTheme(themeId);
       
       // 更新状态
       setCurrentTheme(themeId);
@@ -90,18 +90,31 @@ export function useTheme(options: UseThemeOptions = {}): UseThemeReturn {
 
   // 监听外部主题变更
   useEffect(() => {
-    const removeListener = addThemeChangeListener((themeId, style) => {
-      setCurrentTheme(themeId);
-      setThemeStyle(style);
-      
-      // 调用回调
-      if (onThemeChange) {
-        onThemeChange(themeId, style);
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        // 处理主题变更
+        if (customEvent.detail.theme) {
+          setCurrentTheme(customEvent.detail.theme);
+          setThemeStyle(customEvent.detail.styles);
+        }
+        
+        // 调用回调
+        if (onThemeChange) {
+          onThemeChange(
+            customEvent.detail.theme || currentTheme, 
+            customEvent.detail.styles || getThemeStyle(currentTheme)
+          );
+        }
       }
-    });
+    };
     
-    return () => removeListener();
-  }, [onThemeChange]);
+    window.addEventListener(THEME_CHANGE_EVENT, handleThemeChange);
+    
+    return () => {
+      window.removeEventListener(THEME_CHANGE_EVENT, handleThemeChange);
+    };
+  }, [currentTheme, onThemeChange]);
 
   // 初始加载时应用主题
   useEffect(() => {

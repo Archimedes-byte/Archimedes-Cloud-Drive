@@ -20,6 +20,7 @@
   position: relative;
   border-radius: 8px;
   background-color: white;
+  width: 100%; /* 确保容器占满整个宽度 */
 }
 
 /* 添加表格容器滚动样式 */
@@ -27,12 +28,14 @@
   overflow-y: auto;
   max-height: calc(100vh - 200px);
   border-bottom: none;
+  width: 100% !important;
 }
 
 /* 表格内容区域滚动样式 */
 .ant-file-table .ant-table-body {
   overflow-y: auto !important;
   max-height: calc(100vh - 200px);
+  width: 100%; /* 确保表格主体占满整个宽度 */
 }
 
 /* 移除表格底部可能的多余边距和边框 */
@@ -44,6 +47,7 @@
   margin-bottom: 0;
   border-bottom: none;
   background-color: transparent;
+  width: 100% !important;
 }
 
 /* 确保表格填满容器 */
@@ -51,6 +55,50 @@
   margin: 0;
   height: 100%;
   background-color: transparent;
+  width: 100%; /* 确保表格填满容器 */
+}
+
+/* 修复表格布局，防止右侧出现空白 */
+.ant-file-table .ant-table-container {
+  display: block;
+  width: 100% !important;
+}
+
+.ant-file-table .ant-table-content {
+  width: 100% !important;
+}
+
+/* 表格列自适应调整 */
+.ant-file-table .ant-table-thead > tr > th.ant-table-cell,
+.ant-file-table .ant-table-tbody > tr > td.ant-table-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 12px !important;
+}
+
+/* 名称列占据更多空间 */
+.ant-file-table .ant-table-cell.name-column {
+  width: 40% !important;
+  min-width: 250px;
+}
+
+/* 标签列占据适当空间 */
+.ant-file-table .ant-table-cell.tags-column {
+  width: 25% !important;
+  min-width: 150px;
+}
+
+/* 日期列固定宽度 */
+.ant-file-table .ant-table-cell.date-column {
+  width: 180px !important;
+  min-width: 150px;
+}
+
+/* 大小列固定宽度 */
+.ant-file-table .ant-table-cell.size-column {
+  width: 100px !important;
+  min-width: 80px;
 }
 
 /* 自定义滚动条样式 */
@@ -108,25 +156,32 @@
 
 /* 文件名样式 */
 .file-name {
-  font-weight: 500;
+  font-weight: 600;
   max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
   transition: color 0.2s ease;
-  color: #1a202c;
+  color: var(--theme-text, #1a202c) !important;
   font-size: 14px;
   white-space: nowrap;
+  text-shadow: 0 0 1px rgba(0,0,0,0.05);
+  display: inline-block;
+  background-color: rgba(255,255,255,0.7) !important;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .file-name:hover {
-  color: var(--theme-primary, #3b82f6);
+  color: var(--theme-primary, #3b82f6) !important;
   text-decoration: underline;
+  background-color: rgba(255,255,255,0.9) !important;
 }
 
 /* 移除非文件夹特殊颜色样式 */
 .file-name-non-folder {
-  color: #1a202c;
+  color: var(--theme-text, #1a202c) !important;
 }
 
 /* 文件图标包装器样式 */
@@ -143,7 +198,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1a202c;
+  color: var(--theme-text, #1a202c) !important;
+  padding: 2px 0;
 }
 
 /* 合并文件图标样式 */
@@ -167,7 +223,7 @@
 
 /* 文件夹图标颜色 */
 .ant-file-table .folder-icon {
-  color: #f6ad55 !important;
+  color: #ff9900 !important; /* 更改为更显眼的橙色 */
 }
 
 /* 文件类型图标颜色 */
@@ -351,4 +407,80 @@
 .ant-table-wrapper .ant-table-tbody > tr:hover {
   background-color: rgba(247, 250, 252, 0.8) !important;
   color: #1a202c !important;
+}
+
+/* 表格基础样式 */
+.ant-table {
+  background-color: transparent;
+  color: #1a202c;
+}
+
+.ant-table-wrapper .ant-table {
+  background-color: transparent;
+}
+
+.ant-empty-description {
+  color: #4a5568;
+}
+
+.ant-pagination-item a {
+  color: #1a202c;
+}
+
+.ant-pagination-item-active {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.ant-pagination-item-active a {
+  color: #3b82f6;
+}
+
+.ant-select-dropdown {
+  background-color: white;
+  border-color: #e2e8f0;
+}
+
+.ant-select-item {
+  color: #1a202c;
+}
+
+.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: #f7fafc;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* 弹出层和对话框样式 */
+.ant-dropdown-menu,
+.ant-modal-content,
+.ant-popover-inner {
+  background-color: white;
+  border-color: #e2e8f0;
+  color: #1a202c;
+}
+
+.ant-dropdown-menu-item:hover,
+.ant-dropdown-menu-submenu-title:hover {
+  background-color: #f7fafc;
+}
+
+.ant-modal-header {
+  background-color: white;
+  border-bottom-color: #e2e8f0;
+}
+
+.ant-modal-title {
+  color: #1a202c;
+}
+
+.ant-modal-close-x {
+  color: #718096;
+}
+
+.ant-modal-footer {
+  border-top-color: #e2e8f0;
 }

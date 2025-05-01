@@ -38,12 +38,10 @@ export * from './features';
 // 业务组件导出 (保持向后兼容)
 export { default as UploadModal } from './features/file-management/upload/upload-modal';
 export { default as FileUpload } from './features/file-management/upload/file-upload';
-export { default as TopActionBar } from './features/file-management/action-bar/top-action-bar';
 export { default as SortDropdown } from './features/file-management/action-bar/sort-dropdown';
 export { default as MenuBar } from './features/file-management/action-bar/menu-bar';
 export { default as UploadDropdown } from './features/file-management/action-bar/upload-dropdown';
 export { default as NewFolderForm } from './features/file-management/folder-management/new-folder-form';
-export { TopActionBar as Toolbar } from './features/file-management/action-bar/top-action-bar';
 
 // 注：分析组件StorageUsage已被移除，不再导出
 

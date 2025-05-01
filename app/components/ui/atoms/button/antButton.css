@@ -3,18 +3,28 @@
  * 用于保持现有UI设计一致性
  */
 
-/* 主要按钮 */
-.ant-btn-custom-primary {
-  background: linear-gradient(to right, #1e40af, #3b82f6);
+/* 主要按钮 - 渐变模式 (有主题色和次要色时) */
+.ant-btn-custom-primary.gradient-mode {
+  background: linear-gradient(to right, var(--secondary-color, #1e40af), var(--primary-color, #3b82f6));
   border: none;
   box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
   transition: all 0.3s ease;
 }
 
-.ant-btn-custom-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
-  background: linear-gradient(to right, #1e40af, #1e3a8a, #2563eb);
+.ant-btn-custom-primary.gradient-mode:hover {
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+}
+
+/* 主要按钮 - 纯色模式 (只有主题色时) */
+.ant-btn-custom-primary.pure-mode {
+  background: var(--primary-color, #3b82f6);
+  border: none;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+  transition: all 0.3s ease;
+}
+
+.ant-btn-custom-primary.pure-mode:hover {
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
 }
 
 /* 次要按钮 */
@@ -26,50 +36,62 @@
 }
 
 .ant-btn-custom-secondary:hover {
-  background-color: #e5e7eb;
-  border-color: #d1d5db;
-  color: #1f2937;
-  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* 成功按钮 */
-.ant-btn-custom-success {
-  background: linear-gradient(to right, #059669, #10b981);
+/* 成功按钮 - 渐变模式 */
+.ant-btn-custom-success.gradient-mode {
+  background: linear-gradient(to right, #047857, #10b981);
   border: none;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
 }
 
-.ant-btn-custom-success:hover {
-  background: linear-gradient(to right, #047857, #059669);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+.ant-btn-custom-success.gradient-mode:hover {
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
 }
 
-/* 危险按钮 */
-.ant-btn-custom-danger {
+/* 成功按钮 - 纯色模式 */
+.ant-btn-custom-success.pure-mode {
+  background: #10b981;
+  border: none;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+.ant-btn-custom-success.pure-mode:hover {
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+/* 危险按钮 - 渐变模式 */
+.ant-btn-custom-danger.gradient-mode {
   background: linear-gradient(to right, #dc2626, #ef4444);
   border: none;
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
-.ant-btn-custom-danger:hover {
-  background: linear-gradient(to right, #b91c1c, #dc2626);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
+.ant-btn-custom-danger.gradient-mode:hover {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+/* 危险按钮 - 纯色模式 */
+.ant-btn-custom-danger.pure-mode {
+  background: #ef4444;
+  border: none;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.ant-btn-custom-danger.pure-mode:hover {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
 }
 
 /* 轮廓按钮 */
 .ant-btn-custom-outline {
   background-color: transparent;
-  border: 1px solid #3b82f6;
-  color: #3b82f6;
+  border: 1px solid var(--primary-color, #3b82f6);
+  color: var(--primary-color, #3b82f6);
 }
 
 .ant-btn-custom-outline:hover {
-  background-color: rgba(59, 130, 246, 0.05);
-  border-color: #1e40af;
-  color: #1e40af;
-  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* 幽灵按钮 */
@@ -80,10 +102,7 @@
 }
 
 .ant-btn-custom-ghost:hover {
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
-  color: #374151;
-  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* 全宽按钮 */

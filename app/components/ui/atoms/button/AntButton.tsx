@@ -5,6 +5,7 @@ import { Button as AntdButton } from 'antd';
 import type { ButtonProps as AntdButtonProps } from 'antd';
 import { cn } from '@/app/utils';
 import './antButton.css';
+import { useTheme } from '@/app/theme';
 
 /**
  * 自定义按钮组件属性
@@ -38,19 +39,25 @@ export const AntButton: React.FC<AntButtonProps> = ({
   asChild, // 忽略这个参数，仅为兼容性保留
   ...props
 }) => {
+  // 获取当前主题信息
+  const { themeStyle } = useTheme();
+  
+  // 确定按钮样式模式：如果主题有secondary颜色，则使用渐变模式，否则使用纯色模式
+  const styleMode = themeStyle.secondary ? 'gradient-mode' : 'pure-mode';
+  
   // 确定按钮类型和类名
   const getTypeAndClass = () => {
     // 将原Button的variant映射到AntdButton的type
     switch (variant) {
       case 'primary':
-        return { type: 'primary' as const, className: 'ant-btn-custom-primary' };
+        return { type: 'primary' as const, className: `ant-btn-custom-primary ${styleMode}` };
       case 'secondary':
         return { type: 'default' as const, className: 'ant-btn-custom-secondary' };
       case 'success':
-        return { type: 'primary' as const, className: 'ant-btn-custom-success' };
+        return { type: 'primary' as const, className: `ant-btn-custom-success ${styleMode}` };
       case 'danger':
       case 'destructive':
-        return { type: 'primary' as const, className: 'ant-btn-custom-danger' };
+        return { type: 'primary' as const, className: `ant-btn-custom-danger ${styleMode}` };
       case 'link':
         return { type: 'link' as const, className: '' };
       case 'ghost':
@@ -61,7 +68,7 @@ export const AntButton: React.FC<AntButtonProps> = ({
         return { type: 'default' as const, className: 'ant-btn-custom-outline' };
       case 'default':
       default:
-        return { type: 'primary' as const, className: 'ant-btn-custom-primary' };
+        return { type: 'primary' as const, className: `ant-btn-custom-primary ${styleMode}` };
     }
   };
   

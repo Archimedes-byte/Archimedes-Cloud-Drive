@@ -7,8 +7,8 @@
 // 导出主题设置的存储键
 export const THEME_STORAGE_KEY = 'app-theme-preference';
 
-// 导出主题配置
-export { default as customTheme } from './ant-theme'; 
+// 导出Ant主题配置
+export { getAntTheme } from './ant-theme'; 
 
 // 导出主题服务功能
 export {
@@ -22,7 +22,8 @@ export {
   saveCustomTheme,
   deleteCustomTheme,
   clearCustomThemes,
-  reinitCustomThemes
+  reinitCustomThemes,
+  THEME_CHANGE_EVENT
 } from './theme-service';
 
 // 导出主题钩子
