@@ -1,13 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { message } from 'antd';
 import { FileInfo } from '@/app/types';
+import { downloadFile, downloadFolder, downloadBlob } from '@/app/lib/storage/utils/download';
 import { handleError } from '@/app/utils/error';
 import useFileStore from '@/app/store/fileStore';
-import { FileManagementService, FileStatsService } from '@/app/services/storage';
+import { FileManagementService } from '@/app/services/storage';
+import { API_PATHS } from '@/app/lib/api/paths';
 
 // 创建服务实例
 const fileManagementService = new FileManagementService();
-const fileStatsService = new FileStatsService();
 
 /**
  * 文件操作接口
@@ -38,6 +39,23 @@ export interface FileOperations {
   /** 错误信息 */
   error: string | null;
 }
+
+/**
+ * 记录文件下载历史
+ * @param fileId 文件ID
+ */
+const recordFileDownload = async (fileId: string): Promise<void> => {
+  try {
+    await fetch(API_PATHS.STORAGE.DOWNLOADS.RECORD, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId }),
+    });
+  } catch (error) {
+    console.warn('记录下载历史失败:', error);
+    // 忽略错误，不影响用户体验
+  }
+};
 
 /**
  * 文件操作钩子
@@ -121,53 +139,86 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       return false;
     }
 
-    if (!currentUserId) {
-      console.warn('未找到用户ID，无法下载文件');
-      return false;
-    }
-
     try {
       setIsLoading(true);
       setError(null);
 
       console.log(`开始下载文件: ${fileIds.join(', ')}`);
+      let success = false;
       
-      // 使用FileStatsService获取和下载文件
-      const blob = await fileStatsService.downloadFiles(fileIds);
-      
-      // 确保获取到的blob有效
-      if (!blob || blob.size === 0) {
-        message.error('获取到的文件内容为空');
-        throw new Error('获取到的文件内容为空');
-      }
-      
-      // 确定下载文件名
-      let fileName = fileIds.length > 1 ? '多文件下载.zip' : '下载文件';
-      
-      // 如果是单个文件，尝试获取文件信息以确定正确的文件名
+      // 如果是单个文件
       if (fileIds.length === 1) {
         try {
-          const fileInfo = await fileManagementService.getFile(currentUserId, fileIds[0]);
-          if (fileInfo) {
-            fileName = fileInfo.name;
-            
-            // 记录下载历史
-            await fileStatsService.recordFileDownload(currentUserId, fileIds[0]);
+          // 获取文件信息，以确定是文件还是文件夹
+          const fileInfo = await fileManagementService.getFile(currentUserId || '', fileIds[0]);
+          
+          if (fileInfo && fileInfo.isFolder) {
+            console.log(`检测到文件夹下载: ${fileInfo.name}`);
+            // 使用文件夹下载函数
+            success = await downloadFolder(fileIds[0], fileInfo.name);
+          } else if (fileInfo) {
+            // 使用文件下载函数
+            success = await downloadFile(fileIds[0], fileInfo.name);
+          }
+          
+          // 如果下载成功，记录下载历史
+          if (success) {
+            await recordFileDownload(fileIds[0]);
+            return true;
           }
         } catch (error) {
-          console.warn('获取单个文件信息失败', error);
+          console.warn('获取单个文件信息失败，尝试直接下载', error);
+          // 如果获取文件信息失败，尝试直接下载
+          success = await downloadFile(fileIds[0]);
+          if (success) return true;
         }
       }
       
-      // 从服务中导入downloadBlob函数
-      const { downloadBlob } = await import('@/app/lib/storage/utils/download');
-      
-      // 下载blob
-      const success = await downloadBlob(blob, fileName);
-      
-      // 成功下载后显示消息
-      if (success) {
-        message.success('下载成功');
+      // 对于多文件下载或单文件下载失败的情况
+      if (!success && fileIds.length > 0) {
+        try {
+          message.loading({ content: '准备下载文件中...', key: 'fileMultiDownload' });
+          
+          // 构建POST请求获取文件Blob
+          const response = await fetch('/api/storage/files/download', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fileIds }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`下载请求失败: ${response.status}`);
+          }
+          
+          // 获取blob
+          const blob = await response.blob();
+          
+          // 验证blob
+          if (!blob || blob.size === 0) {
+            message.error({ content: '获取到的文件内容为空', key: 'fileMultiDownload' });
+            throw new Error('获取到的文件内容为空');
+          }
+          
+          // 确定下载文件名
+          let fileName = fileIds.length > 1 ? '多文件下载.zip' : '下载文件';
+          success = await downloadBlob(blob, fileName);
+          
+          // 成功下载后显示消息
+          if (success) {
+            message.success({ content: '下载成功', key: 'fileMultiDownload' });
+            
+            // 记录下载历史 (只在单文件下载时记录)
+            if (fileIds.length === 1) {
+              await recordFileDownload(fileIds[0]);
+            }
+          }
+        } catch (error) {
+          console.error('下载文件详细错误:', error);
+          handleError(error, true, 'error', '下载文件失败');
+          return false;
+        }
       }
       
       return success;

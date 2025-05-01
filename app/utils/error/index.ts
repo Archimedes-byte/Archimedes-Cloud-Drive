@@ -601,29 +601,111 @@ export async function withErrorHandling<T>(
 }
 
 /**
- * 统一处理API响应结果
- * 根据响应状态进行错误处理或返回响应数据
+ * 统一处理API响应
  * 
- * @param response fetch API的Response对象
- * @param errorMessage 错误提示消息
- * @returns 解析后的响应数据
- * @throws 当响应不成功时抛出错误
+ * 处理API响应，包括错误处理和数据解析
+ * @param response Fetch API的Response对象
+ * @returns 解析后的数据
  */
-export async function handleApiResponse<T>(response: Response, errorMessage = '请求失败'): Promise<T> {
+export async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    // 尝试获取错误详情
-    let errorDetail = '';
+    let errorMessage = `请求失败: ${response.status} ${response.statusText}`;
+    let errorData: any = null;
+    
     try {
-      const errorData = await response.json();
-      errorDetail = errorData.message || errorData.error || `状态码: ${response.status}`;
+      // 检查内容类型
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        
+        // 记录详细的错误信息到控制台
+        console.error('API请求失败，服务器返回:', {
+          status: response.status,
+          errorData,
+          url: response.url
+        });
+      } else {
+        // 非JSON响应
+        const textResponse = await response.text();
+        console.error('API请求失败，非JSON响应:', {
+          status: response.status,
+          text: textResponse.substring(0, 200), // 只记录前200个字符，避免日志过大
+          url: response.url
+        });
+      }
     } catch (e) {
-      errorDetail = `状态码: ${response.status}`;
+      // 解析错误响应失败，使用默认错误信息
+      console.error('解析API错误响应失败:', e);
     }
     
-    // 创建并抛出错误
-    throw createFileError('access', `${errorMessage}: ${errorDetail}`);
+    // 创建API错误
+    throw new ApiError(
+      errorMessage, 
+      response.status, 
+      errorData?.code, 
+      { originalError: errorData, url: response.url }
+    );
   }
-  
-  // 成功响应，返回数据
-  return await response.json() as T;
+
+  try {
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.warn('响应不是JSON格式:', {
+        contentType,
+        url: response.url,
+        status: response.status
+      });
+      
+      // 如果不是JSON但状态码是成功的，返回一个简单的成功对象
+      return { success: true } as unknown as T;
+    }
+    
+    const data = await response.json();
+    
+    // 处理不同的响应格式
+    if (data.success === false) {
+      // 创建API错误
+      throw new ApiError(
+        data.error || data.message || '请求失败',
+        response.status,
+        data.code?.toString(),
+        { originalError: data }
+      );
+    }
+    
+    // 处理嵌套的数据结构
+    let resultData: any;
+    
+    if (data.data !== undefined) {
+      // 标准API响应格式 { success: true, data: ... }
+      resultData = data.data;
+    } else if (data.folder !== undefined) {
+      // 文件夹API响应格式 { folder: ... }
+      resultData = data.folder;
+    } else if (data.file !== undefined) {
+      // 文件API响应格式 { file: ... }
+      resultData = data.file;
+    } else if (data.items !== undefined) {
+      // 列表API响应格式 { items: [...], total: ... }
+      resultData = data;
+    } else {
+      // 其他格式，直接返回数据
+      resultData = data;
+    }
+    
+    return resultData as T;
+  } catch (e) {
+    if (e instanceof ApiError) {
+      throw e; // 重新抛出已经创建的API错误
+    }
+    // 创建API错误
+    throw new ApiError(
+      '解析API响应失败: ' + (e instanceof Error ? e.message : '未知错误'), 
+      500,
+      undefined,
+      { originalError: e }
+    );
+  }
 }

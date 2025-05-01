@@ -1,13 +1,12 @@
 /**
  * 存储模块
  * 
- * 提供文件存储、访问和管理的底层功能
- * 
- * lib层职责：
- * - 提供与业务无关的底层功能
- * - 实现基础的文件操作和存储管理
- * - 提供通用工具函数
- * - 不直接实现业务逻辑
+ * 提供文件存储、访问和管理的功能
+ * 包括：
+ * - 文件上传和下载
+ * - 文件读写操作
+ * - 存储路径管理
+ * - 访问权限控制
  */
 
 // 导出核心功能中的指定函数，避免命名冲突
@@ -28,22 +27,13 @@ export {
   formatFileSize
 } from './utils';
 
-// 导出文件工具函数 
-export {
-  loadFolderPath,
-  copyToClipboard,
-  getFileExtension,
-  getFileNameAndExtension,
-  isImageFile,
-  sanitizeFilename
-} from './utils/file-utils';
-
 // 从文件工具模块导入相关类型和函数
+import { getFileNameAndExtension } from '@/app/utils/file';
 import { FileType } from '@/app/types/file';
 import { FILE_TYPE_MAP } from '@/app/types/domains/fileTypes';
 
 // 重新导出这些导入的类型和函数
-export { FileType, FILE_TYPE_MAP };
+export { getFileNameAndExtension, FileType, FILE_TYPE_MAP };
 
 // 导出存储基础操作，这些是主要的API
 export {
@@ -52,14 +42,25 @@ export {
   deleteFile
 } from './core/storage';
 
-// 导出下载工具函数
+// 导出下载工具函数（直接从utils/中导入，解决循环依赖）
 export {
   downloadFile,
   downloadFolder,
-  downloadBlob,
-  getFileBlob
+  downloadBlob
 } from './utils/download';
 
-// 注意：不再从app/services/storage导入高级服务
-// 避免循环依赖问题
-// 使用方应直接从app/services/storage导入所需服务 
+// 从app/services/storage导入高级服务 (推荐使用这些服务)
+import { 
+  FileUploadService, 
+  FileManagementService, 
+  FileStatsService,
+  FavoriteService 
+} from '@/app/services/storage';
+
+// 重导出高级服务
+export {
+  FileUploadService, 
+  FileManagementService, 
+  FileStatsService,
+  FavoriteService
+}; 
