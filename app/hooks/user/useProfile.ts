@@ -41,7 +41,7 @@ export interface UserProfile {
  */
 export interface UserProfileInput {
   /** 显示名称 */
-  displayName?: string
+  name?: string
   /** 头像URL */
   avatarUrl?: string
   /** 主题 */

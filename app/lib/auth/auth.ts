@@ -213,11 +213,11 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       // 简化日志输出
       if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
-        console.log(`重定向处理: ${url} -> ${baseUrl}/file-management/main`);
+        console.log(`重定向处理: ${url} -> ${baseUrl}/pages/file`);
       }
       
       // 始终重定向到文件管理页面
-      return `${baseUrl}/file-management/main`;
+      return `${baseUrl}/pages/file`;
     }
   },
   pages: {

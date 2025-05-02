@@ -1,0 +1,92 @@
+/* 认证页面共享样式 */
+.header {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.headerTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: all 0.3s ease;
+}
+
+.headerTitle:hover {
+  background: linear-gradient(to right, #1e3a8a, #2563eb);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transform: translateY(-1px);
+}
+
+.headerIcon {
+  color: #1e40af;
+  filter: drop-shadow(0 2px 4px rgba(30, 64, 175, 0.3));
+}
+
+.nav {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav a {
+  color: #4a5568;
+  text-decoration: none;
+  font-weight: 500;
+  position: relative;
+  padding: 0.5rem 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.nav a:hover {
+  color: #1e40af;
+}
+
+.nav a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: #1e40af;
+  transition: width 0.3s ease;
+}
+
+.nav a:hover::after {
+  width: 100%;
+}
+
+.footer {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  background-color: transparent;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .nav {
+    gap: 1rem;
+  }
+} 

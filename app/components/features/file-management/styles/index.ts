@@ -8,7 +8,8 @@ export { default as pageLayoutStyles } from './layout/page-layout.module.css';
 
 // 共享UI组件样式
 export { default as sharedStyles } from './shared/shared.module.css';
-export { default as modalStyles } from './shared/modal-styles.module.css';
+// 模态框样式已移至shared目录，从那里导出
+export { modalStyles } from '../shared';
 
 // 动画样式
 export { default as animationStyles } from './animations/animation.module.css';

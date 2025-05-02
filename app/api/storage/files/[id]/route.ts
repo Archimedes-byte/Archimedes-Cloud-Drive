@@ -1,6 +1,6 @@
 /**
  * 单个文件API路由
- * 处理单个文件的获取和更新请求
+ * 处理单个文件的获取、更新和删除请求
  */
 import { 
   withAuth, 
@@ -10,6 +10,7 @@ import {
 } from '@/app/middleware/auth';
 import { FileManagementService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
+import { prisma } from '@/app/lib/database';
 
 const managementService = new FileManagementService();
 
@@ -70,7 +71,8 @@ export const PATCH = withAuth<FileInfo>(async (req: AuthenticatedRequest) => {
 });
 
 /**
- * 删除文件
+ * 删除单个文件 
+ * 优化实现: 直接标记单个文件为已删除，而不经过批量删除逻辑
  */
 export const DELETE = withAuth<{ success: boolean }>(async (req: AuthenticatedRequest) => {
   try {
@@ -81,12 +83,27 @@ export const DELETE = withAuth<{ success: boolean }>(async (req: AuthenticatedRe
       return createApiErrorResponse('文件ID无效', 400);
     }
     
-    // 删除文件
-    const result = await managementService.deleteFiles(req.user.id, [fileId]);
+    // 直接标记文件为已删除 - 优化的单文件删除逻辑
+    const file = await prisma.file.findFirst({
+      where: {
+        id: fileId,
+        uploaderId: req.user.id,
+        isDeleted: false
+      }
+    });
     
-    if (result === 0) {
-      return createApiErrorResponse('文件删除失败或不存在', 404);
+    if (!file) {
+      return createApiErrorResponse('文件不存在或无权访问', 404);
     }
+    
+    // 更新文件为已删除状态
+    await prisma.file.update({
+      where: { id: fileId },
+      data: { 
+        isDeleted: true,
+        updatedAt: new Date()
+      }
+    });
     
     return createApiResponse({ success: true });
   } catch (error: any) {

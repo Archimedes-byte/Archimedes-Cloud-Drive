@@ -71,7 +71,7 @@ const RegisterForm: React.FC = () => {
         setSuccess('注册成功，正在跳转...');
         setError('');
         setTimeout(() => {
-          router.push('/file-management/main');
+          router.push('/pages/file');
         }, 1000);
       } else {
         setError(data.error || '注册失败');
@@ -155,7 +155,7 @@ const RegisterForm: React.FC = () => {
       <div className={styles.link}>
         <Space>
           <span>已有账户？</span>
-          <Link href="/auth/login">登录</Link>
+          <Link href="/pages/auth/login">登录</Link>
         </Space>
       </div>
     </div>

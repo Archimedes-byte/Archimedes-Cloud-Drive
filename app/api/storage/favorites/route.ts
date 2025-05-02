@@ -1,6 +1,11 @@
 /**
  * 收藏列表API路由
- * 处理收藏列表的POST和DELETE请求
+ * 处理收藏列表的POST请求
+ * 
+ * 注意：
+ * - 获取收藏列表建议使用 GET /api/storage/favorites/list 接口
+ * - 添加收藏请使用 POST /api/storage/favorites/add-to-folder 接口
+ * - 删除收藏请使用 POST /api/storage/favorites/remove-from-folder 接口
  */
 import { 
   withAuth, 
@@ -10,7 +15,6 @@ import {
 } from '@/app/middleware/auth';
 import { FavoriteService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
-import { NextResponse } from 'next/server';
 
 const favoriteService = new FavoriteService();
 
@@ -21,10 +25,8 @@ const favoriteService = new FavoriteService();
 export const POST = withAuth<{ items: FileInfo[]; total: number; page: number; pageSize: number }>(
   async (req: AuthenticatedRequest) => {
     try {
-      // 获取请求体数据
       const { page = 1, pageSize = 50 } = await req.json();
       
-      // 获取收藏列表
       const result = await favoriteService.getAllFavoriteFiles(
         req.user.id,
         page,
@@ -35,40 +37,6 @@ export const POST = withAuth<{ items: FileInfo[]; total: number; page: number; p
     } catch (error: any) {
       console.error('获取收藏列表失败:', error);
       return createApiErrorResponse(error.message || '获取收藏列表失败', 500);
-    }
-  }
-);
-
-/**
- * DELETE方法：删除收藏
- */
-export const DELETE = withAuth<{ deletedCount: number }>(
-  async (req: AuthenticatedRequest) => {
-    try {
-      // 获取请求体中的fileIds
-      const body = await req.json();
-      const fileIds = body.fileIds || body.favoriteIds || [];
-      
-      if (!Array.isArray(fileIds) || fileIds.length === 0) {
-        return createApiErrorResponse('请提供有效的文件ID列表', 400);
-      }
-      
-      console.log('DELETE 收藏API: 接收到移除收藏请求', { 
-        fileIdsCount: fileIds.length,
-        fileIds: fileIds
-      });
-      
-      // 使用新版API从所有收藏夹中移除收藏
-      const count = await favoriteService.removeBatchFromFolder(req.user.id, fileIds);
-      
-      // 使用与其他API一致的返回格式
-      return NextResponse.json({
-        success: true,
-        data: { deletedCount: count }
-      });
-    } catch (error: any) {
-      console.error('删除收藏失败:', error);
-      return createApiErrorResponse(error.message || '删除收藏失败', 500);
     }
   }
 ); 

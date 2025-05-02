@@ -20,7 +20,7 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
         </p>
         <div className={styles.heroActions}>
           <Link
-            href="/auth/login"
+            href="/pages/auth/login"
             className={`${styles.heroButton} ${styles.primaryButton}`}
           >
             去登录

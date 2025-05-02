@@ -1,37 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { LoginForm, AuthHeader, AuthFooter } from '@/app/components/features/auth';
-import styles from '@/app/styles/AuthPages.module.css';
+import { RegisterForm, AuthHeader, AuthFooter } from '@/app/components/features/auth';
+import styles from '@/app/styles/auth/register.module.css';
 
-// 为Google对象声明全局类型
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
-
-export default function Login() {
-  // 添加自定义Google登录按钮事件
-  useEffect(() => {
-    // 等待Google脚本加载完成
-    const waitForGoogleScript = setInterval(() => {
-      if (window.google && document.getElementById('customGoogleButton')) {
-        clearInterval(waitForGoogleScript);
-        
-        // 点击自定义按钮时触发原始Google按钮点击
-        document.getElementById('customGoogleButton')?.addEventListener('click', () => {
-          const googleButton = document.querySelector('.g_id_signin [role=button]');
-          if (googleButton) {
-            (googleButton as HTMLElement).click();
-          }
-        });
-      }
-    }, 300);
-
-    return () => clearInterval(waitForGoogleScript);
-  }, []);
-
+export default function Register() {
   return (
     <div className={styles.container}>
       {/* 背景效果 */}
@@ -39,28 +11,23 @@ export default function Login() {
         <div className={`${styles.bgCircle} ${styles.bgCircle1}`}></div>
         <div className={`${styles.bgCircle} ${styles.bgCircle2}`}></div>
         <div className={`${styles.bgCircle} ${styles.bgCircle3}`}></div>
-        <div className={styles.bgGradient}></div>
       </div>
 
       <AuthHeader />
 
       <main className={styles.content}>
         <div className={styles.loginSection}>
-          {/* 登录表单组件 */}
-          <LoginForm />
+          {/* 注册表单组件 */}
+          <RegisterForm />
           
           {/* 视觉元素 */}
           <div className={styles.loginVisual}>
             <div className={styles.abstractGraphic}>
-              {/* 图形元素 */}
               <div className={styles.graphicElement} data-index="1"></div>
               <div className={styles.graphicElement} data-index="2"></div>
               <div className={styles.graphicElement} data-index="3"></div>
               <div className={styles.graphicElement} data-index="4"></div>
               <div className={styles.graphicElement} data-index="5"></div>
-              
-              {/* 阴影效果 */}
-              <div className={styles.graphicShadow}></div>
               
               {/* 连接线条 */}
               <div className={styles.graphicLines}>
@@ -75,8 +42,8 @@ export default function Login() {
               
               {/* 标语文字 */}
               <div className={styles.tagline}>
-                <div className={styles.taglineHighlight}>云端存储</div>
-                <div className={styles.taglineText}>随时随地，尽在掌握</div>
+                <div className={styles.taglineHighlight}>开启云端之旅</div>
+                <div className={styles.taglineText}>安全存储，随心所欲</div>
               </div>
             </div>
           </div>

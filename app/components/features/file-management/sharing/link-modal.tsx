@@ -48,7 +48,7 @@ export const LinkInputModal: React.FC<LinkInputModalProps> = ({
           ref={linkInputRef}
           value={shareLink}
           onChange={(e) => onShareLinkChange(e.target.value)}
-          placeholder="输入分享链接，例如: https://example.com/s/abcdef"
+          placeholder="输入分享链接，例如: https://example.com/pages/share/abcdef"
           onPressEnter={onSubmit}
         />
       </div>
@@ -63,4 +63,7 @@ export const LinkInputModal: React.FC<LinkInputModalProps> = ({
       </div>
     </Modal>
   );
-}; 
+};
+
+// 添加默认导出以兼容index.ts中的导入方式
+export default LinkInputModal; 

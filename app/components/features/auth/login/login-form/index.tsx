@@ -125,7 +125,7 @@ const LoginForm: React.FC = () => {
       <div className={styles.link}>
         <Space>
           <span>还没有账户？</span>
-          <Link href="/auth/register">注册新账户</Link>
+          <Link href="/pages/auth/register">注册新账户</Link>
         </Space>
       </div>
       

@@ -8,8 +8,6 @@ interface ValidationErrors {
   location?: string;
   website?: string;
   company?: string;
-  // 兼容旧字段名
-  displayName?: string;
 }
 
 // 验证函数类型
@@ -61,11 +59,9 @@ export const useValidation = () => {
     const newErrors: ValidationErrors = {};
     
     // 验证用户名
-    const displayNameError = validators.required('用户名')(userInfo.name || '');
-    if (displayNameError) {
-      newErrors.name = displayNameError;
-      // 兼容旧代码
-      newErrors.displayName = displayNameError;
+    const nameError = validators.required('用户名')(userInfo.name || '');
+    if (nameError) {
+      newErrors.name = nameError;
     }
     
     // 验证个人简介
@@ -102,7 +98,6 @@ export const useValidation = () => {
     
     switch (field) {
       case 'name':
-      case 'displayName':
         error = validators.required('用户名')(value);
         break;
       case 'bio':
@@ -121,26 +116,10 @@ export const useValidation = () => {
         error = undefined;
     }
     
-    // 处理字段名变更的兼容性问题
-    let fieldKey = field;
-    if (field === 'displayName') {
-      setErrors(prev => ({
-        ...prev,
-        displayName: error,
-        name: error
-      }));
-    } else if (field === 'name') {
-      setErrors(prev => ({
-        ...prev,
-        name: error,
-        displayName: error
-      }));
-    } else {
-      setErrors(prev => ({
-        ...prev,
-        [field]: error
-      }));
-    }
+    setErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
     
     return error;
   };

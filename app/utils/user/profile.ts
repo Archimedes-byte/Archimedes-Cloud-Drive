@@ -19,7 +19,7 @@ export function profileToProfileInput(profile: UserProfile): UserProfileInput {
   
   return {
     // 基础信息
-    displayName: profile.name || '',
+    name: profile.name || '',
     
     // 个人信息
     bio: profile.bio || '',
@@ -60,7 +60,7 @@ export function createProfileUpdate(
  * 定义了UserProfile和UserProfileInput字段之间的映射关系
  */
 export const profileFieldMapping = {
-  name: 'displayName',
+  name: 'name',
   avatarUrl: 'avatarUrl',
   bio: 'bio',
   location: 'location',

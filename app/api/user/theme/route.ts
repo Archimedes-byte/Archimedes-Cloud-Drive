@@ -101,7 +101,7 @@ export async function PUT(request: NextRequest) {
       update: { theme },
       create: {
         userId: user.id,
-        displayName: session.user.name || '',
+        name: session.user.name || '',
         theme
       }
     });

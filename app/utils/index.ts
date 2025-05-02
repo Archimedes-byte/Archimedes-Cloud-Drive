@@ -5,6 +5,14 @@
  * 已清理和规范化的导出机制，避免命名冲突和重复导出
  */
 
+// UI工具函数
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 // 导出字符串处理工具
 export * from './string';
 

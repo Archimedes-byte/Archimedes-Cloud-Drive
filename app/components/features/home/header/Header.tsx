@@ -16,14 +16,14 @@ const Header: React.FC = () => {
           </h1>
           <nav className={styles.nav}>
             <Link href="/">首页</Link>
-            <Link href="/auth/login">登录</Link>
-            <Link href="/auth/register">注册</Link>
+            <Link href="/pages/auth/login">登录</Link>
+            <Link href="/pages/auth/register">注册</Link>
             <Link href="#">帮助中心</Link>
             <Link href="#">关于我们</Link>
           </nav>
         </div>
         <div className={styles.headerActions}>
-          <Link href="/auth/register" className={styles.registerBtn}>免费注册</Link>
+          <Link href="/pages/auth/register" className={styles.registerBtn}>免费注册</Link>
         </div>
       </div>
     </header>

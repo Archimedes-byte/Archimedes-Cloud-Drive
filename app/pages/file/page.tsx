@@ -1,29 +1,5 @@
 'use client';
 
-/**
- * 文件管理页面
- * 
- * 状态管理优化：
- * 1. 已提取的状态管理Hooks
- *   - useViewState: 视图状态管理（我的文件、收藏夹、最近文件等视图切换）
- *   - useModalState: 模态窗口状态统一管理（已优化移除创建文件夹和分享链接相关状态）
- *   - useUIState: UI状态管理（侧边栏、上传下拉菜单等）
- *   - useShareManagement: 文件分享和分享链接管理（整合了原useFileShare和useShareLink）
- *   - useRecentContent: 最近文件内容管理
- *   - useThemeUI: 主题UI状态管理 (新增)
- *   - useFavorites: 收藏状态管理 (新增)
- *   - useFileSelection: 文件选择状态管理 (新增)
- *   - useFolderCreation: 文件夹创建状态管理 (新增)
- * 
- * 2. 进一步优化点
- *   - 文件移动相关逻辑: 可考虑整合到useFileOperations中，创建专门的useFileMoveOperations钩子
- *   - 文件重命名逻辑: 可以提取handleRenameButtonClick到useFilePreview或创建专门的useFileRename钩子
- *   - 文件预览增强: 扩展useFilePreview，包含更多的预览控制功能
- *   - 上传状态管理: 创建专门的useFileUpload钩子，管理上传模态窗口和上传状态
- *   - 页面初始化逻辑: 提取复杂的页面初始化逻辑到专门的hook
- *   - 事件监听管理: 创建通用的事件监听hook，管理所有的事件订阅和清理
- */
-
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -696,10 +672,10 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
         onHomeClick={() => {
           // 先关闭主题面板，再跳转
           setShowThemePanel(false);
-          router.push('/file-management/main');
+          router.push('/pages/file');
         }}
         onLogoutClick={handleSignOut}
-        onAvatarClick={() => router.push('/dashboard')}
+        onAvatarClick={() => router.push('/pages/dashboard')}
       >
         <ContentArea 
           // 视图状态

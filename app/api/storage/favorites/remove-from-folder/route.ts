@@ -1,6 +1,15 @@
 /**
  * 从收藏夹移除API路由
  * 将文件从指定收藏夹中移除
+ * 
+ * 请求参数:
+ * - fileId: 单个文件ID (与fileIds二选一)
+ * - fileIds: 多个文件ID数组 (与fileId二选一)
+ * - folderId: 收藏夹ID (可选，不提供时会从所有收藏夹中移除)
+ * 
+ * 响应:
+ * - 单个文件: { success: boolean }
+ * - 多个文件: { count: number } (成功移除的文件数量)
  */
 import { 
   withAuth, 
@@ -20,6 +29,7 @@ interface RemoveFromFolderResponse {
 
 /**
  * POST方法：从收藏夹中移除文件
+ * 主收藏删除API：此API是移除收藏的标准接口，替代了原来的DELETE方法
  */
 export const POST = withAuth<RemoveFromFolderResponse>(async (req: AuthenticatedRequest) => {
   try {

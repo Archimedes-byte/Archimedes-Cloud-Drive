@@ -1,3 +1,24 @@
+/**
+ * 文件夹API路由
+ * 处理文件夹相关请求
+ * 
+ * 注意：
+ * - 此API专门处理文件夹，仅返回isFolder=true的项目
+ * - 通用文件查询请使用 GET /api/storage/files
+ * 
+ * 该API提供两个主要功能:
+ * 1. 获取文件夹列表(GET) - 仅返回文件夹，不包含普通文件
+ * 2. 创建新文件夹(POST) - 专门用于创建文件夹结构
+ * 
+ * 文件夹创建是系统的核心功能之一，它允许用户:
+ * - 组织文件结构
+ * - 创建层级存储体系
+ * - 管理文件分类
+ * 
+ * 与文件上传API的区别:
+ * - 文件上传API: 处理二进制文件数据的上传和存储
+ * - 文件夹API: 只处理文件夹结构的创建和管理
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/database';
 import { withAuth, AuthenticatedRequest, createApiResponse, createApiErrorResponse } from '@/app/middleware/auth';

@@ -9,7 +9,7 @@ import { useProfile, usePassword, useThemeManager } from '@/app/hooks'
 import { useToast } from '@/app/components/features/dashboard/toaster/Toaster'
 // 直接导入主题服务，用于特殊情况处理
 import { 
-  getThemeStyle, 
+  // getThemeStyle, 
   applyTheme as applyThemeDirectly, 
   loadThemeFromStorage,
   reinitCustomThemes,
@@ -28,10 +28,10 @@ import ProfileCompleteness from '@/app/components/features/user-profile/complete
 import modalStyles from '@/app/components/features/dashboard/modal/Modal.module.css'
 import styles from './dashboard.module.css' 
 
-import {
-  useTheme,
-  ThemePanel
-} from '@/app/theme'
+// import {
+//   useTheme,
+//   ThemePanel
+// } from '@/app/theme'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [manualThemeApplied, setManualThemeApplied] = useState(false)
-  const [dashboardTheme, setDashboardTheme] = useState<string | null>(null)
+  // const [dashboardTheme, setDashboardTheme] = useState<string | null>(null)
   
   // 使用Ref代替直接DOM操作
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -58,7 +58,7 @@ export default function DashboardPage() {
     forceRefreshProfile } = useProfile()
 
   // 使用主题管理钩子
-  const { currentTheme, updateTheme, isLoading: themeLoading } = useThemeManager({
+  const { /* currentTheme, */ updateTheme, isLoading: themeLoading } = useThemeManager({
     userTheme: userProfile?.theme || null
   });
 
@@ -95,7 +95,7 @@ export default function DashboardPage() {
           console.log(`Dashboard页面：尝试直接应用本地存储的自定义主题 ${storedTheme}`);
           
           // 尝试直接应用主题
-          const themeStyle = applyThemeDirectly(storedTheme, false); // 不触发事件，仅应用样式
+          const themeStyle = applyThemeDirectly(storedTheme); // 应用样式
           
           if (themeStyle) {
             console.log(`Dashboard页面：成功直接应用自定义主题 ${storedTheme}`);
@@ -152,7 +152,7 @@ export default function DashboardPage() {
         // 应用主题
         const themeStyle = applyThemeDirectly(userTheme);
         if (themeStyle) {
-          setDashboardTheme(userTheme);
+          // setDashboardTheme(userTheme); // 已弃用
           console.log(`Dashboard页面：成功应用主题 ${userTheme}`);
           
           // 确保记录主题到localStorage和body属性
@@ -162,8 +162,9 @@ export default function DashboardPage() {
           console.error(`Dashboard页面：应用主题 ${userTheme} 失败`);
           
           // 如果主题应用失败，尝试使用默认主题
+          // setDashboardTheme('default'); // 已弃用
           applyThemeDirectly('default');
-          setDashboardTheme('default');
+          // setDashboardTheme('default'); // 已弃用
         }
       } catch (error) {
         console.error('Dashboard页面：应用主题出错:', error);
@@ -177,7 +178,7 @@ export default function DashboardPage() {
       try {
         const themeStyle = applyThemeDirectly(storedTheme);
         if (themeStyle) {
-          setDashboardTheme(storedTheme);
+          // setDashboardTheme(storedTheme); // 已弃用
           console.log(`Dashboard页面：成功应用本地存储的主题 ${storedTheme}`);
           
           // 保存主题到用户数据库
@@ -197,7 +198,7 @@ export default function DashboardPage() {
     else {
       console.log('Dashboard页面：没有找到用户主题设置，使用默认主题');
       applyThemeDirectly('default');
-      setDashboardTheme('default');
+      // setDashboardTheme('default'); // 已弃用
     }
   }, [userProfile?.theme, updateTheme, themeLoading]);
   
@@ -307,7 +308,7 @@ export default function DashboardPage() {
       <div className={styles.profile}>
         {/* 返回按钮 */}
         <button 
-          onClick={() => router.push('/file-management/main')}
+          onClick={() => router.push('file')}
           className={styles.backButton}
           title="返回文件管理"
         >

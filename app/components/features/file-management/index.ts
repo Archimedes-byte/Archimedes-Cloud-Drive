@@ -16,13 +16,17 @@ export * from './rename-modal';
 
 // 选择性导出模块功能组件
 export { PageLayout } from './layout/page-layout';
-export { ShareModal } from './sharing';
-export { LinkInputModal } from './sharing/link-modal';
+
+// 整合共享/分享相关功能
+export * from './sharing'; // 包含ShareModal和LinkInputModal
+export * from './shares';  // 包含SharesContent
+export * from './my-shares'; // 包含MySharesContent
+
+// 其他功能组件
 export { RecentFilesContent } from './recent-files';
 export { RecentDownloadsContent } from './recent-downloads';
 export { FavoritesContent, FavoriteModal, CreateFavoriteModal } from './favorites';
 export { default as UploadModal } from './upload/upload-modal';
 export { CreateFolderModal } from './folder-management/create-folder-modal';
 export { default as FolderSelectModal } from './folder-select/FolderSelectModal';
-export { SharesContent } from './shares';
 export { DownloadListModal } from './download/DownloadListModal'; 

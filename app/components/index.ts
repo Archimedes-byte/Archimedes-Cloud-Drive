@@ -10,7 +10,6 @@
  * - common/: 通用功能组件
  *   - feedback/: 反馈类组件（提示、通知等）
  *   - form/: 表单相关组件
- *   - media/: 媒体组件（音视频等）
  * 
  * - features/: 业务功能组件
  *   - dashboard/: 仪表盘相关组件
@@ -26,11 +25,34 @@
  */
 
 // 导出Ant Design UI组件 (这是基础组件的统一导出点)
-export * from './ui/ant';
+// 不要从这里导出全部ui/ant组件，避免与features组件产生命名冲突
+import * as AntComponents from './ui/ant';
+// 选择性重新导出，排除与features中冲突的组件
+export { 
+  Button, Space, Flex, Divider, Form, Input, Checkbox, 
+  Radio, Select, Switch, Slider, DatePicker, TimePicker,
+  InputNumber, Table, Tabs, Card, List, Avatar, Badge, Tag,
+  Modal, Drawer, Tooltip, Popover, Popconfirm, message,
+  notification, Progress, Spin, Alert, Menu, Pagination,
+  Dropdown, Steps, Affix, ConfigProvider, theme, Row, Col,
+  Typography, Title, Text, Paragraph, Link,
+  // 所有图标
+  SearchOutlined, UserOutlined, FileOutlined, FolderOutlined,
+  HomeOutlined, SettingOutlined, UploadOutlined, DownloadOutlined,
+  DeleteOutlined, EditOutlined, EyeOutlined, MenuOutlined,
+  CloseOutlined, CheckOutlined, InfoCircleOutlined, WarningOutlined,
+  ExclamationCircleOutlined, QuestionCircleOutlined, PlusOutlined,
+  MinusOutlined, ArrowUpOutlined, ArrowDownOutlined, ArrowLeftOutlined,
+  ArrowRightOutlined, CloudUploadOutlined, CloudDownloadOutlined,
+  ClockCircleOutlined, LockOutlined, UnlockOutlined, CalendarOutlined,
+  StarOutlined,
+} from './ui/ant';
+
+// 为避免命名冲突，重命名导出
+export { Breadcrumb as AntBreadcrumb } from './ui/ant';
 
 // 导出通用组件 
 export * from './common/form';
-export * from './common/media';
 
 // 导出业务功能组件
 export * from './features';
@@ -41,12 +63,9 @@ export { default as FileUpload } from './features/file-management/upload/file-up
 export { default as SortDropdown } from './features/file-management/action-bar/sort-dropdown';
 export { default as MenuBar } from './features/file-management/action-bar/menu-bar';
 export { default as UploadDropdown } from './features/file-management/action-bar/upload-dropdown';
-export { default as NewFolderForm } from './features/file-management/folder-management/new-folder-form';
+// 注意：移除了不存在的NewFolderForm导出
 
 // 注：分析组件StorageUsage已被移除，不再导出
-
-// 媒体组件
-export { default as AudioVisualizer } from './common/media/audio-visualizer';
 
 // 用户资料组件
 export { default as ProfileHeader } from './features/user-profile/profile-header';

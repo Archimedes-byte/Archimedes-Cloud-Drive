@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server';
 import { 
   withAuth, 
   AuthenticatedRequest, 
@@ -45,7 +44,8 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
     
     // 循环查询父文件夹，直到根文件夹
     while (currentFolderId) {
-      const currentFolder = await prisma.file.findUnique({
+      // 添加类型注释，避免隐式any
+      const currentFolder: { id: string; name: string; parentId: string | null } | null = await prisma.file.findUnique({
         where: {
           id: currentFolderId,
           uploaderId: req.user.id,

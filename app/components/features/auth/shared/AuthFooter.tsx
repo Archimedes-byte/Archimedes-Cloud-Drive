@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '@/app/styles/AuthPages.module.css';
+import styles from '@/app/styles/auth/shared.module.css';
 import { Typography } from '@/app/components/ui/ant';
 
 /**

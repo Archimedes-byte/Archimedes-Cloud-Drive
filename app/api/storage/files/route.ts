@@ -1,15 +1,26 @@
 /**
  * 文件API路由
  * 处理文件相关请求
+ * 
+ * 该API主要用于:
+ * 1. 获取文件和文件夹列表(GET)
+ * 2. 重定向上传请求到专用上传API(POST)
+ * 
+ * 注意：系统中存在两套相关API:
+ * - /api/storage/files - 处理所有类型的存储项(文件和文件夹)
+ * - /api/storage/folders - 专门处理文件夹
+ * 
+ * 文件创建在系统中有两种方式:
+ * 1. 通过/api/storage/files/upload专用上传API上传文件
+ * 2. 通过/api/storage/folders接口创建文件夹
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
-import { FileManagementService, FileUploadService } from '@/app/services/storage';
+import { FileManagementService } from '@/app/services/storage';
 
 const managementService = new FileManagementService();
-const uploadService = new FileUploadService();
 
 /**
  * 获取文件列表
@@ -88,93 +99,15 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * 文件上传处理
+ * 文件上传处理 - 重定向到专用上传API
+ * 此方法统一重定向到 /api/storage/files/upload 以避免功能重复
  */
 export async function POST(request: NextRequest) {
-  try {
-    // 获取用户会话
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ 
-        success: false, 
-        error: '未授权访问' 
-      }, { status: 401 });
-    }
-    
-    // 获取用户信息
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
-    });
-    
-    if (!user) {
-      return NextResponse.json({ 
-        success: false, 
-        error: '用户不存在' 
-      }, { status: 404 });
-    }
-    
-    const formData = await request.formData();
-    const files = formData.getAll('file');
-    const tagsJson = formData.get('tags');
-    const folderId = formData.get('folderId')?.toString() || null;
-    
-    // 处理标签
-    let tags: string[] = [];
-    if (tagsJson && typeof tagsJson === 'string') {
-      try {
-        tags = JSON.parse(tagsJson);
-      } catch (e) {
-        console.error('解析标签JSON失败:', e);
-      }
-    }
-    
-    // 验证文件
-    if (!files || files.length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        error: '未提供文件' 
-      }, { status: 400 });
-    }
-    
-    // 处理单个文件上传
-    if (files.length === 1) {
-      const file = files[0] as File;
-      const result = await uploadService.uploadFile(user.id, file, folderId, tags);
-      return NextResponse.json({ 
-        success: true, 
-        data: result 
-      });
-    }
-    
-    // 处理批量上传
-    const results = [];
-    for (const fileData of files) {
-      const file = fileData as File;
-      try {
-        const result = await uploadService.uploadFile(user.id, file, folderId, tags);
-        results.push(result);
-      } catch (error: any) {
-        console.error(`上传文件 ${file.name} 失败:`, error);
-        // 继续处理其他文件
-      }
-    }
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: results 
-    });
-  } catch (error: any) {
-    console.error('文件上传失败:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: '文件上传失败', 
-      message: error.message || '未知错误' 
-    }, { status: 500 });
-  }
+  console.log('接收到文件上传请求，重定向到专用上传API');
+  
+  // 创建重定向URL
+  const uploadApiUrl = new URL('/api/storage/files/upload', request.url);
+  
+  // 301表示永久重定向，客户端应该更新他们的书签
+  return NextResponse.redirect(uploadApiUrl.toString(), 301);
 } 

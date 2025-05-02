@@ -1,6 +1,21 @@
 /**
  * 文件上传API路由
- * 直接处理文件上传请求而不是转发
+ * 专用上传处理API - 系统上传文件的标准接口
+ * 
+ * 这个API处理以下功能:
+ * 1. 单个文件上传
+ * 2. 多个文件批量上传
+ * 3. 文件夹结构上传(包括自动创建文件夹)
+ * 
+ * 系统架构说明:
+ * - 所有文件上传应使用此API，而非通用files API
+ * - 在文件夹上传场景中，会根据需要自动创建缺失的文件夹结构
+ * - 单独创建文件夹应使用 POST /api/storage/folders 接口
+ * 
+ * 文件夹创建逻辑仅在isFolderUpload=true时激活，用于:
+ * - 保持原始文件夹结构
+ * - 在上传时自动创建必要的文件夹层级
+ * - 确保文件被放置在正确的路径中
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';

@@ -1,6 +1,10 @@
 /**
  * 文件下载备用API路由
  * 提供简化的下载机制，用于处理主下载接口失败的情况
+ * 
+ * 重要：此API仅作为主下载API (api/storage/files/download) 的备用方案
+ * 前端应先尝试使用主下载API，仅在主API失败时才调用此接口
+ * 此API使用不同的文件查找算法和精简的ZIP处理机制，适合作为备用方案
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest, createApiErrorResponse } from '@/app/middleware/auth';

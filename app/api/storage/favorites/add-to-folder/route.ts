@@ -1,6 +1,15 @@
 /**
  * 添加到收藏夹API路由
  * 将文件添加到指定收藏夹
+ * 
+ * 请求参数:
+ * - fileId: 单个文件ID (与fileIds二选一)
+ * - fileIds: 多个文件ID数组 (与fileId二选一)
+ * - folderId: 收藏夹ID (可选，不提供时会添加到默认收藏夹)
+ * 
+ * 响应:
+ * - 单个文件: { success: boolean }
+ * - 多个文件: { count: number } (成功添加的文件数量)
  */
 import { 
   withAuth, 
@@ -20,6 +29,7 @@ interface AddToFolderResponse {
 
 /**
  * POST方法：添加文件到收藏夹
+ * 主收藏API：此API是添加收藏的标准接口
  */
 export const POST = withAuth<AddToFolderResponse>(async (req: AuthenticatedRequest) => {
   try {

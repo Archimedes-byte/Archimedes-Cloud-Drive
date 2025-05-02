@@ -85,7 +85,7 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
   // 复制分享链接
   const copyShareLink = (shareCode: string, extractCode: string) => {
     const baseUrl = window.location.origin;
-    const shareLink = `${baseUrl}/s/${shareCode}?code=${extractCode}`;
+    const shareLink = `${baseUrl}/pages/share/${shareCode}?code=${extractCode}`;
     
     navigator.clipboard.writeText(shareLink)
       .then(() => message.success('分享链接已复制到剪贴板'))
@@ -120,7 +120,7 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
 
   // 打开分享链接
   const openShareLink = (shareCode: string, extractCode: string) => {
-    window.open(`/s/${shareCode}?code=${extractCode}`, '_blank');
+    window.open(`/pages/share/${shareCode}?code=${extractCode}`, '_blank');
   };
 
   // 获取文件图标
@@ -172,7 +172,7 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
       ellipsis: true,
       render: (_: any, record: ShareItem) => {
         const baseUrl = window.location.origin;
-        const shareLink = `${baseUrl}/s/${record.shareCode}`;
+        const shareLink = `${baseUrl}/pages/share/${record.shareCode}`;
         return (
           <Tooltip title={shareLink} placement="topLeft">
             <div style={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -304,7 +304,7 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
     } else {
       // 只有在没有回调函数的情况下才进行页面跳转
       // 这种情况主要是为了兼容直接访问/file-management/my-shares路径的情况
-      router.push('/file-management/main');
+      router.push('/pages/file');
     }
   };
 

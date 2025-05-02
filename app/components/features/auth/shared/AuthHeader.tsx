@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { CloudOutlined } from '@ant-design/icons';
-import styles from '@/app/styles/AuthPages.module.css';
+import styles from '@/app/styles/auth/shared.module.css';
 import { Typography, Space } from '@/app/components/ui/ant';
 
 /**
@@ -18,8 +18,8 @@ export default function AuthHeader() {
       <nav className={styles.nav}>
         <Space size={16}>
           <Link href="/">首页</Link>
-          <Link href="/auth/login">登录</Link>
-          <Link href="/auth/register">注册</Link>
+          <Link href="/pages/auth/login">登录</Link>
+          <Link href="/pages/auth/register">注册</Link>
           <Link href="#">帮助中心</Link>
         </Space>
       </nav>
