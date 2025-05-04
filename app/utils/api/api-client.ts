@@ -7,7 +7,7 @@ import { ApiDataResponse } from '@/app/types/api';
 import { formatError, ApiError, TimeoutError } from '@/app/utils/error';
 
 // 引入LRU缓存策略
-import { LRUCache } from 'lru-cache';
+import LRUCache from 'lru-cache';
 
 /**
  * API客户端配置接口

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { FolderPathItem, FileInfo, FileTypeEnum, FileSortInterface, SortDirectionEnum } from '@/app/types';
 import { fileApi } from '@/app/lib/api/file-api';
-import { handleError, safeAsync } from '@/app/utils/error';
+import { safeAsync } from '@/app/utils/error';
 import { sortFiles } from '@/app/utils/file/sort';
 import { filterFilesByType } from '@/app/utils/file/type';
 

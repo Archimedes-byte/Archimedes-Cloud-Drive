@@ -30,7 +30,9 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ['lh3.googleusercontent.com'],
+    remotePatterns: [
+      // 由于已移除第三方登录，这里不再需要外部图片域名配置
+    ]
   }
 };
 

@@ -9,13 +9,13 @@ import {
 } from 'antd';
 import { 
   Share2, ExternalLink, Trash2, Copy, 
-  File, Folder, FileText, Image as ImageIcon, 
-  Video, Music, AlertCircle, ArrowLeft
-} from 'lucide-react';
+  
+  AlertCircle} from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import styles from './my-shares.module.css';
 import { FileIcon } from '@/app/utils/file/icon-map';
+import { AUTH_CONSTANTS } from '@/app/constants/auth';
 
 const { Title, Text } = Typography;
 
@@ -44,7 +44,7 @@ interface MySharesContentProps {
 }
 
 export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesContentProps = {}) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [shares, setShares] = useState<ShareItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,10 @@ export default function MySharesContent({ onNavigateBack, titleIcon }: MySharesC
   useEffect(() => {
     // 检查用户登录状态
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      // 不再直接跳转，而是触发全局登录事件
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
+      }
       return;
     }
 

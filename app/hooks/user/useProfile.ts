@@ -132,6 +132,14 @@ export function useProfile() {
       retryCount 
     })
 
+    // 确保在所有条件分支中都设置加载状态
+    if (retryCount === 0) {
+      setIsLoading(true)
+      setError(null)
+    }
+
+    let result: UserProfile | null = null
+
     // 会话检查 - 增加容错处理
     if (!session) {
       console.log('未检测到有效会话，等待会话初始化后再试...')
@@ -142,11 +150,10 @@ export function useProfile() {
         setTimeout(() => {
           fetchUserProfile(showToast, retryCount + 1)
         }, RETRY_DELAY * 2)
-        return null
+      } else {
+        setIsLoading(false)
+        setError('未检测到有效会话')
       }
-      
-      setIsLoading(false)
-      setError('未检测到有效会话')
       return null
     }
     
@@ -160,11 +167,10 @@ export function useProfile() {
         setTimeout(() => {
           fetchUserProfile(showToast, retryCount + 1)
         }, RETRY_DELAY * 2)
-        return null
+      } else {
+        setIsLoading(false)
+        setError('会话中无有效用户信息')
       }
-      
-      setIsLoading(false)
-      setError('会话中无有效用户信息')
       return null
     }
 
@@ -179,15 +185,18 @@ export function useProfile() {
         }
         setUserProfile(offlineProfile)
         setIsLoading(false)
-        return offlineProfile
+        result = offlineProfile
+      } else {
+        setIsLoading(false)
+        result = userProfile
       }
-      setIsLoading(false)
-      return userProfile
+      return result
     }
 
     // 如果已经有用户资料且不是重试模式，则直接返回现有资料
     if (userProfile && !showToast && retryCount === 0) {
       console.log('已有用户资料，直接返回:', userProfile.email)
+      setIsLoading(false)
       return userProfile
     }
 
@@ -203,12 +212,6 @@ export function useProfile() {
     let timeoutId: NodeJS.Timeout | null = null
 
     try {
-      setIsLoading(true)
-      
-      if (retryCount === 0) {
-        setError(null)
-      }
-      
       console.log(`获取用户资料${retryCount > 0 ? `(重试 ${retryCount}/${MAX_RETRIES})` : ''}...`)
       
       // 设置请求超时 - 15秒，增强容错性 (原来是10秒)
@@ -341,8 +344,14 @@ export function useProfile() {
     // 延迟获取用户资料，避免在会话初始化过程中频繁请求
     debouncedFn();
     
-    return () => cancel();
-  }, [session, fetchUserProfile])
+    return () => {
+      cancel();
+      // 取消任何正在进行的请求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [session, fetchUserProfile]);
 
   /**
    * 强制刷新用户资料

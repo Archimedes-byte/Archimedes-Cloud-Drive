@@ -36,8 +36,7 @@ export * from './file/useShareManagement';
 // 导出Zustand状态管理
 export { default as useFileStore } from '@/app/store/fileStore';
 
-// 认证相关hooks
-export * from './auth/useAuth';
+// 认证相关hooks - 仅导出新的统一Hook
 export * from './auth';
 
 // 新增的common文件夹中的钩子

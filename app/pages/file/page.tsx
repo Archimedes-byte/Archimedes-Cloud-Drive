@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation';
 import { message } from 'antd';
 import Head from 'next/head';
 
+// 导入退出样式
+import logoutStyles from '@/app/styles/logout.module.css';
+// 导入登录模态事件
+import { AUTH_CONSTANTS } from '@/app/constants/auth';
+
 // 导入组件
 import {
   PageLayout,
@@ -55,13 +60,41 @@ import { FileWithSize } from '@/app/hooks/file/useFiles';
 // 导入API客户端
 import { fileApi } from '@/app/lib/api/file-api';
 
-interface FileManagementPageProps {
+// 内部使用的属性接口
+interface FileManagementProps {
   initialShowShares?: boolean;
 }
 
-export default function FileManagementPage({ initialShowShares = false }: FileManagementPageProps) {
+// 页面组件不再接收props，改为使用searchParams
+export default function FileManagementPage() {
   const router = useRouter();
   const { status } = useSession();
+  
+  // 默认不显示共享内容
+  const initialShowShares = false;
+  
+  // 监听会话状态，未登录时触发登录模态框
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      console.log('用户未登录，打开登录模态框');
+      // 触发登录模态框事件而不是重定向
+      window.dispatchEvent(new Event(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
+      
+      // 如果需要返回首页
+      router.replace('/');
+    }
+  }, [status, router]);
+  
+  // 在会话状态未确定或未认证时，显示加载状态
+  if (status === 'loading' || status === 'unauthenticated') {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="mb-4">加载中...</div>
+        </div>
+      </div>
+    );
+  }
   
   // 获取用户资料相关状态，包括加载状态
   const { 
@@ -276,13 +309,42 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
     refreshCurrentFolder();
   }, [refreshCurrentFolder]);
 
+  // 添加一个退出状态
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   // 处理登出
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     try {
-      await signOut({ redirect: true, callbackUrl: '/' });
-      router.push('/');
+      // 立即显示退出遮罩层，阻断所有React渲染
+      setIsLoggingOut(true);
+      
+      // 使用Ant Design的消息提示
+      message.loading({
+        content: '正在退出登录...',
+        key: 'logout',
+        duration: 0 // 不自动关闭
+      });
+      
+      // 使用setTimeout将退出逻辑放到下一个事件循环
+      // 这样可以确保React完成当前渲染循环
+      setTimeout(() => {
+        try {
+          // 调用登出API
+          signOut({ redirect: false });
+        } catch (e) {
+          console.error('登出API调用失败', e);
+        } finally {
+          // 无论API是否成功，都在很短的延迟后跳转
+          // 短延迟让消息有时间显示，提升用户体验
+          setTimeout(() => {
+            window.location.replace('/');
+          }, 200);
+        }
+      }, 10);
     } catch (error) {
-      console.error('登出失败', error);
+      console.error('退出过程出错', error);
+      // 出错也强制跳转
+      window.location.replace('/');
     }
   };
 
@@ -571,339 +633,358 @@ export default function FileManagementPage({ initialShowShares = false }: FileMa
 
   return (
     <>
-      <Head>
-        <title>文件管理 - Cloud Drive</title>
-      </Head>
-      
-      <PageLayout 
-        selectedFileType={selectedFileType as FileType}
-        currentView={currentView as any}
-        showThemePanel={showThemePanel}
-        previewFile={previewFile}
-        currentTheme={currentTheme || 'light'}
-        searchType={searchType}
-        favoriteFoldersRefreshTrigger={favoriteFoldersRefreshTrigger}
-        onTypeClick={(type) => {
-          // 先关闭所有特殊视图
-          closeAllSpecialViews();
-          // 设置当前视图 - 使用类型断言
-          setCurrentView(type as any);
-          // 清除当前路径，回到根目录
-          setFolderPath([]);
-          setCurrentFolderId(null);
-          // 应用文件类型过滤 - 转换FileType为FileTypeEnum
-          filterByFileType(type as unknown as FileTypeEnum);
-          // 记录当前选择的类型，确保与侧边栏同步
-          console.log('文件类型切换为:', type, '已重置面包屑路径');
-        }}
-        onSearchClick={(query, type) => {
-          // 处理搜索点击，支持文件名搜索和标签搜索
-          console.log(`处理搜索点击，查询: ${query}, 类型: ${type}`);
+      {isLoggingOut ? (
+        // 优雅的退出界面
+        <div className={logoutStyles.logoutContainer}>
+          <div className={logoutStyles.logoContainer}>
+            <img 
+              src="/logo.png" 
+              alt="Cloud Drive Logo" 
+              className={logoutStyles.logo}
+            />
+          </div>
+          <div className={logoutStyles.messageContainer}>
+            <h2 className={logoutStyles.title}>感谢使用Cloud Drive</h2>
+            <p className={logoutStyles.message}>正在安全退出您的账户...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <Head>
+            <title>文件管理 - Cloud Drive</title>
+          </Head>
           
-          // 调用视图状态钩子处理搜索视图，添加路径重置回调
-          handleSearchClick(query, type as any, () => {
-            // 清除当前路径，回到根目录
-            setFolderPath([]);
-            setCurrentFolderId(null);
-          });
-          
-          // 设置搜索类型
-          if (type === 'tag') {
-            setSearchType('tag');
-          } else {
-            setSearchType('name');
-          }
-          
-          // 如果有查询字符串，立即进行搜索
-          if (query) {
-            setSearchQuery(query);
-            // 将字符串类型转换为要求的类型
-            handleSearch(query, type as any);
-          }
-        }}
-        onSharesClick={() => {
-          handleViewMyShares(() => {
-            // 清除当前路径，回到根目录
-            setFolderPath([]);
-            setCurrentFolderId(null);
-          });
-        }}
-        onFavoritesClick={(folderId) => {
-          handleFavoritesClick(folderId, () => {
-            // 清除当前路径，回到根目录
-            setFolderPath([]);
-            setCurrentFolderId(null);
-          });
-        }}
-        onCreateFavoriteFolder={handleCreateFavoriteFolder}
-        onRecentClick={() => {
-          handleRecentClick(() => {
-            // 清除当前路径，回到根目录
-            setFolderPath([]);
-            setCurrentFolderId(null);
-          });
-          // 刷新最近访问文件
-          fetchRecentFiles();
-        }}
-        onRecentDownloadsClick={() => {
-          // 使用新的辅助函数，不再重复传递回调
-          handleRecentDownloadsClick(() => {
-            setFolderPath([]);
-            setCurrentFolderId(null);
-          });
-          // 刷新最近下载文件列表
-          fetchRecentDownloads();
-        }}
-        onThemeClick={() => {
-          toggleThemePanel();
-          if (!showThemePanel) {
-            setShowSearchView(false);
-            if (previewFile) {
-              handleClosePreview();
-            }
-          }
-        }}
-        onClosePreview={handleClosePreview}
-        onThemeChange={updateTheme}
-        onCloseThemePanel={() => setShowThemePanel(false)}
-        avatarUrl={effectiveAvatarUrl}
-        userName={userProfile?.name || null}
-        userEmail={userProfile?.email || null}
-        onHomeClick={() => {
-          // 先关闭主题面板，再跳转
-          setShowThemePanel(false);
-          router.push('/pages/file');
-        }}
-        onLogoutClick={handleSignOut}
-        onAvatarClick={() => router.push('/pages/dashboard')}
-      >
-        <ContentArea 
-          // 视图状态
-          showFavoritesContent={showFavoritesContent}
-          showRecentFilesContent={showRecentFilesContent}
-          showRecentDownloadsContent={showRecentDownloadsContent}
-          showMySharesContent={showMySharesContent}
-          showSearchView={showSearchView}
-          
-          // 文件数据
-          files={files}
-          selectedFiles={selectedFiles}
-          isRefreshing={isRefreshing}
-          filesLoading={filesLoading}
-          filesError={filesError ? filesError.toString() : null}
-          favoritedFileIds={favoritedFileIds}
-          fileUpdateTrigger={fileUpdateTrigger}
-          
-          // 面包屑相关
-          folderPath={folderPath}
-          currentFolderId={currentFolderId}
-          selectedFileType={selectedFileType}
-          
-          // 搜索相关
-          searchQuery={searchQuery}
-          searchType={searchType}
-          searchResults={searchResults || []}
-          searchLoading={searchLoading}
-          enableRealTimeSearch={enableRealTimeSearch}
-          
-          // 最近文件和下载
-          recentFiles={recentFiles}
-          loadingRecentFiles={loadingRecentFiles}
-          recentDownloads={recentDownloads}
-          loadingRecentDownloads={loadingRecentDownloads}
-          
-          // 排序相关
-          sortOrder={sortOrder}
-          
-          // 收藏夹
-          selectedFavoriteFolderId={selectedFavoriteFolderId}
-          
-          // 模态窗口状态
-          showUploadDropdown={showUploadDropdown}
-          uploadDropdownRef={uploadDropdownRef as React.RefObject<HTMLDivElement>}
-          
-          // 事件处理函数
-          onBreadcrumbPathClick={handleBreadcrumbPathClick}
-          onBreadcrumbBackClick={handleBreadcrumbBackClick}
-          onClearFilter={handleClearFilter}
-          closeAllSpecialViews={closeAllSpecialViews}
-          onFileClick={(file) => {
-            // 确保file是FileWithSize类型
-            const fileWithSize: FileWithSize = {
-              ...file,
-              size: file.size || 0
-            };
-            handleFileClick(fileWithSize);
-          }}
-          onPreviewFile={(file) => {
-            // 确保file是FileWithSize类型
-            const fileWithSize: FileWithSize = {
-              ...file,
-              size: file.size || 0
-            };
-            handlePreviewFile(fileWithSize);
-          }}
-          onFileItemClick={handleFileItemClick}
-          onFileCheckboxChange={handleFileCheckboxChange}
-          onSelectAllFiles={() => selectAllFiles(files)}
-          onDeselectAllFiles={deselectAllFiles}
-          onToggleFavorite={handleToggleFavorite}
-          onFileContextMenu={handleFileContextMenu}
-          onDownload={handleDownload}
-          onShare={handleShareButtonClick}
-          onDelete={handleDelete}
-          onRefreshFiles={handleRefreshFiles}
-          onCreateFolder={handleCreateFolderClick}
-          onRename={handleRenameButtonClick}
-          onMove={handleMoveButtonClick}
-          onSearch={(query, type) => handleSearch(query, type as any)}
-          onSearchChange={setSearchQuery}
-          onRealTimeSearchChange={setEnableRealTimeSearch}
-          onRequestDownload={handleSingleFileDownload}
-          
-          // 模态窗口操作
-          setShowUploadDropdown={setShowUploadDropdown}
-          setIsUploadModalOpen={setIsUploadModalOpen}
-          setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
-          changeSort={changeSort}
-          setSortOrder={setSortOrder}
-        />
-      </PageLayout>
-      
-      {/* 上传模态窗口 */}
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={closeUploadModal} 
-        onSuccess={handleUploadSuccess}
-        currentFolderId={currentFolderId}
-        isFolderUpload={false}
-        onUploadSuccess={handleUploadSuccess}
-        withTags={true}
-      />
-      
-      <UploadModal 
-        isOpen={isFolderUploadModalOpen} 
-        onClose={closeFolderUploadModal} 
-        onSuccess={handleUploadSuccess}
-        currentFolderId={currentFolderId}
-        isFolderUpload={true}
-        onUploadSuccess={handleUploadSuccess}
-        withTags={true}
-      />
-
-      {/* 文件预览组件应该位于整个应用的最外层，确保它覆盖其他所有内容 */}
-      {previewFile && (
-        <FilePreview
-          file={previewFile}
-          onClose={handleClosePreview}
-          onDownload={() => {
-            if (previewFile && previewFile.id) {
-              handleDownload([previewFile.id]);
-            } else {
-              message.warning('无法下载此文件，文件ID不存在');
-            }
-          }}
-        />
-      )}
-
-      {/* 添加文件夹选择弹窗 */}
-      <FolderSelectModal 
-        isOpen={isMoveModalOpen}
-        onClose={closeMoveModal}
-        onConfirm={handleMove}
-        currentFolderId={currentFolderId}
-        disabledFolderIds={disabledFolderIds}
-        isLoading={isMoveLoading}
-        onRefresh={handleRefreshFiles}
-      />
-
-      {/* 分享模态窗口 */}
-      <ShareModal 
-        isOpen={isShareModalOpen}
-        onClose={closeShareModal}
-        selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
-        onShare={shareFiles}
-      />
-      
-      {/* 链接输入模态窗口 */}
-      <LinkInputModal
-        isVisible={isLinkInputVisible}
-        shareLink={shareLink}
-        shareLinkPassword={shareLinkPassword}
-        onShareLinkChange={setShareLink}
-        onShareLinkPasswordChange={setShareLinkPassword}
-        onSubmit={handleLinkSubmit}
-        onCancel={closeLinkInputModal}
-      />
-
-      {/* 创建收藏夹模态窗口 */}
-      <CreateFavoriteModal 
-        visible={isCreateFavoriteModalOpen}
-        onClose={() => setIsCreateFavoriteModalOpen(false)}
-        onSuccess={handleFavoriteCreateSuccess}
-      />
-
-      {/* 创建文件夹模态窗口 */}
-      <CreateFolderModal
-        isOpen={isCreateFolderModalOpen}
-        onClose={closeCreateFolderModal}
-        onCreateFolder={async (name, tags) => {
-          const folderId = await createFolder(name, currentFolderId, tags);
-          if (folderId) {
-            await loadFiles(currentFolderId, selectedFileType, true);
-          }
-        }}
-      />
-
-      {/* 添加重命名模态窗口 */}
-      <RenameModal
-        isOpen={isRenameModalOpen}
-        onClose={() => setIsRenameModalOpen(false)}
-        onRename={(newName, tags) => {
-          if (!fileToRename) {
-            message.warning('未选择要重命名的文件');
-            return;
-          }
-          
-          handleConfirmEdit(newName, tags)
-            .then(success => {
-              if (success) {
-                console.log('重命名成功，刷新文件列表');
-                // 清空选择状态，避免后续操作引起混乱
-                setSelectedFiles([]);
-                // 刷新文件列表
-                refreshCurrentFolder();
+          <PageLayout 
+            selectedFileType={selectedFileType as FileType}
+            currentView={currentView as any}
+            showThemePanel={showThemePanel}
+            previewFile={previewFile}
+            currentTheme={currentTheme || 'light'}
+            searchType={searchType}
+            favoriteFoldersRefreshTrigger={favoriteFoldersRefreshTrigger}
+            onTypeClick={(type) => {
+              // 先关闭所有特殊视图
+              closeAllSpecialViews();
+              // 设置当前视图 - 使用类型断言
+              setCurrentView(type as any);
+              // 清除当前路径，回到根目录
+              setFolderPath([]);
+              setCurrentFolderId(null);
+              // 应用文件类型过滤 - 转换FileType为FileTypeEnum
+              filterByFileType(type as unknown as FileTypeEnum);
+              // 记录当前选择的类型，确保与侧边栏同步
+              console.log('文件类型切换为:', type, '已重置面包屑路径');
+            }}
+            onSearchClick={(query, type) => {
+              // 处理搜索点击，支持文件名搜索和标签搜索
+              console.log(`处理搜索点击，查询: ${query}, 类型: ${type}`);
+              
+              // 调用视图状态钩子处理搜索视图，添加路径重置回调
+              handleSearchClick(query, type as any, () => {
+                // 清除当前路径，回到根目录
+                setFolderPath([]);
+                setCurrentFolderId(null);
+              });
+              
+              // 设置搜索类型
+              if (type === 'tag') {
+                setSearchType('tag');
               } else {
-                console.error('重命名失败');
+                setSearchType('name');
               }
-            })
-            .catch(err => {
-              console.error('重命名过程出错:', err);
-            });
-        }}
-        initialName={fileToRename?.name || ''}
-        initialTags={fileToRename?.tags || []}
-        fileType={fileToRename?.isFolder ? 'folder' : 'file'}
-      />
-      
-      {/* 收藏夹选择框 */}
-      <FavoriteModal
-        fileId={selectedFileForFavorite?.id || ''}
-        fileName={selectedFileForFavorite?.name || ''}
-        visible={favoriteModalVisible}
-        onClose={closeFavoriteModal}
-        onSuccess={handleFavoriteSuccess}
-      />
+              
+              // 如果有查询字符串，立即进行搜索
+              if (query) {
+                setSearchQuery(query);
+                // 将字符串类型转换为要求的类型
+                handleSearch(query, type as any);
+              }
+            }}
+            onSharesClick={() => {
+              handleViewMyShares(() => {
+                // 清除当前路径，回到根目录
+                setFolderPath([]);
+                setCurrentFolderId(null);
+              });
+            }}
+            onFavoritesClick={(folderId) => {
+              handleFavoritesClick(folderId, () => {
+                // 清除当前路径，回到根目录
+                setFolderPath([]);
+                setCurrentFolderId(null);
+              });
+            }}
+            onCreateFavoriteFolder={handleCreateFavoriteFolder}
+            onRecentClick={() => {
+              handleRecentClick(() => {
+                // 清除当前路径，回到根目录
+                setFolderPath([]);
+                setCurrentFolderId(null);
+              });
+              // 刷新最近访问文件
+              fetchRecentFiles();
+            }}
+            onRecentDownloadsClick={() => {
+              // 使用新的辅助函数，不再重复传递回调
+              handleRecentDownloadsClick(() => {
+                setFolderPath([]);
+                setCurrentFolderId(null);
+              });
+              // 刷新最近下载文件列表
+              fetchRecentDownloads();
+            }}
+            onThemeClick={() => {
+              toggleThemePanel();
+              if (!showThemePanel) {
+                setShowSearchView(false);
+                if (previewFile) {
+                  handleClosePreview();
+                }
+              }
+            }}
+            onClosePreview={handleClosePreview}
+            onThemeChange={updateTheme}
+            onCloseThemePanel={() => setShowThemePanel(false)}
+            avatarUrl={effectiveAvatarUrl}
+            userName={userProfile?.name || null}
+            userEmail={userProfile?.email || null}
+            onHomeClick={() => {
+              // 先关闭主题面板，再跳转
+              setShowThemePanel(false);
+              router.push('/pages/file');
+            }}
+            onLogoutClick={handleSignOut}
+            onAvatarClick={() => router.push('/pages/dashboard')}
+          >
+            <ContentArea 
+              // 视图状态
+              showFavoritesContent={showFavoritesContent}
+              showRecentFilesContent={showRecentFilesContent}
+              showRecentDownloadsContent={showRecentDownloadsContent}
+              showMySharesContent={showMySharesContent}
+              showSearchView={showSearchView}
+              
+              // 文件数据
+              files={files}
+              selectedFiles={selectedFiles}
+              isRefreshing={isRefreshing}
+              filesLoading={filesLoading}
+              filesError={filesError ? filesError.toString() : null}
+              favoritedFileIds={favoritedFileIds}
+              fileUpdateTrigger={fileUpdateTrigger}
+              
+              // 面包屑相关
+              folderPath={folderPath}
+              currentFolderId={currentFolderId}
+              selectedFileType={selectedFileType}
+              
+              // 搜索相关
+              searchQuery={searchQuery}
+              searchType={searchType}
+              searchResults={searchResults || []}
+              searchLoading={searchLoading}
+              enableRealTimeSearch={enableRealTimeSearch}
+              
+              // 最近文件和下载
+              recentFiles={recentFiles}
+              loadingRecentFiles={loadingRecentFiles}
+              recentDownloads={recentDownloads}
+              loadingRecentDownloads={loadingRecentDownloads}
+              
+              // 排序相关
+              sortOrder={sortOrder}
+              
+              // 收藏夹
+              selectedFavoriteFolderId={selectedFavoriteFolderId}
+              
+              // 模态窗口状态
+              showUploadDropdown={showUploadDropdown}
+              uploadDropdownRef={uploadDropdownRef as React.RefObject<HTMLDivElement>}
+              
+              // 事件处理函数
+              onBreadcrumbPathClick={handleBreadcrumbPathClick}
+              onBreadcrumbBackClick={handleBreadcrumbBackClick}
+              onClearFilter={handleClearFilter}
+              closeAllSpecialViews={closeAllSpecialViews}
+              onFileClick={(file) => {
+                // 确保file是FileWithSize类型
+                const fileWithSize: FileWithSize = {
+                  ...file,
+                  size: file.size || 0
+                };
+                handleFileClick(fileWithSize);
+              }}
+              onPreviewFile={(file) => {
+                // 确保file是FileWithSize类型
+                const fileWithSize: FileWithSize = {
+                  ...file,
+                  size: file.size || 0
+                };
+                handlePreviewFile(fileWithSize);
+              }}
+              onFileItemClick={handleFileItemClick}
+              onFileCheckboxChange={handleFileCheckboxChange}
+              onSelectAllFiles={() => selectAllFiles(files)}
+              onDeselectAllFiles={deselectAllFiles}
+              onToggleFavorite={handleToggleFavorite}
+              onFileContextMenu={handleFileContextMenu}
+              onDownload={handleDownload}
+              onShare={handleShareButtonClick}
+              onDelete={handleDelete}
+              onRefreshFiles={handleRefreshFiles}
+              onCreateFolder={handleCreateFolderClick}
+              onRename={handleRenameButtonClick}
+              onMove={handleMoveButtonClick}
+              onSearch={(query, type) => handleSearch(query, type as any)}
+              onSearchChange={setSearchQuery}
+              onRealTimeSearchChange={setEnableRealTimeSearch}
+              onRequestDownload={handleSingleFileDownload}
+              
+              // 模态窗口操作
+              setShowUploadDropdown={setShowUploadDropdown}
+              setIsUploadModalOpen={setIsUploadModalOpen}
+              setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
+              changeSort={changeSort}
+              setSortOrder={setSortOrder}
+            />
+          </PageLayout>
+          
+          {/* 上传模态窗口 */}
+          <UploadModal 
+            isOpen={isUploadModalOpen} 
+            onClose={closeUploadModal} 
+            onSuccess={handleUploadSuccess}
+            currentFolderId={currentFolderId}
+            isFolderUpload={false}
+            onUploadSuccess={handleUploadSuccess}
+            withTags={true}
+          />
+          
+          <UploadModal 
+            isOpen={isFolderUploadModalOpen} 
+            onClose={closeFolderUploadModal} 
+            onSuccess={handleUploadSuccess}
+            currentFolderId={currentFolderId}
+            isFolderUpload={true}
+            onUploadSuccess={handleUploadSuccess}
+            withTags={true}
+          />
 
-      {/* 下载列表模态框 */}
-      <DownloadListModal
-        visible={isDownloadModalOpen}
-        fileList={filesToDownload}
-        onCancel={() => setIsDownloadModalOpen(false)}
-        onDownload={executeDownload}
-        loading={isDownloading}
-        onUpdateFileList={handleUpdateFileList}
-      />
+          {/* 文件预览组件应该位于整个应用的最外层，确保它覆盖其他所有内容 */}
+          {previewFile && (
+            <FilePreview
+              file={previewFile}
+              onClose={handleClosePreview}
+              onDownload={() => {
+                if (previewFile && previewFile.id) {
+                  handleDownload([previewFile.id]);
+                } else {
+                  message.warning('无法下载此文件，文件ID不存在');
+                }
+              }}
+            />
+          )}
+
+          {/* 添加文件夹选择弹窗 */}
+          <FolderSelectModal 
+            isOpen={isMoveModalOpen}
+            onClose={closeMoveModal}
+            onConfirm={handleMove}
+            currentFolderId={currentFolderId}
+            disabledFolderIds={disabledFolderIds}
+            isLoading={isMoveLoading}
+            onRefresh={handleRefreshFiles}
+          />
+
+          {/* 分享模态窗口 */}
+          <ShareModal 
+            isOpen={isShareModalOpen}
+            onClose={closeShareModal}
+            selectedFiles={files.filter(file => selectedFiles.includes(file.id))}
+            onShare={shareFiles}
+          />
+          
+          {/* 链接输入模态窗口 */}
+          <LinkInputModal
+            isVisible={isLinkInputVisible}
+            shareLink={shareLink}
+            shareLinkPassword={shareLinkPassword}
+            onShareLinkChange={setShareLink}
+            onShareLinkPasswordChange={setShareLinkPassword}
+            onSubmit={handleLinkSubmit}
+            onCancel={closeLinkInputModal}
+          />
+
+          {/* 创建收藏夹模态窗口 */}
+          <CreateFavoriteModal 
+            visible={isCreateFavoriteModalOpen}
+            onClose={() => setIsCreateFavoriteModalOpen(false)}
+            onSuccess={handleFavoriteCreateSuccess}
+          />
+
+          {/* 创建文件夹模态窗口 */}
+          <CreateFolderModal
+            isOpen={isCreateFolderModalOpen}
+            onClose={closeCreateFolderModal}
+            onCreateFolder={async (name, tags) => {
+              const folderId = await createFolder(name, currentFolderId, tags);
+              if (folderId) {
+                await loadFiles(currentFolderId, selectedFileType, true);
+              }
+            }}
+          />
+
+          {/* 添加重命名模态窗口 */}
+          <RenameModal
+            isOpen={isRenameModalOpen}
+            onClose={() => setIsRenameModalOpen(false)}
+            onRename={(newName, tags) => {
+              if (!fileToRename) {
+                message.warning('未选择要重命名的文件');
+                return;
+              }
+              
+              handleConfirmEdit(newName, tags)
+                .then(success => {
+                  if (success) {
+                    console.log('重命名成功，刷新文件列表');
+                    // 清空选择状态，避免后续操作引起混乱
+                    setSelectedFiles([]);
+                    // 刷新文件列表
+                    refreshCurrentFolder();
+                  } else {
+                    console.error('重命名失败');
+                  }
+                })
+                .catch(err => {
+                  console.error('重命名过程出错:', err);
+                });
+            }}
+            initialName={fileToRename?.name || ''}
+            initialTags={fileToRename?.tags || []}
+            fileType={fileToRename?.isFolder ? 'folder' : 'file'}
+          />
+          
+          {/* 收藏夹选择框 */}
+          <FavoriteModal
+            fileId={selectedFileForFavorite?.id || ''}
+            fileName={selectedFileForFavorite?.name || ''}
+            visible={favoriteModalVisible}
+            onClose={closeFavoriteModal}
+            onSuccess={handleFavoriteSuccess}
+          />
+
+          {/* 下载列表模态框 */}
+          <DownloadListModal
+            visible={isDownloadModalOpen}
+            fileList={filesToDownload}
+            onCancel={() => setIsDownloadModalOpen(false)}
+            onDownload={executeDownload}
+            loading={isDownloading}
+            onUpdateFileList={handleUpdateFileList}
+          />
+        </>
+      )}
     </>
   );
 }

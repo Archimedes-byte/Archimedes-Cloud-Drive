@@ -1,0 +1,40 @@
+.loginModalContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  min-width: 350px;
+}
+
+.loginForm {
+  width: 100%;
+}
+
+/* 模态框内的自定义样式 */
+/* 为解决 CSS Modules 纯全局选择器问题，添加一个本地类与全局选择器配合使用 */
+.modalWrapper :global(.ant-modal-content) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.modalWrapper :global(.ant-modal-header) {
+  background-color: #f8f8f8;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modalWrapper :global(.ant-modal-title) {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.modalWrapper :global(.ant-modal-body) {
+  padding: 32px 24px;
+}
+
+.modalWrapper :global(.ant-modal-footer) {
+  border-top: none;
+  padding: 10px 24px 24px;
+} 

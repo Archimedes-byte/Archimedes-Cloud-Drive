@@ -1,31 +1,36 @@
 /**
- * 认证模块 (Authentication Module)
- * 
- * 此模块负责用户认证、授权和会话管理，提供统一的身份验证接口。
- * 主要功能：
- * - 用户登录与注册
- * - 会话管理与令牌验证
- * - 第三方认证集成（Google等）
- * - 权限控制
- * 
- * @example
- * // 使用认证选项
- * import { authOptions } from '@/app/lib/auth';
- * 
- * // 验证Google令牌
- * import { verifyGoogleToken } from '@/app/lib/auth';
- * const user = await verifyGoogleToken(token);
+ * 认证系统导出
  */
 
-// 导出核心认证配置
+// 从新位置导出常量
+export { AUTH_CONSTANTS, AUTH_ERROR_CODE, AUTH_ACTION } from '@/app/constants/auth';
+
+// 导出错误处理
+export { createAuthError, logAuthError, getFriendlyErrorMessage } from '@/app/lib/error/auth-error';
+
+// 导出凭据服务
+export { verifyCredentials } from './credentials-service';
+
+// 导出用户服务
+export {
+  findUserByEmail,
+  findUserById,
+  createUser,
+  updateUserAvatar,
+  toUserBasic,
+  getUserBasicById
+} from './user-service';
+
+// 导出认证选项
 export { authOptions } from './auth';
 
-// 导出Google认证功能
-export { verifyGoogleToken } from './google-auth';
+// 注意: 不再导出prisma - 请从 @/app/lib/database 导入
 
-// 导出认证错误处理
-export {
-  isNetworkError,
-  getFormattedAuthError,
-  retryWithDelay
-} from './auth-error-handler'; 
+// 废弃的常量和工具函数移除 
+// 现在请使用:
+// - 常量: @/app/constants/auth
+// - 错误处理: @/app/utils/error
+// - 验证工具: @/app/utils/validation
+
+// 导出类型定义
+export * from '@/app/types/auth'; 

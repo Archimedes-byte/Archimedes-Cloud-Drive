@@ -3,7 +3,6 @@
  * 处理单个文件或文件夹的重命名请求
  */
 
-import { NextResponse } from 'next/server';
 import { 
   withAuth, 
   AuthenticatedRequest, 
@@ -11,8 +10,6 @@ import {
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { FileManagementService } from '@/app/services/storage';
-import path from 'path';
-import fs from 'fs/promises';
 
 const managementService = new FileManagementService();
 

@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { useProfile, usePassword, useThemeManager } from '@/app/hooks'
 import { useToast } from '@/app/components/features/dashboard/toaster/Toaster'
+import { AUTH_CONSTANTS } from '@/app/constants/auth'
 // 直接导入主题服务，用于特殊情况处理
 import { 
   // getThemeStyle, 
@@ -38,7 +39,10 @@ export default function DashboardPage() {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      router.push('/auth/login')
+      // 不再直接跳转，而是触发全局登录事件
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
+      }
     },
   })
   

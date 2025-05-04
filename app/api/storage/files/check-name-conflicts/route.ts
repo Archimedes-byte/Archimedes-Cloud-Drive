@@ -9,7 +9,6 @@ import {
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { db } from '@/app/lib/database';
-import { NextResponse } from 'next/server';
 
 interface CheckNameConflictsRequest {
   folderId: string;

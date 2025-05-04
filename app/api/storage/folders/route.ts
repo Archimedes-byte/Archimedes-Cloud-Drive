@@ -19,7 +19,6 @@
  * - 文件上传API: 处理二进制文件数据的上传和存储
  * - 文件夹API: 只处理文件夹结构的创建和管理
  */
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/database';
 import { withAuth, AuthenticatedRequest, createApiResponse, createApiErrorResponse } from '@/app/middleware/auth';
 import { v4 as uuidv4 } from 'uuid';

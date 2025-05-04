@@ -6,12 +6,12 @@
  * 前端应先尝试使用主下载API，仅在主API失败时才调用此接口
  * 此API使用不同的文件查找算法和精简的ZIP处理机制，适合作为备用方案
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, AuthenticatedRequest, createApiErrorResponse } from '@/app/middleware/auth';
+import { withAuth, createApiErrorResponse, AuthenticatedRequest } from '@/app/middleware/auth';
 import { FileManagementService } from '@/app/services/storage';
+import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import fs from 'fs/promises';
-import { join, basename } from 'path';
+import { join } from 'path';
 import { existsSync } from 'fs';
 import path from 'path';
 import { FileInfo } from '@/app/types';

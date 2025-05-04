@@ -117,6 +117,22 @@ export function AntFileList({
   fileUpdateTrigger = 0,
   showPath = false
 }: AntFileListProps) {
+  // ----- 防御性编程: 确保所有props有默认值 -----
+  const safeFiles = Array.isArray(files) ? files : [];
+  const safeSelectedFiles = Array.isArray(selectedFiles) ? selectedFiles : [];
+  const safeFavoritedFileIds = Array.isArray(favoritedFileIds) ? favoritedFileIds : [];
+  
+  // 尝试防止React Hooks错误：始终使用相同的钩子调用序列
+  // React要求无论组件状态如何，钩子调用顺序必须一致
+  const [mounted, setMounted] = useState(true);
+  
+  // 组件卸载时标记，避免卸载后的状态更新
+  useEffect(() => {
+    return () => {
+      setMounted(false);
+    };
+  }, []);
+  
   const actualEditingFileId = editingFileId || editingFile;
 
   const [localEditName, setLocalEditName] = useState<string>('');
@@ -128,9 +144,9 @@ export function AntFileList({
   const newTagValue = providedNewTag !== undefined ? providedNewTag : localNewTag;
   
   // 文件数据记忆化
-  const filesMemoized = useMemo(() => files, [
-    files.map(f => f.id).join(','), 
-    files.map(f => f.name).join(','),
+  const filesMemoized = useMemo(() => safeFiles, [
+    safeFiles.map(f => f.id).join(','), 
+    safeFiles.map(f => f.name).join(','),
     fileUpdateTrigger
   ]);
   
@@ -160,7 +176,7 @@ export function AntFileList({
   // 自动聚焦编辑输入框
   useEffect(() => {
     if (actualEditingFileId && providedEditingName === undefined) {
-      const file = files.find(f => f.id === actualEditingFileId);
+      const file = safeFiles.find(f => f.id === actualEditingFileId);
       if (file) {
         setLocalEditName(file.name);
         setLocalEditTags(file.tags || []);
@@ -176,7 +192,7 @@ export function AntFileList({
         }, 100);
       }
     }
-  }, [actualEditingFileId, files, providedEditingName]);
+  }, [actualEditingFileId, safeFiles, providedEditingName]);
 
   // 处理编辑时的键盘事件
   const handleEditKeyDown = (e: React.KeyboardEvent, fileId: string) => {
@@ -228,7 +244,7 @@ export function AntFileList({
     }
   };
 
-  // 文件勾选框改变事件
+  // 处理文件勾选框改变事件
   const handleFileCheckboxChange = (checked: boolean, file: FileInfo) => {
     if (onFileSelect) {
       onFileSelect(file, checked);
@@ -256,7 +272,7 @@ export function AntFileList({
 
   // 渲染收藏按钮
   const renderFavoriteButton = (file: FileInfo) => {
-    const isFavorited = favoritedFileIds.includes(file.id);
+    const isFavorited = safeFavoritedFileIds.includes(file.id);
     
     return (
       <Tooltip title={isFavorited ? '取消收藏' : '收藏'}>
@@ -319,7 +335,7 @@ export function AntFileList({
         width: 50,
         render: (_: any, record: FileInfo) => (
           <Checkbox
-            checked={selectedFiles.includes(record.id)}
+            checked={safeSelectedFiles.includes(record.id)}
             onChange={(e) => handleFileCheckboxChange(e.target.checked, record)}
             onClick={(e) => e.stopPropagation()}
           />
@@ -343,7 +359,7 @@ export function AntFileList({
       key: 'name',
       className: 'name-column',
       ellipsis: true,
-      sorter: (a, b) => {
+      sorter: (a: FileInfo, b: FileInfo) => {
         // 文件夹总是排在文件前面
         if (a.isFolder && !b.isFolder) return -1;
         if (!a.isFolder && b.isFolder) return 1;
@@ -518,7 +534,9 @@ export function AntFileList({
         
         // 点击行选择文件
         if (onFileSelect) {
-          onFileSelect(record, !selectedFiles.includes(record.id));
+          // 添加防护措施，确保selectedFiles是数组
+          const safeSelectedFiles = Array.isArray(selectedFiles) ? selectedFiles : [];
+          onFileSelect(record, !safeSelectedFiles.includes(record.id));
         }
       },
       onDoubleClick: () => {
@@ -530,7 +548,8 @@ export function AntFileList({
       onContextMenu: (e: React.MouseEvent) => {
         onFileContextMenu?.(e, record);
       },
-      className: `${selectedFiles.includes(record.id) ? 'selected-row' : ''} ${actualEditingFileId === record.id ? 'editing-row' : ''}`,
+      // 添加防护措施，确保selectedFiles是数组
+      className: `${Array.isArray(selectedFiles) && selectedFiles.includes(record.id) ? 'selected-row' : ''} ${actualEditingFileId === record.id ? 'editing-row' : ''}`,
     };
   };
 

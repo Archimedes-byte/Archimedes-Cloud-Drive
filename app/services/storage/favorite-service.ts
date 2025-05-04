@@ -55,8 +55,7 @@ export class FavoriteService {
               folderId: folder.id,
               userId,
               file: {
-                isDeleted: false,
-                // 不要使用NOT NULL条件，这在Prisma中不起作用
+                isDeleted: false
               }
             }
           });
@@ -518,8 +517,9 @@ export class FavoriteService {
         throw createFileError('notfound', '收藏夹不存在');
       }
 
-      // 先清理已删除文件的收藏记录
+      // 清理已删除和不存在文件的收藏记录
       await this.cleanupDeletedFileFavorites(userId, folderId);
+      await this.cleanupNonExistentFileFavorites(userId, folderId);
 
       // 查询条件
       const where = {
@@ -571,8 +571,9 @@ export class FavoriteService {
     pageSize = 50
   ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
     try {
-      // 先清理所有收藏夹中已删除文件的收藏记录
+      // 清理已删除和不存在文件的收藏记录
       await this.cleanupDeletedFileFavorites(userId);
+      await this.cleanupNonExistentFileFavorites(userId);
 
       // 查询条件
       const where = {
@@ -627,10 +628,7 @@ export class FavoriteService {
       const whereClause: any = {
         userId,
         file: {
-          OR: [
-            { id: null },       // 文件不存在
-            { isDeleted: true } // 文件已被删除
-          ]
+          isDeleted: true
         }
       };
 
@@ -651,6 +649,51 @@ export class FavoriteService {
       return result.count;
     } catch (error) {
       console.error('[收藏夹服务] 清理已删除文件的收藏记录失败:', error);
+      return 0; // 返回0表示没有清理任何记录
+    }
+  }
+
+  /**
+   * 清理指向不存在文件的收藏记录
+   * @param userId 用户ID
+   * @param folderId 可选的收藏夹ID，如果提供则只清理指定收藏夹
+   */
+  private async cleanupNonExistentFileFavorites(userId: string, folderId?: string): Promise<number> {
+    try {
+      // 获取所有用户的收藏记录
+      const whereClause: any = { userId };
+      if (folderId) {
+        whereClause.folderId = folderId;
+      }
+
+      const favorites = await prisma.favorite.findMany({
+        where: whereClause,
+        include: { file: true }
+      });
+
+      // 找出指向不存在文件的收藏记录ID
+      const nonExistentFileIds = favorites
+        .filter(fav => fav.file === null)
+        .map(fav => fav.id);
+
+      if (nonExistentFileIds.length === 0) {
+        return 0;
+      }
+
+      // 删除这些收藏记录
+      const result = await prisma.favorite.deleteMany({
+        where: {
+          id: { in: nonExistentFileIds }
+        }
+      });
+
+      if (result.count > 0) {
+        console.log(`[收藏夹服务] 已清理 ${result.count} 条指向不存在文件的收藏记录`);
+      }
+
+      return result.count;
+    } catch (error) {
+      console.error('[收藏夹服务] 清理指向不存在文件的收藏记录失败:', error);
       return 0; // 返回0表示没有清理任何记录
     }
   }

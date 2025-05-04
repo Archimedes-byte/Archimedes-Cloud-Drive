@@ -63,9 +63,8 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     
-    // 检查是否强制刷新
-    const hasTimestamp = searchParams.has('_t');
-
+    console.log('收到查询参数:', Object.fromEntries(searchParams));
+    
     // 获取文件列表
     const result = await managementService.getFiles(
       user.id,

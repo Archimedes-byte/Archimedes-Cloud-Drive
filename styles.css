@@ -1,0 +1,368 @@
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+a {
+    text-decoration: none;
+    color: #4e6ef2;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #315efb;
+}
+
+/* 主容器 */
+.container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+}
+
+/* 左侧面板 */
+.left-panel {
+    position: relative;
+    flex: 1;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2)), url('https://picsum.photos/id/1018/1500/900');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 40px 60px;
+}
+
+.logo-container {
+    margin-bottom: 60px;
+}
+
+.logo {
+    width: 120px;
+    filter: brightness(0) invert(1);
+}
+
+.slogan {
+    margin-top: auto;
+    margin-bottom: 100px;
+}
+
+.main-title {
+    font-size: 3.5rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+
+.sub-title {
+    font-size: 1.5rem;
+    font-weight: 300;
+    opacity: 0.9;
+}
+
+.copyright {
+    position: absolute;
+    bottom: 20px;
+    left: 60px;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* 右侧面板 */
+.right-panel {
+    width: 500px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.form-title {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #222;
+    margin-bottom: 6px;
+}
+
+.login-link {
+    color: #999;
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #bbb;
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="password"] {
+    width: 100%;
+    padding: 14px 40px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: #f9f9f9;
+}
+
+input::placeholder {
+    color: #bbb;
+    font-size: 0.9rem;
+}
+
+input:focus {
+    outline: none;
+    border-color: #4e6ef2;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(78, 110, 242, 0.1);
+}
+
+input:focus + label {
+    color: #4e6ef2;
+}
+
+input:focus ~ .input-icon {
+    color: #4e6ef2;
+}
+
+label {
+    position: absolute;
+    left: 40px;
+    top: -8px;
+    background: white;
+    padding: 0 5px;
+    font-size: 0.8rem;
+    color: #999;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+input:focus + label,
+input:not(:placeholder-shown) + label {
+    opacity: 1;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #bbb;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: #777;
+}
+
+/* 验证码区域 */
+.verification-group {
+    display: flex;
+    gap: 10px;
+}
+
+.verification-input {
+    flex: 1;
+}
+
+.get-code-btn {
+    padding: 0 15px;
+    background-color: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    color: #666;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.get-code-btn:hover {
+    background-color: #eee;
+}
+
+/* 复选框样式 */
+.checkbox-group {
+    margin-top: 30px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    cursor: pointer;
+    font-size: 0.9rem;
+    user-select: none;
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: relative;
+    top: 2px;
+    height: 18px;
+    width: 18px;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-right: 10px;
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
+}
+
+.checkbox-container:hover input ~ .checkmark {
+    background-color: #f0f0f0;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: #4e6ef2;
+    border-color: #4e6ef2;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.agreement-text {
+    color: #777;
+    line-height: 1.5;
+}
+
+/* 注册按钮 */
+.register-btn {
+    width: 100%;
+    padding: 14px;
+    margin-top: 30px;
+    background-color: #4e6ef2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.register-btn:hover {
+    background-color: #315efb;
+}
+
+.register-btn:disabled {
+    background-color: #b3bfef;
+    cursor: not-allowed;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 1024px) {
+    .left-panel {
+        flex: 0.7;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+    
+    .left-panel {
+        height: 200px;
+        padding: 20px;
+    }
+    
+    .logo-container {
+        margin-bottom: 20px;
+    }
+    
+    .logo {
+        width: 80px;
+    }
+    
+    .slogan {
+        margin: 0;
+    }
+    
+    .main-title {
+        font-size: 2rem;
+    }
+    
+    .sub-title {
+        font-size: 1rem;
+    }
+    
+    .copyright {
+        left: 20px;
+    }
+    
+    .right-panel {
+        width: 100%;
+        padding: 30px 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 480px) {
+  .register-btn {
+    height: 2.75rem;
+    font-size: 0.875rem;
+  }
+} 

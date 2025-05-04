@@ -1,0 +1,219 @@
+/* 注册页面特定样式 - 只包含页面布局相关样式 */
+
+/* 主容器样式 */
+.container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 背景区域 */
+.bgFull {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+/* 左侧文本内容区域 */
+.leftContent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 60%;
+  padding-left: 12%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 1;
+}
+
+.mainText {
+  color: white;
+  font-size: 4.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 1s ease forwards;
+}
+
+.subText {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 300;
+  margin-bottom: 8rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 1s ease forwards 0.5s;
+}
+
+.sloganText {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1.875rem;
+  font-weight: 400;
+  overflow: hidden;
+  border-right: 3px solid rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  letter-spacing: 0.15rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  width: 0;
+  margin-bottom: 2rem;
+  position: relative;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: 
+    fadeInUp 1s ease 1s forwards,
+    typing 3.5s steps(40, end) 2s forwards,
+    blink-caret 0.75s step-end infinite 2s;
+}
+
+.copyright {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 12%;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+/* 表单卡片区域 */
+.card {
+  position: absolute;
+  width: 450px;
+  max-width: 90%;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2rem 2.5rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(15px);
+  border-radius: 1.2rem;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.15),
+    0 3px 10px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.5);
+  z-index: 1;
+  animation: fadeIn 1s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 70%);
+  z-index: -1;
+}
+
+.formWrapper {
+  position: relative;
+  z-index: 2;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: slideInDown 0.8s ease;
+}
+
+.linkContainer {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.25rem;
+  text-align: center;
+  animation: fadeIn 1s ease 0.3s forwards;
+  opacity: 0;
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.link:hover {
+  color: #1e40af;
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #3b82f6;
+  transition: width 0.3s ease;
+}
+
+.link:hover::after {
+  width: 100%;
+}
+
+/* 动画定义 */
+@keyframes typing {
+  from { width: 0 }
+  to { width: 24ch }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: rgba(255, 255, 255, 0.85) }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 

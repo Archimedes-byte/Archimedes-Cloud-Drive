@@ -6,6 +6,13 @@
   left: 0;
   z-index: 20;
   background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modalOverlay {
@@ -36,10 +43,14 @@
   box-shadow: 
     0 20px 25px -5px rgba(59, 130, 246, 0.1),
     0 10px 10px -5px rgba(59, 130, 246, 0.04),
-    0 0 0 1px rgba(59, 130, 246, 0.05);
+    0 0 0 1px rgba(59, 130, 246, 0.05),
+    0 0 40px rgba(0, 0, 0, 0.1);
   position: relative;
   animation: modalSlideIn 0.3s ease-out;
+  transform-origin: top center;
   margin: auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .modalContainer::before {
@@ -112,6 +123,19 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  position: relative;
+  display: inline-block;
+}
+
+.modalTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  border-radius: 3px;
 }
 
 .modalClose {
@@ -135,6 +159,94 @@
   background-color: #3b82f6;
   color: white;
   transform: rotate(90deg);
+}
+
+/* 为登录弹窗添加特殊样式 */
+.customModal:global(.login-modal) .modalContainer {
+  background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+  max-width: 520px;
+  box-shadow: 
+    0 20px 40px rgba(59, 130, 246, 0.15),
+    0 10px 20px rgba(59, 130, 246, 0.1),
+    0 0 0 1px rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  transform-origin: center;
+}
+
+.customModal:global(.login-modal) .modalContainer::before {
+  display: none;
+}
+
+.customModal:global(.login-modal) .modalContainer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 70%);
+  z-index: 1;
+}
+
+.customModal:global(.login-modal) .modalBackdrop {
+  backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.7);
+}
+
+.customModal:global(.login-modal) .modalTitle {
+  font-size: 1.6rem;
+  text-align: center;
+  width: 100%;
+  font-weight: 700;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.5px;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 10px;
+}
+
+.customModal:global(.login-modal) .modalTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  border-radius: 3px;
+}
+
+.customModal:global(.login-modal) .modalHeader {
+  border-bottom: none;
+  text-align: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 1.75rem 2rem 1rem;
+}
+
+.customModal:global(.login-modal) .modalBody {
+  padding: 0.5rem 2rem 2.5rem;
+  background: transparent;
+}
+
+.customModal:global(.login-modal) .modalClose {
+  top: 1rem;
+  right: 1rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.customModal:global(.login-modal) .modalClose:hover {
+  background-color: #3b82f6;
+  color: white;
+  transform: rotate(90deg) scale(1.05);
 }
 
 /* 媒体查询 */
@@ -168,10 +280,180 @@
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-20px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+/* 自定义Modal样式 */
+.customModal {
+  top: 20px;
+}
+
+.customModal :global(.ant-modal-content) {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 10px 30px rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+}
+
+.customModal :global(.ant-modal-header) {
+  margin: 0;
+  background: transparent;
+  border-bottom: none;
+  padding: 24px 24px 0;
+}
+
+.customModal :global(.ant-modal-body) {
+  padding: 16px 24px 24px;
+  max-height: 80vh;
+}
+
+.customModal :global(.ant-modal-close) {
+  top: 16px;
+  right: 16px;
+}
+
+/* 对登录弹窗的特别样式 */
+.customModal:global(.login-modal) {
+  width: 420px !important;
+  max-width: 95vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-content) {
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  box-shadow: 
+    0 20px 40px rgba(59, 130, 246, 0.15),
+    0 10px 20px rgba(59, 130, 246, 0.1),
+    0 0 0 1px rgba(59, 130, 246, 0.08);
+  overflow: visible;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-close) {
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-close):hover {
+  transform: rotate(90deg);
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.2);
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-body) {
+  padding: 0;
+  overflow-y: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-header) {
+  position: relative;
+  text-align: center;
+  padding: 18px 24px 4px;
+  margin: 0 0 5px 0;
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-title) {
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: #1e3a8a;
+  background: linear-gradient(to right, #1e3a8a, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-header)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+  border-radius: 16px 16px 0 0;
+}
+
+.modalCloseIcon {
+  color: #64748b;
+  transition: all 0.2s ease;
+  font-size: 18px;
+}
+
+.modalCloseIcon:hover {
+  color: #3b82f6;
+  transform: rotate(90deg);
+}
+
+.customModal:global(.login-modal) .modalCloseIcon {
+  color: #94a3b8;
+}
+
+.customModal:global(.login-modal) .modalCloseIcon:hover {
+  color: #2563eb;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.customModal:global(.login-modal) .modalTitle {
+  font-size: 1.75rem;
+  text-align: center;
+  width: 100%;
+  font-weight: 700;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.5px;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 12px;
+}
+
+.customModal:global(.login-modal) .modalTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  border-radius: 3px;
+}
+
+.modalBody {
+  position: relative;
 } 

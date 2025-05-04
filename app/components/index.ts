@@ -78,7 +78,8 @@ export * from './features/user-profile/avatar';
 export * from './features/auth';
 
 // 反馈组件
-export { ToastProvider, useToast } from './features/dashboard/toaster/Toaster';
+export { ToastContainer } from './features/dashboard/toaster/Toaster';
+export { ToastProvider, useToast } from '@/app/contexts';
 
 // 首页组件
 export { default as Hero } from './features/home/hero';

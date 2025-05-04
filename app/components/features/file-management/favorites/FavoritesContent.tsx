@@ -21,6 +21,7 @@ import { FileInfo } from '@/app/types';
 import { AntFileList } from '../file-list';
 import { FolderManagement } from '../folder-management';
 import { FileIcon } from '@/app/utils/file/icon-map';
+import { AUTH_CONSTANTS } from '@/app/constants/auth';
 
 const { Title, Text } = Typography;
 
@@ -82,7 +83,10 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
   useEffect(() => {
     // 检查用户登录状态
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      // 不再直接跳转，而是触发全局登录事件
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
+      }
       return;
     }
 
@@ -293,7 +297,10 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
   useEffect(() => {
     // 检查用户登录状态
     if (status === 'unauthenticated') {
-      router.push('/auth/login');
+      // 不再直接跳转，而是触发全局登录事件
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
+      }
       return;
     }
 

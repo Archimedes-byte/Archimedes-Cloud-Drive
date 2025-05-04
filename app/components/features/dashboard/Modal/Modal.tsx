@@ -9,6 +9,7 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  className?: string;
 }
 
 const Modal = ({ 
@@ -16,7 +17,8 @@ const Modal = ({
   onClose, 
   title, 
   children, 
-  footer
+  footer,
+  className = ''
 }: ModalProps) => {
   return (
     <AntModal
@@ -25,8 +27,8 @@ const Modal = ({
       title={<div className={styles.modalTitle}>{title}</div>}
       footer={footer}
       closeIcon={<CloseOutlined className={styles.modalCloseIcon} />}
-      className={styles.customModal}
-      wrapClassName={styles.modalBackdrop}
+      className={`${styles.customModal} ${className}`}
+      wrapClassName={`${styles.modalBackdrop} ${className}`}
       centered
     >
       <div className={styles.modalBody}>

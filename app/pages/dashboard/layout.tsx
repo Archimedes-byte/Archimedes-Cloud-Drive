@@ -1,4 +1,5 @@
-import { ToastProvider } from '@/app/components/features/dashboard/toaster/Toaster';
+import { ToastProvider } from '@/app/contexts';
+import { ToastContainer } from '@/app/components/features/dashboard/toaster/Toaster';
 
 export default function DashboardLayout({
   children,
@@ -8,6 +9,7 @@ export default function DashboardLayout({
   return (
     <ToastProvider>
       {children}
+      <ToastContainer />
     </ToastProvider>
   );
 } 

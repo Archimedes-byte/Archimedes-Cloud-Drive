@@ -5,12 +5,24 @@ import Link from 'next/link';
 import { ChevronDown, FileText, FileImage, FileVideo, FileArchive, FolderIcon, ShareIcon, LockIcon, DatabaseIcon, FileIcon as LucideFileIcon, BookmarkIcon, Cloud } from 'lucide-react';
 import styles from './Hero.module.css';
 import { FileIcon } from '@/app/utils/file/icon-map';
+import { AUTH_CONSTANTS } from '@/app/constants/auth';
 
 interface HeroProps {
   onExploreClick: () => void;
+  onLoginClick?: () => void;
 }
 
-const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
+const Hero: React.FC<HeroProps> = ({ onExploreClick, onLoginClick }) => {
+  // 处理登录点击
+  const handleLoginClick = () => {
+    // 如果传入了onLoginClick回调则使用，否则触发全局登录模态框事件
+    if (onLoginClick) {
+      onLoginClick();
+    } else {
+      window.dispatchEvent(new Event(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
+    }
+  };
+
   return (
     <div className={styles.heroSection}>
       <div className={styles.heroContent}>
@@ -19,12 +31,12 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
           为你电脑/手机中的文件提供云备份、预览、分享等服务，帮你更便捷安全地管理数据。
         </p>
         <div className={styles.heroActions}>
-          <Link
-            href="/pages/auth/login"
+          <button 
+            onClick={handleLoginClick}
             className={`${styles.heroButton} ${styles.primaryButton}`}
           >
             去登录
-          </Link>
+          </button>
           <button 
             onClick={onExploreClick}
             className={`${styles.heroButton} ${styles.secondaryButton}`}

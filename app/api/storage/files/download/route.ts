@@ -5,7 +5,6 @@
 import { 
   withAuth, 
   AuthenticatedRequest, 
-  createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
 import { FileManagementService } from '@/app/services/storage';
@@ -13,9 +12,8 @@ import { NextResponse } from 'next/server';
 import { existsSync } from 'fs';
 import fs from 'fs/promises';
 import { join } from 'path';
-import path from 'path';
 import mime from 'mime-types';
-import { FileInfo, FileTypeEnum } from '@/app/types';
+import { FileInfo } from '@/app/types';
 import JSZip from 'jszip';
 
 const fileManagementService = new FileManagementService();
@@ -31,10 +29,9 @@ if (!existsSync(UPLOAD_DIR)) {
 /**
  * 从多个来源确定文件的MIME类型
  * @param fileInfo 文件信息对象
- * @param filePath 文件路径
  * @returns 确定的内容类型
  */
-async function determineContentType(fileInfo: FileInfo, filePath: string): Promise<string> {
+async function determineContentType(fileInfo: FileInfo): Promise<string> {
   // 默认内容类型
   let contentType = 'application/octet-stream';
   
@@ -397,7 +394,7 @@ export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => 
         const fileContent = await fs.readFile(filePath);
         
         // 使用改进的内容类型检测
-        const contentType = await determineContentType(fileInfo, filePath);
+        const contentType = await determineContentType(fileInfo);
         
         console.log(`文件下载准备完成: ${fileInfo.name}, 大小: ${fileContent.length} 字节, 类型: ${contentType}`);
         

@@ -7,8 +7,15 @@
 
 // 导出核心/通用类型
 export * from './core/common';
-export * from './core/auth';
-export * from './core/api';
+
+// 选择性导出核心API类型，避免与api目录冲突
+export type { 
+  ApiResponse,
+  ApiError,
+  ResponseStatus,
+  ErrorResponse,
+  AppConfig
+} from './core/api';
 
 // 导出文件相关类型
 // 注意：从多个模块导出同名类型会产生冲突，以下是解决方案
@@ -72,10 +79,6 @@ export * from './hooks';
 // 导出工具类型
 export * from './utils';
 
-// 导出第三方服务集成类型
-// 如果integrations子目录未被TSC正确识别，可能需要项目重新构建
-// export * from './integrations/google-user';
-
 // 导出全局类型扩展
 // 注意：.d.ts文件通常不需要显式导出，它们在全局范围内自动生效
 // export * from './global/next-auth';
@@ -83,4 +86,22 @@ export * from './utils';
 
 // 解决其他导出歧义
 export type { PaginatedResponse } from './core/common';
-export type { FileUploadHook, FileSearchHook, FileOperationsHook } from './hooks/hooks'; 
+export type { FileUploadHook, FileSearchHook, FileOperationsHook } from './hooks/hooks';
+
+// 导出认证相关类型，明确指定类型导出以避免冲突
+export type {
+  UserBasic,
+  UserFull,
+  LoginCredentials,
+  RegisterData,
+  AuthError,
+  ApiResponse as AuthApiResponse,
+  PasswordValidationResult,
+  EmailValidationResult,
+  CredentialsValidationResult,
+  PasswordRequirements,
+  AuthJWT
+} from './auth';
+
+// 从常量导出错误码
+export { AUTH_ERROR_CODE } from '@/app/constants/auth'; 

@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
-import { LockOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
-import { FormField } from '@/app/components/common/form';
-import { Input, Alert } from '@/app/components/ui/ant';
+import { LockOutlined, KeyOutlined, InfoCircleOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+import { FormField, PasswordInput } from '@/app/components/common/form';
+import { Alert, Tooltip, Form, Input, Button, Progress } from '@/app/components/ui/ant';
+import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import styles from './PasswordForm.module.css';
 
 interface PasswordFormProps {
@@ -45,6 +46,37 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
     handlePasswordChange('confirmPassword', e.target.value);
   }, [handlePasswordChange]);
   
+  // 生成密码要求提示内容
+  const getPasswordRequirements = () => {
+    const requirements = [
+      `至少 ${AUTH_CONSTANTS.PASSWORD.MIN_LENGTH} 个字符`,
+    ];
+    
+    if (AUTH_CONSTANTS.PASSWORD.REQUIRE_NUMBERS) {
+      requirements.push('至少包含 1 个数字');
+    }
+    
+    if (AUTH_CONSTANTS.PASSWORD.REQUIRE_UPPERCASE) {
+      requirements.push('至少包含 1 个大写字母');
+    }
+    
+    if (AUTH_CONSTANTS.PASSWORD.REQUIRE_LOWERCASE) {
+      requirements.push('至少包含 1 个小写字母');
+    }
+    
+    if (AUTH_CONSTANTS.PASSWORD.REQUIRE_SPECIAL) {
+      requirements.push('至少包含 1 个特殊字符');
+    }
+    
+    return (
+      <ul className={styles.requirementsList}>
+        {requirements.map((req, index) => (
+          <li key={index}>{req}</li>
+        ))}
+      </ul>
+    );
+  };
+  
   return (
     <div className={styles.form}>
       {passwordError && (
@@ -69,25 +101,41 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
         设置密码后，您可以使用邮箱 {userEmail} 和密码登录系统。
       </p>
       
-      <FormField label="密码" icon={<LockOutlined />}>
-        <Input.Password
+      <div className={styles.passwordRequirements}>
+        <Alert
+          message="密码要求"
+          description={getPasswordRequirements()}
+          type="info"
+          showIcon
+          className={styles.requirementsAlert}
+        />
+      </div>
+      
+      <FormField 
+        label="密码" 
+        icon={<LockOutlined />}
+        suffix={
+          <Tooltip title="请设置符合要求的强密码">
+            <InfoCircleOutlined style={{ color: 'rgba(0,0,0,.45)' }} />
+          </Tooltip>
+        }
+      >
+        <PasswordInput
           value={passwordInfo.password}
           onChange={handlePasswordInputChange}
           onFocus={handleFocus}
           className={styles.input}
-          placeholder="请输入密码（至少8位）"
-          iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+          placeholder={`请输入密码（至少${AUTH_CONSTANTS.PASSWORD.MIN_LENGTH}位）`}
         />
       </FormField>
       
       <FormField label="确认密码" icon={<KeyOutlined />}>
-        <Input.Password
+        <PasswordInput
           value={passwordInfo.confirmPassword}
           onChange={handleConfirmPasswordInputChange}
           onFocus={handleFocus}
           className={styles.input}
           placeholder="请再次输入密码"
-          iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
         />
       </FormField>
     </div>

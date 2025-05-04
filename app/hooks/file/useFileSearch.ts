@@ -88,13 +88,16 @@ export const useFileSearch = ({
   const [showSearchView, setShowSearchView] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     // 从localStorage加载搜索历史
-    try {
-      const savedHistory = localStorage.getItem('fileSearchHistory');
-      return savedHistory ? JSON.parse(savedHistory) : [];
-    } catch (e) {
-      console.error('加载搜索历史失败:', e);
-      return [];
+    if (typeof window !== 'undefined') {
+      try {
+        const savedHistory = localStorage.getItem('fileSearchHistory');
+        return savedHistory ? JSON.parse(savedHistory) : [];
+      } catch (e) {
+        console.error('加载搜索历史失败:', e);
+        return [];
+      }
     }
+    return [];
   });
   
   // 搜索配置
@@ -166,7 +169,9 @@ export const useFileSearch = ({
           
           // 保存到localStorage
           try {
-            localStorage.setItem('fileSearchHistory', JSON.stringify(newHistory));
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('fileSearchHistory', JSON.stringify(newHistory));
+            }
           } catch (e) {
             console.error('保存搜索历史失败:', e);
           }
@@ -273,7 +278,9 @@ export const useFileSearch = ({
     setSearchHistory([]);
     // 清除localStorage中的搜索历史
     try {
-      localStorage.removeItem('fileSearchHistory');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('fileSearchHistory');
+      }
     } catch (e) {
       console.error('清除搜索历史失败:', e);
     }

@@ -33,7 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "google-auth-library": "^9.15.1",
+    "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
     "lru-cache": "^7.18.3",

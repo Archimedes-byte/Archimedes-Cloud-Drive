@@ -21,7 +21,7 @@ model User {
   downloadHistories DownloadHistory[]
   favorites         Favorite[]
   favoriteFolders   FavoriteFolder[]
-  File              File[]
+  files             File[]
   fileShares        FileShare[]
   folders           Folder[]
   sessions          Session[]

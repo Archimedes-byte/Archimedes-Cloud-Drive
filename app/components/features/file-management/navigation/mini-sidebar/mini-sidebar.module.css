@@ -197,4 +197,29 @@
   color: white;
   width: 20px;
   height: 20px;
+}
+
+.accountSwitcherContainer {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accountSwitcherContainer :global(.ant-btn) {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.accountSwitcherContainer :global(.ant-btn:hover) {
+  background: rgba(255, 255, 255, 0.1);
 } 

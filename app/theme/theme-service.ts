@@ -145,16 +145,17 @@ function notifyThemeChange(details: Partial<ThemeEventDetails>): void {
 /**
  * 应用主题
  * @param themeId 主题ID
+ * @param saveToStorage 是否保存到localStorage，默认为true
  * @returns 应用的主题样式对象
  */
-export function applyTheme(themeId: string): ThemeStyle | null {
+export function applyTheme(themeId: string, saveToStorage: boolean = true): ThemeStyle | null {
   try {
     // 获取并应用主题样式
     const style = applyPresetTheme(themeId);
     if (!style) return null;
     
-    // 添加到localStorage
-    if (typeof window !== 'undefined') {
+    // 添加到localStorage，如果需要的话
+    if (saveToStorage && typeof window !== 'undefined') {
       localStorage.setItem(THEME_STORAGE_KEY, themeId);
     }
     
@@ -171,7 +172,10 @@ export function applyTheme(themeId: string): ThemeStyle | null {
     
     return style;
   } catch (error) {
-    console.error('应用主题时出错:', error);
+    // 避免在控制台输出过多错误
+    if (process.env.NODE_ENV === 'development') {
+      console.error('应用主题时出错:', error);
+    }
     return null;
   }
 }
@@ -197,10 +201,15 @@ export function saveCustomTheme(id: string, theme: ThemeStyle): boolean {
     // 序列化并保存到localStorage
     localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
     
-    console.log(`自定义主题 ${id} 已保存`);
+    // 仅在开发环境输出日志
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`自定义主题 ${id} 已保存`);
+    }
     return true;
   } catch (error) {
-    console.error('保存自定义主题失败:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('保存自定义主题失败:', error);
+    }
     return false;
   }
 }
@@ -306,11 +315,16 @@ function applyPresetTheme(themeId: string): ThemeStyle {
   
   // 特殊处理纯色系统
   if (style.category === '纯色系统') {
-    console.log('检测到纯色系统，正在应用纯色设置');
+    // 仅在开发环境输出日志
+    if (process.env.NODE_ENV === 'development') {
+      console.log('检测到纯色系统，正在应用纯色设置');
+    }
     
     // 纯色系统 - 背景应该设置为纯色
     if (style.background && style.background.includes('gradient')) {
-      console.log('将渐变背景替换为纯色:', style.primary);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('将渐变背景替换为纯色:', style.primary);
+      }
       document.documentElement.style.setProperty('--theme-background', style.primary);
     }
     

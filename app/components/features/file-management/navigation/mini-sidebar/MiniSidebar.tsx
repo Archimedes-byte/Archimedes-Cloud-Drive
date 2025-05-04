@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Home, LogOut, Palette } from 'lucide-react';
+import { Home, LogOut, Palette, Users } from 'lucide-react';
 import { Button, Avatar, Flex, Tooltip } from 'antd';
 import styles from './mini-sidebar.module.css';
 import { useTheme } from '@/app/theme';
@@ -87,6 +87,7 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
       >
         <Home className={styles.iconStyle} />
       </Button>
+      
       
       {/* 主题选择按钮 */}
       <Button 

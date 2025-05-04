@@ -10,12 +10,10 @@ import {
 } from '@/app/middleware/auth';
 import { FileManagementService } from '@/app/services/storage';
 import { readFileSync, writeFileSync } from 'fs';
-import { join, extname } from 'path';
+import { join } from 'path';
 import path from 'path';
 import { FILE_CATEGORIES } from '@/app/utils/file/type';
-import { NextResponse } from 'next/server';
 import { existsSync } from 'fs';
-import fs from 'fs/promises';
 import { PrismaClient } from '@prisma/client';
 
 const fileManagementService = new FileManagementService();
@@ -45,7 +43,7 @@ function isTextFile(fileType: string, extension: string): boolean {
 /**
  * 查询文件信息处理函数
  */
-async function getFileWithPermissionCheck(userId: string | null, fileId: string, shareCode?: string | null, extractCode?: string | null) {
+async function getFileWithPermissionCheck(userId: string | null, fileId: string) {
   if (!userId || !fileId) {
     throw new Error('用户ID或文件ID无效');
   }

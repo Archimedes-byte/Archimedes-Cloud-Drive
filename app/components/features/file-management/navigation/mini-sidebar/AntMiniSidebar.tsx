@@ -38,17 +38,22 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
 
   // 获取用户首字母作为头像显示
   const getAvatarText = useCallback(() => {
-    if (userName && userName.length > 0) {
-      return userName[0].toUpperCase();
+    if (userName && typeof userName === 'string' && userName.trim().length > 0) {
+      return userName.trim()[0].toUpperCase();
     }
-    if (userEmail && userEmail.length > 0) {
-      return userEmail[0].toUpperCase();
+    if (userEmail && typeof userEmail === 'string' && userEmail.trim().length > 0) {
+      return userEmail.trim()[0].toUpperCase();
     }
     return '?';
   }, [userName, userEmail]);
 
   // 计算渐变背景 - 使用主题颜色
   const gradientBackground = `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`;
+
+  // 确保即使在会话丢失时也能正常渲染
+  const safeAvatarUrl = avatarUrl || null;
+  const safeUserName = userName || null;
+  const safeUserEmail = userEmail || null;
 
   return (
     <Sider
@@ -57,16 +62,16 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
       className={styles.miniSidebar}
     >
       <div className={styles.avatarContainer}>
-        <Tooltip title={userName || userEmail || '用户信息'} placement="right">
+        <Tooltip title={safeUserName || safeUserEmail || '用户信息'} placement="right">
           <Button 
             type="text" 
             shape="circle" 
             onClick={onAvatarClick}
             style={{ padding: 0 }}
           >
-            {avatarUrl ? (
+            {safeAvatarUrl ? (
               <Avatar 
-                src={avatarUrl} 
+                src={safeAvatarUrl} 
                 size={38} 
                 className={styles.avatar}
               />
