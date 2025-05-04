@@ -1,3 +1,5 @@
+"use client";
+
 import { ToastProvider } from '@/app/contexts';
 import { ToastContainer } from '@/app/components/features/dashboard/toaster/Toaster';
 

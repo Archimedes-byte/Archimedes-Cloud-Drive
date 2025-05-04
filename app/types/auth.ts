@@ -7,23 +7,13 @@
 // NextAuth会话类型扩展
 import { DefaultSession } from 'next-auth';
 import { AUTH_ERROR_CODE } from '@/app/constants/auth';
-
-// 用户基本信息
-export interface UserBasic {
-  id: string;
-  name?: string | null;
-  email: string;
-  image?: string | null;
-}
+import { UserBasic } from '@/app/types/user';
 
 // 完整用户信息(包含敏感字段)
 export interface UserFull extends UserBasic {
   password?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  profile?: {
-    avatarUrl?: string | null;
-  };
 }
 
 // 登录凭据
@@ -115,7 +105,7 @@ declare module 'next-auth' {
       id: string;
       name?: string | null;
       email?: string | null;
-      image?: string | null;
+      avatarUrl?: string | null;
     }
   }
   

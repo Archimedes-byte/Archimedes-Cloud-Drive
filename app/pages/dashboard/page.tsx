@@ -22,9 +22,11 @@ import { createProfileUpdate } from '@/app/utils/user/profile'
 import Modal from '@/app/components/features/dashboard/modal'
 import ProfileHeader from '@/app/components/features/user-profile/profile-header'
 import ProfileContent from '@/app/components/features/dashboard/profile-content'
-import { UserProfileForm } from '@/app/components/features/user-profile/user-form'
+import ProfileForm from '@/app/components/features/user-profile/ProfileForm'
+import type { ProfileFormRef } from '@/app/components/features/user-profile/ProfileForm'
 import PasswordForm from '@/app/components/features/user-profile/password-form'
 import ProfileCompleteness from '@/app/components/features/user-profile/completeness'
+import { AvatarModal } from '@/app/components/features/user-profile/avatar'
 
 import modalStyles from '@/app/components/features/dashboard/modal/Modal.module.css'
 import styles from './dashboard.module.css' 
@@ -48,11 +50,13 @@ export default function DashboardPage() {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
   const [manualThemeApplied, setManualThemeApplied] = useState(false)
   // const [dashboardTheme, setDashboardTheme] = useState<string | null>(null)
   
   // 使用Ref代替直接DOM操作
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const profileFormRef = useRef<ProfileFormRef>(null)
   
   const { 
     userProfile, 
@@ -129,6 +133,19 @@ export default function DashboardPage() {
     resetPasswordState()
     setIsPasswordModalOpen(true)
   }
+
+  // 添加密码字段变更适配器，解决类型不匹配问题
+  const handlePasswordFieldChange = (field: 'password' | 'confirmPassword', value: string) => {
+    // 创建一个模拟的事件对象来适配usePassword的handlePasswordChange函数
+    const mockEvent = {
+      target: {
+        name: field,
+        value: value
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    handlePasswordChange(mockEvent);
+  };
 
   // 主题初始化与应用
   useEffect(() => {
@@ -219,12 +236,13 @@ export default function DashboardPage() {
 
   // 处理头像上传点击 - 使用ref代替直接DOM操作
   const handleAvatarClick = () => {
-    // 如果ref绑定了头像上传input，则直接触发点击
-    if (avatarInputRef.current) {
-      avatarInputRef.current.click();
-    } else {
-      toast.error('无法访问头像上传控件');
-    }
+    // 修改为打开头像管理模态框，而不是直接触发文件选择
+    // 让用户可以选择上传或删除头像
+    setShowAvatarModal(true);
+  };
+
+  const handleCloseAvatarModal = () => {
+    setShowAvatarModal(false);
   };
 
   // 设置密码弹窗底部按钮
@@ -242,6 +260,34 @@ export default function DashboardPage() {
         disabled={passwordLoading}
       >
         保存密码
+      </button>
+    </div>
+  );
+
+  // 编辑个人信息弹窗底部按钮
+  const renderProfileFooter = () => (
+    <div className={modalStyles.modalFooter}>
+      <button
+        onClick={() => {
+          if (profileFormRef.current) {
+            profileFormRef.current.handleCancel();
+          }
+          setIsEditModalOpen(false);
+        }}
+        className={modalStyles.cancelButton || styles.cancelButton}
+      >
+        取消
+      </button>
+      <button
+        onClick={() => {
+          if (profileFormRef.current) {
+            profileFormRef.current.handleSave();
+          }
+        }}
+        className={modalStyles.saveButton || styles.saveButton}
+        disabled={profileLoading}
+      >
+        保存信息
       </button>
     </div>
   );
@@ -346,6 +392,15 @@ export default function DashboardPage() {
           onEditClick={() => setIsEditModalOpen(true)}
           onAvatarClick={handleAvatarClick}
         />
+
+        {/* 头像管理模态框 - 单独添加用于"完善以下信息"中的头像管理 */}
+        <AvatarModal 
+          isOpen={showAvatarModal}
+          onClose={handleCloseAvatarModal}
+          currentAvatarUrl={userProfile.avatarUrl || session.user?.avatarUrl || null}
+          userDisplayName={userProfile.name || session.user?.name || ''}
+          onAvatarChange={handleAvatarChange}
+        />
         
         {/* 个人资料内容 */}
         <ProfileContent 
@@ -356,41 +411,54 @@ export default function DashboardPage() {
       </div>
 
       {/* 编辑个人信息弹窗 */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="编辑个人信息"
-      >
-        <UserProfileForm 
-          userProfile={userProfile}
-          onUpdate={updateUserProfile}
-          onComplete={() => {
-            setIsEditModalOpen(false)
-            toast.success('个人信息已更新')
-          }}
-          onCancel={() => setIsEditModalOpen(false)}
-        />
-      </Modal>
+      <div className={styles.profileModalStyles}>
+        {isEditModalOpen && (
+          <Modal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            title="编辑个人信息"
+            footer={renderProfileFooter()}
+            className="profile-modal"
+          >
+            <ProfileForm 
+              ref={profileFormRef}
+              userProfile={userProfile}
+              onUpdate={updateUserProfile}
+              onComplete={() => {
+                setIsEditModalOpen(false)
+                toast.success('个人信息已更新')
+              }}
+              onCancel={() => setIsEditModalOpen(false)}
+              className={styles.profileForm}
+            />
+          </Modal>
+        )}
+      </div>
 
       {/* 设置密码弹窗 */}
-      <Modal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
-        title="设置密码"
-        footer={renderPasswordFooter()}
-      >
-        <PasswordForm
-          passwordInfo={passwordInfo}
-          passwordError={passwordError}
-          passwordSuccess={passwordSuccess}
-          showPassword={showPassword}
-          showConfirmPassword={showConfirmPassword}
-          setShowPassword={setShowPassword}
-          setShowConfirmPassword={setShowConfirmPassword}
-          handlePasswordChange={handlePasswordChange}
-          userEmail={session.user.email}
-        />
-      </Modal>
+      <div className={styles.profileModalStyles}>
+        {isPasswordModalOpen && (
+          <Modal
+            isOpen={isPasswordModalOpen}
+            onClose={() => setIsPasswordModalOpen(false)}
+            title="设置密码"
+            footer={renderPasswordFooter()}
+            className="password-modal"
+          >
+            <PasswordForm
+              passwordInfo={passwordInfo}
+              passwordError={passwordError}
+              passwordSuccess={passwordSuccess}
+              showPassword={showPassword}
+              showConfirmPassword={showConfirmPassword}
+              setShowPassword={setShowPassword}
+              setShowConfirmPassword={setShowConfirmPassword}
+              handlePasswordChange={handlePasswordFieldChange}
+              userEmail={session.user.email}
+            />
+          </Modal>
+        )}
+      </div>
     </div>
   )
 } 

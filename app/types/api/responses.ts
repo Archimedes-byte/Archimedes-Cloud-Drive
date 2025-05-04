@@ -1,6 +1,7 @@
 import { FileWithUIState, FileTypeEnum } from '../domains/fileTypes';
 import { ApiResponse } from '../core/api';
 import { PaginatedResponse as CorePaginatedResponse } from '../core/common';
+import { UserBasic } from '../user';
 
 export interface FileListResponse extends ApiResponse {
   data: FileWithUIState[];
@@ -39,17 +40,9 @@ export interface FileTypeStats {
 //   };
 // }
 
-export interface UserInfo {
-  id: string;
-  name: string | null;
-  email: string;
-  avatar?: string | null;
-  accountType?: 'free' | 'premium' | 'enterprise';
-}
-
 export interface AuthResponse extends ApiResponse {
   data: {
-    user: UserInfo;
+    user: UserBasic;
     token?: string;
     refreshToken?: string;
     expiresIn?: number;

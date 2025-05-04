@@ -14,10 +14,10 @@ import { emailSchema, passwordSchema } from '@/app/lib/validation/schemas';
 import { 
   findUserByEmail,
   createUser,
-  toUserBasic,
   getUserBasicById
 } from './user-service';
-import { UserBasic } from '@/app/types/auth';
+import { UserBasic } from '@/app/types/user';
+import { toUserBasic } from '@/app/utils/user/transform';
 
 /**
  * 哈希密码

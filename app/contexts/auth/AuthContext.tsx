@@ -12,6 +12,8 @@ import { message } from '@/app/components/ui/ant';
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import authService from '@/app/services/auth-service';
 import { LoginCredentials, RegisterData } from '@/app/types/auth';
+// 导入登录模态框组件
+import { LoginModal } from '@/app/components/features/auth';
 
 // 错误等级
 export enum ErrorSeverity {
@@ -151,6 +153,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }));
     }
   };
+  
+  // 监听自定义事件
+  useEffect(() => {
+    const handleLoginModalEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.open === 'boolean') {
+        setLoginModalOpen(customEvent.detail.open);
+      } else {
+        // 如果没有详细信息，则切换状态
+        setLoginModalOpen(prev => !prev);
+      }
+    };
+
+    // 添加事件监听器
+    window.addEventListener(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL, handleLoginModalEvent);
+
+    // 清理函数
+    return () => {
+      window.removeEventListener(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL, handleLoginModalEvent);
+    };
+  }, []);
   
   // 登录方法
   const login = async (
@@ -292,6 +315,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
+      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
     </AuthContext.Provider>
   );
 }

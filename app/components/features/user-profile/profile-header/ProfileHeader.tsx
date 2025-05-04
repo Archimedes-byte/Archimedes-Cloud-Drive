@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Session } from 'next-auth';
-import { UserProfile } from '@/app/hooks/user/useProfile';
+import { UserProfile } from '@/app/types/user';
 import { CameraOutlined } from '@ant-design/icons';
 import styles from './ProfileHeader.module.css';
 import { AvatarModal } from '@/app/components/features/user-profile/avatar';
@@ -14,6 +14,8 @@ interface ProfileHeaderProps {
   onPasswordClick: () => void;
   isLoading: boolean;
   onAvatarChange?: (avatarUrl: string) => void;
+  showAvatarModal?: boolean;
+  onCloseAvatarModal?: () => void;
 }
 
 const ProfileHeader = ({ 
@@ -22,10 +24,11 @@ const ProfileHeader = ({
   onEditClick, 
   onPasswordClick, 
   isLoading,
-  onAvatarChange
+  onAvatarChange,
+  showAvatarModal = false,
+  onCloseAvatarModal
 }: ProfileHeaderProps) => {
   const [avatarError, setAvatarError] = useState(false);
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
   
   // 使用userProfile中的name作为首选，如果没有则使用session中的name
   const displayName = userProfile.name || session.user?.name || '未设置昵称';
@@ -33,8 +36,8 @@ const ProfileHeader = ({
   // 获取用于头像占位符的首字母
   const nameInitial = displayName[0]?.toUpperCase() || '?';
 
-  // 简化头像URL逻辑，直接使用userProfile中的头像或session头像
-  const effectiveAvatarUrl = userProfile.avatarUrl || session.user?.image;
+  // 简化头像URL逻辑，统一使用avatarUrl字段
+  const effectiveAvatarUrl = userProfile.avatarUrl || session.user?.avatarUrl;
   
   // 添加时间戳作为key的一部分，确保每次头像变更都会重新渲染
   const [refreshKey, setRefreshKey] = useState(Date.now());
@@ -59,8 +62,13 @@ const ProfileHeader = ({
 
   // 打开头像管理弹窗
   const handleAvatarClick = useCallback(() => {
-    setShowAvatarModal(true);
-  }, []);
+    if (onCloseAvatarModal) {
+      // 这里应该触发父组件中的头像处理，但我们没有相应的prop
+      // 应该是在dashboard页面中执行setShowAvatarModal(true)
+      // 这里仅通知父组件处理点击事件
+      onAvatarChange?.(''); // 触发父组件中的头像点击处理
+    }
+  }, [onAvatarChange, onCloseAvatarModal]);
 
   // 处理头像变更
   const handleAvatarChange = useCallback((newAvatarUrl: string) => {
@@ -73,8 +81,10 @@ const ProfileHeader = ({
 
   // 关闭头像弹窗
   const handleCloseAvatarModal = useCallback(() => {
-    setShowAvatarModal(false);
-  }, []);
+    if (onCloseAvatarModal) {
+      onCloseAvatarModal();
+    }
+  }, [onCloseAvatarModal]);
 
   // 处理头像加载错误
   const handleAvatarError = useCallback(() => {

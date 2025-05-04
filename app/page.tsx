@@ -5,11 +5,11 @@ import { AppLayout } from '@/app/components/shared/layouts';
 import Hero from '@/app/components/features/home/hero';
 import Features from '@/app/components/features/home/features';
 import CTA from '@/app/components/features/home/cta';
-import { useLoginModal } from '@/app/contexts/LoginModalContext';
+import { useAuth } from '@/app/contexts/auth';
 
 export default function HomePage() {
   const featuresRef = useRef<HTMLDivElement>(null);
-  const { openLoginModal } = useLoginModal();
+  const { openLoginModal } = useAuth();
 
   const scrollToFeatures = () => {
     featuresRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -41,6 +41,16 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
     }
   }, [isOpen]);
 
+  // 处理点击关闭弹窗的背景区域
+  const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      // 如果正在上传或者在裁剪状态，不允许通过点击背景关闭
+      if (!uploading && !isEditing) {
+        onClose();
+      }
+    }
+  }, [onClose, uploading, isEditing]);
+
   // 打开文件选择器
   const openFileSelector = () => {
     fileInputRef.current?.click();
@@ -190,16 +200,6 @@ const AvatarModal: React.FC<AvatarModalProps> = ({
 
   // 如果弹窗未打开，不渲染内容
   if (!isOpen) return null;
-
-  // 处理点击关闭弹窗的背景区域
-  const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      // 如果正在上传或者在裁剪状态，不允许通过点击背景关闭
-      if (!uploading && !isEditing) {
-        onClose();
-      }
-    }
-  }, [onClose, uploading, isEditing]);
 
   return (
     <div className={styles.modalOverlay} onClick={handleOverlayClick}>

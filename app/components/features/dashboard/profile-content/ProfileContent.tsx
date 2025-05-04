@@ -1,6 +1,8 @@
+"use client"
+
 import React from 'react';
 import { Session } from 'next-auth';
-import { UserProfile } from '@/app/hooks/user/useProfile';
+import { UserProfile } from '@/app/types/user';
 import styles from './ProfileContent.module.css';
 import { Card, Typography, Spin, Divider } from '@/app/components/ui/ant';
 import { Descriptions } from 'antd';

@@ -28,6 +28,7 @@ export {
   DatePicker,
   TimePicker,
   InputNumber,
+  Cascader,
   
   // 数据展示
   Table,

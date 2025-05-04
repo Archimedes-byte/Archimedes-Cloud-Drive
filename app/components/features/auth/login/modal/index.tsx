@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Modal from '@/app/components/features/dashboard/modal';
-import { LoginForm } from '@/app/components/features/auth';
+import LoginForm from '@/app/components/features/auth/login/login-form';
 import styles from './modal.module.css';
 
 interface LoginModalProps {

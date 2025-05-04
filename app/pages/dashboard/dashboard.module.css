@@ -10,7 +10,7 @@
 }
 
 /* 优化主题背景应用 */
-:global(.theme-background-applied) .container {
+.container :global(.theme-background-applied) {
   /* 确保自定义主题的背景能够正确应用 */
   background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%));
   transition: background 0.3s ease;
@@ -184,4 +184,56 @@
   .profile {
     padding: 1rem;
   }
+}
+
+/* 个人信息表单样式 */
+.profileForm {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem 0;
+}
+
+/* 美化模态框样式 */
+.profileModalStyles :global(.profile-modal .ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+}
+
+.profileModalStyles :global(.profile-modal .ant-modal-header) {
+  border-bottom-color: rgba(59, 130, 246, 0.1);
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%);
+}
+
+.profileModalStyles :global(.profile-modal .ant-modal-body) {
+  padding: 1.5rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(240, 247, 255, 0.3) 100%);
+}
+
+.profileModalStyles :global(.profile-modal .ant-modal-footer) {
+  border-top-color: rgba(59, 130, 246, 0.1);
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%);
+}
+
+.profileModalStyles :global(.profile-modal .ant-btn-primary) {
+  background: linear-gradient(to right, #3b82f6, #3b98f5);
+  border: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.profileModalStyles :global(.profile-modal .ant-btn-primary:hover) {
+  background: linear-gradient(to right, #2563eb, #3386f3);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.profileModalStyles :global(.profile-modal .ant-btn-default) {
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.profileModalStyles :global(.profile-modal .ant-btn-default:hover) {
+  border-color: #3b82f6;
+  color: #2563eb;
 } 

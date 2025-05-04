@@ -1,8 +1,14 @@
-// 导出user-profile目录下的所有组件
-export * from './avatar';
+/**
+ * 用户资料组件导出
+ */
+export { default as ProfileForm } from './ProfileForm';
+export * from './PersonalInfoForm';
+export * from './ContactInfoForm';
 export * from './profile-header';
-// export * from './profile-content'; // 此目录当前为空
-export * from './completeness';
+export * from './avatar';
 export * from './password-form';
-export * from './edit-form';
-export * from './user-form'; 
+export * from './completeness';
+
+// 导出类型定义
+import type { ProfileFormRef } from './ProfileForm';
+export type { ProfileFormRef }; 

@@ -8,11 +8,11 @@ import { HomeOutlined } from '@ant-design/icons';
 import { RegisterForm } from '@/app/components/features/auth/register';
 import registerStyles from '@/app/styles/auth/register/register-page.module.css';
 import styles from '@/app/styles/auth/shared.module.css';
-import { useLoginModal } from '@/app/contexts/LoginModalContext';
+import { useAuth } from '@/app/contexts/auth';
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
-  const { openLoginModal } = useLoginModal();
+  const { openLoginModal } = useAuth();
   
   // 定义返回首页按钮作为额外按钮
   const homeButton = (

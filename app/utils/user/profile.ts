@@ -3,7 +3,7 @@
  * 
  * 提供处理用户资料数据结构转换的标准化函数
  */
-import { UserProfile, UserProfileInput } from '@/app/hooks/user/useProfile';
+import { UserProfile, UserProfileInput } from '@/app/types/user';
 
 /**
  * 将UserProfile对象转换为UserProfileInput对象
@@ -56,24 +56,19 @@ export function createProfileUpdate(
 }
 
 /**
- * 字段映射配置
- * 定义了UserProfile和UserProfileInput字段之间的映射关系
+ * 验证规则接口
  */
-export const profileFieldMapping = {
-  name: 'name',
-  avatarUrl: 'avatarUrl',
-  bio: 'bio',
-  location: 'location',
-  website: 'website',
-  company: 'company',
-  theme: 'theme'
-};
+export interface ProfileValidationRule {
+  required: boolean;
+  maxLength: number;
+  isUrl?: boolean;
+}
 
 /**
  * 验证规则配置
  * 每个字段的验证配置
  */
-export const profileValidationRules = {
+export const profileValidationRules: Record<string, ProfileValidationRule> = {
   name: { required: true, maxLength: 50 },
   bio: { required: false, maxLength: 500 },
   location: { required: false, maxLength: 100 },

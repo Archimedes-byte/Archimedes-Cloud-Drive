@@ -4,9 +4,10 @@
  * 提供统一的用户管理功能，包括用户查询、创建、更新等
  */
 import { prisma } from '@/app/lib/database';
-import { UserBasic } from '@/app/types/auth';
+import { UserBasic } from '@/app/types/user';
 import { AUTH_ERROR_CODE } from '@/app/constants/auth';
 import { createAuthError } from '@/app/lib/error/auth-error';
+import { toUserBasic } from '@/app/utils/user/transform';
 
 // 通过邮箱查找用户
 export async function findUserByEmail(email: string) {
@@ -89,16 +90,6 @@ export async function updateUserAvatar(userId: string, avatarUrl: string) {
       profile: true
     }
   });
-}
-
-// 转换为基本用户信息
-export function toUserBasic(user: any): UserBasic {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    image: user.profile?.avatarUrl || null
-  };
 }
 
 // 根据ID获取基本用户信息

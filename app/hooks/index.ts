@@ -13,8 +13,7 @@ export * from './core/useModalState';
 // 用户相关hooks
 export * from './user/useProfile';
 export * from './user/usePassword';
-export * from './user/useValidation';
-export * from './user/useUserForm';
+export * from './user/useProfileForm';
 
 // 文件相关hooks
 export * from './file/useFiles';
