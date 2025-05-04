@@ -47,9 +47,9 @@ export function useAuthForm<T extends Record<string, any>>(
   }, []);
   
   // 尝试从安全存储获取保存的表单数据
-  const getSavedFormData = (): AuthFormData => {
+  const getSavedFormData = async (): Promise<AuthFormData> => {
     try {
-      const savedDataStr = getSecureItem(STORAGE_CONFIG.KEYS.AUTH_FORM_DATA);
+      const savedDataStr = await getSecureItem(STORAGE_CONFIG.KEYS.AUTH_FORM_DATA);
       if (!savedDataStr) return {};
       
       return JSON.parse(savedDataStr) as AuthFormData;
@@ -60,8 +60,8 @@ export function useAuthForm<T extends Record<string, any>>(
   };
   
   // 合并保存的数据和初始数据
-  const getMergedValues = (): T => {
-    const savedData = getSavedFormData();
+  const getMergedValues = async (): Promise<T> => {
+    const savedData = await getSavedFormData();
     
     // 如果没有保存的数据，直接返回初始值
     if (!Object.keys(savedData).length) {
@@ -83,13 +83,24 @@ export function useAuthForm<T extends Record<string, any>>(
   };
 
   // 状态管理
-  const [values, setValues] = useState<T>(getMergedValues());
+  const [values, setValues] = useState<T>(initialValues);
+  
+  // 从存储中加载数据
+  useEffect(() => {
+    const loadSavedData = async () => {
+      const mergedValues = await getMergedValues();
+      setValues(mergedValues);
+    };
+    
+    loadSavedData();
+  }, []);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 保存表单数据到安全存储 (只保存姓名和邮箱)
-  const saveFormData = (formData: T) => {
+  const saveFormData = async (formData: T) => {
     try {
       const dataToSave: AuthFormData = {};
       
@@ -104,7 +115,7 @@ export function useAuthForm<T extends Record<string, any>>(
       // 只在有数据时保存
       if (Object.keys(dataToSave).length > 0) {
         // 使用安全存储工具保存数据，设置24小时过期
-        setSecureItem(
+        await setSecureItem(
           STORAGE_CONFIG.KEYS.AUTH_FORM_DATA, 
           JSON.stringify(dataToSave),
           STORAGE_CONFIG.EXPIRATION.MEDIUM
@@ -124,6 +135,7 @@ export function useAuthForm<T extends Record<string, any>>(
       
       // 仅保存姓名和邮箱字段
       if (name === 'name' || name === 'email') {
+        // 异步调用不会阻塞UI更新
         saveFormData(newValues);
       }
       
@@ -158,14 +170,14 @@ export function useAuthForm<T extends Record<string, any>>(
   };
 
   // 重置表单状态
-  const resetForm = () => {
+  const resetForm = async () => {
     setValues(initialValues);
     setErrors({});
     setTouched({});
     setIsSubmitting(false);
     
     // 清除存储的表单数据
-    removeSecureItem(STORAGE_CONFIG.KEYS.AUTH_FORM_DATA);
+    await removeSecureItem(STORAGE_CONFIG.KEYS.AUTH_FORM_DATA);
   };
   
   // 设置字段值
@@ -175,6 +187,7 @@ export function useAuthForm<T extends Record<string, any>>(
       
       // 如果是姓名或邮箱字段，保存到安全存储
       if (name === 'name' || name === 'email') {
+        // 异步调用不会阻塞UI更新
         saveFormData(newValues);
       }
       
