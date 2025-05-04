@@ -157,8 +157,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
           console.log('文件类型支持预览，正在获取预览URL');
           
           // 检查当前是否在分享页面，读取URL参数中的分享码和提取码
-          const isSharePage = window.location.pathname.startsWith('/pages/share/');
-          const shareCodeFromPath = isSharePage ? window.location.pathname.split('/')[3] : '';
+          const isSharePage = window.location.pathname.startsWith('/share/');
+          const shareCodeFromPath = isSharePage ? window.location.pathname.split('/')[2] : '';
           const extractCodeFromParams = searchParams.get('code') || '';
           
           // 构建请求URL，添加分享参数

@@ -751,10 +751,10 @@ export default function FileManagementPage() {
             onHomeClick={() => {
               // 先关闭主题面板，再跳转
               setShowThemePanel(false);
-              router.push('/pages/file');
+              router.push('/file');
             }}
             onLogoutClick={handleSignOut}
-            onAvatarClick={() => router.push('/pages/dashboard')}
+            onAvatarClick={() => router.push('/dashboard')}
           >
             <ContentArea 
               // 视图状态

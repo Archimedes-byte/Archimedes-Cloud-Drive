@@ -2,7 +2,7 @@
  * 文件分享页面
  * 
  * 这个页面处理文件分享功能，通过动态路由[code]捕获分享链接中的唯一码。
- * 目录结构 /pages/share/[code] 对应于分享链接格式：${baseUrl}/pages/share/${shareCode}
+ * 目录结构 /share/[code] 对应于分享链接格式：${baseUrl}/share/${shareCode}
  * 使用完整的'share'作为目录名，提高可读性和可维护性。
  */
 

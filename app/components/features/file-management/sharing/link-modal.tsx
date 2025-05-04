@@ -48,7 +48,7 @@ export const LinkInputModal: React.FC<LinkInputModalProps> = ({
           ref={linkInputRef}
           value={shareLink}
           onChange={(e) => onShareLinkChange(e.target.value)}
-          placeholder="输入分享链接，例如: https://example.com/pages/share/abcdef"
+          placeholder="输入分享链接，例如: https://example.com/share/abcdef"
           onPressEnter={onSubmit}
         />
       </div>

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // 从分享链接中提取分享码
     let shareCode = '';
     try {
-      // 尝试从URL中提取分享码，格式可能是 https://example.com/pages/share/{shareCode} 或其他格式
+      // 尝试从URL中提取分享码，格式可能是 https://example.com/share/{shareCode} 或其他格式
       const url = new URL(shareLink);
       const pathSegments = url.pathname.split('/');
       shareCode = pathSegments[pathSegments.length - 1];

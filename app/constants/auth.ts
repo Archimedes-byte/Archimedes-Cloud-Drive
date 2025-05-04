@@ -11,10 +11,10 @@ export const AUTH_CONSTANTS = {
   // 路由配置
   ROUTES: {
     LOGIN: '/auth/login',
-    REGISTER: '/pages/auth/register',
+    REGISTER: '/auth/register',
     LOGOUT: '/auth/logout',
     ERROR: '/auth/error',
-    DEFAULT_SUCCESS: '/pages/file',
+    DEFAULT_SUCCESS: '/file',
     PROFILE: '/account/profile',
   },
   

@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       
       // 构建分享链接
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.headers.get('origin') || '';
-      const shareLink = `${baseUrl}/pages/share/${shareCode}`;
+      const shareLink = `${baseUrl}/share/${shareCode}`;
       
       // 如果设置了自动填充提取码，则直接附加到链接
       const shareLinkWithCode = autoRefreshCode ? `${shareLink}?code=${finalExtractCode}` : shareLink;
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
         id: share.id,
         fileId: firstFile?.id || '',
         fileName: firstFile?.name || '未知文件',
-        shareLink: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/pages/share/${share.shareCode}`,
+        shareLink: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/share/${share.shareCode}`,
         extractCode: share.extractCode,
         expiryDays: share.expiresAt 
           ? Math.ceil((new Date(share.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000)) 

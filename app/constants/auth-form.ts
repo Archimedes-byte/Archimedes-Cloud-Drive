@@ -16,7 +16,7 @@ export const LOGIN_FORM_DEFAULTS: {
     email: '', 
     password: '' 
   },
-  redirectUrl: '/pages/file'
+  redirectUrl: '/file'
 };
 
 /**

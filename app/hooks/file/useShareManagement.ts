@@ -302,7 +302,7 @@ export function useShareManagement(): ShareManagementHook {
       
       // 验证成功，关闭对话框并导航到分享页面
       closeLinkInputModal();
-      router.push(`/pages/share/${shareCode}?code=${encodeURIComponent(shareLinkPassword)}`);
+      router.push(`/share/${shareCode}?code=${encodeURIComponent(shareLinkPassword)}`);
       return true;
     } catch (error) {
       handleError(error, true, 'error', '处理分享链接失败，请重试');
