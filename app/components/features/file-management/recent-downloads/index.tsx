@@ -54,7 +54,11 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
       
       {isLoading && (
         <div className={styles.loadingContainer}>
-          <Spin size="large" tip="加载最近下载文件..." />
+          <Spin size="large">
+            <div style={{ padding: '30px', textAlign: 'center' }}>
+              加载最近下载文件...
+            </div>
+          </Spin>
         </div>
       )}
       

@@ -318,7 +318,11 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
         <div className={styles.folderListContainer}>
           {loading ? (
             <div className={styles.loadingContainer}>
-              <Spin tip="加载中..." size="large" />
+              <Spin size="large">
+                <div style={{ padding: '50px', textAlign: 'center' }}>
+                  加载中...
+                </div>
+              </Spin>
             </div>
           ) : error ? (
             <div className={styles.errorContainer}>

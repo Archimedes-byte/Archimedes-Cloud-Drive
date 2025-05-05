@@ -8,10 +8,9 @@ import {
   createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { FileStatsService } from '@/app/services/storage';
 import { FileInfo } from '@/app/types';
-
-const statsService = new FileStatsService();
+import { prisma } from '@/app/lib/database';
+import { mapFileEntityToFileInfo } from '@/app/services/storage/file-upload-service';
 
 // 定义API响应类型
 interface RecentFilesResponse {
@@ -32,13 +31,26 @@ export const GET = withAuth<RecentFilesResponse>(async (req: AuthenticatedReques
     
     console.log(`[API:recent] 获取最近访问文件, 用户ID: ${req.user.id}, 限制: ${safeLimit}`);
     
-    // 获取最近文件
-    const recentFiles = await statsService.getRecentFiles(req.user.id, safeLimit);
+    // 直接使用Prisma获取最近文件
+    const recentFiles = await prisma.file.findMany({
+      where: {
+        uploaderId: req.user.id,
+        isDeleted: false,
+        isFolder: false, // 只包含文件，不包含文件夹
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      take: safeLimit,
+    });
     
-    console.log(`[API:recent] 找到 ${recentFiles.length} 个最近访问文件`);
+    // 转换为FileInfo对象
+    const fileInfoList = recentFiles.map(mapFileEntityToFileInfo);
     
-    // 修改：使用files字段包装数据，与前端期望的格式保持一致
-    return createApiResponse({ files: recentFiles });
+    console.log(`[API:recent] 找到 ${fileInfoList.length} 个最近访问文件`);
+    
+    // 返回数据
+    return createApiResponse({ files: fileInfoList });
   } catch (error: any) {
     console.error('[API:recent] 获取最近文件失败:', error);
     return createApiErrorResponse(error.message || '获取最近文件失败', 500);

@@ -43,7 +43,11 @@ const ProfileContent = ({ session, userProfile, isLoading }: ProfileContentProps
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
-        <Spin tip="数据加载中..." />
+        <Spin>
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            数据加载中...
+          </div>
+        </Spin>
       </div>
     );
   }

@@ -81,19 +81,25 @@ export class FileStatsService {
    */
   async getRecentFiles(userId: string, limit = 10): Promise<FileInfo[]> {
     try {
-      const recentFiles = await prisma.file.findMany({
-        where: {
-          uploaderId: userId,
-          isDeleted: false,
-          isFolder: false, // 只包含文件，不包含文件夹
+      // 使用请求参数构建查询
+      const searchParams = `?limit=${limit}`;
+      
+      // 使用fetch调用API接口获取最近文件
+      const response = await fetch(`${API_PATHS.STORAGE.RECENT}${searchParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-        take: limit,
+        // 添加缓存控制
+        cache: 'no-store'
       });
-
-      return recentFiles.map(mapFileEntityToFileInfo);
+      
+      if (!response.ok) {
+        throw new Error(`获取最近文件失败: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.files || [];
     } catch (error) {
       console.error('获取最近文件失败:', error);
       throw createFileError('access', '获取最近文件失败');
@@ -325,15 +331,30 @@ export class FileStatsService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        cache: 'no-store'
       });
       
       if (!response.ok) {
         throw new Error(`获取最近下载失败: ${response.status}`);
       }
       
-      const data = await response.json();
-      return data.items || [];
+      const result = await response.json();
+      console.log('[文件统计] 获取最近下载文件响应:', result);
+      
+      // 处理不同的返回格式
+      if (result && typeof result === 'object') {
+        if (Array.isArray(result)) {
+          return result;
+        } else if (result.files && Array.isArray(result.files)) {
+          return result.files;
+        } else if (result.items && Array.isArray(result.items)) {
+          return result.items;
+        }
+      }
+      
+      // 默认返回空数组
+      return [];
     } catch (error) {
       console.error('[文件统计] 获取最近下载失败:', error);
       throw createFileError('access', '获取最近下载失败');
