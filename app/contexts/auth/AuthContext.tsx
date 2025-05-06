@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { message } from '@/app/components/ui/ant';
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import authService from '@/app/services/auth-service';
-import { LoginCredentials, RegisterData } from '@/app/types/auth';
+import { LoginCredentials, RegisterData } from '@/app/types';
 // 导入登录模态框组件
 import { LoginModal } from '@/app/components/features/auth';
 

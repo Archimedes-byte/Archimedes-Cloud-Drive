@@ -4,7 +4,7 @@
  * 提供统一的用户管理功能，包括用户查询、创建、更新等
  */
 import { prisma } from '@/app/lib/database';
-import { UserBasic } from '@/app/types/user';
+import { UserBasic } from '@/app/types';
 import { AUTH_ERROR_CODE } from '@/app/constants/auth';
 import { createAuthError } from '@/app/lib/error/auth-error';
 import { toUserBasic } from '@/app/utils/user/transform';

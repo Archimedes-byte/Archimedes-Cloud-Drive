@@ -3,7 +3,7 @@
  * 
  * 提供处理用户资料数据结构转换的标准化函数
  */
-import { UserProfile, UserProfileInput } from '@/app/types/user';
+import { UserProfile, UserProfileInput } from '@/app/types';
 
 /**
  * 将UserProfile对象转换为UserProfileInput对象

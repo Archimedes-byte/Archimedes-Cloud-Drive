@@ -17,7 +17,6 @@ export {
   findUserById,
   createUser,
   updateUserAvatar,
-  toUserBasic,
   getUserBasicById
 } from './user-service';
 
@@ -32,5 +31,15 @@ export { authOptions } from './auth';
 // - 错误处理: @/app/utils/error
 // - 验证工具: @/app/utils/validation
 
-// 导出类型定义
-export * from '@/app/types/auth'; 
+// 导出类型定义 - 使用export type确保与isolatedModules兼容
+export type { 
+  LoginCredentials,
+  RegisterData,
+  AuthError,
+  UserFull,
+  AuthJWT,
+  PasswordValidationResult,
+  EmailValidationResult,
+  CredentialsValidationResult,
+  PasswordRequirements
+} from '@/app/types'; 

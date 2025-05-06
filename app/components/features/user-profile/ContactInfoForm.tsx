@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { EnvironmentOutlined, GlobalOutlined, BankOutlined } from '@ant-design/icons';
 import { Input, Cascader } from '@/app/components/ui/ant';
-import { UserProfile } from '@/app/types/user';
+import { UserProfile } from '@/app/types';
 import { handleFocusWithSelect } from '@/app/utils/form/field-handlers';
 import { chinaProvinces } from '@/app/constants/china-regions';
 import styles from './ProfileForm.module.css';

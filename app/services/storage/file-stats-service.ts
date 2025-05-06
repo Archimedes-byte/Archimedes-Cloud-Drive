@@ -257,67 +257,67 @@ export class FileStatsService {
   }
 
   /**
-   * 记录文件下载历史
+   * 记录文件访问
    * @param userId 用户ID
    * @param fileId 文件ID
    * @returns 操作是否成功
    */
-  async recordFileDownload(userId: string, fileId: string): Promise<boolean> {
+  async recordFileAccess(userId: string, fileId: string): Promise<boolean> {
     try {
-      console.log(`[文件统计] 记录文件下载历史: ${fileId}`);
+      console.log(`[文件统计] 记录文件访问历史: ${fileId}`);
       
-      // 检查文件是否存在且属于用户
+      // 检查文件是否存在
       const file = await prisma.file.findFirst({
         where: {
           id: fileId,
-          uploaderId: userId,
           isDeleted: false
         }
       });
       
       if (!file) {
-        console.warn(`[文件统计] 无法记录下载历史: 找不到文件 ${fileId}`);
+        console.warn(`[文件统计] 无法记录访问历史: 找不到文件 ${fileId}`);
         return false;
       }
       
-      // 使用现有的API接口记录下载
+      // 使用API接口记录访问
       try {
-        const response = await fetch(API_PATHS.STORAGE.DOWNLOADS.RECORD, {
+        const response = await fetch(API_PATHS.STORAGE.RECORD_ACCESS, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ 
-            fileId, 
+            fileId,
             userId 
           }),
         });
         
         if (!response.ok) {
-          throw new Error(`记录下载失败: ${response.status}`);
+          throw new Error(`记录访问失败: ${response.status}`);
         }
-      } catch (err) {
-        console.error('[文件统计] 通过API记录下载历史失败:', err);
-        // 接口调用失败，尝试使用更新文件时间的备用方案
         
-        // 更新文件的访问时间
-        await prisma.file.update({
-          where: { id: fileId },
-          data: { 
-            updatedAt: new Date()
+        const result = await response.json();
+        return result.success === true;
+      } catch (apiError) {
+        console.error('[文件统计] 通过API记录访问历史失败:', apiError);
+        // 接口调用失败，尝试直接使用Prisma记录
+        await prisma.fileAccess.create({
+          data: {
+            userId,
+            fileId,
+            accessedAt: new Date()
           }
         });
+        
+        return true;
       }
-      
-      console.log(`[文件统计] 文件下载记录已保存: ${fileId}`);
-      return true;
     } catch (error) {
-      console.error('[文件统计] 记录下载历史失败:', error);
+      console.error('[文件统计] 记录访问历史失败:', error);
       // 这个操作失败不应该影响用户体验
       return false;
     }
   }
-  
+
   /**
    * 获取最近下载的文件
    * @param userId 用户ID

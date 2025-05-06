@@ -3,7 +3,7 @@
  * 
  * 提供统一的用户数据转换函数，避免重复代码
  */
-import { UserBasic, UserProfile } from '@/app/types/user';
+import { UserBasic, UserProfile } from '@/app/types';
 
 /**
  * 将原始用户数据转换为基本用户信息

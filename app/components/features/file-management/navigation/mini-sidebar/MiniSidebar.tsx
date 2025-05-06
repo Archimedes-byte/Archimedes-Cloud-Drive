@@ -1,8 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Home, LogOut, Palette, Users } from 'lucide-react';
 import { Button, Avatar, Flex, Tooltip } from 'antd';
+import { useRouter } from 'next/navigation';
 import styles from './mini-sidebar.module.css';
 import { useTheme } from '@/app/theme';
+import { useProfile } from '@/app/hooks/user/useProfile';
 
 interface MiniSidebarProps {
   avatarUrl: string | null;
@@ -25,13 +27,30 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
   currentTheme = 'default',
   onThemeClick
 }) => {
+  const router = useRouter();
+  const [isClicked, setIsClicked] = useState(false);
   // 使用主题钩子
   const { themeStyle } = useTheme();
+  // 使用profile钩子
+  const { backgroundRefreshProfile } = useProfile();
 
-  // 优化回调函数，避免不必要的重新创建
+  // 优化头像点击函数，立即跳转而不等待数据加载
   const handleAvatarClick = useCallback(() => {
-    onAvatarClick();
-  }, [onAvatarClick]);
+    // 防止重复点击
+    if (isClicked) return;
+    
+    setIsClicked(true);
+    
+    // 立即执行路由跳转到dashboard页面
+    router.push('/dashboard');
+    
+    // 不阻塞UI的情况下在后台刷新资料
+    requestAnimationFrame(() => {
+      // 使用不阻塞UI的数据刷新方法
+      backgroundRefreshProfile();
+      setIsClicked(false);
+    });
+  }, [router, isClicked, backgroundRefreshProfile]);
 
   const handleHomeClick = useCallback(() => {
     onHomeClick();

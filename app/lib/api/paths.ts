@@ -26,10 +26,12 @@ export const API_PATHS = {
       MOVE: `${STORAGE_BASE}/files/move`,
       UPDATE: (fileId: string) => `${STORAGE_BASE}/files/${fileId}`,
       DOWNLOAD: `${STORAGE_BASE}/files/download`,
+      DOWNLOAD_DIRECT: `${STORAGE_BASE}/files/download-direct`,
       PREVIEW: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/preview`,
       CONTENT: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/content`,
       RENAME: (fileId: string) => `${STORAGE_BASE}/files/rename/${fileId}`,
       CHECK_NAME_CONFLICTS: `${STORAGE_BASE}/files/check-name-conflicts`,
+      ACCESS_HISTORY: (fileId: string) => `${STORAGE_BASE}/files/${fileId}/access-history`,
     },
     
     // 文件夹操作

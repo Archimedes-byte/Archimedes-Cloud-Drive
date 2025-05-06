@@ -7,30 +7,23 @@
 // NextAuth会话类型扩展
 import { DefaultSession } from 'next-auth';
 import { AUTH_ERROR_CODE } from '@/app/constants/auth';
-import { UserBasic } from '@/app/types/user';
+import { 
+  UserBasic,
+  AuthJWT
+} from '@/app/types/shared/api-types';
 
-// 完整用户信息(包含敏感字段)
+/**
+ * 完整用户信息(包含敏感字段)
+ */
 export interface UserFull extends UserBasic {
   password?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-// 登录凭据
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-// 注册数据
-export interface RegisterData {
-  name?: string;
-  email: string;
-  password: string;
-  confirmPassword?: string;
-}
-
-// 认证错误
+/**
+ * 认证错误
+ */
 export interface AuthError {
   message: string;
   code: AUTH_ERROR_CODE;
@@ -38,44 +31,25 @@ export interface AuthError {
   originalError?: Error;
 }
 
-// API响应基础接口
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-  statusCode?: number;
-}
-
-// 认证响应
-export interface AuthResponse extends ApiResponse {
-  data?: {
-    user: UserBasic;
-    token?: string;
-    refreshToken?: string;
-    expiresIn?: number;
-  };
-}
-
-// 密码校验结果
-export interface PasswordValidationResult {
-  isValid: boolean;
-  message?: string;
-}
-
-// 邮箱校验结果
+/**
+ * 邮箱校验结果
+ */
 export interface EmailValidationResult {
   isValid: boolean;
   message?: string;
 }
 
-// 凭据校验结果
+/**
+ * 凭据校验结果
+ */
 export interface CredentialsValidationResult {
   isValid: boolean;
   message?: string;
 }
 
-// 密码要求
+/**
+ * 密码要求
+ */
 export interface PasswordRequirements {
   minLength: number;
   requireNumbers: boolean;
@@ -84,18 +58,22 @@ export interface PasswordRequirements {
   requireSpecialChars: boolean;
 }
 
-// NextAuth JWT扩展
-export interface AuthJWT {
-  id?: string;
-  userId?: string;
-  email?: string;
-  name?: string;
-  picture?: string;
-  sub?: string;
+/**
+ * 会话用户信息
+ */
+export interface SessionUser extends UserBasic {
+  role?: string;
+  permissions?: string[];
+}
+
+/**
+ * 认证会话扩展
+ */
+export interface AuthSession {
+  user: SessionUser;
+  expires: string;
   accessToken?: string;
-  iat?: number;
-  exp?: number;
-  jti?: string;
+  refreshToken?: string;
 }
 
 // 扩展NextAuth会话类型定义
@@ -105,7 +83,7 @@ declare module 'next-auth' {
       id: string;
       name?: string | null;
       email?: string | null;
-      avatarUrl?: string | null;
+      image?: string | null;
     }
   }
   

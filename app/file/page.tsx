@@ -592,7 +592,7 @@ export default function FileManagementPage() {
   }, []);
 
   // 添加实际执行下载的函数
-  const executeDownload = useCallback(async () => {
+  const executeDownload = useCallback(async (fileName?: string) => {
     if (filesToDownload.length === 0) {
       message.warning('没有选择要下载的文件');
       return;
@@ -604,12 +604,17 @@ export default function FileManagementPage() {
       // 提取文件ID列表
       const fileIds = filesToDownload.map(file => file.id);
       
-      // 执行下载
-      const success = await downloadFiles(fileIds);
+      // 执行下载，传递文件名
+      const success = await downloadFiles(fileIds, fileName);
       
       if (success) {
         // 下载成功后关闭模态框
         setIsDownloadModalOpen(false);
+        
+        // 下载成功后刷新最近下载列表
+        setTimeout(() => {
+          fetchRecentDownloads();
+        }, 500); // 延迟500毫秒，等待服务器记录完成
       }
     } catch (error) {
       console.error('下载过程出错:', error);
@@ -617,7 +622,7 @@ export default function FileManagementPage() {
     } finally {
       setIsDownloading(false);
     }
-  }, [filesToDownload, downloadFiles]);
+  }, [filesToDownload, downloadFiles, fetchRecentDownloads]);
 
   // 添加更新下载文件列表的函数
   const handleUpdateFileList = useCallback((files: FileInfo[]) => {
@@ -878,6 +883,10 @@ export default function FileManagementPage() {
               onDownload={() => {
                 if (previewFile && previewFile.id) {
                   handleDownload([previewFile.id]);
+                  // 在用户完成下载后刷新最近下载记录
+                  setTimeout(() => {
+                    fetchRecentDownloads();
+                  }, 1000); // 给用户充分时间完成下载操作
                 } else {
                   message.warning('无法下载此文件，文件ID不存在');
                 }

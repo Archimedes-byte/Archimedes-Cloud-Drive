@@ -3,7 +3,7 @@
  * 处理文件类型判断、图标获取等
  */
 
-import { FileType } from '@/app/types/file';
+import { FileType } from '@/app/types';
 
 /**
  * 文件分类常量

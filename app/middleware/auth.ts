@@ -4,22 +4,27 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type Session } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
+import { ApiResponse as SharedApiResponse } from '@/app/types/shared/api-types';
 
+/**
+ * 扩展的请求对象，包含用户信息
+ */
 export interface AuthenticatedRequest extends NextRequest {
   user: {
     id: string;
     email: string;
     name?: string;
   };
+  session?: Session;
 }
 
-// API响应类型定义
-export type ApiSuccessResponse<T> = {
+// API响应类型定义，使用统一的API类型
+export type ApiSuccessResponse<T> = Omit<SharedApiResponse<T>, 'data'> & {
   success: true;
   data: T;
-  message?: string;
 };
 
 export type ApiErrorResponse = {

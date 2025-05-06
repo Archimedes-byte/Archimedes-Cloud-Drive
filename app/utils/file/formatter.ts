@@ -58,4 +58,56 @@ export function getRelativeTimeString(date: Date | string | number): string {
   
   // 超过一年显示具体日期
   return formatDate(d);
+}
+
+/**
+ * 将数据库文件实体转换为前端友好的文件信息对象
+ * @param file 数据库文件实体
+ * @returns 格式化后的文件信息对象
+ */
+export function formatFile(file: any): any {
+  if (!file) return undefined;
+  
+  // 提取基本字段
+  const result: any = {
+    id: file.id,
+    name: file.name,
+    path: file.path || '',
+    isFolder: !!file.isFolder,
+    parentId: file.parentId || null,
+    createdAt: formatDate(file.createdAt),
+    updatedAt: file.updatedAt ? file.updatedAt.toString() : new Date().toString(),
+  };
+  
+  // 添加可选字段
+  if (file.type !== null && file.type !== undefined) {
+    result.type = file.type;
+  }
+  
+  if (file.size !== null && file.size !== undefined) {
+    result.size = file.size;
+    result.sizeFormatted = formatFileSize(file.size);
+  }
+  
+  // 添加文件扩展名
+  if (file.name) {
+    const parts = file.name.split('.');
+    if (parts.length > 1) {
+      result.extension = parts[parts.length - 1].toLowerCase();
+    } else {
+      result.extension = '';
+    }
+  }
+  
+  // 添加其他可选字段
+  if (file.uploaderId) result.uploaderId = file.uploaderId;
+  if (file.url) result.url = file.url;
+  if (file.tags) result.tags = file.tags;
+  
+  // 处理文件夹信息
+  if (file.folder) {
+    result.folder = file.folder;
+  }
+  
+  return result;
 } 

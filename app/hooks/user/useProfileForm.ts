@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { UserProfile, UserProfileInput } from '@/app/types/user';
+import { UserProfile, UserProfileInput } from '@/app/types';
 import { profileToProfileInput, profileValidationRules, ProfileValidationRule } from '@/app/utils/user/profile';
 
 /**

@@ -64,7 +64,8 @@ export {
 export {
   formatFileSize,
   formatDate,
-  getRelativeTimeString
+  getRelativeTimeString,
+  formatFile
 } from './formatter';
 
 // 导出文件路径处理函数

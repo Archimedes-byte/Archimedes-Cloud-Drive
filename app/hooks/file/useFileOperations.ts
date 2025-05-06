@@ -1,14 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { message } from 'antd';
 import { FileInfo } from '@/app/types';
-import { downloadFile, downloadFolder, downloadBlob } from '@/app/lib/storage/utils/download';
+import { downloadFile, downloadFolder, downloadBlob, downloadFileDirect, downloadMultipleFiles } from '@/app/lib/storage/utils/download';
 import { handleError } from '@/app/utils/error';
 import useFileStore from '@/app/store/fileStore';
-import { FileManagementService } from '@/app/services/storage';
 import { API_PATHS } from '@/app/lib/api/paths';
-
-// 创建服务实例
-const fileManagementService = new FileManagementService();
+import { fileApi } from '@/app/lib/api/file-api';
 
 /**
  * 文件操作接口
@@ -23,7 +20,7 @@ export interface FileOperations {
   /** 清除选择 */
   clearSelection: () => void;
   /** 下载文件 */
-  downloadFiles: (fileIds: string[]) => Promise<boolean>;
+  downloadFiles: (fileIds: string[], customFileName?: string) => Promise<boolean>;
   /** 移动文件 */
   moveFiles: (fileIds: string[], targetFolderId: string) => Promise<boolean>;
   /** 删除文件 */
@@ -131,9 +128,10 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
   /**
    * 下载文件
    * @param fileIds 文件ID列表
+   * @param customFileName 自定义文件名
    * @returns 是否成功
    */
-  const downloadFiles = useCallback(async (fileIds: string[]): Promise<boolean> => {
+  const downloadFiles = useCallback(async (fileIds: string[], customFileName?: string): Promise<boolean> => {
     if (!fileIds.length) {
       message.warning('请选择要下载的文件');
       return false;
@@ -144,91 +142,75 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
       setError(null);
 
       console.log(`开始下载文件: ${fileIds.join(', ')}`);
-      let success = false;
       
-      // 如果是单个文件
+      // 单个文件下载 - 判断是文件夹还是普通文件
       if (fileIds.length === 1) {
         try {
-          // 获取文件信息，以确定是文件还是文件夹
-          const fileInfo = await fileManagementService.getFile(currentUserId || '', fileIds[0]);
+          // 获取文件信息
+          const fileInfo = await fileApi.getFile(fileIds[0]);
           
-          if (fileInfo && fileInfo.isFolder) {
-            console.log(`检测到文件夹下载: ${fileInfo.name}`);
-            // 使用文件夹下载函数
-            success = await downloadFolder(fileIds[0], fileInfo.name);
-          } else if (fileInfo) {
-            // 使用文件下载函数
-            success = await downloadFile(fileIds[0], fileInfo.name);
+          if (!fileInfo) {
+            throw new Error('无法获取文件信息');
           }
           
-          // 如果下载成功，记录下载历史
+          let success = false;
+          
+          // 如果提供了自定义文件名，使用它；否则使用原始文件名
+          const fileName = customFileName || fileInfo.name;
+          
+          if (fileInfo.isFolder) {
+            // 文件夹下载 - 使用ZIP打包
+            console.log(`下载文件夹: ${fileInfo.name}`);
+            success = await downloadFolder(fileIds[0], fileName);
+          } else {
+            // 普通文件下载 - 优先使用直接下载API
+            console.log(`下载文件: ${fileInfo.name}`);
+            try {
+              // 尝试直接下载
+              success = await downloadFileDirect(fileIds[0], fileName);
+            } catch (directError) {
+              console.warn('直接下载失败，尝试ZIP下载:', directError);
+              // 如果直接下载失败，回退到ZIP下载
+              success = await downloadFile(fileIds[0], fileName);
+            }
+          }
+          
+          // 记录下载历史并返回结果
           if (success) {
             await recordFileDownload(fileIds[0]);
             return true;
           }
         } catch (error) {
-          console.warn('获取单个文件信息失败，尝试直接下载', error);
-          // 如果获取文件信息失败，尝试直接下载
-          success = await downloadFile(fileIds[0]);
-          if (success) return true;
+          console.error('单文件下载处理失败:', error);
+          // 出错时继续执行到多文件下载逻辑
         }
       }
       
-      // 对于多文件下载或单文件下载失败的情况
-      if (!success && fileIds.length > 0) {
-        try {
-          message.loading({ content: '准备下载文件中...', key: 'fileMultiDownload' });
-          
-          // 构建POST请求获取文件Blob
-          const response = await fetch('/api/storage/files/download', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ fileIds }),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`下载请求失败: ${response.status}`);
+      // 多文件下载或单文件处理失败时的逻辑
+      try {
+        // 使用专门的多文件下载函数处理，传递自定义文件名
+        const success = await downloadMultipleFiles(fileIds, customFileName);
+        
+        // 下载成功后，记录所有文件的下载历史
+        if (success) {
+          // 为每个文件记录下载历史
+          for (const fileId of fileIds) {
+            await recordFileDownload(fileId);
           }
-          
-          // 获取blob
-          const blob = await response.blob();
-          
-          // 验证blob
-          if (!blob || blob.size === 0) {
-            message.error({ content: '获取到的文件内容为空', key: 'fileMultiDownload' });
-            throw new Error('获取到的文件内容为空');
-          }
-          
-          // 确定下载文件名
-          let fileName = fileIds.length > 1 ? '多文件下载.zip' : '下载文件';
-          success = await downloadBlob(blob, fileName);
-          
-          // 成功下载后显示消息
-          if (success) {
-            message.success({ content: '下载成功', key: 'fileMultiDownload' });
-            
-            // 记录下载历史 (只在单文件下载时记录)
-            if (fileIds.length === 1) {
-              await recordFileDownload(fileIds[0]);
-            }
-          }
-        } catch (error) {
-          console.error('下载文件详细错误:', error);
-          handleError(error, true, 'error', '下载文件失败');
-          return false;
         }
+        
+        return success;
+      } catch (error) {
+        console.error('多文件下载失败:', error);
+        return false;
       }
-      
-      return success;
     } catch (error) {
       handleError(error, true, 'error', '下载文件失败');
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [currentUserId]);
+  }, []);
 
   /**
    * 移动文件
@@ -304,14 +286,27 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
         throw new Error('未找到用户ID');
       }
       
-      // 使用FileManagementService的重命名功能
-      const updatedFile = await fileManagementService.renameFile(currentUserId, fileId, newName);
+      // 使用API重命名文件
+      const response = await fetch(API_PATHS.STORAGE.FILES.RENAME(fileId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newName }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '重命名文件失败');
+      }
+      
+      const updatedFile = await response.json();
       
       // 更新Zustand状态
       storeRenameFile(fileId, newName);
       
       message.success('文件重命名成功');
-      if (onSuccess) {
+      if (onSuccess && updatedFile) {
         onSuccess(updatedFile);
       }
       return true;
@@ -361,19 +356,20 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
    * @returns 包含文件详细信息的Promise
    */
   const getFilesInfo = useCallback(async (fileIds: string[]): Promise<FileInfo[]> => {
-    if (!fileIds.length || !currentUserId) return [];
+    if (!fileIds.length) return [];
     
     try {
       setIsLoading(true);
       setError(null);
       
-      // 并行请求所有文件信息
+      // 使用fileApi获取文件信息，而不是FileManagementService
       const filesInfoPromises = fileIds.map(fileId => 
-        fileManagementService.getFile(currentUserId, fileId)
+        fileApi.getFile(fileId)
       );
       
       const filesInfo = await Promise.all(filesInfoPromises);
-      return filesInfo;
+      // 过滤掉可能的null结果
+      return filesInfo.filter(Boolean) as FileInfo[];
     } catch (error) {
       console.error('获取文件信息失败:', error);
       setError('获取文件信息失败');
@@ -381,7 +377,7 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
     } finally {
       setIsLoading(false);
     }
-  }, [currentUserId]);
+  }, []);
 
   return {
     selectedFileIds,

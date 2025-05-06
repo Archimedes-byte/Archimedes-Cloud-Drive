@@ -4,7 +4,7 @@
  * 集中处理所有用户资料相关的业务逻辑
  */
 import { prisma } from '@/app/lib/database';
-import { UserProfile, UserProfileInput } from '@/app/types/user';
+import { UserProfile, UserProfileInput } from '@/app/types';
 import { toUserProfile } from '@/app/utils/user/transform';
 
 /**

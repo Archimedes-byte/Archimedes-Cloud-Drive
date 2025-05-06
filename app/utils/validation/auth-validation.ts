@@ -5,7 +5,7 @@
  * 
  * 提供前端表单验证功能，确保与后端验证一致
  */
-import { LoginCredentials, RegisterData } from '@/app/types/auth';
+import { LoginCredentials, RegisterData } from '@/app/types';
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import { 
   emailSchema, 

@@ -3,7 +3,7 @@
 import React from 'react';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { AuthFormField } from '@/app/components/common/form';
-import { LoginCredentials, RegisterData } from '@/app/types/auth';
+import { LoginCredentials, RegisterData } from '@/app/types';
 
 // 定义表单字段类型
 type FormValues = LoginCredentials | RegisterData;

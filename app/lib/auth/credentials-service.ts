@@ -3,7 +3,7 @@
  * 
  * 提供NextAuth兼容的凭据认证服务
  */
-import { UserBasic } from '@/app/types/user';
+import { UserBasic } from '@/app/types';
 import { verifyCredentials, getUserBasicById } from './auth-service';
 
 // 重新导出验证凭证函数供NextAuth使用

@@ -9,7 +9,7 @@ import { useAuthForm } from '@/app/hooks/auth/useAuthForm';
 import { FormStatus } from '@/app/lib/forms/types';
 import ErrorMessage from '@/app/components/shared/ErrorMessage';
 import AuthFormFields from './AuthFormFields';
-import { LoginCredentials, RegisterData } from '@/app/types/auth';
+import { LoginCredentials, RegisterData } from '@/app/types';
 import { validateLoginForm, validateRegisterForm, validatePasswordStrength } from '@/app/utils/validation/auth-validation';
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import styles from '@/app/styles/auth/shared.module.css';
@@ -152,42 +152,65 @@ const AuthForm: React.FC<AuthFormProps> = ({
     setStatus(FormStatus.SUBMITTING);
     
     if (formType === 'login') {
-      // 登录处理 - 使用统一Auth上下文
+      // 立即关闭登录模态框，提高UI响应速度
+      if (closeLoginModal) closeLoginModal();
+      
+      // 立即进行路由跳转，不等待登录完成
+      const targetRoute = redirectPath || AUTH_CONSTANTS.ROUTES.DEFAULT_SUCCESS;
+      router.push(targetRoute);
+      
+      // 在后台处理登录流程
       login(values as LoginCredentials, {
         redirect: false,
-        callbackUrl: redirectPath || AUTH_CONSTANTS.ROUTES.DEFAULT_SUCCESS,
+        callbackUrl: targetRoute,
         onSuccess: () => {
           setStatus(FormStatus.SUCCESS);
-          showSuccessMessage('登录成功！');
-          
-          if (closeLoginModal) closeLoginModal();
-          
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            router.push(redirectPath || AUTH_CONSTANTS.ROUTES.DEFAULT_SUCCESS);
-          }
+          // 登录成功后不再需要显示模态框中的成功消息，因为已经跳转了
+          setTimeout(() => {
+            showSuccessMessage('登录成功！');
+            
+            if (onSuccess) {
+              onSuccess();
+            }
+          }, 10);
         }
       });
     } else {
-      // 注册处理 - 使用统一Auth上下文
+      // 注册处理 - 优化响应速度
+      
+      // 立即关闭模态框，提高UI响应速度
+      if (closeLoginModal) closeLoginModal();
+      
+      // 立即进行路由跳转，不等待注册完成
+      const targetRoute = '/';  // 注册成功通常返回首页
+      router.push(targetRoute);
+      
+      // 在后台处理注册流程
       register(values as RegisterData, {
         withName: true,
         onSuccess: async () => {
           setStatus(FormStatus.SUCCESS);
+          
           // 使用安全存储 - 异步操作
           await setSecureItem(
             STORAGE_CONFIG.KEYS.REGISTERED_EMAIL, 
             (values as RegisterData).email,
             STORAGE_CONFIG.EXPIRATION.SHORT
           );
-          showSuccessMessage('注册成功！即将打开登录窗口...');
-          resetForm();
-          setRegistrationSuccess(true);
           
-          if (onSuccess) {
-            onSuccess();
-          }
+          // 注册成功消息改为在跳转后异步显示
+          setTimeout(() => {
+            showSuccessMessage('注册成功！点击右上角头像进入登录窗口');
+            
+            if (onSuccess) {
+              onSuccess();
+            }
+            
+            // 不再自动打开登录窗口，让用户主动点击
+            setRegistrationSuccess(true);
+          }, 10);
+          
+          resetForm();
         }
       });
     }

@@ -2,28 +2,73 @@
  * 文件下载API路由
  * 处理文件下载请求
  */
+import { NextRequest, NextResponse } from 'next/server';
 import { 
   withAuth, 
   AuthenticatedRequest, 
+  createApiResponse, 
   createApiErrorResponse 
 } from '@/app/middleware/auth';
-import { FileManagementService } from '@/app/services/storage';
-import { NextResponse } from 'next/server';
-import { existsSync } from 'fs';
-import fs from 'fs/promises';
 import { join } from 'path';
-import mime from 'mime-types';
-import { FileInfo } from '@/app/types';
+import { existsSync, mkdirSync, createReadStream } from 'fs';
+import { promises as fs } from 'fs';
+import { FileInfo } from '@/app/types/domains/fileTypes';
 import JSZip from 'jszip';
+import { prisma } from '@/app/lib/database';
+import { mapFileEntityToFileInfo } from '@/app/services/storage/file-upload-service';
+import mime from 'mime-types';
 
-const fileManagementService = new FileManagementService();
+// 上传目录
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 // 确保上传目录存在
 if (!existsSync(UPLOAD_DIR)) {
-  fs.mkdir(UPLOAD_DIR, { recursive: true }).catch((err: Error) => {
-    console.error('创建上传目录失败:', err);
-  });
+  mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+/**
+ * 记录文件下载历史
+ */
+async function recordDownloadHistory(userId: string, fileId: string) {
+  try {
+    await prisma.downloadHistory.upsert({
+      where: {
+        userId_fileId: {
+          userId,
+          fileId
+        }
+      },
+      update: {
+        downloadedAt: new Date()
+      },
+      create: {
+        userId,
+        fileId,
+        downloadedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('记录下载历史失败:', error);
+  }
+}
+
+/**
+ * 将数据库文件实体转换为前端FileInfo对象
+ */
+function mapToFileInfo(file: any): FileInfo {
+  return {
+    id: file.id,
+    name: file.name,
+    type: file.type || 'unknown',
+    size: file.size || 0,
+    isFolder: file.isFolder,
+    createdAt: file.createdAt.toISOString(),
+    updatedAt: file.updatedAt.toISOString(),
+    path: file.path,
+    parentId: file.parentId,
+    tags: file.tags || [],
+    url: file.url || undefined,
+  };
 }
 
 /**
@@ -175,15 +220,32 @@ async function getAllFilesInFolder(
   relativePath: string = ''
 ): Promise<Array<{ fileInfo: FileInfo, relativePath: string }>> {
   try {
-    // 获取文件夹信息
-    const folderInfo = await fileManagementService.getFile(userId, folderId);
-    if (!folderInfo || !folderInfo.isFolder) {
+    // 直接使用prisma查询文件夹信息
+    const folder = await prisma.file.findFirst({
+      where: {
+        id: folderId,
+        isDeleted: false,
+        isFolder: true
+      }
+    });
+    
+    if (!folder) {
       throw new Error(`ID为 ${folderId} 的项目不是文件夹或不存在`);
     }
     
-    // 获取文件夹下的所有项目
-    const folderContentsResponse = await fileManagementService.getFiles(userId, folderId);
-    const folderContents = folderContentsResponse.items || [];
+    const folderInfo = mapFileEntityToFileInfo(folder);
+    
+    // 直接使用prisma获取文件夹下的所有项目
+    const folderContents = await prisma.file.findMany({
+      where: {
+        parentId: folderId,
+        isDeleted: false
+      },
+      orderBy: [
+        { isFolder: 'desc' },
+        { name: 'asc' }
+      ]
+    });
     
     console.log(`文件夹 "${folderInfo.name}" (${folderId}) 包含 ${folderContents.length} 个项目`);
     
@@ -218,8 +280,8 @@ async function getAllFilesInFolder(
               name: '.empty',
               isFolder: false,
               size: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
               type: 'text/plain',
               uploaderId: userId,
               isDeleted: false
@@ -235,7 +297,7 @@ async function getAllFilesInFolder(
       else {
         fileCount++;
         allFiles.push({
-          fileInfo: item,
+          fileInfo: mapFileEntityToFileInfo(item),
           relativePath
         });
       }
@@ -253,263 +315,285 @@ interface DownloadRequest {
   fileIds: string[];
 }
 
+// 创建一个专门用于处理文件下载的withAuth包装函数
+function withDownloadAuth(
+  handler: (req: AuthenticatedRequest) => Promise<Response>
+) {
+  return withAuth(async (req: AuthenticatedRequest) => {
+    const response = await handler(req);
+    return response as any; // 类型断言，因为这里我们返回的是原始响应
+  });
+}
+
 /**
- * 文件下载处理
+ * 处理文件下载请求
+ * 支持GET和POST方法
  */
-export const POST = withAuth<NextResponse>(async (req: AuthenticatedRequest) => {
+export const GET = withDownloadAuth(async (req: AuthenticatedRequest) => {
   try {
-    // 获取请求体数据
-    const { fileIds } = await req.json() as DownloadRequest;
-    
-    // 验证文件ID数组
-    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
-      return createApiErrorResponse('文件ID列表无效', 400);
+    const { searchParams } = new URL(req.url);
+    const fileIds = searchParams.get('fileIds')?.split(',') || [];
+    const folderId = searchParams.get('folderId');
+
+    if (!fileIds.length && !folderId) {
+      return createApiErrorResponse('请提供文件ID或文件夹ID');
     }
+
+    // 获取ZIP文件内容
+    const { fileName, filePath } = await handleDownload(req.user.id, fileIds, folderId);
     
-    // 如果只下载一个文件
-    if (fileIds.length === 1) {
-      const fileId = fileIds[0];
-      const fileInfo = await fileManagementService.getFile(req.user.id, fileId);
-      
-      if (!fileInfo) {
-        return createApiErrorResponse(`文件不存在: ${fileId}`, 404);
-      }
-      
-      // 如果是文件夹，将文件夹内容打包为ZIP
-      if (fileInfo.isFolder) {
-        console.log(`文件夹下载请求: ID=${fileId}, 名称=${fileInfo.name}`);
-        
-        // 获取文件夹内所有文件
-        const folderFiles = await getAllFilesInFolder(req.user.id, fileId);
-        
-        if (folderFiles.length === 0) {
-          console.log(`文件夹 "${fileInfo.name}" 完全为空，添加空目录标记`);
-          // 即使文件夹完全为空，也创建一个ZIP文件返回一个.empty文件
-          const zip = new JSZip();
-          const folderName = fileInfo.name || `folder_${fileId}`;
-          
-          // 添加一个空文件以保持目录结构
-          zip.file(`${folderName}/.empty`, '此文件夹为空', { comment: '空文件夹标记' });
-          
-          // 生成ZIP文件
-          const zipContent = await zip.generateAsync({
-            type: 'nodebuffer',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 } 
-          });
-          
-          console.log(`空文件夹ZIP文件生成完成，大小: ${(zipContent.length / 1024).toFixed(2)} KB`);
-          
-          // 返回ZIP文件
-          return new NextResponse(zipContent, {
-            headers: {
-              'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"`,
-              'Content-Type': 'application/zip',
-              'Content-Length': zipContent.length.toString(),
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            },
-          });
-        }
-        
-        // 创建ZIP文件
-        const zip = new JSZip();
-        const folderName = fileInfo.name || `folder_${fileId}`;
-        
-        console.log(`开始打包文件夹: ${folderName}，共 ${folderFiles.length} 个文件`);
-        
-        // 添加文件到ZIP
-        for (const { fileInfo, relativePath } of folderFiles) {
-          try {
-            // 对于占位文件，直接添加内容
-            if (fileInfo.name === '.empty' && fileInfo.id.startsWith('empty_')) {
-              const emptyFilePath = join(relativePath, '.empty');
-              zip.file(emptyFilePath, '此文件夹为空', { comment: '空文件夹标记' });
-              console.log(`已添加空文件夹标记: ${emptyFilePath}`);
-              continue;
-            }
-            
-            // 获取文件路径
-            const filePath = await getFilePath(fileInfo);
-            if (!filePath) {
-              console.warn(`找不到文件: ${fileInfo.name}，跳过`);
-              continue;
-            }
-            
-            // 读取文件内容
-            const fileContent = await fs.readFile(filePath);
-            
-            // 确定ZIP中的文件路径（包括相对路径）
-            const fileName = fileInfo.name || `file_${fileInfo.id}`;
-            const zipPath = join(relativePath, fileName);
-            
-            // 添加到ZIP
-            zip.file(zipPath, fileContent);
-            console.log(`已添加文件到ZIP: ${zipPath}`);
-          } catch (error) {
-            console.error(`添加文件到ZIP时出错: ${fileInfo.id}`, error);
-          }
-        }
-        
-        // 生成ZIP文件
-        console.log('正在生成ZIP文件...');
-        const zipContent = await zip.generateAsync({
-          type: 'nodebuffer',
-          compression: 'DEFLATE',
-          compressionOptions: { level: 6 } 
-        });
-        
-        console.log(`ZIP文件生成完成，大小: ${(zipContent.length / 1024).toFixed(2)} KB`);
-        
-        // 返回ZIP文件
-        return new NextResponse(zipContent, {
-          headers: {
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"`,
-            'Content-Type': 'application/zip',
-            'Content-Length': zipContent.length.toString(),
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
-        });
-      }
-      
-      // 如果是单个文件，走原来的下载逻辑
-      console.log(`文件下载请求: ID=${fileId}, 名称=${fileInfo.name}, 类型=${fileInfo.type || '未知'}, 存储文件名=${fileInfo.filename || '未知'}`);
-      
-      // 获取文件路径
-      const filePath = await getFilePath(fileInfo);
-      
-      // 如果找不到文件
-      if (!filePath) {
-        console.error(`文件不存在，尝试了多种方式查找: ID=${fileId}, 文件名=${fileInfo.name}, 存储文件名=${fileInfo.filename || '未知'}, URL=${fileInfo.url || '未知'}`);
-        return createApiErrorResponse(`文件不存在或无法访问`, 404);
-      }
-      
-      console.log(`准备下载文件: ${filePath}`);
-      
-      try {
-        // 使用流式读取文件（处理大文件更高效）
-        const fileContent = await fs.readFile(filePath);
-        
-        // 使用改进的内容类型检测
-        const contentType = await determineContentType(fileInfo);
-        
-        console.log(`文件下载准备完成: ${fileInfo.name}, 大小: ${fileContent.length} 字节, 类型: ${contentType}`);
-        
-        // 获取安全的文件名，确保下载体验良好
-        const safeFileName = fileInfo.name || fileInfo.filename || `文件_${fileId}`;
-        
-        // 设置下载头
-        return new NextResponse(fileContent, {
-          headers: {
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(safeFileName)}"`,
-            'Content-Type': contentType,
-            'Content-Length': fileContent.length.toString(),
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
-        });
-      } catch (readError: any) {
-        console.error(`读取文件失败: ${filePath}`, readError);
-        return createApiErrorResponse('读取文件失败: ' + (readError.message || '未知错误'), 500);
-      }
-    } 
+    // 直接用文件路径返回一个响应
+    return await returnFileResponse(filePath, fileName, 'application/zip');
     
-    // 如果下载多个文件，创建一个ZIP文件
-    console.log(`批量下载请求: ${fileIds.length} 个文件`);
-    
-    // 创建ZIP文件
-    const zip = new JSZip();
-    
-    // 添加文件到ZIP
-    for (const fileId of fileIds) {
-      try {
-        const fileInfo = await fileManagementService.getFile(req.user.id, fileId);
-        
-        if (!fileInfo) {
-          console.warn(`文件不存在: ${fileId}，跳过`);
-          continue;
-        }
-        
-        // 如果是文件夹，递归获取文件夹内所有文件
-        if (fileInfo.isFolder) {
-          const folderName = fileInfo.name || `folder_${fileId}`;
-          const folderFiles = await getAllFilesInFolder(req.user.id, fileId, folderName);
-          
-          for (const { fileInfo: nestedFile, relativePath } of folderFiles) {
-            const filePath = await getFilePath(nestedFile);
-            if (!filePath) {
-              console.warn(`找不到文件: ${nestedFile.name}，跳过`);
-              continue;
-            }
-            
-            // 对于占位文件，直接添加内容
-            if (nestedFile.name === '.empty' && nestedFile.id.startsWith('empty_')) {
-              const emptyFilePath = join(relativePath, '.empty');
-              zip.file(emptyFilePath, '此文件夹为空', { comment: '空文件夹标记' });
-              console.log(`已添加空文件夹标记: ${emptyFilePath}`);
-              continue;
-            }
-            
-            // 读取文件内容
-            const fileContent = await fs.readFile(filePath);
-            
-            // 确定ZIP中的文件路径
-            const fileName = nestedFile.name || `file_${nestedFile.id}`;
-            const zipPath = join(relativePath, fileName);
-            
-            // 添加到ZIP
-            zip.file(zipPath, fileContent);
-            console.log(`已添加文件到ZIP: ${zipPath}`);
-          }
-        } 
-        // 如果是单个文件，直接添加
-        else {
-          const filePath = await getFilePath(fileInfo);
-          if (!filePath) {
-            console.warn(`找不到文件: ${fileInfo.name}，跳过`);
-            continue;
-          }
-          
-          // 读取文件内容
-          const fileContent = await fs.readFile(filePath);
-          
-          // 添加到ZIP，使用文件名
-          const fileName = fileInfo.name || `file_${fileId}`;
-          zip.file(fileName, fileContent);
-          console.log(`已添加文件到ZIP: ${fileName}`);
-        }
-      } catch (error) {
-        console.error(`处理文件时出错: ${fileId}`, error);
-      }
-    }
-    
-    // 生成ZIP文件
-    console.log('正在生成ZIP文件...');
-    const zipContent = await zip.generateAsync({
-      type: 'nodebuffer',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 } 
-    });
-    
-    console.log(`ZIP文件生成完成，大小: ${(zipContent.length / 1024).toFixed(2)} KB`);
-    
-    // 返回ZIP文件
-    return new NextResponse(zipContent, {
-      headers: {
-        'Content-Disposition': `attachment; filename="download_${new Date().getTime()}.zip"`,
-        'Content-Type': 'application/zip',
-        'Content-Length': zipContent.length.toString(),
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      },
-    });
-  } catch (error: any) {
-    console.error('下载文件失败:', error);
-    return createApiErrorResponse(error.message || '下载文件失败', 500);
+  } catch (error) {
+    console.error('文件下载失败:', error);
+    return createApiErrorResponse('文件下载失败');
   }
-}); 
+});
+
+/**
+ * 处理POST请求的文件下载
+ */
+export const POST = withDownloadAuth(async (req: AuthenticatedRequest) => {
+  try {
+    const body = await req.json();
+    const { fileIds = [], isFolder = false } = body;
+    
+    if (!fileIds.length) {
+      return createApiErrorResponse('请提供文件ID');
+    }
+
+    // 如果是文件夹下载，使用第一个ID作为文件夹ID
+    const folderId = isFolder ? fileIds[0] : null;
+    
+    // 获取ZIP文件内容
+    const { fileName, filePath } = await handleDownload(req.user.id, fileIds, folderId);
+    
+    // 直接用文件路径返回一个响应
+    return await returnFileResponse(filePath, fileName, 'application/zip');
+    
+  } catch (error) {
+    console.error('文件下载失败:', error);
+    return createApiErrorResponse('文件下载失败');
+  }
+});
+
+/**
+ * 处理文件下载的核心逻辑
+ * 返回临时文件流而不是Buffer
+ */
+async function handleDownload(userId: string, fileIds: string[], folderId: string | null): Promise<{ 
+  fileName: string;
+  filePath: string;
+}> {
+  // 创建ZIP文件
+  const zip = new JSZip();
+  const tempFileName = `download-${Date.now()}-${Math.random().toString(36).substring(2, 10)}.zip`;
+  const tempFilePath = join(UPLOAD_DIR, 'temp', tempFileName);
+  
+  // 确保临时目录存在
+  const tempDir = join(UPLOAD_DIR, 'temp');
+  if (!existsSync(tempDir)) {
+    mkdirSync(tempDir, { recursive: true });
+  }
+
+  // 递归处理文件夹内容的函数
+  const processFolder = async (folder: any, zipFolder: JSZip, currentPath: string = '') => {
+    // 获取文件夹下的所有内容
+    const contents = await prisma.file.findMany({
+      where: {
+        parentId: folder.id,
+        isDeleted: false
+      },
+      orderBy: [
+        { isFolder: 'desc' },
+        { name: 'asc' }
+      ]
+    });
+
+    for (const item of contents) {
+      const itemPath = join(currentPath, item.name);
+      
+      if (item.isFolder) {
+        // 创建子文件夹
+        const newZipFolder = zipFolder.folder(item.name);
+        if (newZipFolder) {
+          // 递归处理子文件夹
+          await processFolder(item, newZipFolder, itemPath);
+        }
+      } else {
+        // 处理文件 - 直接使用完整的filename
+        if (item.filename) {
+          const filePath = join(UPLOAD_DIR, item.filename);
+          console.log(`尝试读取文件: ${filePath}`);
+          
+          if (existsSync(filePath)) {
+            try {
+              const fileContent = await fs.readFile(filePath);
+              zipFolder.file(item.name, fileContent);
+              // 记录文件下载历史
+              await recordDownloadHistory(userId, item.id);
+            } catch (error) {
+              console.error(`读取文件失败: ${filePath}`, error);
+            }
+          } else {
+            console.error(`文件不存在: ${filePath}`);
+          }
+        }
+      }
+    }
+  };
+
+  // 处理文件夹下载
+  if (folderId) {
+    const folder = await prisma.file.findUnique({
+      where: { id: folderId },
+      include: {
+        other_File: {
+          select: {
+            id: true,
+            name: true,
+            filename: true,
+            isFolder: true,
+            path: true
+          }
+        }
+      }
+    });
+
+    if (!folder) {
+      throw new Error('文件夹不存在');
+    }
+
+    if (!folder.isFolder) {
+      throw new Error('指定的ID不是文件夹');
+    }
+
+    // 从根文件夹开始处理
+    await processFolder(folder, zip);
+  }
+
+  // 处理单个或多个文件下载
+  if (fileIds.length > 0) {
+    const files = await prisma.file.findMany({
+      where: {
+        id: {
+          in: fileIds
+        },
+        isDeleted: false
+      }
+    });
+
+    for (const file of files) {
+      // 跳过主文件夹（如果已经处理过）
+      if (folderId && file.id === folderId) {
+        continue;
+      }
+      
+      if (file.isFolder) {
+        // 处理文件夹 - 在根目录创建文件夹
+        const folderInZip = zip.folder(file.name);
+        if (folderInZip) {
+          // 递归处理文件夹内容
+          await processFolder(file, folderInZip, file.name);
+        }
+      } else if (file.filename) {
+        // 处理普通文件 - 直接添加到根目录
+        const filePath = join(UPLOAD_DIR, file.filename);
+        console.log(`尝试读取文件: ${filePath}`);
+        
+        if (existsSync(filePath)) {
+          try {
+            const fileContent = await fs.readFile(filePath);
+            // 使用原始文件名，避免重复
+            const fileName = file.name || `file_${file.id}`;
+            zip.file(fileName, fileContent);
+            // 记录文件下载历史
+            await recordDownloadHistory(userId, file.id);
+          } catch (error) {
+            console.error(`读取文件失败: ${filePath}`, error);
+          }
+        } else {
+          console.error(`文件不存在: ${filePath}`);
+        }
+      }
+    }
+  }
+
+  // 生成ZIP文件到临时位置
+  console.log(`正在生成ZIP文件到临时路径: ${tempFilePath}`);
+  
+  // 记录ZIP文件的内容结构
+  const zipContents = zip.files;
+  const fileCount = Object.keys(zipContents).length;
+  console.log(`ZIP文件将包含 ${fileCount} 个项目`);
+  console.log('ZIP内容清单:');
+  Object.keys(zipContents).forEach(path => {
+    const isFolder = zipContents[path].dir;
+    console.log(`- ${isFolder ? '[文件夹] ' : '[文件] '}${path}`);
+  });
+  
+  const zipContent = await zip.generateAsync({ 
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: {
+      level: 6 // 提高压缩级别，平衡压缩率和速度
+    },
+    streamFiles: true // 启用流式处理，减少内存使用
+  });
+
+  // 写入临时文件
+  await fs.writeFile(tempFilePath, zipContent);
+  console.log(`ZIP文件已写入临时位置，大小: ${(zipContent.length / 1024).toFixed(2)} KB`);
+  
+  // 确定文件名
+  const fileName = folderId 
+    ? `folder-${folderId}-${Date.now()}.zip` 
+    : `files-${Date.now()}.zip`;
+  
+  // 创建文件流
+  const fileStream = createReadStream(tempFilePath);
+  
+  // 注册文件读取完成后的清理操作
+  fileStream.on('end', () => {
+    // 延迟删除临时文件，确保文件已被完全读取
+    setTimeout(() => {
+      fs.unlink(tempFilePath).catch(err => {
+        console.error(`删除临时文件失败: ${tempFilePath}`, err);
+      });
+    }, 1000);
+  });
+  
+  return {
+    fileName,
+    filePath: tempFilePath
+  };
+}
+
+/**
+ * 直接返回文件响应
+ */
+async function returnFileResponse(filePath: string, fileName: string, contentType: string): Promise<Response> {
+  // 直接读取文件到内存
+  const fileBuffer = await fs.readFile(filePath);
+  
+  // 成功读取文件后，安排稍后删除临时文件
+  setTimeout(() => {
+    fs.unlink(filePath).catch(err => {
+      console.error(`删除临时文件失败: ${filePath}`, err);
+    });
+  }, 5000);
+  
+  console.log(`文件已读取，准备返回下载，大小: ${(fileBuffer.length / 1024).toFixed(2)} KB`);
+  
+  return new Response(fileBuffer, {
+    headers: {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+      'Content-Length': fileBuffer.length.toString(),
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+}

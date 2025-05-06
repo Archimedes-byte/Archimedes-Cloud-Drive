@@ -4,42 +4,22 @@
  * 包含与API交互相关的基础类型定义
  */
 
-// 响应状态接口
-export interface ResponseStatus {
-  success: boolean;
-  message?: string;
-  code?: string | number;
-}
+import { 
+  ApiResponse as SharedApiResponse, 
+  ResponseStatus,
+  ErrorResponse as SharedErrorResponse,
+  ApiError as SharedApiError
+} from '@/app/types/shared/api-types';
 
-// API基础响应接口
-export interface ApiResponse<T = any> extends ResponseStatus {
-  data?: T;
-  errors?: Record<string, string[]>;
-}
+// 导出共享类型
+export type { 
+  ResponseStatus,
+  SharedErrorResponse as ErrorResponse,
+  SharedApiError as ApiError
+};
 
-// 统一错误响应
-export interface ErrorResponse {
-  success: false;
-  error: string;
-  code?: number | string;
-  message?: string;
-  details?: Record<string, any>;
-}
-
-// API错误类
-export class ApiError extends Error {
-  code: number | string;
-  message: string;
-  details?: Record<string, any>;
-
-  constructor(message: string, code: number | string = 'UNKNOWN_ERROR', details?: Record<string, any>) {
-    super(message);
-    this.name = 'ApiError';
-    this.code = code;
-    this.message = message;
-    this.details = details;
-  }
-}
+// 为了向后兼容，保持ApiResponse的导出
+export type ApiResponse<T = any> = SharedApiResponse<T>;
 
 // 配置接口
 export interface AppConfig {

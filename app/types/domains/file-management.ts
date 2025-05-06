@@ -120,29 +120,6 @@ export interface RenameModalProps {
   extension?: string;
 }
 
-/**
- * 文件上下文类型
- */
-export interface FileContextType {
-  // 状态
-  files: ExtendedFile[];
-  selectedFiles: string[];
-  currentFolderId: string | null;
-  folderPath: FolderPathItem[];
-  isLoading: boolean;
-  error: string | null;
-  sortOrder: SortOrder;
-  selectedFileType: FileTypeEnum | null;
-
-  // 方法
-  loadFiles: (folderId?: string | null) => Promise<void>;
-  selectFiles: (fileIds: string[]) => void;
-  clearSelection: () => void;
-  updateFileSort: (sortOrder: SortOrder) => void;
-  setFileType: (type: FileTypeEnum | null) => void;
-  navigateToFolder: (folderId: string | null, folderName?: string) => void;
-}
-
 // ----------------------------------------------------------------------------
 // Hooks接口
 // ----------------------------------------------------------------------------

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from 'sonner'
 import { applyTheme as applyThemeService } from '@/app/theme';
-import { UserProfile } from '@/app/types/user';
+import { UserProfile } from '@/app/types';
 import { apiClient } from '@/app/services/api/client';
 
 // 默认离线用户配置，当API不可用时使用
@@ -37,14 +37,20 @@ export function useProfile() {
   /**
    * 获取用户资料
    * @param showToast 是否显示加载成功的提示
+   * @param forceLoad 是否强制重新加载数据
+   * @param skipLoadingState 是否跳过加载状态设置(用于提高UI响应速度)
    * @returns 用户资料
    */
-  const fetchUserProfile = useCallback(async (showToast = false) => {
+  const fetchUserProfile = useCallback(async (
+    showToast = false, 
+    forceLoad = false,
+    skipLoadingState = false
+  ) => {
     // 如果没有session，则不进行请求
     if (!session || !session.user || !session.user.email) {
-      setIsLoading(false)
-      setError('未检测到有效会话或用户信息')
-      return null
+      !skipLoadingState && setIsLoading(false);
+      setError('未检测到有效会话或用户信息');
+      return null;
     }
 
     // 如果已处于离线模式，使用离线资料
@@ -53,57 +59,70 @@ export function useProfile() {
         ...DEFAULT_OFFLINE_PROFILE,
         email: session.user?.email || DEFAULT_OFFLINE_PROFILE.email,
         name: session.user?.name || DEFAULT_OFFLINE_PROFILE.name,
-      }
-      setUserProfile(offlineProfile)
-      setIsLoading(false)
-      return offlineProfile
+      };
+      setUserProfile(offlineProfile);
+      !skipLoadingState && setIsLoading(false);
+      return offlineProfile;
+    }
+
+    // 如果已经有数据并且不是强制加载，则直接返回缓存数据
+    if (userProfile && !forceLoad) {
+      return userProfile;
     }
 
     // 开始加载
-    setIsLoading(true)
-    setError(null)
+    !skipLoadingState && setIsLoading(true);
+    setError(null);
     
     try {
       // 使用API客户端获取资料
-      const profile = await apiClient.getUserProfile()
-      setUserProfile(profile)
+      const profile = await apiClient.getUserProfile();
+      setUserProfile(profile);
       
       if (showToast) {
-        toast.success('用户资料已更新')
+        toast.success('用户资料已更新');
       }
       
       // 应用用户主题
       if (profile.theme) {
-        applyThemeService(profile.theme)
+        applyThemeService(profile.theme);
       }
       
-      return profile
+      return profile;
     } catch (err) {
-      console.error('获取用户资料失败:', err)
-      setError(err instanceof Error ? err.message : '无法加载用户资料')
+      console.error('获取用户资料失败:', err);
+      setError(err instanceof Error ? err.message : '无法加载用户资料');
       
       // 进入离线模式
-      setIsOfflineMode(true)
+      setIsOfflineMode(true);
       const offlineProfile = {
         ...DEFAULT_OFFLINE_PROFILE,
         email: session.user?.email || DEFAULT_OFFLINE_PROFILE.email,
         name: session.user?.name || DEFAULT_OFFLINE_PROFILE.name,
-      }
-      setUserProfile(offlineProfile)
+      };
+      setUserProfile(offlineProfile);
       
-      return offlineProfile
+      return offlineProfile;
     } finally {
-      setIsLoading(false)
+      !skipLoadingState && setIsLoading(false);
     }
-  }, [session, isOfflineMode])
+  }, [session, isOfflineMode, userProfile])
 
   /**
    * 强制刷新用户资料
    * @returns 刷新后的用户资料
    */
   const forceRefreshProfile = useCallback(() => {
-    return fetchUserProfile(true)
-  }, [fetchUserProfile])
+    return fetchUserProfile(true, true);
+  }, [fetchUserProfile]);
+
+  /**
+   * 后台刷新用户资料(不更新loading状态，不阻塞UI)
+   * @returns 刷新后的用户资料 
+   */
+  const backgroundRefreshProfile = useCallback(() => {
+    return fetchUserProfile(false, true, true);
+  }, [fetchUserProfile]);
 
   /**
    * 更新用户资料
@@ -155,6 +174,7 @@ export function useProfile() {
     effectiveAvatarUrl,
     fetchUserProfile,
     forceRefreshProfile,
+    backgroundRefreshProfile,
     updateUserProfile
   }
 } 

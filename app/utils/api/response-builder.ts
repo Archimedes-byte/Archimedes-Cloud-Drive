@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { UserProfile } from '@/app/types/user';
+import { UserProfile } from '@/app/types';
 
 /**
  * 创建成功的API响应
@@ -10,6 +10,6 @@ import { UserProfile } from '@/app/types/user';
 export function createSuccessResponse<T>(data: T) {
   return NextResponse.json({
     success: true,
-    ...typeof data === 'object' ? data : { data }
+    data: data // 确保统一使用data字段包装所有响应内容
   });
 } 

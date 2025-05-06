@@ -1,5 +1,5 @@
 import React, { useCallback, useImperativeHandle, forwardRef } from 'react';
-import { UserProfile, UserProfileInput } from '@/app/types/user';
+import { UserProfile, UserProfileInput } from '@/app/types';
 import { useProfileForm } from '@/app/hooks/user';
 import { PersonalInfoForm } from './PersonalInfoForm';
 import { ContactInfoForm } from './ContactInfoForm';

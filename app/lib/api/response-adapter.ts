@@ -3,7 +3,7 @@
  * 
  * 提供统一的前后端响应格式处理，确保一致性
  */
-import { ApiResponse } from '@/app/types/auth';
+import { ApiResponse } from '@/app/types/shared/api-types';
 
 /**
  * 将API响应转换为统一格式

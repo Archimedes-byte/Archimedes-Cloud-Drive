@@ -2,57 +2,61 @@
  * 最近下载记录API路由
  * 获取用户最近下载的文件
  */
-import { 
-  withAuth, 
-  AuthenticatedRequest, 
-  createApiResponse, 
-  createApiErrorResponse 
-} from '@/app/middleware/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { handleApiError } from '@/app/utils/api/error-handler';
+import { createSuccessResponse } from '@/app/utils/api/response-builder';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
-import { FileInfo } from '@/app/types';
-import { mapFileEntityToFileInfo } from '@/app/services/storage';
-
-// 定义API响应类型
-interface RecentDownloadsResponse {
-  files: FileInfo[];
-}
+import { ApiResponse } from '@/app/types/shared/api-types';
+import { formatFile } from '@/app/utils/file';
 
 /**
- * 获取最近下载文件
+ * 获取最近下载的文件
  */
-export const GET = withAuth<RecentDownloadsResponse>(async (req: AuthenticatedRequest) => {
+export async function GET(request: NextRequest) {
   try {
-    // 获取查询参数
-    const { searchParams } = new URL(req.url);
-    const limit = searchParams.has('limit') ? parseInt(searchParams.get('limit')!) : 10;
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
     
-    // 限制最大获取数量
-    const safeLimit = Math.min(limit, 50);
-    
-    console.log(`[API:downloads/recent] 获取最近下载文件, 用户ID: ${req.user.id}, 限制: ${safeLimit}`);
-    
-    // 获取最近下载文件
-    const downloadHistories = await prisma.downloadHistory.findMany({
-      where: { userId: req.user.id },
-      orderBy: { downloadedAt: 'desc' },
-      take: safeLimit,
-      include: { file: true }
+    // 获取最近下载的文件
+    const recentDownloads = await prisma.downloadHistory.findMany({
+      where: {
+        userId: (session.user as any).id
+      },
+      orderBy: {
+        downloadedAt: 'desc'
+      },
+      take: 10,
+      include: {
+        file: true
+      }
     });
     
-    // 转换为文件信息
-    const recentDownloads = downloadHistories
-      .filter(history => !history.file.isDeleted) // 过滤已删除的文件
-      .map(history => ({
-        ...mapFileEntityToFileInfo(history.file),
-        downloadedAt: history.downloadedAt
-      }));
+    // 获取完整的文件信息
+    const fileIds = recentDownloads
+      .filter(download => download.fileId) // 过滤无效记录
+      .map(download => download.fileId);
+      
+    // 查询文件详细信息
+    const files = await prisma.file.findMany({
+      where: {
+        id: { in: fileIds },
+        isDeleted: false
+      }
+    });
     
-    console.log(`[API:downloads/recent] 找到 ${recentDownloads.length} 个最近下载文件`);
+    // 格式化文件数据
+    const formattedFiles = files.map(file => formatFile(file));
     
-    // 修改：使用files字段包装数据，与前端期望的格式保持一致
-    return createApiResponse({ files: recentDownloads });
-  } catch (error: any) {
-    console.error('[API:downloads/recent] 获取最近下载文件失败:', error);
-    return createApiErrorResponse(error.message || '获取最近下载文件失败', 500);
+    // 返回成功响应
+    return createSuccessResponse({ files: formattedFiles });
+  } catch (error) {
+    return handleApiError(error, '获取最近下载的文件失败');
   }
-}); 
+} 

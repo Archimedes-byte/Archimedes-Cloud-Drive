@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { UserProfileInput } from '@/app/types/user'
+import { UserProfileInput } from '@/app/types'
 import { handleApiError } from '@/app/utils/api/error-handler'
 import { createSuccessResponse } from '@/app/utils/api/response-builder'
 import { SessionManager } from '@/app/services/session/SessionManager'

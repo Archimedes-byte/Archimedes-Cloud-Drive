@@ -16,7 +16,7 @@ import {
   createUser,
   getUserBasicById
 } from './user-service';
-import { UserBasic } from '@/app/types/user';
+import { UserBasic } from '@/app/types';
 import { toUserBasic } from '@/app/utils/user/transform';
 
 /**

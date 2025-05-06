@@ -22,6 +22,21 @@ export enum FileTypeEnum {
 }
 
 /**
+ * 旧版文件类型枚举 - 向后兼容，与FileTypeEnum完全相同
+ * @deprecated 建议使用FileTypeEnum替代
+ */
+export enum FileType {
+  IMAGE = 'image',
+  DOCUMENT = 'document',
+  VIDEO = 'video',
+  AUDIO = 'audio',
+  ARCHIVE = 'archive',
+  CODE = 'code',
+  FOLDER = 'folder',
+  UNKNOWN = 'unknown'
+}
+
+/**
  * 排序方向枚举 - 取代字符串联合类型
  */
 export enum SortDirectionEnum {

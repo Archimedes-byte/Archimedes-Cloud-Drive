@@ -1,6 +1,6 @@
 /**
  * 记录文件访问历史API路由
- * 更新文件的最后访问时间，用于最近访问记录
+ * 创建或更新文件访问历史记录
  */
 import { 
   withAuth, 
@@ -40,14 +40,22 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       return createApiErrorResponse('文件不存在或已被删除', 404);
     }
     
-    // 更新文件的访问时间（我们使用updatedAt字段作为最后访问时间）
-    await prisma.file.update({
-      where: { id: fileId },
-      data: { updatedAt: new Date() },
-    });
-    
-    console.log(`[API:recent/record] 成功记录文件访问: ${fileId}`);
-    return createApiResponse({ success: true });
+    try {
+      // 创建新的文件访问记录
+      await prisma.fileAccess.create({
+        data: {
+          userId: req.user.id,
+          fileId: fileId,
+          accessedAt: new Date()
+        }
+      });
+      
+      console.log(`[API:recent/record] 成功记录文件访问: ${fileId}`);
+      return createApiResponse({ success: true });
+    } catch (dbError) {
+      console.error('[API:recent/record] 数据库操作失败:', dbError);
+      throw dbError;
+    }
   } catch (error: any) {
     console.error('[API:recent/record] 记录文件访问历史失败:', error);
     return createApiErrorResponse(error.message || '记录文件访问失败', 500);

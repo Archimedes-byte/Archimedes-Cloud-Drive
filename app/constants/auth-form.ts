@@ -3,7 +3,7 @@
  * 
  * 提供认证表单的默认配置和常量
  */
-import { LoginCredentials, RegisterData } from '@/app/types/auth';
+import { LoginCredentials, RegisterData } from '@/app/types';
 
 /**
  * 登录表单默认值

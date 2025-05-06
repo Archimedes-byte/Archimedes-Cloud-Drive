@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Layout, Avatar, Button, Tooltip, Divider, theme } from 'antd';
 import { 
   HomeOutlined, LogoutOutlined, BgColorsOutlined, 
   UserOutlined 
 } from '@ant-design/icons';
 import styles from './mini-sidebar.module.css';
+import { useRouter } from 'next/navigation';
+import { useProfile } from '@/app/hooks/user/useProfile';
 
 const { Sider } = Layout;
 const { useToken } = theme;
@@ -35,6 +37,28 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
 }: AntMiniSidebarProps) {
   // 获取antd主题token
   const { token } = useToken();
+  const router = useRouter();
+  const [isClicked, setIsClicked] = useState(false);
+  // 使用profile钩子获取优化的刷新方法
+  const { backgroundRefreshProfile } = useProfile();
+
+  // 处理头像点击，优化性能
+  const handleAvatarClick = useCallback(() => {
+    // 防止重复点击
+    if (isClicked) return;
+    
+    setIsClicked(true);
+    
+    // 立即执行路由跳转到dashboard页面
+    router.push('/dashboard');
+    
+    // 使用requestAnimationFrame确保UI绘制优先，避免阻塞
+    requestAnimationFrame(() => {
+      // 使用不阻塞UI的后台刷新方法
+      backgroundRefreshProfile();
+      setIsClicked(false);
+    });
+  }, [router, isClicked, backgroundRefreshProfile]);
 
   // 获取用户首字母作为头像显示
   const getAvatarText = useCallback(() => {
@@ -66,7 +90,7 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
           <Button 
             type="text" 
             shape="circle" 
-            onClick={onAvatarClick}
+            onClick={handleAvatarClick}
             style={{ padding: 0 }}
           >
             {safeAvatarUrl ? (

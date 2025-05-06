@@ -19,6 +19,7 @@ model User {
   isAdmin           Boolean           @default(false)
   accounts          Account[]
   downloadHistories DownloadHistory[]
+  fileAccesses      FileAccess[]
   favorites         Favorite[]
   favoriteFolders   FavoriteFolder[]
   files             File[]
@@ -101,6 +102,7 @@ model File {
   uploaderId        String
   tags              String[]
   url               String?
+  accessHistories   FileAccess[]
   downloadHistories DownloadHistory[]
   favorites         Favorite[]
   File              File?             @relation("FileToFile", fields: [parentId], references: [id])
@@ -215,4 +217,18 @@ model DownloadHistory {
   @@index([userId])
   @@index([fileId])
   @@index([downloadedAt])
+}
+
+// 文件访问历史模型
+model FileAccess {
+  id         String   @id @default(cuid())
+  userId     String
+  fileId     String
+  accessedAt DateTime @default(now())
+  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([fileId])
+  @@index([accessedAt])
 }

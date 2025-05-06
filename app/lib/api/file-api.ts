@@ -11,6 +11,8 @@ import {
   isNetworkError, 
   handleApiResponse 
 } from '@/app/utils/error';
+import { ApiResponse } from '@/app/types/shared/api-types';
+import { PaginatedResponse as SharedPaginatedResponse } from '@/app/types/shared/api-types';
 
 /**
  * 定义收藏夹类型
@@ -24,16 +26,6 @@ export interface FavoriteFolderInfo {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
-}
-
-/**
- * API响应接口
- */
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
 }
 
 /**
@@ -68,14 +60,9 @@ export interface FileSearchRequest {
 }
 
 /**
- * 分页响应
+ * 分页响应 - 使用共享类型别名
  */
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type PaginatedResponse<T> = SharedPaginatedResponse<T>;
 
 /**
  * 统一的文件管理API客户端
@@ -402,11 +389,26 @@ export const fileApi = {
   },
   
   // 获取单个文件信息
-  async getFile(fileId: string): Promise<FileInfo> {
-    // 使用新的API路径
-    const response = await fetch(API_PATHS.STORAGE.FILES.GET(fileId));
-    
-    return handleApiResponse<FileInfo>(response);
+  async getFile(fileId: string): Promise<FileInfo | null> {
+    try {
+      const response = await fetch(`${API_PATHS.STORAGE.FILES.GET(fileId)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`获取文件信息失败: ${response.status}`);
+      }
+      
+      return await handleApiResponse<FileInfo>(response);
+    } catch (error) {
+      console.error('获取文件信息失败:', error);
+      throw new ApiError('获取文件信息失败', typeof error === 'object' ? (error as any).status : 500);
+    }
   },
   
   // 获取存储统计信息
@@ -697,6 +699,41 @@ export const fileApi = {
       console.error('记录文件访问历史失败:', error);
       // 即使失败也不影响用户体验，返回成功
       return { success: false };
+    }
+  },
+  
+  // 获取文件访问历史
+  async getFileAccessHistory(fileId: string, page = 1, limit = 50): Promise<{
+    history: Array<{
+      id: string;
+      userId: string;
+      userName: string;
+      userEmail: string;
+      accessedAt: string;
+    }>;
+    pagination: {
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    };
+  }> {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      const url = `${API_PATHS.STORAGE.FILES.ACCESS_HISTORY(fileId)}?${params.toString()}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      return handleApiResponse<any>(response);
+    } catch (error) {
+      console.error('获取文件访问历史失败:', error);
+      throw error;
     }
   },
   

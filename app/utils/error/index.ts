@@ -18,6 +18,7 @@
  */
 
 import { message } from 'antd';
+import { ApiResponse } from '@/app/types/shared/api-types';
 
 /**
  * 错误类型枚举
@@ -528,15 +529,9 @@ export async function fetchWithTimeout(
 }
 
 /**
- * API响应数据接口
+ * API响应数据接口 - 使用共享类型避免重复定义
  */
-export interface ApiDataResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
-  message?: string;
-  code?: string | number;
-}
+// 删除冗余定义，直接使用共享类型
 
 /**
  * 通用错误处理的异步API调用包装器
@@ -546,7 +541,7 @@ export interface ApiDataResponse<T> {
  * @returns 响应数据或null
  */
 export async function withErrorHandling<T>(
-  apiCall: () => Promise<ApiDataResponse<T> | T>,
+  apiCall: () => Promise<ApiResponse<T> | T>,
   options: {
     showError?: boolean;
     errorMessage?: string;
@@ -566,7 +561,7 @@ export async function withErrorHandling<T>(
     
     // 检查是否是API标准响应格式
     if (response && typeof response === 'object' && 'success' in response) {
-      const apiResponse = response as ApiDataResponse<T>;
+      const apiResponse = response as ApiResponse<T>;
       if (!apiResponse.success) {
         throw new ApiError(
           apiResponse.error || apiResponse.message || '请求失败',
@@ -574,7 +569,7 @@ export async function withErrorHandling<T>(
           apiResponse.code
         );
       }
-      return apiResponse.data;
+      return apiResponse.data || null;
     }
     
     // 不是标准API响应，直接返回数据

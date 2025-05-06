@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Session } from 'next-auth';
-import { UserProfile } from '@/app/types/user';
+import { UserProfile } from '@/app/types';
 import { CameraOutlined } from '@ant-design/icons';
 import styles from './ProfileHeader.module.css';
 import { AvatarModal } from '@/app/components/features/user-profile/avatar';

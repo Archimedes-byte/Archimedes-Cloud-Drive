@@ -3,14 +3,7 @@
  * 
  * 统一处理所有API请求，包含重试、超时和错误处理逻辑
  */
-import { UserProfile, UserProfileInput } from '@/app/types/user';
-
-// API响应通用接口
-interface ApiResponse<T> {
-  success: boolean;
-  error?: string;
-  [key: string]: any;
-}
+import { UserProfile, UserProfileInput, ApiResponse } from '@/app/types/shared/api-types';
 
 // 重试配置接口
 interface RetryConfig {
@@ -127,11 +120,20 @@ export class ApiClient {
   async getUserProfile(): Promise<UserProfile> {
     const response = await this.request<ApiResponse<{profile: UserProfile}>>('/api/user/profile');
     
-    if (!response.profile) {
+    if (!response.data) {
+      // 添加更详细的错误信息以便调试
+      console.error('API返回格式不符合预期:', JSON.stringify(response));
       throw new Error('未返回用户资料');
     }
     
-    return response.profile;
+    // 适配新的响应格式
+    const profile = response.data.profile;
+    if (!profile) {
+      console.error('API返回的数据中没有profile字段:', JSON.stringify(response.data));
+      throw new Error('未返回用户资料');
+    }
+    
+    return profile;
   }
   
   /**
@@ -143,11 +145,11 @@ export class ApiClient {
       body: JSON.stringify(data)
     });
     
-    if (!response.profile) {
+    if (!response.data || !response.data.profile) {
       throw new Error('未返回更新后的用户资料');
     }
     
-    return response.profile;
+    return response.data.profile;
   }
 }
 

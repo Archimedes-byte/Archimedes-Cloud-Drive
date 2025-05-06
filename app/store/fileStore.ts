@@ -1,5 +1,15 @@
 import { create } from 'zustand';
-import { FolderPathItem, FileInfo, FileTypeEnum, FileSortInterface, SortDirectionEnum } from '@/app/types';
+import { 
+  FolderPathItem, 
+  FileInfo, 
+  FileTypeEnum, 
+  FileSortInterface, 
+  SortDirectionEnum,
+  SortOrder,
+  convertInterfaceToSortOrder,
+  convertSortOrderToInterface,
+  ExtendedFile 
+} from '@/app/types';
 import { fileApi } from '@/app/lib/api/file-api';
 import { safeAsync } from '@/app/utils/error';
 import { sortFiles } from '@/app/utils/file/sort';
@@ -7,6 +17,7 @@ import { filterFilesByType } from '@/app/utils/file/type';
 
 /**
  * 文件状态接口
+ * 整合了原FileContextType和FileState的功能
  */
 interface FileState {
   // 文件列表状态
@@ -41,6 +52,11 @@ interface FileState {
   
   // 工具方法
   resetState: () => void;
+  
+  // 从FileContextType迁移的方法
+  updateFileSort: (sortOrder: SortOrder) => void;
+  setFileType: (type: FileTypeEnum | null) => void;
+  navigateToFolder: (folderId: string | null, folderName?: string) => void;
 }
 
 /**
@@ -406,6 +422,37 @@ const useFileStore = create<FileState>((set, get) => ({
         direction: SortDirectionEnum.DESC
       }
     });
+  },
+  
+  /**
+   * 从FileContextType迁移：更新文件排序
+   * @param sortOrder 排序选项
+   */
+  updateFileSort: (sortOrder: SortOrder) => {
+    // 将 SortOrder 转换为 FileSortInterface
+    const sortInterface = convertSortOrderToInterface(sortOrder);
+    set({ sortOrder: sortInterface });
+  },
+  
+  /**
+   * 从FileContextType迁移：设置文件类型过滤
+   * @param type 文件类型
+   */
+  setFileType: (type: FileTypeEnum | null) => {
+    set({ selectedFileType: type });
+    // 如果类型改变，重新加载文件列表
+    get().loadFiles(get().currentFolderId, type, true);
+  },
+  
+  /**
+   * 从FileContextType迁移：导航到文件夹
+   * @param folderId 文件夹ID
+   * @param folderName 文件夹名称(可选)
+   */
+  navigateToFolder: (folderId: string | null, folderName?: string) => {
+    // 切换文件夹时清除之前的类型筛选
+    set({ selectedFileType: null });
+    get().loadFiles(folderId, null, true);
   }
 }));
 

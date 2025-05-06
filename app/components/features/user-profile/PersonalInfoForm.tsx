@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Input } from '@/app/components/ui/ant';
 import { FormField } from '@/app/components/common/form';
-import { UserProfile } from '@/app/types/user';
+import { UserProfile } from '@/app/types';
 import { handleFocusWithSelect } from '@/app/utils/form/field-handlers';
 import styles from './ProfileForm.module.css';
 

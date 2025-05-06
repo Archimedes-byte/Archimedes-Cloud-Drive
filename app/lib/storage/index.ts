@@ -29,7 +29,7 @@ export {
 
 // 从文件工具模块导入相关类型和函数
 import { getFileNameAndExtension } from '@/app/utils/file';
-import { FileType } from '@/app/types/file';
+import { FileType } from '@/app/types';
 import { FILE_TYPE_MAP } from '@/app/types/domains/fileTypes';
 
 // 重新导出这些导入的类型和函数
@@ -46,7 +46,9 @@ export {
 export {
   downloadFile,
   downloadFolder,
-  downloadBlob
+  downloadBlob,
+  downloadFileDirect,
+  downloadMultipleFiles
 } from './utils/download';
 
 // 从app/services/storage导入高级服务 (推荐使用这些服务)

@@ -15,10 +15,18 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// 创建或复用Prisma客户端实例
+// 优化Prisma客户端配置以加快启动速度
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  // 可在此添加日志配置等选项
-  // log: ['query', 'info', 'warn', 'error'],
+  // 优化连接配置
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  // 禁用查询引擎日志以提高性能
+  errorFormat: 'minimal',
+  // 连接池配置
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
 });
 
 // 在开发环境中保存实例到全局变量，避免热重载时创建多个连接

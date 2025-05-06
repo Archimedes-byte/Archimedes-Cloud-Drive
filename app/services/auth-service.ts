@@ -14,7 +14,7 @@ import {
   ApiResponse,
   LoginCredentials,
   RegisterData
-} from '@/app/types/auth';
+} from '@/app/types';
 import { adaptApiResponse, adaptErrorToResponse } from '@/app/lib/api/response-adapter';
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import { logAuthError } from '@/app/lib/error/auth-error';

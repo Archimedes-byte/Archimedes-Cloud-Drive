@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { FileInfo } from '@/app/types';
+import { FileInfo, ApiResponse } from '@/app/types';
 import { fileApi } from '@/app/lib/api/file-api';
 
-// 添加API响应类型定义
-interface FileApiResponse {
+// 使用扩展共享类型定义API响应类型
+interface FileApiResponse extends ApiResponse {
   files?: FileInfo[];
   [key: string]: any;
 }
