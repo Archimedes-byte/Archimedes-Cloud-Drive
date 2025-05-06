@@ -40,18 +40,9 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       return createApiErrorResponse('文件不存在或已被删除', 404);
     }
     
-    // 创建或更新下载记录
-    await prisma.downloadHistory.upsert({
-      where: {
-        userId_fileId: {
-          userId: req.user.id,
-          fileId: fileId
-        }
-      },
-      update: {
-        downloadedAt: new Date()
-      },
-      create: {
+    // 创建新的下载记录，每次都添加新记录
+    await prisma.downloadHistory.create({
+      data: {
         userId: req.user.id,
         fileId: fileId,
         downloadedAt: new Date()

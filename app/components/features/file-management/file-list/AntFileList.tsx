@@ -80,6 +80,7 @@ interface AntFileListProps {
   onToggleFavorite?: (file: FileInfo, isFavorite: boolean) => void;
   fileUpdateTrigger?: number;
   showPath?: boolean;
+  customColumns?: (defaultColumns: any[]) => any[];
 }
 
 export function AntFileList({
@@ -115,7 +116,8 @@ export function AntFileList({
   favoritedFileIds = [],
   onToggleFavorite,
   fileUpdateTrigger = 0,
-  showPath = false
+  showPath = false,
+  customColumns
 }: AntFileListProps) {
   // ----- 防御性编程: 确保所有props有默认值 -----
   const safeFiles = Array.isArray(files) ? files : [];
@@ -314,216 +316,239 @@ export function AntFileList({
   );
 
   // Ant Design表格列定义
-  const columns = [
-    // 文件勾选列
-    ...(showCheckboxes ? [
-      {
-        title: (
-          <Checkbox
-            checked={areAllSelected}
-            onChange={(e) => {
-              if (e.target.checked) {
-                onSelectAll?.();
-              } else {
-                onDeselectAll?.();
-              }
-            }}
-          />
-        ),
-        dataIndex: 'checkbox',
-        key: 'checkbox',
-        width: 50,
-        render: (_: any, record: FileInfo) => (
-          <Checkbox
-            checked={safeSelectedFiles.includes(record.id)}
-            onChange={(e) => handleFileCheckboxChange(e.target.checked, record)}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-      }
-    ] : []),
-    
-    // 收藏列
-    {
-      title: '',
-      dataIndex: 'favorite',
-      key: 'favorite',
-      width: 50,
-      render: (_: any, record: FileInfo) => renderFavoriteButton(record),
-    },
-    
-    // 文件名列
-    {
-      title: '名称',
-      dataIndex: 'name',
-      key: 'name',
-      className: 'name-column',
-      ellipsis: true,
-      sorter: (a: FileInfo, b: FileInfo) => {
-        // 文件夹总是排在文件前面
-        if (a.isFolder && !b.isFolder) return -1;
-        if (!a.isFolder && b.isFolder) return 1;
-        return a.name.localeCompare(b.name);
-      },
-      render: (_: any, record: FileInfo) => {
-        const isEditing = record.id === actualEditingFileId;
-        
-        if (isEditing) {
-          return (
-            <Input
-              ref={editNameInputRef}
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => handleEditKeyDown(e, record.id)}
-              autoFocus
+  const columns = useMemo(() => {
+    // 默认列定义
+    let defaultColumns = [
+      // 文件勾选列
+      ...(showCheckboxes ? [
+        {
+          title: (
+            <Checkbox
+              checked={areAllSelected}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  onSelectAll?.();
+                } else {
+                  onDeselectAll?.();
+                }
+              }}
             />
-          );
+          ),
+          dataIndex: 'checkbox',
+          key: 'checkbox',
+          width: 50,
+          render: (_: any, record: FileInfo) => (
+            <Checkbox
+              checked={safeSelectedFiles.includes(record.id)}
+              onChange={(e) => handleFileCheckboxChange(e.target.checked, record)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ),
         }
-        
-        /* 直接显示文件名，不再分解扩展名 */
-        return (
-          <div className="file-name-wrapper" onClick={() => onFileClick(record)}>
-            {renderFileIcon(record)}
-            <div className="file-name" title={record.name}>
-              {record.name}
-            </div>
-          </div>
-        );
-      },
-      width: '40%',
-    },
-    
-    // 路径列 - 仅在搜索结果中显示
-    ...(showPath ? [
+      ] : []),
+      
+      // 收藏列
       {
-        title: '所在位置',
-        dataIndex: 'path',
-        key: 'path',
-        width: 220,
+        title: '',
+        dataIndex: 'favorite',
+        key: 'favorite',
+        width: 50,
+        render: (_: any, record: FileInfo) => renderFavoriteButton(record),
+      },
+      
+      // 文件名列
+      {
+        title: '名称',
+        dataIndex: 'name',
+        key: 'name',
+        className: 'name-column',
+        ellipsis: true,
+        sorter: (a: FileInfo, b: FileInfo) => {
+          // 文件夹总是排在文件前面
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          return a.name.localeCompare(b.name);
+        },
         render: (_: any, record: FileInfo) => {
-          const path = record.path || '-';
-          if (!path || path === '-') return <Text type="secondary">-</Text>;
+          const isEditing = record.id === actualEditingFileId;
           
+          if (isEditing) {
+            return (
+              <Input
+                ref={editNameInputRef}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => handleEditKeyDown(e, record.id)}
+                autoFocus
+              />
+            );
+          }
+          
+          /* 直接显示文件名，不再分解扩展名 */
           return (
-            <Text 
-              ellipsis={true} 
-              title={path}
-              style={{ color: '#718096', fontSize: '13px' }}
-            >
-              {path}
-            </Text>
+            <div className="file-name-wrapper" onClick={() => onFileClick(record)}>
+              {renderFileIcon(record)}
+              <div className="file-name" title={record.name}>
+                {record.name}
+              </div>
+            </div>
           );
         },
-      }
-    ] : []),
-    
-    // 标签列
-    {
-      title: '标签',
-      dataIndex: 'tags',
-      key: 'tags',
-      width: 220,
-      render: (_: any, record: FileInfo) => {
-        const isEditing = record.id === actualEditingFileId;
-        
-        if (isEditing) {
-          return (
-            <div className="tag-edit-container">
-              <div className="edit-tags-list">
-                {editTags.length > 0 ? (
-                  editTags.map((tag) => (
-                    <Tag 
-                      key={tag} 
-                      closable 
-                      onClose={() => handleRemoveTag(tag)}
-                      style={{ marginBottom: '8px' }}
-                    >
-                      {tag}
-                    </Tag>
-                  ))
-                ) : (
-                  <Text type="secondary" italic>无标签</Text>
-                )}
+        width: '40%',
+      },
+      
+      // 路径列 - 仅在搜索结果中显示
+      ...(showPath ? [
+        {
+          title: '所在位置',
+          dataIndex: 'path',
+          key: 'path',
+          width: 220,
+          render: (_: any, record: FileInfo) => {
+            const path = record.path || '-';
+            if (!path || path === '-') return <Text type="secondary">-</Text>;
+            
+            return (
+              <Text 
+                ellipsis={true} 
+                title={path}
+                style={{ color: '#718096', fontSize: '13px' }}
+              >
+                {path}
+              </Text>
+            );
+          },
+        }
+      ] : []),
+      
+      // 标签列
+      {
+        title: '标签',
+        dataIndex: 'tags',
+        key: 'tags',
+        width: 220,
+        render: (_: any, record: FileInfo) => {
+          const isEditing = record.id === actualEditingFileId;
+          
+          if (isEditing) {
+            return (
+              <div className="tag-edit-container">
+                <div className="edit-tags-list">
+                  {editTags.length > 0 ? (
+                    editTags.map((tag) => (
+                      <Tag 
+                        key={tag} 
+                        closable 
+                        onClose={() => handleRemoveTag(tag)}
+                        style={{ marginBottom: '8px' }}
+                      >
+                        {tag}
+                      </Tag>
+                    ))
+                  ) : (
+                    <Text type="secondary" italic>无标签</Text>
+                  )}
+                </div>
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    ref={newTagInputRef}
+                    placeholder="添加标签..."
+                    value={newTagValue}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    prefix={<TagOutlined />}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddTag}
+                    disabled={!newTagValue.trim()}
+                  />
+                </Space.Compact>
               </div>
-              <Space.Compact style={{ width: '100%' }}>
-                <Input
-                  ref={newTagInputRef}
-                  placeholder="添加标签..."
-                  value={newTagValue}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  prefix={<TagOutlined />}
-                />
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddTag}
-                  disabled={!newTagValue.trim()}
-                />
-              </Space.Compact>
+            );
+          }
+          
+          if (!record.tags || record.tags.length === 0) {
+            return <Text type="secondary">-</Text>;
+          }
+          
+          // 显示前2个标签，其余使用可点击标签展示
+          const visibleTags = record.tags.slice(0, 2);
+          const remainingCount = record.tags.length - visibleTags.length;
+          
+          return (
+            <div className="tag-container">
+              {visibleTags.map(tag => (
+                <Tag key={tag} color="blue">{tag}</Tag>
+              ))}
+              {remainingCount > 0 && (
+                <Popover 
+                  content={allTagsContent(record.tags)} 
+                  title="全部标签" 
+                  trigger="click"
+                  placement="right"
+                >
+                  <Tag color="default" className="more-tags-button">+{remainingCount}</Tag>
+                </Popover>
+              )}
             </div>
           );
-        }
-        
-        if (!record.tags || record.tags.length === 0) {
-          return <Text type="secondary">-</Text>;
-        }
-        
-        // 显示前2个标签，其余使用可点击标签展示
-        const visibleTags = record.tags.slice(0, 2);
-        const remainingCount = record.tags.length - visibleTags.length;
-        
-        return (
-          <div className="tag-container">
-            {visibleTags.map(tag => (
-              <Tag key={tag} color="blue">{tag}</Tag>
-            ))}
-            {remainingCount > 0 && (
-              <Popover 
-                content={allTagsContent(record.tags)} 
-                title="全部标签" 
-                trigger="click"
-                placement="right"
-              >
-                <Tag color="default" className="more-tags-button">+{remainingCount}</Tag>
-              </Popover>
-            )}
-          </div>
-        );
+        },
       },
-    },
+      
+      // 文件大小列
+      {
+        title: '大小',
+        dataIndex: 'size',
+        key: 'size',
+        width: 120,
+        render: (_: any, record: FileInfo) => {
+          if (record.isFolder) return <span>-</span>;
+          const size = typeof record.size === 'number' ? record.size : 0;
+          return <span>{formatFileSize(size)}</span>;
+        },
+      },
+      
+      // 修改日期列
+      {
+        title: '修改日期',
+        dataIndex: 'updatedAt',
+        key: 'updatedAt',
+        width: 180,
+        render: (_: any, record: FileInfo) => {
+          const updatedAt = record.updatedAt || '';
+          if (!updatedAt) return '-';
+          try {
+            const date = new Date(updatedAt);
+            return date.toLocaleString();
+          } catch (e) {
+            return '-';
+          }
+        },
+      },
+    ];
     
-    // 文件大小列
-    {
-      title: '大小',
-      dataIndex: 'size',
-      key: 'size',
-      width: 120,
-      render: (_: any, record: FileInfo) => {
-        if (record.isFolder) return <span>-</span>;
-        const size = typeof record.size === 'number' ? record.size : 0;
-        return <span>{formatFileSize(size)}</span>;
-      },
-    },
+    // 如果提供了自定义列处理函数，应用它
+    if (customColumns) {
+      defaultColumns = customColumns(defaultColumns);
+    }
     
-    // 修改日期列
-    {
-      title: '修改日期',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
-      width: 180,
-      render: (_: any, record: FileInfo) => {
-        const updatedAt = record.updatedAt || '';
-        if (!updatedAt) return '-';
-        try {
-          const date = new Date(updatedAt);
-          return date.toLocaleString();
-        } catch (e) {
-          return '-';
-        }
-      },
-    },
-  ];
+    return defaultColumns;
+  }, [
+    showCheckboxes, 
+    areAllSelected, 
+    onSelectAll, 
+    onDeselectAll, 
+    safeSelectedFiles, 
+    safeFavoritedFileIds, 
+    actualEditingFileId, 
+    editName, 
+    editTags, 
+    newTagValue,
+    showPath,
+    customColumns // 添加自定义列处理函数作为依赖
+  ]);
 
   // 表格行属性
   const onRow = (record: FileInfo) => {

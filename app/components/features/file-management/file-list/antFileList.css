@@ -23,6 +23,23 @@
   width: 100%; /* 确保容器占满整个宽度 */
 }
 
+/* 修复按钮文字颜色问题 */
+.ant-btn {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.ant-btn-primary {
+  color: #fff !important;
+}
+
+.ant-btn-link {
+  color: #1890ff !important;
+}
+
+.ant-btn-text {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
 /* 添加表格容器滚动样式 */
 .ant-file-table .ant-table-container {
   overflow-y: auto;

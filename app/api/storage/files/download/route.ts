@@ -31,17 +31,8 @@ if (!existsSync(UPLOAD_DIR)) {
  */
 async function recordDownloadHistory(userId: string, fileId: string) {
   try {
-    await prisma.downloadHistory.upsert({
-      where: {
-        userId_fileId: {
-          userId,
-          fileId
-        }
-      },
-      update: {
-        downloadedAt: new Date()
-      },
-      create: {
+    await prisma.downloadHistory.create({
+      data: {
         userId,
         fileId,
         downloadedAt: new Date()

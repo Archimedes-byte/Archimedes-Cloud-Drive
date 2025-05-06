@@ -32,30 +32,34 @@ export async function GET(request: NextRequest) {
       orderBy: {
         downloadedAt: 'desc'
       },
-      take: 10,
+      take: 20, // 增加返回数量以确保显示更多记录
       include: {
         file: true
       }
     });
     
-    // 获取完整的文件信息
-    const fileIds = recentDownloads
-      .filter(download => download.fileId) // 过滤无效记录
-      .map(download => download.fileId);
+    console.log(`找到 ${recentDownloads.length} 条下载记录`);
+    
+    // 过滤有效记录（文件仍然存在且未删除）
+    const validDownloads = recentDownloads.filter(
+      download => download.file && !download.file.isDeleted
+    );
+    
+    console.log(`有效下载记录: ${validDownloads.length} 条`);
+    
+    // 转换为前端需要的格式
+    const formattedDownloads = validDownloads.map(download => {
+      const fileInfo = formatFile(download.file);
       
-    // 查询文件详细信息
-    const files = await prisma.file.findMany({
-      where: {
-        id: { in: fileIds },
-        isDeleted: false
-      }
+      // 添加下载时间
+      return {
+        ...fileInfo,
+        downloadedAt: download.downloadedAt.toISOString()
+      };
     });
     
-    // 格式化文件数据
-    const formattedFiles = files.map(file => formatFile(file));
-    
     // 返回成功响应
-    return createSuccessResponse({ files: formattedFiles });
+    return createSuccessResponse({ files: formattedDownloads });
   } catch (error) {
     return handleApiError(error, '获取最近下载的文件失败');
   }

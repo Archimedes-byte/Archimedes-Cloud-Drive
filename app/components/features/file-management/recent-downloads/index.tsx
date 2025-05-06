@@ -1,13 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Spin, Typography, Empty } from 'antd';
+import { Spin, Typography, Empty, Table } from 'antd';
 import { DownloadCloud } from 'lucide-react';
 import { AntFileList } from '../../file-management/file-list/AntFileList';
 import { FileInfo } from '@/app/types';
 import styles from './RecentDownloads.module.css';
+import { formatFileSize } from '@/app/utils/file/formatter';
+import { FileIcon } from '@/app/utils/file/icon-map';
+import type { TableProps } from 'antd';
 
 const { Title, Text } = Typography;
+
+// 扩展的下载历史信息接口
+interface DownloadHistoryInfo extends FileInfo {
+  downloadedAt?: string;
+}
 
 interface RecentDownloadsContentProps {
   loadingRecentDownloads: boolean;
@@ -22,6 +30,82 @@ interface RecentDownloadsContentProps {
   onToggleFavorite: (file: FileInfo, isFavorite: boolean) => void;
 }
 
+// 专门为最近下载页面创建的文件列表组件
+const DownloadHistoryFileList: React.FC<{
+  files: DownloadHistoryInfo[];
+  selectedFiles: string[];
+  onFileClick: (file: FileInfo) => void;
+  onFileSelect: (file: FileInfo, checked: boolean) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  areAllSelected?: boolean;
+  showCheckboxes?: boolean;
+  favoritedFileIds?: string[];
+  onToggleFavorite?: (file: FileInfo, isFavorite: boolean) => void;
+  fileUpdateTrigger?: number;
+  isLoading?: boolean;
+}> = ({
+  files,
+  selectedFiles,
+  onFileClick,
+  onFileSelect,
+  onSelectAll,
+  onDeselectAll,
+  areAllSelected,
+  showCheckboxes = true,
+  favoritedFileIds = [],
+  onToggleFavorite,
+  fileUpdateTrigger = 0,
+  isLoading = false,
+}) => {
+  // 基本上使用AntFileList的相同逻辑，但修改列配置
+  return (
+    <AntFileList
+      files={files}
+      selectedFiles={selectedFiles}
+      onFileClick={onFileClick}
+      onFileSelect={onFileSelect}
+      onSelectAll={onSelectAll}
+      onDeselectAll={onDeselectAll}
+      areAllSelected={areAllSelected}
+      showCheckboxes={showCheckboxes}
+      favoritedFileIds={favoritedFileIds}
+      onToggleFavorite={onToggleFavorite}
+      fileUpdateTrigger={fileUpdateTrigger}
+      isLoading={isLoading}
+      // 自定义列配置，替换修改日期为下载日期
+      customColumns={(defaultColumns) => {
+        // 找到修改日期列的索引
+        const updatedAtColumnIndex = defaultColumns.findIndex(
+          (col: any) => col.key === 'updatedAt'
+        );
+        
+        // 如果找到了修改日期列，替换为下载日期列
+        if (updatedAtColumnIndex !== -1) {
+          defaultColumns[updatedAtColumnIndex] = {
+            title: '下载日期',
+            dataIndex: 'downloadedAt',
+            key: 'downloadedAt',
+            width: 180,
+            render: (_: any, record: DownloadHistoryInfo) => {
+              const downloadedAt = record.downloadedAt || '';
+              if (!downloadedAt) return '-';
+              try {
+                const date = new Date(downloadedAt);
+                return date.toLocaleString();
+              } catch (e) {
+                return '-';
+              }
+            },
+          };
+        }
+        
+        return defaultColumns;
+      }}
+    />
+  );
+};
+
 export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   loadingRecentDownloads,
   recentDownloads,
@@ -35,7 +119,7 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
   onToggleFavorite
 }) => {
   // 使用useMemo避免不必要的重新计算
-  const files = useMemo(() => recentDownloads, [recentDownloads]);
+  const files = useMemo(() => recentDownloads as DownloadHistoryInfo[], [recentDownloads]);
   
   // 状态简化：使用计算属性而不是本地状态
   const isLoading = loadingRecentDownloads && files.length === 0;
@@ -70,7 +154,7 @@ export const RecentDownloadsContent: React.FC<RecentDownloadsContentProps> = ({
       )}
       
       {hasContent && (
-        <AntFileList 
+        <DownloadHistoryFileList 
           files={files}
           selectedFiles={selectedFiles}
           onFileClick={onFileClick}
