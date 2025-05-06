@@ -9,15 +9,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input, Button, Spin, Result, List, Avatar, Breadcrumb } from 'antd';
+import { Input, Button, Spin, Result, List, Avatar, Breadcrumb, message } from 'antd';
 import { FileIcon, folderIcon } from '@/app/utils/file/icon-map';
 import { formatFileSize } from '@/app/utils/file/formatter';
-import { Lock, Download, File, Folder, ChevronLeft, Home, Eye } from 'lucide-react';
+import { Lock, Download, File, Folder, ChevronLeft, Home, Eye, Save } from 'lucide-react';
 import { useShareView } from '@/app/hooks/file/useShareView';
 import { FilePreview } from '@/app/components/features/file-management/file-preview/FilePreview';
+import { FolderSelect } from '@/app/components/features/file-management/folder-select/FolderSelect';
+import { useSession } from 'next-auth/react';
 import styles from './file-share-page.module.css';
 
 export default function SharePage({ params }: { params: { code: string } }) {
+  const { data: session } = useSession();
   const {
     extractCode,
     setExtractCode,
@@ -29,14 +32,46 @@ export default function SharePage({ params }: { params: { code: string } }) {
     folderStack,
     currentFolder,
     folderLoading,
+    savingToMyDrive,
     verifyShareCode,
     downloadFile,
     openFolder,
     goBackFolder,
     goToRoot,
-    downloadFolder
+    downloadFolder,
+    saveToMyDrive
   } = useShareView(params.code);
   const [previewFile, setPreviewFile] = useState<any>(null);
+  const [folderSelectVisible, setFolderSelectVisible] = useState(false);
+  const [fileToSave, setFileToSave] = useState<any>(null);
+
+  // 打开文件夹选择对话框
+  const handleSaveToMyDrive = (file: any) => {
+    if (!session) {
+      message.error('请先登录再保存文件');
+      return;
+    }
+    
+    setFileToSave(file);
+    setFolderSelectVisible(true);
+  };
+
+  // 处理文件夹选择完成
+  const handleFolderSelected = async (folderId: string | null) => {
+    if (!fileToSave) return;
+    
+    try {
+      await saveToMyDrive(
+        fileToSave.id,
+        folderId,
+        fileToSave.isFolder
+      );
+      setFolderSelectVisible(false);
+      setFileToSave(null);
+    } catch (error) {
+      console.error('保存失败:', error);
+    }
+  };
 
   // 渲染提取码输入界面
   const renderExtractCodeInput = () => {
@@ -134,6 +169,24 @@ export default function SharePage({ params }: { params: { code: string } }) {
                   打包下载
                 </Button>
               )}
+              {session && folderStack.length > 0 && (
+                <Button
+                  type="link"
+                  icon={<Save size={14} />}
+                  onClick={() => {
+                    const currentFolder = folderStack[folderStack.length - 1];
+                    handleSaveToMyDrive({
+                      id: currentFolder.id,
+                      name: currentFolder.name,
+                      isFolder: true
+                    });
+                  }}
+                  loading={savingToMyDrive}
+                  className={styles.saveButton}
+                >
+                  保存至我的网盘
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -175,7 +228,18 @@ export default function SharePage({ params }: { params: { code: string } }) {
                   >
                     {file.isFolder ? <Folder size={16} /> : <Download size={16} />}
                     {file.isFolder ? '打开' : '下载'}
-                  </Button>
+                  </Button>,
+                  session && (
+                    <Button
+                      key="save"
+                      type="link"
+                      onClick={() => handleSaveToMyDrive(file)}
+                      loading={savingToMyDrive && fileToSave?.id === file.id}
+                    >
+                      <Save size={16} />
+                      保存至我的网盘
+                    </Button>
+                  )
                 ]}
               >
                 <List.Item.Meta
@@ -210,6 +274,17 @@ export default function SharePage({ params }: { params: { code: string } }) {
             }}
           />
         )}
+        
+        {/* 文件夹选择对话框 */}
+        <FolderSelect
+          visible={folderSelectVisible}
+          onCancel={() => {
+            setFolderSelectVisible(false);
+            setFileToSave(null);
+          }}
+          onSelect={handleFolderSelected}
+          title="选择保存位置"
+        />
       </div>
     );
   };

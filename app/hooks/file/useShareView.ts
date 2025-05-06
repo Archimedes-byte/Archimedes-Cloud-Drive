@@ -24,6 +24,7 @@ export function useShareView(shareCode: string) {
   const [folderStack, setFolderStack] = useState<{id: string, name: string}[]>([]);
   const [currentFolder, setCurrentFolder] = useState<FolderInfo | null>(null);
   const [folderLoading, setFolderLoading] = useState(false);
+  const [savingToMyDrive, setSavingToMyDrive] = useState(false);
 
   // 自动尝试使用URL中的提取码
   useEffect(() => {
@@ -344,6 +345,43 @@ export function useShareView(shareCode: string) {
     }
   }, [shareCode, extractCode]);
 
+  // 保存分享文件到自己的网盘
+  const saveToMyDrive = useCallback(async (fileId: string, folderId: string | null, isFolder: boolean) => {
+    setSavingToMyDrive(true);
+    
+    try {
+      const response = await fetch(`/api/storage/share/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shareCode,
+          extractCode,
+          fileId,
+          folderId,
+          isFolder
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        message.success('已成功保存到您的网盘');
+        return data.data;
+      } else {
+        message.error(data.error || '保存失败');
+        throw new Error(data.error || '保存失败');
+      }
+    } catch (error) {
+      console.error('保存到网盘失败:', error);
+      message.error('保存到网盘失败，请稍后重试');
+      throw error;
+    } finally {
+      setSavingToMyDrive(false);
+    }
+  }, [shareCode, extractCode]);
+
   return {
     extractCode,
     setExtractCode,
@@ -355,11 +393,13 @@ export function useShareView(shareCode: string) {
     folderStack,
     currentFolder,
     folderLoading,
+    savingToMyDrive,
     verifyShareCode,
     downloadFile,
     openFolder,
     goBackFolder,
     goToRoot,
-    downloadFolder
+    downloadFolder,
+    saveToMyDrive
   };
 } 
