@@ -6,10 +6,11 @@ import Providers from './providers';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth/auth';
 
+// 主字体
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Cloud Drive',
+  title: "Archimedes' Cloud Drive",
   description: 'Your personal cloud storage solution',
 };
 
@@ -24,7 +25,10 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" href="/symbol.png" />
-        <title>Archimedes' Cloud Drive</title>
+        {/* 添加Imperial Script字体 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Imperial+Script&display=swap" rel="stylesheet" />
         {/* 添加关键样式预置，避免样式闪烁 */}
         <style dangerouslySetInnerHTML={{ __html: `
           /* 确保密码输入框样式立即生效 */

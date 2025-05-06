@@ -171,9 +171,19 @@ class AuthService {
    * 执行登出操作
    */
   async logout(options?: { redirect?: boolean; callbackUrl?: string }): Promise<void> {
+    // 如果设置了redirect选项并且为true，直接通过路由导航到登出页面
+    if (options?.redirect !== false) {
+      // 优先使用提供的回调URL，否则使用登出路由
+      const redirectUrl = options?.callbackUrl || AUTH_CONSTANTS.ROUTES.LOGOUT;
+      if (typeof window !== 'undefined') {
+        window.location.href = redirectUrl;
+        return new Promise<void>(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    // 如果不需要重定向，则直接调用signOut
     await signOut({
-      redirect: options?.redirect ?? true,
-      callbackUrl: options?.callbackUrl ?? AUTH_CONSTANTS.ROUTES.LOGIN
+      redirect: false
     });
   }
 

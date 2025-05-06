@@ -1,3 +1,14 @@
+/* 导入Imperial Script字体并优化加载策略 */
+@import url('https://fonts.googleapis.com/css2?family=Imperial+Script&display=block');
+
+/* 预定义字体回退策略 */
+@font-face {
+  font-family: 'Imperial Script Fallback';
+  size-adjust: 130%;
+  src: local('Brush Script MT'), local('Comic Sans MS');
+  font-display: block;
+}
+
 /* 退出页面样式 */
 .logoutContainer {
   position: fixed;
@@ -9,10 +20,16 @@
   justify-content: center;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   animation: fadeIn 0.3s ease-in-out;
+  /* 添加字体平滑渲染 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .logoContainer {
   margin-bottom: 2rem;
+  /* 添加视觉隐藏直到字体加载完成 */
+  opacity: 0;
+  animation: fadeInText 0.5s ease-in-out 0.2s forwards;
 }
 
 .logo {
@@ -22,8 +39,25 @@
   opacity: 0.9;
 }
 
+/* Imperial Script 字体样式 */
+.logoText {
+  font-family: 'Imperial Script', 'Imperial Script Fallback', cursive, sans-serif;
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: #1a1a1a;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  animation: pulse 1.5s infinite;
+  /* 字体渲染优化 */
+  text-rendering: optimizeLegibility;
+  /* 防止字体缩放和调整 */
+  transform: translateZ(0);
+}
+
 .messageContainer {
   text-align: center;
+  /* 添加视觉隐藏直到字体加载完成 */
+  opacity: 0;
+  animation: fadeInText 0.5s ease-in-out 0.3s forwards;
 }
 
 .title {
@@ -44,6 +78,17 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fadeInText {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

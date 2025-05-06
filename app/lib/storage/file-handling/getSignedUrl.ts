@@ -20,7 +20,7 @@ export async function getSignedUrl(filePath: string, expiresIn: number = 600): P
     const fileId = Math.random().toString(36).substring(2, 15);
     
     // 获取秘钥，如果环境变量未设置则使用默认值
-    const secret = process.env.JWT_SECRET || 'cloud-drive-secure-file-access';
+    const secret = process.env.JWT_SECRET || 'archimedes-cloud-drive-secure-file-access';
     
     // 创建JWT token
     const token = sign(

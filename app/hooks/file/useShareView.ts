@@ -32,21 +32,21 @@ export function useShareView(shareCode: string) {
       setExtractCode(urlCode);
       verifyShareCode(urlCode);
     } else {
-      setLoading(false);
+      // 即使没有提取码也尝试验证，处理autoFillCode的情况
+      verifyShareCode('');
     }
   }, [searchParams, shareCode]);
 
   // 验证分享码和提取码
   const verifyShareCode = useCallback(async (code: string) => {
-    if (!code) {
-      message.warning('请输入提取码');
-      return;
-    }
-
+    // 不再检查code是否为空
+    
     setVerifying(true);
     setError(null);
 
     try {
+      console.log(`尝试验证分享链接: ${shareCode}, 提取码长度: ${code?.length || 0}`);
+      
       const response = await fetch(`/api/storage/share/verify`, {
         method: 'POST',
         headers: {
@@ -59,11 +59,12 @@ export function useShareView(shareCode: string) {
       });
 
       const data = await response.json();
+      console.log(`验证响应:`, data);
 
       if (data.success) {
         setShareInfo(data.data);
         setVerified(true);
-        if (!searchParams.get('code')) {
+        if (code && !searchParams.get('code')) {
           // 如果URL中没有code参数，添加提取码到URL
           const newUrl = `${window.location.pathname}?code=${code}`;
           window.history.replaceState({}, '', newUrl);

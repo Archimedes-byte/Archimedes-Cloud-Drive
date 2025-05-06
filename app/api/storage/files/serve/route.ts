@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     }
     
     // 解析令牌
-    const secret = process.env.JWT_SECRET || 'cloud-drive-secure-file-access';
+    const secret = process.env.JWT_SECRET || 'archimedes-cloud-drive-secure-file-access';
     let payload;
     
     try {

@@ -56,6 +56,7 @@ export default function SharePage({ params }: { params: { code: string } }) {
             onChange={e => setExtractCode(e.target.value)}
             onPressEnter={() => verifyShareCode(extractCode)}
             maxLength={10}
+            autoFocus
           />
           <Button 
             type="primary"

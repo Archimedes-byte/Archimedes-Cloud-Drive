@@ -30,6 +30,8 @@ export const THEME_STORAGE_KEY = 'app-theme-preference';
  * 用于在localStorage中保存用户自定义主题
  */
 export const CUSTOM_THEMES_STORAGE_KEY = 'custom-themes';
+// 添加用户前缀，确保每个用户只能看到自己的主题
+export const getUserThemeKey = (userId?: string) => userId ? `${CUSTOM_THEMES_STORAGE_KEY}-${userId}` : CUSTOM_THEMES_STORAGE_KEY;
 
 // 自定义主题存储
 let customThemes: Record<string, ThemeStyle> = {};
@@ -45,12 +47,15 @@ initCustomThemes();
 /**
  * 初始化自定义主题
  * 从localStorage加载保存的自定义主题
+ * @param userId 用户ID，如果提供则加载特定用户的主题
  */
-function initCustomThemes() {
+function initCustomThemes(userId?: string) {
   if (typeof window === 'undefined') return;
   
   try {
-    const savedThemes = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+    // 使用用户特定的键获取主题
+    const themeKey = getUserThemeKey(userId);
+    const savedThemes = localStorage.getItem(themeKey);
     if (savedThemes) {
       customThemes = JSON.parse(savedThemes);
       console.log('已加载自定义主题:', Object.keys(customThemes).length);
@@ -63,10 +68,14 @@ function initCustomThemes() {
 
 /**
  * 重新初始化自定义主题
- * 用于需要强制刷新自定义主题时
+ * 用于在用户登录或切换时更新主题
+ * @param userId 用户ID
  */
-export function reinitCustomThemes() {
-  initCustomThemes();
+export function reinitCustomThemes(userId?: string) {
+  // 清空当前主题
+  customThemes = {};
+  // 加载特定用户的主题
+  initCustomThemes(userId);
 }
 
 /**
@@ -184,9 +193,10 @@ export function applyTheme(themeId: string, saveToStorage: boolean = true): Them
  * 保存自定义主题
  * @param id 主题ID
  * @param theme 主题样式
+ * @param userId 用户ID，用于将主题与特定用户关联
  * @returns 是否保存成功
  */
-export function saveCustomTheme(id: string, theme: ThemeStyle): boolean {
+export function saveCustomTheme(id: string, theme: ThemeStyle, userId?: string): boolean {
   if (typeof window === 'undefined') return false;
   
   try {
@@ -198,12 +208,15 @@ export function saveCustomTheme(id: string, theme: ThemeStyle): boolean {
     // 将自定义主题添加到内存中
     customThemes[id] = theme;
     
+    // 使用用户特定的键保存主题
+    const themeKey = getUserThemeKey(userId);
+    
     // 序列化并保存到localStorage
-    localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
+    localStorage.setItem(themeKey, JSON.stringify(customThemes));
     
     // 仅在开发环境输出日志
     if (process.env.NODE_ENV === 'development') {
-      console.log(`自定义主题 ${id} 已保存`);
+      console.log(`自定义主题 ${id} 已保存, 用户ID: ${userId || '未登录'}`);
     }
     return true;
   } catch (error) {
@@ -217,29 +230,24 @@ export function saveCustomTheme(id: string, theme: ThemeStyle): boolean {
 /**
  * 删除自定义主题
  * @param id 主题ID
+ * @param userId 用户ID，用于确定删除特定用户的主题
  * @returns 是否删除成功
  */
-export function deleteCustomTheme(id: string): boolean {
+export function deleteCustomTheme(id: string, userId?: string): boolean {
   if (typeof window === 'undefined') return false;
   
   try {
-    // 如果主题不存在，返回成功
+    // 如果主题不存在，无需删除
     if (!customThemes[id]) {
-      return true;
+      return false;
     }
     
-    // 从内存中删除主题
+    // 从内存中删除
     delete customThemes[id];
     
-    // 更新localStorage
-    localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(customThemes));
-    
-    console.log(`自定义主题 ${id} 已删除`);
-    
-    // 如果当前使用的是被删除的主题，切换到默认主题
-    if (lastAppliedTheme === id) {
-      applyTheme('default');
-    }
+    // 使用用户特定的键保存更新后的主题集合
+    const themeKey = getUserThemeKey(userId);
+    localStorage.setItem(themeKey, JSON.stringify(customThemes));
     
     return true;
   } catch (error) {
@@ -420,9 +428,15 @@ export function addThemeChangeListener(
 
 /**
  * 获取所有可用主题
+ * @param userId 用户ID，如果提供则只返回该用户的自定义主题
  * @returns 主题ID和名称的数组
  */
-export function getAllThemes(): Array<{id: string, name: string}> {
+export function getAllThemes(userId?: string): Array<{id: string, name: string}> {
+  // 如果提供了用户ID，确保加载该用户的自定义主题
+  if (userId) {
+    reinitCustomThemes(userId);
+  }
+  
   // 合并内置主题和自定义主题
   const builtInThemes = Object.entries(themeDefinitions).map(([id, theme]: [string, ThemeStyle]) => ({
     id,

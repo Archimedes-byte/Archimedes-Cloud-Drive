@@ -28,7 +28,7 @@ interface PageLayoutProps {
   onRecentDownloadsClick: () => void;
   onThemeClick: () => void;
   onClosePreview: () => void;
-  onThemeChange: (themeId: string) => Promise<boolean>;
+  onThemeChange: (themeId: string, customConfig?: Record<string, string>) => Promise<boolean>;
   onCloseThemePanel: () => void;
   // MiniSidebar所需的额外属性
   avatarUrl: string | null;

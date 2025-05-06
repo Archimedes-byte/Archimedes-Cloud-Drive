@@ -101,20 +101,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setErrorState(errorMessage);
     setErrorSeverity(severity);
     
-    if (errorMessage) {
-      // 使用Ant Design消息组件显示错误
-      switch (severity) {
-        case ErrorSeverity.INFO:
-          message.info(errorMessage);
-          break;
-        case ErrorSeverity.WARNING:
-          message.warning(errorMessage);
-          break;
-        case ErrorSeverity.ERROR:
-          message.error(errorMessage);
-          break;
-      }
-    }
+    // 移除这里的消息显示，避免与ErrorMessage组件重复显示
+    // 错误消息将由ErrorMessage组件统一显示
   };
   
   // 清除错误
@@ -122,9 +110,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setErrorState(null);
   };
   
-  // 显示错误消息
+  // 显示错误消息 - 专门用于不通过状态展示的情况
   const showErrorMessage = (msg: string, severity = ErrorSeverity.ERROR) => {
-    setError(msg, severity);
+    // 不设置状态，只显示消息
+    switch (severity) {
+      case ErrorSeverity.INFO:
+        message.info(msg);
+        break;
+      case ErrorSeverity.WARNING:
+        message.warning(msg);
+        break;
+      case ErrorSeverity.ERROR:
+        message.error(msg);
+        break;
+    }
   };
   
   // 显示成功消息
@@ -275,14 +274,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async (callbackUrl?: string): Promise<void> => {
     try {
       setAuthStatus(AuthStatus.LOADING);
+      // 使用authService的logout方法，传递回调URL
       await authService.logout({ 
         redirect: true,
-        callbackUrl: callbackUrl || AUTH_CONSTANTS.ROUTES.LOGIN
+        callbackUrl: callbackUrl || AUTH_CONSTANTS.ROUTES.LOGOUT // 使用登出页面而非直接跳转到登录页
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '登出失败';
       setError(errorMsg);
       setAuthStatus(AuthStatus.ERROR);
+      // 发生错误时仍然尝试重定向到登出页面
+      if (typeof window !== 'undefined') {
+        window.location.href = AUTH_CONSTANTS.ROUTES.LOGOUT;
+      }
     }
   };
   

@@ -19,10 +19,10 @@ model User {
   isAdmin           Boolean           @default(false)
   accounts          Account[]
   downloadHistories DownloadHistory[]
-  fileAccesses      FileAccess[]
   favorites         Favorite[]
   favoriteFolders   FavoriteFolder[]
   files             File[]
+  fileAccesses      FileAccess[]
   fileShares        FileShare[]
   folders           Folder[]
   sessions          Session[]
@@ -46,18 +46,19 @@ model Share {
 }
 
 model FileShare {
-  id           String          @id @default(cuid())
-  shareCode    String          @unique
+  id           String             @id @default(cuid())
+  shareCode    String             @unique
   extractCode  String
   expiresAt    DateTime?
   accessLimit  Int?
-  accessCount  Int             @default(0)
-  autoFillCode Boolean         @default(false)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  accessCount  Int                @default(0)
+  autoFillCode Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   files        FileShareFile[]
+  visitors     FileShareVisitor[]
 }
 
 model FileShareFile {
@@ -89,7 +90,6 @@ model File {
   name              String
   filename          String
   path              String
-  storagePath       String?
   type              String?
   size              Int?
   data              Bytes?
@@ -102,12 +102,13 @@ model File {
   uploaderId        String
   tags              String[]
   url               String?
-  accessHistories   FileAccess[]
+  storagePath       String?
   downloadHistories DownloadHistory[]
   favorites         Favorite[]
   File              File?             @relation("FileToFile", fields: [parentId], references: [id])
   other_File        File[]            @relation("FileToFile")
   User              User              @relation(fields: [uploaderId], references: [id])
+  accessHistories   FileAccess[]
   fileShares        FileShareFile[]
   shares            Share[]
 
@@ -218,7 +219,6 @@ model DownloadHistory {
   @@index([downloadedAt])
 }
 
-// 文件访问历史模型
 model FileAccess {
   id         String   @id @default(cuid())
   userId     String
@@ -230,4 +230,20 @@ model FileAccess {
   @@index([userId])
   @@index([fileId])
   @@index([accessedAt])
+}
+
+model FileShareVisitor {
+  id           String    @id @default(cuid())
+  shareId      String
+  fingerprint  String
+  ipAddress    String?
+  userAgent    String?
+  visitCount   Int       @default(1)
+  firstVisitAt DateTime  @default(now())
+  lastVisitAt  DateTime  @default(now())
+  share        FileShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@unique([shareId, fingerprint], name: "shareId_fingerprint")
+  @@index([shareId])
+  @@index([fingerprint])
 }

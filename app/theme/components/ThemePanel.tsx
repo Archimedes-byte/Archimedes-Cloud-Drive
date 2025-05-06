@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Palette, Search, Check, Plus, ChevronLeft, Brush, Type, EyeIcon, Save, Trash, AlertCircle } from 'lucide-react';
+import { Select, Input, Tabs, Button, Alert, Popconfirm, Modal } from 'antd';
 import styles from './ThemePanel.module.css';
 import { 
   getThemeStyle, 
@@ -7,13 +8,15 @@ import {
   getAllThemes,
   saveCustomTheme,
   deleteCustomTheme,
+  reinitCustomThemes,
   THEME_STORAGE_KEY
 } from '../theme-service';
 import { ThemeStyle } from '../theme-definitions';
+import { useSession } from 'next-auth/react';
 
 interface ThemePanelProps {
   currentTheme: string | null;
-  onThemeChange: (themeId: string) => Promise<boolean>;
+  onThemeChange: (themeId: string, customConfig?: Record<string, string>) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -56,11 +59,15 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
   // 删除主题状态
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [themeToDelete, setThemeToDelete] = useState<string | null>(null);
+  
+  // 获取用户会话信息
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
 
   // 使用统一的主题服务获取所有主题
   const themes = React.useMemo(() => {
     // 使用全局主题定义映射到需要的格式
-    return getAllThemes().map(theme => {
+    return getAllThemes(userId).map(theme => {
       const themeStyle = getThemeStyle(theme.id);
       return {
         id: theme.id,
@@ -78,7 +85,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         isCustom: theme.id.startsWith('custom_')
       };
     });
-  }, [showDeleteConfirm]); // 添加showDeleteConfirm依赖，确保删除后重新获取主题列表
+  }, [showDeleteConfirm, userId]); // 添加userId作为依赖，确保用户变化时重新获取主题列表
 
   // 获取所有主题分类
   const categories: string[] = Array.from(new Set(themes.map(theme => theme.category || '')));
@@ -144,10 +151,18 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       applyThemeService(themeId);
       console.log(`主题 ${themeId} 已本地应用`);
       
+      // 确定是否为自定义主题
+      const isCustomTheme = themeId.startsWith('custom_');
+      
       // 使用onThemeChange回调保存到服务器
       try {
         console.log(`正在将主题 ${themeId} 同步到服务器...`);
-        const success = await onThemeChange(themeId);
+        
+        // 如果是自定义主题，传递themeId作为自定义配置
+        const themeType = isCustomTheme ? 'custom' : themeId;
+        const customConfig = isCustomTheme ? { themeId } : undefined;
+        
+        const success = await onThemeChange(themeType as any, customConfig);
         
         if (success) {
           console.log(`主题 ${themeId} 已成功同步到服务器`);
@@ -361,23 +376,25 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     }
     
     // 获取当前用户ID，用于创建用户特定的自定义主题ID
-    let userId = '';
-    if (typeof window !== 'undefined') {
-      userId = localStorage.getItem('user-id') || `user_${Date.now()}`;
+    let userIdPrefix = '';
+    if (userId) {
+      userIdPrefix = userId.substring(0, 20); // 限制长度
+    } else if (typeof window !== 'undefined') {
+      userIdPrefix = localStorage.getItem('user-id') || `user_${Date.now()}`;
       
-      // 确保userId不包含特殊字符，使用encodeURIComponent处理
-      userId = encodeURIComponent(userId).replace(/%/g, '');
+      // 确保userIdPrefix不包含特殊字符，使用encodeURIComponent处理
+      userIdPrefix = encodeURIComponent(userIdPrefix).replace(/%/g, '');
       
       // 限制userId长度
-      if (userId.length > 20) {
-        userId = userId.substring(0, 20);
+      if (userIdPrefix.length > 20) {
+        userIdPrefix = userIdPrefix.substring(0, 20);
       }
     }
     
     // 生成唯一ID
     const timestamp = Date.now().toString().slice(-6);
     const randomNum = Math.floor(Math.random() * 1000);
-    const customThemeId = `custom_${userId}_${timestamp}_${randomNum}`;
+    const customThemeId = `custom_${userIdPrefix}_${timestamp}_${randomNum}`;
     
     console.log(`创建自定义主题: ${customThemeId}`);
     
@@ -389,7 +406,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       }
       
       // 步骤2: 保存自定义主题到主题库
-      const saveSuccess = saveCustomTheme(customThemeId, fullCustomTheme);
+      const saveSuccess = saveCustomTheme(customThemeId, fullCustomTheme, userId);
       
       if (saveSuccess) {
         // 步骤3: 应用主题到UI
@@ -402,7 +419,11 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         
         // 步骤4: 尝试同步到服务器（非阻塞操作）
         console.log(`正在将自定义主题 ${customThemeId} 同步到服务器...`);
-        onThemeChange(customThemeId)
+        
+        // 传递themeId作为配置，确保服务器知道应用哪个自定义主题
+        const customConfig = { themeId: customThemeId };
+        
+        onThemeChange('custom', customConfig)
           .then(success => {
             if (success) {
               console.log(`自定义主题 ${customThemeId} 已成功同步到服务器`);
@@ -485,7 +506,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     if (!themeToDelete) return;
     
     try {
-      const deleteSuccess = deleteCustomTheme(themeToDelete);
+      const deleteSuccess = deleteCustomTheme(themeToDelete, userId);
       
       if (deleteSuccess) {
         // 如果当前选中的是被删除的主题，则切换回默认主题
@@ -883,6 +904,14 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       </div>
     </>
   );
+
+  // 在组件挂载时加载当前用户的主题
+  useEffect(() => {
+    if (userId) {
+      // 重新初始化用户主题
+      reinitCustomThemes(userId);
+    }
+  }, [userId]);
 
   return (
     <div className={styles.themePanel}>

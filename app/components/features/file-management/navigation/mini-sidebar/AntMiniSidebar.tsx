@@ -39,6 +39,7 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
   const { token } = useToken();
   const router = useRouter();
   const [isClicked, setIsClicked] = useState(false);
+  const [isLogoutClicked, setIsLogoutClicked] = useState(false);
   // 使用profile钩子获取优化的刷新方法
   const { backgroundRefreshProfile } = useProfile();
 
@@ -59,6 +60,24 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
       setIsClicked(false);
     });
   }, [router, isClicked, backgroundRefreshProfile]);
+  
+  // 优化退出登录点击响应
+  const handleLogoutClick = useCallback(() => {
+    // 防止重复点击
+    if (isLogoutClicked) return;
+    
+    setIsLogoutClicked(true);
+    
+    // 立即执行路由跳转到登出页面，而不是调用onLogoutClick回调
+    // 这样可以避免额外的状态管理和函数调用，提高响应速度
+    router.push('/auth/logout');
+    
+    // 使用requestAnimationFrame确保UI绘制优先，避免阻塞
+    // 在动画帧中重置状态，为下次交互做准备
+    requestAnimationFrame(() => {
+      setIsLogoutClicked(false);
+    });
+  }, [router, isLogoutClicked]);
 
   // 获取用户首字母作为头像显示
   const getAvatarText = useCallback(() => {
@@ -141,7 +160,7 @@ const AntMiniSidebar = React.memo(function AntMiniSidebar({
             type="text" 
             shape="circle" 
             icon={<LogoutOutlined className={styles.iconStyle} />} 
-            onClick={onLogoutClick}
+            onClick={handleLogoutClick}
             className={styles.miniSidebarButton}
           />
         </Tooltip>
