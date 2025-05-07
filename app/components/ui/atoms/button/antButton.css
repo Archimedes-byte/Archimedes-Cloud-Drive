@@ -5,7 +5,7 @@
 
 /* 主要按钮 - 渐变模式 (有主题色和次要色时) */
 .ant-btn-custom-primary.gradient-mode {
-  background: linear-gradient(to right, var(--secondary-color, #1e40af), var(--primary-color, #3b82f6));
+  background: linear-gradient(to right, var(--theme-secondary, #1e40af), var(--theme-primary, #3b82f6));
   border: none;
   box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
   transition: all 0.3s ease;
@@ -17,7 +17,7 @@
 
 /* 主要按钮 - 纯色模式 (只有主题色时) */
 .ant-btn-custom-primary.pure-mode {
-  background: var(--primary-color, #3b82f6);
+  background: var(--theme-primary, #3b82f6);
   border: none;
   box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
   transition: all 0.3s ease;
@@ -86,8 +86,8 @@
 /* 轮廓按钮 */
 .ant-btn-custom-outline {
   background-color: transparent;
-  border: 1px solid var(--primary-color, #3b82f6);
-  color: var(--primary-color, #3b82f6);
+  border: 1px solid var(--theme-primary, #3b82f6);
+  color: var(--theme-primary, #3b82f6);
 }
 
 .ant-btn-custom-outline:hover {
@@ -127,4 +127,139 @@
   height: 48px;
   padding: 0 24px;
   font-size: 18px;
+}
+
+/* Ant Button Overrides */
+
+/* Primary Button */
+.ant-btn-primary {
+  height: 40px;
+  padding: 0px 20px;
+  /* 使用主题变量 */
+  background: linear-gradient(to right, var(--theme-secondary, #1e40af), var(--theme-primary, #3b82f6));
+  border: none;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ant-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ant-btn-primary.ant-btn-solid {
+  background: var(--theme-primary, #3b82f6);
+}
+
+/* Default Button */
+.ant-btn-default {
+  height: 40px;
+  padding: 0px 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.ant-btn-default:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+/* Text Button */
+.ant-btn-text {
+  padding: 4px 15px;
+  color: #475569;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  height: auto;
+}
+
+.ant-btn-text:hover {
+  color: #334155;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Link Button */
+.ant-btn-link {
+  padding: 4px;
+  color: #3b82f6;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  height: auto;
+}
+
+.ant-btn-link:hover {
+  color: #2563eb;
+  background: transparent;
+}
+
+/* Button Sizes */
+.ant-btn-lg {
+  height: 48px;
+  padding: 0px 24px;
+  font-size: 16px;
+}
+
+.ant-btn-sm {
+  height: 32px;
+  padding: 0px 16px;
+}
+
+.ant-btn-xs {
+  height: 24px;
+  padding: 0px 8px;
+  font-size: 12px;
+}
+
+/* Round Button */
+.ant-btn-round {
+  border-radius: 9999px;
+}
+
+/* Circle Button */
+.ant-btn-circle {
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.ant-btn-circle.ant-btn-lg {
+  min-width: 48px;
+  width: 48px;
+  height: 48px;
+}
+
+.ant-btn-circle.ant-btn-sm {
+  min-width: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+/* Outlined Button */
+.ant-btn-outline {
+  border: 1px solid var(--theme-primary, #3b82f6);
+  color: var(--theme-primary, #3b82f6);
+  background: transparent;
+}
+
+.ant-btn-outline:hover {
+  color: white;
+  background: var(--theme-primary, #3b82f6);
+}
+
+/* Disabled Button */
+.ant-btn-disabled,
+.ant-btn-disabled:hover,
+.ant-btn-disabled:focus,
+.ant-btn-disabled:active {
+  color: rgba(0, 0, 0, 0.25);
+  background: #f5f5f5;
+  border-color: #d9d9d9;
+  text-shadow: none;
+  box-shadow: none;
 } 

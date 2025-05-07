@@ -1,10 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Home, LogOut, Palette, Users } from 'lucide-react';
 import { Button, Avatar, Flex, Tooltip } from 'antd';
 import { useRouter } from 'next/navigation';
 import styles from './mini-sidebar.module.css';
-import { useTheme } from '@/app/theme';
+import { useTheme } from '@/app/hooks';
 import { useProfile } from '@/app/hooks/user/useProfile';
+import { applyTheme } from '@/app/theme/theme-service';
 
 interface MiniSidebarProps {
   avatarUrl: string | null;
@@ -33,6 +34,29 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
   const { themeStyle } = useTheme();
   // 使用profile钩子
   const { backgroundRefreshProfile } = useProfile();
+  
+  // 确保主题变量在页面间保持一致性
+  useEffect(() => {
+    // 确保DOM中应用了正确的主题类
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('theme-background-applied');
+      
+      // 如果在不同页面间切换，主动应用当前主题
+      if (currentTheme) {
+        setTimeout(() => {
+          // 短暂延迟确保DOM已完全挂载
+          applyTheme(currentTheme, false);
+        }, 0);
+      }
+    }
+    
+    return () => {
+      // 清理函数，避免类残留
+      if (typeof document !== 'undefined') {
+        // 这里不需要移除theme-background-applied类，避免主题闪烁
+      }
+    };
+  }, [currentTheme]);
 
   // 优化头像点击函数，立即跳转而不等待数据加载
   const handleAvatarClick = useCallback(() => {
@@ -68,6 +92,25 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
   const getAvatarText = useCallback(() => {
     return userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?';
   }, [userName, userEmail]);
+  
+  // 统一的按钮样式，确保在不同页面间保持尺寸一致
+  const buttonStyle = {
+    width: '50px',
+    height: '50px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '14px',
+    background: 'transparent',
+    border: 'none',
+    boxShadow: 'none',
+  };
+  
+  const iconStyle = {
+    color: 'white',
+    width: '20px',
+    height: '20px',
+  };
 
   return (
     <Flex 
@@ -82,6 +125,7 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
           className={styles.miniSidebarButton}
           onClick={handleAvatarClick}
           type="text"
+          style={buttonStyle}
         >
           {avatarUrl ? (
             <Avatar 
@@ -103,8 +147,9 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
         className={styles.miniSidebarButton}
         onClick={handleHomeClick}
         type="text"
+        style={buttonStyle}
       >
-        <Home className={styles.iconStyle} />
+        <Home style={iconStyle} />
       </Button>
       
       
@@ -114,16 +159,18 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
         onClick={handleThemeClick}
         title="主题设置"
         type="text"
+        style={buttonStyle}
       >
-        <Palette className={styles.iconStyle} />
+        <Palette style={iconStyle} />
       </Button>
       
       <Button 
         className={styles.miniSidebarButton}
         onClick={handleLogoutClick}
         type="text"
+        style={buttonStyle}
       >
-        <LogOut className={styles.iconStyle} />
+        <LogOut style={iconStyle} />
       </Button>
     </Flex>
   );

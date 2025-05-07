@@ -93,24 +93,24 @@
 }
 
 .miniSidebarButton {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 16px !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .miniSidebarButton::before {
@@ -125,9 +125,9 @@
 }
 
 .miniSidebarButton:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
 .miniSidebarButton:hover::before {
@@ -155,6 +155,12 @@
   position: relative;
   overflow: hidden;
   font-size: 16px;
+  width: 38px !important;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
 }
 
 .avatarPlaceholder::before {
@@ -180,23 +186,23 @@
 }
 
 .sidebarButtonStyle {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
-  margin-bottom: 16px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 14px !important;
+  margin-bottom: 16px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .iconStyle {
-  color: white;
-  width: 20px;
-  height: 20px;
+  color: white !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 .accountSwitcherContainer {

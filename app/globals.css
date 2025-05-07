@@ -2,15 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 导入主题变量 */
+@import "./styles/variables.css";
+
 /* 
- * 主题变量已移至 app/shared/themes/variables.css
- * 请使用该文件中定义的CSS变量
+ * 所有主题变量已移至 app/styles/variables.css
+ * 请使用该文件中定义的带--theme-前缀的CSS变量
  */
 
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 min-h-screen;
-    background: rgb(var(--background-start-rgb));
+    background: rgb(var(--theme-bg-start-rgb));
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
@@ -53,11 +56,10 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* 纯色系统样式覆盖 */
+/* 纯色系统样式覆盖 - 使用统一的CSS变量 */
 :root.pure-color-theme {
   --theme-secondary: var(--theme-primary);
   --theme-accent: var(--theme-primary);
-  --theme-background: var(--theme-primary);
 }
 
 /* 从根目录 styles.css 合并的样式 */

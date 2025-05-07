@@ -5,7 +5,7 @@ import { Button as AntdButton } from 'antd';
 import type { ButtonProps as AntdButtonProps } from 'antd';
 import { cn } from '@/app/utils/format';
 import './antButton.css';
-import { useTheme } from '@/app/theme';
+import { useTheme } from '@/app/hooks';
 
 /**
  * 自定义按钮组件属性
@@ -43,7 +43,8 @@ export const AntButton: React.FC<AntButtonProps> = ({
   const { themeStyle } = useTheme();
   
   // 确定按钮样式模式：如果主题有secondary颜色，则使用渐变模式，否则使用纯色模式
-  const styleMode = themeStyle.secondary ? 'gradient-mode' : 'pure-mode';
+  // 添加空值检查，避免themeStyle为null时出错
+  const styleMode = themeStyle?.secondary ? 'gradient-mode' : 'pure-mode';
   
   // 确定按钮类型和类名
   const getTypeAndClass = () => {

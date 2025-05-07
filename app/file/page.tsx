@@ -41,7 +41,7 @@ import {
   useViewState,
   useRecentContent,
   useModalState,
-  useThemeUI,
+  useTheme,
   useFavorites,
   useFileSelection,
   useFolderCreation,
@@ -109,7 +109,7 @@ export default function FileManagementPage() {
     showThemePanel,
     setShowThemePanel,
     toggleThemePanel
-  } = useThemeUI();
+  } = useTheme();
 
   // 使用双状态加载管理
   const {

@@ -6,9 +6,9 @@
 // 核心hooks
 export * from './core/useLoadingState';
 export * from './core/useUIState';
-export * from './core/useThemeManager';
-export * from './core/useThemeUI';
 export * from './core/useModalState';
+// 导出主题Hook - 从主题系统导入
+export { useTheme } from '@/app/theme';
 
 // 用户相关hooks
 export * from './user/useProfile';

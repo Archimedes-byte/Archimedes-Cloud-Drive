@@ -7,7 +7,7 @@
  */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { addThemeChangeListener } from '@/app/theme';
-import type { ThemeStyle } from '@/app/theme/theme-definitions';
+import type { ThemeStyle } from '@/app/types/theme';
 
 // 定义Toast类型
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

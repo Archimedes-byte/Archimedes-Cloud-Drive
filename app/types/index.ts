@@ -156,4 +156,7 @@ export interface PasswordRequirements {
 }
 
 // 从常量导出错误码
-export { AUTH_ERROR_CODE } from '@/app/constants/auth'; 
+export { AUTH_ERROR_CODE } from '@/app/constants/auth';
+
+// 导出主题相关类型
+export * from './theme'; 

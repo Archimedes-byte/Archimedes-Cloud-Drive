@@ -1,3 +1,9 @@
+/* 全局样式 - 确保dashboard页面应用主题背景 */
+body.theme-background-applied,
+html.theme-background-applied {
+  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%)) !important;
+}
+
 .container {
   display: flex;
   flex-direction: column;
@@ -5,14 +11,14 @@
   justify-content: center;
   min-height: 100vh;
   padding: 2rem 1rem;
-  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%));
+  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%)) !important;
   overflow-y: auto;
 }
 
 /* 优化主题背景应用 */
 .container :global(.theme-background-applied) {
   /* 确保自定义主题的背景能够正确应用 */
-  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%));
+  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%)) !important;
   transition: background 0.3s ease;
 }
 
@@ -61,7 +67,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%));
+  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%)) !important;
 }
 
 .loadingCard,

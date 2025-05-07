@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { message } from 'antd';
 import logoutStyles from '@/app/styles/logout.module.css';
@@ -13,6 +13,9 @@ import Head from 'next/head';
  * 导致的Hooks问题
  */
 export default function LogoutPage() {
+  const [messageText, setMessageText] = useState("");
+  const fullMessage = "正在安全退出您的账户...";
+  
   useEffect(() => {
     // 预加载字体
     if ('fonts' in document) {
@@ -22,6 +25,17 @@ export default function LogoutPage() {
         console.log('Imperial Script字体已加载');
       });
     }
+    
+    // 打字效果
+    let charIndex = 0;
+    const typingEffect = setInterval(() => {
+      if (charIndex <= fullMessage.length) {
+        setMessageText(fullMessage.substring(0, charIndex));
+        charIndex++;
+      } else {
+        clearInterval(typingEffect);
+      }
+    }, 100);
     
     const performLogout = async () => {
       try {
@@ -35,10 +49,10 @@ export default function LogoutPage() {
         // 执行登出操作
         await signOut({ redirect: false });
         
-        // 延长展示时间，从300ms增加到2000ms，让用户有足够时间查看退出界面
+        // 延长展示时间，让用户有足够时间查看退出界面
         setTimeout(() => {
           window.location.replace('/');
-        }, 2000);
+        }, 3000);
       } catch (error) {
         console.error('登出过程出错', error);
         message.error({
@@ -55,6 +69,10 @@ export default function LogoutPage() {
     
     // 页面加载后立即执行登出
     performLogout();
+    
+    return () => {
+      clearInterval(typingEffect);
+    };
   }, []);
   
   return (
@@ -77,7 +95,10 @@ export default function LogoutPage() {
         </div>
         <div className={logoutStyles.messageContainer}>
           <h2 className={logoutStyles.title}>感谢使用Archimedes' Cloud Drive</h2>
-          <p className={logoutStyles.message}>正在安全退出您的账户...</p>
+          <p className={`${logoutStyles.message} ${logoutStyles.typingText}`}>
+            {messageText}
+            <span className={logoutStyles.cursor}></span>
+          </p>
         </div>
       </div>
     </>

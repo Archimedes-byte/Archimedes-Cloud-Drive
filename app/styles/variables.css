@@ -1,7 +1,8 @@
 /**
- * 集中的主题变量系统
+ * 统一主题变量系统
  * 
  * 该文件定义了应用中使用的所有主题变量。
+ * 所有主题变量使用 --theme- 前缀。
  * 
  * 使用方法：
  * 1. 在组件中通过 var(--theme-*) 使用变量
@@ -11,8 +12,11 @@
 
 :root {
   /* ===== 基础系统变量 ===== */
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  --theme-bg: #ffffff;
+  --theme-fg: #1a202c;
+  --theme-bg-start-rgb: 240, 247, 255;
+  --theme-bg-end-rgb: 230, 240, 253;
+  --theme-fg-rgb: 24, 24, 27;
   
   /* ===== 主题颜色变量 ===== */
   --theme-primary: #3b82f6;         /* 主色调 */
@@ -25,7 +29,7 @@
   
   --theme-accent: #60a5fa;          /* 强调色 */
   
-  /* 功能色彩 */
+  /* ===== 状态颜色 ===== */
   --theme-success: #10b981;         /* 成功 */
   --theme-success-light: #34d399;   /* 成功亮色版 */
   --theme-success-dark: #059669;    /* 成功暗色版 */
@@ -42,31 +46,70 @@
   --theme-info-light: #60a5fa;      /* 信息亮色版 */
   --theme-info-dark: #2563eb;       /* 信息暗色版 */
   
+  /* ===== 文本颜色 ===== */
+  --theme-text: #1a202c;
+  --theme-text-secondary: #4a5568;
+  --theme-text-disabled: #a0aec0;
+  
   /* ===== 背景和界面变量 ===== */
   --theme-background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fd 100%);
   --theme-card: rgba(255, 255, 255, 0.9);
   --theme-border: #e2e8f0;
-  --theme-text: #1a202c;
-  --theme-text-secondary: #64748b;
+  
+  /* ===== 布局相关 ===== */
+  --theme-header-bg: var(--theme-primary);
+  --theme-sidebar-bg: var(--theme-secondary);
   
   /* ===== 阴影变量 ===== */
-  --theme-card-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
-  --theme-button-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  --theme-button-hover-shadow: 0 4px 9px rgba(0, 0, 0, 0.09);
-  --theme-dropdown-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  
-  /* ===== 辅助变量 ===== */
-  --background-start-rgb: 240, 247, 255;
-  --background-end-rgb: 230, 240, 253;
-  --foreground-rgb: 24, 24, 27;
+  --theme-shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --theme-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+  --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   
   /* ===== 过渡和动画 ===== */
-  --transition-speed: 0.3s;
-  --transition-function: cubic-bezier(0.4, 0, 0.2, 1);
-  --animation-duration: 0.3s;
+  --theme-transition-speed: 0.3s;
+  --theme-transition-function: cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-animation-duration: 0.3s;
   
   /* ===== 间距和尺寸 ===== */
   --theme-border-radius: 0.5rem;
   --theme-input-height: 2.5rem;
   --theme-button-height: 2.5rem;
+}
+
+/* 深色主题基础变量 */
+[data-theme="dark"] {
+  /* 基础系统变量 */
+  --theme-bg: #1e293b;
+  --theme-fg: #f8fafc;
+  --theme-bg-start-rgb: 15, 23, 42;
+  --theme-bg-end-rgb: 30, 41, 59;
+  --theme-fg-rgb: 248, 250, 252;
+  
+  /* 主题颜色 */
+  --theme-primary: #60a5fa;
+  --theme-primary-light: #93c5fd;
+  --theme-primary-dark: #3b82f6;
+  
+  --theme-secondary: #93c5fd;
+  --theme-secondary-light: #bfdbfe;
+  --theme-secondary-dark: #60a5fa;
+  
+  --theme-accent: #3b82f6;
+  
+  /* 文本颜色 */
+  --theme-text: #f8fafc;
+  --theme-text-secondary: #cbd5e1;
+  --theme-text-disabled: #94a3b8;
+  
+  /* 背景和界面 */
+  --theme-background: #1e293b;
+  --theme-border: #334155;
+  --theme-card: rgba(30, 41, 59, 0.8);
+  
+  /* 阴影 */
+  --theme-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  --theme-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
 } 

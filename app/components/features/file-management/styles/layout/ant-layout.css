@@ -4,12 +4,12 @@
   width: 100%;
   overflow-x: hidden;
   position: relative;
-  background: var(--theme-background, linear-gradient(135deg, #f0f9ff 0%, #e6f0fd 100%));
+  background: var(--theme-background, linear-gradient(135deg, #f0f9ff 0%, #e6f0fd 100%)) !important;
 }
 
 /* 自定义头部 */
 .ant-custom-header {
-  background-color: transparent;
+  background-color: transparent !important;
   padding: 0 1rem;
   height: 64px;
   line-height: 64px;
@@ -28,6 +28,19 @@
   min-height: calc(100vh - 64px);
   background: transparent;
   overflow-y: auto;
+}
+
+/* 全局主题应用样式 - 确保与dashboard页面一致 */
+body.theme-background-applied,
+html.theme-background-applied {
+  background: var(--theme-background, linear-gradient(135deg, #e6f1ff 0%, #f0f7ff 100%)) !important;
+}
+
+/* 按钮共享样式 - 与dashboard页面保持一致 */
+:root {
+  --theme-button-shadow: var(--theme-shadow-sm, 0 4px 8px rgba(0, 0, 0, 0.08));
+  --theme-button-hover-shadow: var(--theme-shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  --theme-card-shadow: var(--theme-shadow, 0 10px 30px rgba(59, 130, 246, 0.1));
 }
 
 /* 响应式调整 */

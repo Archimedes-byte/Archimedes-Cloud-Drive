@@ -8,8 +8,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: "var(--theme-bg)",
+        foreground: "var(--theme-fg)",
         primary: "var(--theme-primary)",
         secondary: "var(--theme-secondary)",
         accent: "var(--theme-accent)",
@@ -19,14 +19,18 @@ export default {
         info: "var(--theme-info)",
         card: "var(--theme-card)",
         border: "var(--theme-border)",
+        
+        // 文本颜色
+        "text-secondary": "var(--theme-text-secondary)",
+        "text-disabled": "var(--theme-text-disabled)",
       },
       backgroundImage: {
         'theme-gradient': "var(--theme-background)",
       },
       boxShadow: {
-        'card': 'var(--theme-card-shadow)',
-        'button': 'var(--theme-button-shadow)',
-        'hover': 'var(--theme-button-hover-shadow)',
+        'card': 'var(--theme-shadow)',
+        'button': 'var(--theme-shadow-sm)',
+        'hover': 'var(--theme-shadow-md)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-in-out',

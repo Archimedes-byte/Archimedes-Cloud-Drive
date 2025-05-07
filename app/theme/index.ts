@@ -1,38 +1,48 @@
 /**
- * 主题配置导出文件
+ * 主题系统
  * 
- * 此文件导出 Ant Design 主题配置及主题服务相关函数
+ * 集中导出所有主题相关功能
+ * 提供统一的API和更好的性能和维护性
  */
-
-// 导出主题设置的存储键
-export const THEME_STORAGE_KEY = 'app-theme-preference';
-
-// 导出Ant主题配置
-export { getAntTheme } from './ant-theme'; 
 
 // 导出主题服务功能
 export {
-  addThemeChangeListener,
+  // 基础常量
+  THEME_STORAGE_KEY,
+  THEME_CHANGE_EVENT,
+  CUSTOM_THEMES_STORAGE_KEY,
+  // 基础功能
   applyTheme,
-  createThemeChangeHandler,
+  getThemeStyle,
   getAllThemes,
   getThemesByCategory,
-  getThemeStyle,
+  // 存储功能
   loadThemeFromStorage,
   saveCustomTheme,
   deleteCustomTheme,
-  clearCustomThemes,
+  // 事件监听
+  addThemeChangeListener,
+  // 自定义主题
+  initCustomThemes,
   reinitCustomThemes,
   syncCustomThemesForUser,
+  // 工具函数
   getContrastColor,
-  THEME_CHANGE_EVENT
+  getUserThemeKey
 } from './theme-service';
 
-// 导出主题钩子
-export { useTheme } from './useTheme';
+// 导出主题定义
+export {
+  themeDefinitions,
+  createTheme
+} from './theme-definitions';
 
-// 导出主题组件
-export { default as AntThemeProvider } from './AntThemeProvider';
+// 引入需要导出的组件和钩子
+import { useTheme, type ThemeHook } from './useTheme';
+import { ThemeProvider, ThemeContext } from './ThemeProvider';
+import { ThemePanel } from './components';
+import type { ThemeStyle } from '@/app/types/theme';
 
-// 导出ThemePanel组件
-export { ThemePanel } from './components'; 
+// 导出主题系统组件和钩子
+export { useTheme, ThemeProvider, ThemeContext, ThemePanel };
+export type { ThemeHook, ThemeStyle }; 

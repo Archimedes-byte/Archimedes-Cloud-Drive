@@ -5,18 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from "react"
 import { ArrowLeft } from 'lucide-react'
 
-import { useProfile, usePassword, useThemeManager } from '@/app/hooks'
+import { useProfile, usePassword, useTheme } from '@/app/hooks'
 import { useToast } from '@/app/components/features/dashboard/toaster/Toaster'
 import { AUTH_CONSTANTS } from '@/app/constants/auth'
-// 直接导入主题服务，用于特殊情况处理
-import { 
-  // getThemeStyle, 
-  applyTheme as applyThemeDirectly, 
-  loadThemeFromStorage,
-  reinitCustomThemes,
-  THEME_STORAGE_KEY
-} from '@/app/theme'
-import { createProfileUpdate } from '@/app/utils/user/profile'
 
 // 导入组件
 import Modal from '@/app/components/features/dashboard/modal'
@@ -29,19 +20,13 @@ import ProfileCompleteness from '@/app/components/features/user-profile/complete
 import { AvatarModal } from '@/app/components/features/user-profile/avatar'
 
 import modalStyles from '@/app/components/features/dashboard/modal/Modal.module.css'
-import styles from './dashboard.module.css' 
-
-// import {
-//   useTheme,
-//   ThemePanel
-// } from '@/app/theme'
+import styles from './dashboard.module.css'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
-      // 不再直接跳转，而是触发全局登录事件
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(AUTH_CONSTANTS.EVENTS.LOGIN_MODAL));
       }
@@ -51,10 +36,7 @@ export default function DashboardPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [showAvatarModal, setShowAvatarModal] = useState(false)
-  const [manualThemeApplied, setManualThemeApplied] = useState(false)
-  // const [dashboardTheme, setDashboardTheme] = useState<string | null>(null)
   
-  // 使用Ref代替直接DOM操作
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const profileFormRef = useRef<ProfileFormRef>(null)
   
@@ -65,10 +47,12 @@ export default function DashboardPage() {
     updateUserProfile, 
     forceRefreshProfile } = useProfile()
 
-  // 使用主题管理钩子
-  const { /* currentTheme, */ updateTheme, isLoading: themeLoading } = useThemeManager({
-    userTheme: userProfile?.theme || null
-  });
+  // 使用统一的主题Hook
+  const { 
+    currentTheme,
+    isLoading: themeLoading,
+    updateTheme
+  } = useTheme();
 
   const {
     passwordInfo,
@@ -86,40 +70,19 @@ export default function DashboardPage() {
 
   const toast = useToast()
 
-  // 页面初次加载时，确保自定义主题已正确初始化
   useEffect(() => {
-    const initializeThemes = async () => {
-      try {
-        // 重新初始化自定义主题，确保数据同步最新
-        const themesCount = reinitCustomThemes();
-        console.log(`Dashboard页面：初始化自定义主题，找到${themesCount}个自定义主题`);
-        
-        // 检查localStorage是否有自定义主题
-        const storedTheme = loadThemeFromStorage();
-        console.log(`Dashboard页面：本地存储的主题=${storedTheme}`);
-        
-        // 检查是否需要直接应用本地存储的自定义主题
-        if (storedTheme && storedTheme.startsWith('custom_') && !manualThemeApplied) {
-          console.log(`Dashboard页面：尝试直接应用本地存储的自定义主题 ${storedTheme}`);
-          
-          // 尝试直接应用主题
-          const themeStyle = applyThemeDirectly(storedTheme); // 应用样式
-          
-          if (themeStyle) {
-            console.log(`Dashboard页面：成功直接应用自定义主题 ${storedTheme}`);
-            document.body.dataset.theme = storedTheme;
-            setManualThemeApplied(true);
-          } else {
-            console.error(`Dashboard页面：无法直接应用自定义主题 ${storedTheme}`);
-          }
-        }
-      } catch (error) {
-        console.error('Dashboard页面：初始化主题时出错', error);
-      }
-    };
+    if (!userProfile?.theme || themeLoading) return;
     
-    initializeThemes();
-  }, [manualThemeApplied]);
+    const userTheme = userProfile.theme as string;
+    console.log(`Dashboard页面:检测到用户主题设置=${userTheme}`);
+    
+    if (userTheme && currentTheme !== userTheme) {
+      console.log(`Dashboard页面:应用用户配置的主题 ${userTheme}`);
+      updateTheme(userTheme).catch((error: Error) => {
+        console.error('Dashboard页面:应用主题失败:', error);
+      });
+    }
+  }, [userProfile?.theme, currentTheme, updateTheme, themeLoading]);
 
   const handlePasswordSave = async () => {
     const success = await updatePassword()
@@ -134,9 +97,7 @@ export default function DashboardPage() {
     setIsPasswordModalOpen(true)
   }
 
-  // 添加密码字段变更适配器，解决类型不匹配问题
   const handlePasswordFieldChange = (field: 'password' | 'confirmPassword', value: string) => {
-    // 创建一个模拟的事件对象来适配usePassword的handlePasswordChange函数
     const mockEvent = {
       target: {
         name: field,
@@ -147,97 +108,7 @@ export default function DashboardPage() {
     handlePasswordChange(mockEvent);
   };
 
-  // 主题初始化与应用
-  useEffect(() => {
-    if (!userProfile?.theme || themeLoading) return;
-    
-    // 确保theme是字符串
-    const userTheme = userProfile.theme as string;
-    console.log(`Dashboard页面：主题初始化 - 用户配置主题=${userTheme}`);
-    
-    // 检查本地存储的主题
-    const storedTheme = loadThemeFromStorage();
-    
-    // 优先级调整：
-    // 1. 用户数据库中的主题优先级最高
-    if (userTheme) {
-      console.log(`Dashboard页面：应用用户数据库中的主题 ${userTheme}`);
-      
-      // 尝试应用主题
-      try {
-        // 如果是自定义主题，确保先重新初始化
-        if (userTheme.startsWith('custom_')) {
-          reinitCustomThemes();
-        }
-        
-        // 应用主题
-        const themeStyle = applyThemeDirectly(userTheme);
-        if (themeStyle) {
-          // setDashboardTheme(userTheme); // 已弃用
-          console.log(`Dashboard页面：成功应用主题 ${userTheme}`);
-          
-          // 确保记录主题到localStorage和body属性
-          localStorage.setItem(THEME_STORAGE_KEY, userTheme);
-          document.body.dataset.theme = userTheme;
-        } else {
-          console.error(`Dashboard页面：应用主题 ${userTheme} 失败`);
-          
-          // 如果主题应用失败，尝试使用默认主题
-          // setDashboardTheme('default'); // 已弃用
-          applyThemeDirectly('default');
-          // setDashboardTheme('default'); // 已弃用
-        }
-      } catch (error) {
-        console.error('Dashboard页面：应用主题出错:', error);
-      }
-    } 
-    // 2. 如果用户数据库中没有主题，但本地存储中有，使用本地存储的主题
-    else if (storedTheme) {
-      console.log(`Dashboard页面：使用本地存储的主题 ${storedTheme}`);
-      
-      // 尝试应用主题并保存到数据库
-      try {
-        const themeStyle = applyThemeDirectly(storedTheme);
-        if (themeStyle) {
-          // setDashboardTheme(storedTheme); // 已弃用
-          console.log(`Dashboard页面：成功应用本地存储的主题 ${storedTheme}`);
-          
-          // 保存主题到用户数据库
-          updateTheme(storedTheme).then(success => {
-            if (success) {
-              console.log(`Dashboard页面：本地主题 ${storedTheme} 已同步到数据库`);
-            } else {
-              console.warn(`Dashboard页面：本地主题 ${storedTheme} 同步到数据库失败`);
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Dashboard页面：应用本地主题出错:', error);
-      }
-    }
-    // 3. 如果用户数据库和本地存储都没有主题，使用默认主题
-    else {
-      console.log('Dashboard页面：没有找到用户主题设置，使用默认主题');
-      applyThemeDirectly('default');
-      // setDashboardTheme('default'); // 已弃用
-    }
-  }, [userProfile?.theme, updateTheme, themeLoading]);
-  
-  // 页面加载时，确保文档主题类处于正确状态
-  useEffect(() => {
-    if (typeof document !== 'undefined' && userProfile?.theme) {
-      // 确保body上有data-theme属性
-      if (!document.body.dataset.theme && userProfile.theme) {
-        document.body.dataset.theme = userProfile.theme;
-        console.log(`Dashboard页面：设置body[data-theme]=${userProfile.theme}`);
-      }
-    }
-  }, [userProfile?.theme]);
-
-  // 处理头像上传点击 - 使用ref代替直接DOM操作
   const handleAvatarClick = () => {
-    // 修改为打开头像管理模态框，而不是直接触发文件选择
-    // 让用户可以选择上传或删除头像
     setShowAvatarModal(true);
   };
 
@@ -245,7 +116,6 @@ export default function DashboardPage() {
     setShowAvatarModal(false);
   };
 
-  // 设置密码弹窗底部按钮
   const renderPasswordFooter = () => (
     <div className={modalStyles.modalFooter}>
       <button
@@ -264,7 +134,6 @@ export default function DashboardPage() {
     </div>
   );
 
-  // 编辑个人信息弹窗底部按钮
   const renderProfileFooter = () => (
     <div className={modalStyles.modalFooter}>
       <button
@@ -292,31 +161,28 @@ export default function DashboardPage() {
     </div>
   );
 
-  // 更新头像处理函数
   const handleAvatarChange = async (avatarUrl: string) => {
+    if (!userProfile) return;
+    
     try {
-      if (userProfile) {
-        // 使用转换工具函数生成UserProfileInput
-        const profileInput = createProfileUpdate(userProfile, { avatarUrl });
-        
-        // 调用API更新
-        const success = await updateUserProfile(profileInput);
-        
-        if (success) {
-          toast.success('头像已成功更新');
-        } else {
-          toast.error('头像更新失败');
-          // 刷新用户资料而不是刷新整个页面
-          forceRefreshProfile();
-        }
+      const success = await updateUserProfile({
+        name: userProfile.name || '',
+        avatarUrl: avatarUrl
+      });
+      
+      if (success) {
+        toast.success('头像已更新');
+        setShowAvatarModal(false);
+        forceRefreshProfile();
+      } else {
+        toast.error('更新头像失败');
       }
     } catch (error) {
-      console.error('处理头像变更时出错:', error);
-      toast.error('更新头像失败，请稍后再试');
+      console.error('更新头像时出错:', error);
+      toast.error('更新头像失败');
     }
   };
 
-  // 加载状态
   if (status === 'loading' || profileLoading) {
     return (
       <div className={styles.loading}>
@@ -329,7 +195,6 @@ export default function DashboardPage() {
     )
   }
 
-  // 错误状态
   if (profileError) {
     return (
       <div className={styles.errorContainer}>
@@ -348,7 +213,6 @@ export default function DashboardPage() {
     )
   }
 
-  // 未登录或没有用户资料
   if (!session?.user || !userProfile) {
     return null
   }
@@ -397,7 +261,7 @@ export default function DashboardPage() {
         <AvatarModal 
           isOpen={showAvatarModal}
           onClose={handleCloseAvatarModal}
-          currentAvatarUrl={userProfile.avatarUrl || session.user?.avatarUrl || null}
+          currentAvatarUrl={userProfile.avatarUrl || session.user?.image || null}
           userDisplayName={userProfile.name || session.user?.name || ''}
           onAvatarChange={handleAvatarChange}
         />

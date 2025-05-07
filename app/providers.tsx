@@ -3,7 +3,7 @@
 import React from 'react';
 import { SessionProvider } from 'next-auth/react';
 import type { Session } from 'next-auth';
-import { AntThemeProvider } from '@/app/theme';
+import { ThemeProvider } from '@/app/theme';
 import { AuthProvider } from '@/app/contexts/auth';
 
 /**
@@ -21,7 +21,7 @@ interface ProvidersProps {
  * 
  * 按照从外到内的顺序组织提供者：
  * 1. 会话提供者 (NextAuth)
- * 2. 主题提供者
+ * 2. 主题提供者 (ThemeProvider - 管理主题状态和UI)
  * 3. 认证提供者 (包含登录模态框和错误处理)
  */
 export default function Providers({ children, session }: ProvidersProps) {
@@ -30,11 +30,11 @@ export default function Providers({ children, session }: ProvidersProps) {
   
   return (
     <NextAuthProvider session={session}>
-      <AntThemeProvider>
+      <ThemeProvider>
         <AuthProvider>
           {children}
         </AuthProvider>
-      </AntThemeProvider>
+      </ThemeProvider>
     </NextAuthProvider>
   );
 } 
