@@ -1,120 +1,136 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { NextRequest } from 'next/server';
+import { handleApiError } from '@/app/utils/api/error-handler';
+import { createSuccessResponse } from '@/app/utils/api/response-builder';
+import { SessionManager } from '@/app/services/session/SessionManager';
 import { prisma } from '@/app/lib/database';
 import { authOptions } from '@/app/lib/auth';
 
-// 获取用户当前主题
-export async function GET() {
+// 创建会话管理器实例
+const sessionManager = new SessionManager(authOptions);
+
+// 自定义主题类型
+interface ThemeConfig {
+  id: string;
+  customThemes?: Record<string, any>;
+}
+
+/**
+ * 获取用户主题
+ * 从数据库读取用户主题设置
+ */
+async function getUserTheme(session: any) {
   try {
-    const session = await getServerSession(authOptions);
+    const userId = session.user.id;
     
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { profile: true }
+    // 从数据库查询用户主题设置
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId }
     });
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      );
+    
+    let themeConfig: ThemeConfig = {
+      id: userProfile?.theme || 'default',
+      customThemes: {}
+    };
+    
+    // 如果用户资料存在额外主题数据
+    if (userProfile?.theme) {
+      // 尝试从localStorage加载用户自定义主题，在前端处理
+      return createSuccessResponse({ 
+        theme: themeConfig.id,
+        userProfileExists: !!userProfile
+      });
+    } else {
+      // 用户未设置主题，使用默认主题
+      return createSuccessResponse({ 
+        theme: 'default',
+        userProfileExists: !!userProfile
+      });
     }
-
-    return NextResponse.json({
-      success: true,
-      theme: user.profile?.theme || 'default'
-    });
   } catch (error) {
-    console.error('获取主题失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取主题失败' },
-      { status: 500 }
-    );
+    return handleApiError(error, '获取用户主题失败');
   }
 }
 
-// 更新用户主题
-export async function PUT(request: NextRequest) {
+/**
+ * 保存用户主题
+ * 将主题ID保存到用户配置
+ */
+async function saveUserTheme(session: any, request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { themeId } = await request.json();
+    const userId = session.user.id;
     
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
-    // 获取请求体
-    const data = await request.json();
-    const { theme } = data;
+    console.log(`保存主题到用户配置：userId=${userId}, themeId=${themeId}`);
     
-    if (!theme) {
-      return NextResponse.json(
-        { success: false, error: '未提供主题参数' },
-        { status: 400 }
-      );
-    }
-
-    // 验证主题是否有效
-    const validThemes = [
-      // 基础色彩主题
-      'default', 'violet', 'emerald', 'amber', 'rose',
-      // 渐变主题
-      'ocean', 'sunset', 'forest', 'galaxy', 
-      // 季节主题
-      'spring', 'summer', 'autumn', 'winter',
-      // 柔和主题 - 浅色系列
-      'pastel_pink', 'pastel_blue', 'pastel_lavender', 'pastel_mint', 
-      'pastel_peach', 'pastel_lemon', 'pastel_teal'
-    ];
-    if (!validThemes.includes(theme)) {
-      return NextResponse.json(
-        { success: false, error: '无效的主题' },
-        { status: 400 }
-      );
-    }
-
-    // 获取用户ID
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      );
-    }
-
-    // 更新用户主题
+    // 更新用户资料中的主题设置
     await prisma.userProfile.upsert({
-      where: { userId: user.id },
-      update: { theme },
+      where: { userId },
+      update: { theme: themeId },
       create: {
-        userId: user.id,
-        name: session.user.name || '',
-        theme
+        userId,
+        theme: themeId
       }
     });
-
-    return NextResponse.json({
+    
+    console.log(`主题 ${themeId} 已成功保存到数据库`);
+    
+    return createSuccessResponse({ 
       success: true,
-      theme
+      message: '主题已保存',
+      themeId: themeId  // 返回保存的主题ID，确保前端知道实际保存的是什么
     });
   } catch (error) {
-    console.error('更新主题失败:', error);
-    return NextResponse.json(
-      { success: false, error: '更新主题失败' },
-      { status: 500 }
-    );
+    console.error('保存用户主题失败:', error);
+    return handleApiError(error, '保存用户主题失败');
   }
-} 
+}
+
+/**
+ * 删除用户自定义主题
+ */
+async function deleteUserTheme(session: any, request: NextRequest) {
+  try {
+    const { themeId } = await request.json();
+    const userId = session.user.id;
+    
+    // 删除指定的自定义主题
+    await prisma.customTheme.delete({
+      where: {
+        id_userId: {
+          id: themeId,
+          userId
+        }
+      }
+    });
+    
+    // 如果用户当前使用的正是被删除的主题，则重置为默认主题
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId }
+    });
+    
+    if (userProfile?.theme === themeId) {
+      await prisma.userProfile.update({
+        where: { userId },
+        data: { theme: 'default' }
+      });
+    }
+    
+    return createSuccessResponse({ 
+      success: true,
+      message: '主题已删除'
+    });
+  } catch (error) {
+    return handleApiError(error, '删除用户主题失败');
+  }
+}
+
+// 导出路由处理函数
+export const GET = sessionManager.createHandler(getUserTheme);
+export const POST = sessionManager.createHandler(
+  async (session, request) => saveUserTheme(session, request as NextRequest),
+  true
+);
+export const DELETE = sessionManager.createHandler(
+  async (session, request) => deleteUserTheme(session, request as NextRequest),
+  true
+); 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, JSX } from 'react';
 import { ArrowLeft, Palette, Search, Check, Plus, ChevronLeft, Brush, Type, EyeIcon, Save, Trash, AlertCircle } from 'lucide-react';
-import { Select, Input, Tabs, Button, Alert, Popconfirm, Modal } from 'antd';
+import { Select, Input, Tabs, Button, Alert, Popconfirm, Modal, message } from 'antd';
 import styles from './ThemePanel.module.css';
 import { 
   getThemeStyle, 
@@ -9,6 +9,7 @@ import {
   saveCustomTheme,
   deleteCustomTheme,
   reinitCustomThemes,
+  getContrastColor,
   THEME_STORAGE_KEY
 } from '../theme-service';
 import { ThemeStyle } from '../theme-definitions';
@@ -43,11 +44,12 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
   currentTheme, 
   onThemeChange,
   onClose
-}) => {
+}): JSX.Element => {
   const [selectedTheme, setSelectedTheme] = useState(currentTheme || 'default');
   const [isChanging, setIsChanging] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [renderKey, setRenderKey] = useState(Date.now());
   
   // 自定义主题状态
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -60,12 +62,21 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [themeToDelete, setThemeToDelete] = useState<string | null>(null);
   
+  // 创建成功提示状态
+  const [showCreationSuccess, setShowCreationSuccess] = useState(false);
+  const [newCreatedThemeId, setNewCreatedThemeId] = useState<string | null>(null);
+  
   // 获取用户会话信息
   const { data: session } = useSession();
   const userId = session?.user?.id;
 
   // 使用统一的主题服务获取所有主题
   const themes = React.useMemo(() => {
+    // 确保自定义主题库是最新的
+    if (userId) {
+      reinitCustomThemes(userId);
+    }
+    
     // 使用全局主题定义映射到需要的格式
     return getAllThemes(userId).map(theme => {
       const themeStyle = getThemeStyle(theme.id);
@@ -85,7 +96,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         isCustom: theme.id.startsWith('custom_')
       };
     });
-  }, [showDeleteConfirm, userId]); // 添加userId作为依赖，确保用户变化时重新获取主题列表
+  }, [showDeleteConfirm, userId, renderKey]); // 添加renderKey作为依赖，确保强制刷新时重新获取主题列表
 
   // 获取所有主题分类
   const categories: string[] = Array.from(new Set(themes.map(theme => theme.category || '')));
@@ -104,7 +115,8 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       const initialTheme = {...defaultCustomTheme};
       setCustomTheme(initialTheme);
       setCustomThemeName('我的自定义主题');
-      setShowPreview(false);
+      // 始终启用预览
+      setShowPreview(true);
       // 检查是否有次要色调并相应更新状态
       setHasSecondaryColor(!!initialTheme.secondary && initialTheme.secondary !== '');
     }
@@ -148,21 +160,17 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       }
       
       // 优先应用主题到UI，防止后续步骤出错导致主题不应用
-      applyThemeService(themeId);
+      applyThemeService(themeId, true, userId);
       console.log(`主题 ${themeId} 已本地应用`);
-      
-      // 确定是否为自定义主题
-      const isCustomTheme = themeId.startsWith('custom_');
       
       // 使用onThemeChange回调保存到服务器
       try {
         console.log(`正在将主题 ${themeId} 同步到服务器...`);
         
-        // 如果是自定义主题，传递themeId作为自定义配置
-        const themeType = isCustomTheme ? 'custom' : themeId;
-        const customConfig = isCustomTheme ? { themeId } : undefined;
+        // 始终传递完整的themeId，不再区分是否自定义
+        const customConfig = { themeId, userId: userId || '' };
         
-        const success = await onThemeChange(themeType as any, customConfig);
+        const success = await onThemeChange(themeId, customConfig);
         
         if (success) {
           console.log(`主题 ${themeId} 已成功同步到服务器`);
@@ -183,7 +191,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         }
       }
     } catch (error) {
-      console.error(`应用主题时出错:`, error);
+      console.error(`应用主题出错:`, error);
       // 恢复之前的主题选择状态
       if (currentTheme) {
         setSelectedTheme(currentTheme);
@@ -350,98 +358,68 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     return `#${toHex(r1)}${toHex(g1)}${toHex(b1)}`;
   };
 
-  // 应用自定义主题
-  const applyCustomTheme = async () => {
-    // 创建完整的自定义主题对象
-    const fullCustomTheme: ThemeStyle = {
-      ...customTheme,
-      name: customThemeName,
-    };
-    
-    // 更新背景色和次要色调
-    if (hasSecondaryColor && customTheme.secondary) {
-      fullCustomTheme.background = `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`;
-      console.log("应用渐变色主题:", fullCustomTheme);
-    } else {
-      // 纯色系统 - 完全移除次要色调和渐变背景
-      fullCustomTheme.background = customTheme.primary;
-      
-      // 显式删除次要色调和强调色，确保不会被混入
-      delete fullCustomTheme.secondary;
-      delete fullCustomTheme.accent;
-      
-      // 输出日志确认设置
-      console.log("应用纯色主题:", fullCustomTheme);
-      console.log("次要色调是否存在:", 'secondary' in fullCustomTheme);
-    }
-    
-    // 获取当前用户ID，用于创建用户特定的自定义主题ID
-    let userIdPrefix = '';
-    if (userId) {
-      userIdPrefix = userId.substring(0, 20); // 限制长度
-    } else if (typeof window !== 'undefined') {
-      userIdPrefix = localStorage.getItem('user-id') || `user_${Date.now()}`;
-      
-      // 确保userIdPrefix不包含特殊字符，使用encodeURIComponent处理
-      userIdPrefix = encodeURIComponent(userIdPrefix).replace(/%/g, '');
-      
-      // 限制userId长度
-      if (userIdPrefix.length > 20) {
-        userIdPrefix = userIdPrefix.substring(0, 20);
-      }
+  // 保存自定义主题并应用
+  const handleSaveCustomTheme = async () => {
+    if (customThemeName.trim() === '') {
+      message.error('请输入主题名称');
+      return;
     }
     
     // 生成唯一ID
-    const timestamp = Date.now().toString().slice(-6);
-    const randomNum = Math.floor(Math.random() * 1000);
-    const customThemeId = `custom_${userIdPrefix}_${timestamp}_${randomNum}`;
+    const timestamp = Date.now();
+    const newThemeId = `custom_${timestamp}`;
     
-    console.log(`创建自定义主题: ${customThemeId}`);
+    // 准备保存的主题对象
+    const themeToSave: ThemeStyle = {
+      ...customTheme,
+      name: customThemeName,
+      category: hasSecondaryColor ? '渐变主题' : '纯色系统'
+    };
     
-    try {
-      // 步骤1: 先保存到本地存储
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(THEME_STORAGE_KEY, customThemeId);
-        console.log(`自定义主题 ${customThemeId} 已保存到本地存储`);
-      }
+    console.log("正在保存自定义主题:", themeToSave);
+    
+    // 使用主题服务保存自定义主题
+    const success = saveCustomTheme(newThemeId, themeToSave, userId);
+    
+    if (success) {
+      // 保存成功后应用新主题
+      setIsChanging(true);
       
-      // 步骤2: 保存自定义主题到主题库
-      const saveSuccess = saveCustomTheme(customThemeId, fullCustomTheme, userId);
+      // 保存新创建的主题ID，用于高亮显示
+      setNewCreatedThemeId(newThemeId);
       
-      if (saveSuccess) {
-        // 步骤3: 应用主题到UI
-        applyThemeService(customThemeId);
-        console.log(`自定义主题 ${customThemeId} 已本地应用`);
+      // 显示创建成功提示
+      setShowCreationSuccess(true);
+      
+      // 应用新主题 - 传递完整的themeId而非类型
+      const customConfig = { themeId: newThemeId, userId: userId || '' };
+      const applyResult = await onThemeChange(newThemeId, customConfig);
+      
+      if (applyResult) {
+        console.log(`自定义主题 ${newThemeId} 应用成功`);
         
-        // 返回到主题列表并选中新创建的主题
+        // 更新当前选中的主题
+        setSelectedTheme(newThemeId);
+        
+        // 强制刷新主题列表
+        setRenderKey(Date.now());
+        
+        // 关闭自定义界面，返回主题列表
         setIsCustomizing(false);
-        setSelectedTheme(customThemeId);
         
-        // 步骤4: 尝试同步到服务器（非阻塞操作）
-        console.log(`正在将自定义主题 ${customThemeId} 同步到服务器...`);
-        
-        // 传递themeId作为配置，确保服务器知道应用哪个自定义主题
-        const customConfig = { themeId: customThemeId };
-        
-        onThemeChange('custom', customConfig)
-          .then(success => {
-            if (success) {
-              console.log(`自定义主题 ${customThemeId} 已成功同步到服务器`);
-            } else {
-              console.warn(`自定义主题 ${customThemeId} 服务器同步失败，但本地创建成功`);
-            }
-          })
-          .catch(error => {
-            console.error('同步自定义主题到服务器出错:', error);
-          });
+        // 3秒后关闭创建成功提示
+        setTimeout(() => {
+          setShowCreationSuccess(false);
+          setNewCreatedThemeId(null);
+        }, 3000);
       } else {
-        console.error(`保存自定义主题到主题库失败`);
-        alert('保存自定义主题失败，请稍后再试');
+        message.error('主题应用失败，请重试');
       }
-    } catch (error) {
-      console.error('应用自定义主题出错:', error);
-      alert('应用自定义主题时发生错误');
+    } else {
+      message.error('保存自定义主题失败，请重试');
     }
+    
+    setIsChanging(false);
   };
 
   // 自定义主题预览
@@ -455,21 +433,30 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
       ? customTheme.primary
       : `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`;
 
-    console.log("预览样式:", {
-      isPureColorSystem,
-      primary: customTheme.primary,
-      secondary: customTheme.secondary,
-      background: previewBackground
-    });
+    // 为顶部栏和侧边栏始终设置渐变背景（在渐变系统中）
+    const headerBackground = isPureColorSystem
+      ? customTheme.primary
+      : `linear-gradient(90deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`;
 
-    // 纯色系统下所有次要色调相关的变量都使用主色调
+    const sidebarBackground = isPureColorSystem
+      ? customTheme.primary 
+      : `linear-gradient(180deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`;
+
+    // 为纯色系统计算对比文本色
+    const textColor = isPureColorSystem 
+      ? getContrastColor(customTheme.primary, '#1e293b', '#ffffff')
+      : (customTheme.text || '#1e293b');
+
+    // 返回完整的预览样式 - 使用白色背景
     return {
       '--preview-primary': customTheme.primary,
       '--preview-secondary': isPureColorSystem ? customTheme.primary : customTheme.secondary,
       '--preview-accent': isPureColorSystem ? customTheme.primary : (customTheme.accent || customTheme.primary),
-      '--preview-background': previewBackground,
-      '--preview-card': customTheme.card,
-      '--preview-text': customTheme.text,
+      '--preview-background': '#ffffff', // 改为白色背景
+      '--preview-header-bg': headerBackground,
+      '--preview-sidebar-bg': sidebarBackground,
+      '--preview-card': 'rgba(255, 255, 255, 0.95)',
+      '--preview-text': '#1e293b', // 固定文本为深色
     } as React.CSSProperties;
   };
 
@@ -478,25 +465,24 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     // 同样强制检查是否为纯色系统
     const isPureColorSystem = !hasSecondaryColor || !customTheme.secondary;
     
-    const backgroundStyle = isPureColorSystem
-      ? { background: customTheme.primary } 
-      : { background: `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)` };
-    
-    console.log("预览按钮样式:", {
-      isPureColorSystem,
-      backgroundStyle
-    });
-    
-    return backgroundStyle as React.CSSProperties;
+    if (isPureColorSystem) {
+      // 纯色系统
+      const textColor = getContrastColor(customTheme.primary, '#1e293b', '#ffffff');
+      return { 
+        background: customTheme.primary,
+        color: textColor,
+      } as React.CSSProperties;
+    } else {
+      // 渐变系统
+      return { 
+        background: `linear-gradient(135deg, ${customTheme.primary} 0%, ${customTheme.secondary} 100%)`,
+        color: "#ffffff", // 为渐变背景设置白色文本以确保可读性
+      } as React.CSSProperties;
+    }
   };
 
   // 处理删除主题
-  const handleDeleteTheme = async (themeId: string) => {
-    if (!themeId.startsWith('custom_')) {
-      alert('只能删除自定义主题');
-      return;
-    }
-    
+  const handleDeleteTheme = (themeId: string) => {
     setThemeToDelete(themeId);
     setShowDeleteConfirm(true);
   };
@@ -506,27 +492,57 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
     if (!themeToDelete) return;
     
     try {
-      const deleteSuccess = deleteCustomTheme(themeToDelete, userId);
+      // 删除主题，传入用户ID
+      const success = deleteCustomTheme(themeToDelete, userId);
       
-      if (deleteSuccess) {
-        // 如果当前选中的是被删除的主题，则切换回默认主题
-        if (selectedTheme === themeToDelete || currentTheme === themeToDelete) {
-          await onThemeChange('default');
-          setSelectedTheme('default');
-        }
+      if (success) {
+        console.log(`已删除主题: ${themeToDelete}`);
         
-        alert(`自定义主题"${themes.find(t => t.id === themeToDelete)?.name || themeToDelete}"已删除`);
+        // 如果删除的是当前主题，切换到默认主题
+        if (themeToDelete === selectedTheme) {
+          handleThemeSelect('default');
+        } else {
+          // 强制刷新主题列表
+          setRenderKey(Date.now());
+        }
       } else {
-        alert('删除主题失败，请稍后再试');
+        console.error(`删除主题失败: ${themeToDelete}`);
       }
     } catch (error) {
       console.error('删除主题出错:', error);
-      alert('删除主题时发生错误');
     } finally {
-      setShowDeleteConfirm(false);
       setThemeToDelete(null);
+      setShowDeleteConfirm(false);
     }
   };
+
+  // 添加创建成功提示组件
+  const renderCreationSuccessMessage = (): JSX.Element | null => {
+    if (!showCreationSuccess) return null;
+    
+    return (
+      <div className={styles.creationSuccessOverlay}>
+        <div className={styles.creationSuccessMessage}>
+          <div className={styles.creationSuccessIcon}>
+            <Check size={24} />
+          </div>
+          <h3>创建成功!</h3>
+          <p>自定义主题「{customThemeName}」已创建并应用</p>
+        </div>
+      </div>
+    );
+  };
+
+  // 自动隐藏创建成功提示
+  useEffect(() => {
+    if (showCreationSuccess) {
+      const timer = setTimeout(() => {
+        setShowCreationSuccess(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showCreationSuccess]);
 
   // 渲染自定义主题界面
   const renderCustomThemeUI = () => (
@@ -543,18 +559,6 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
           <Brush size={20} className={styles.titleIcon} />
           自定义主题
         </h2>
-        
-        <div className={styles.previewToggle}>
-          <button
-            className={`${styles.previewButton} ${showPreview ? styles.active : ''}`}
-            onClick={() => setShowPreview(!showPreview)}
-            title={showPreview ? "关闭预览" : "打开预览"}
-            style={showPreview ? {} : getCustomThemePreviewStyle()}
-          >
-            <EyeIcon size={18} />
-            {showPreview ? "关闭预览" : "预览"}
-          </button>
-        </div>
       </div>
       
       <div className={styles.customThemeContent}>
@@ -586,7 +590,6 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
                     onChange={(e) => handleColorChange(e.target.value, 'primary')}
                     className={styles.colorInput}
                   />
-                  <span className={styles.colorValue}>{customTheme.primary}</span>
                 </div>
               </div>
               
@@ -600,7 +603,6 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
                       onChange={(e) => handleColorChange(e.target.value, 'secondary')}
                       className={styles.colorInput}
                     />
-                    <span className={styles.colorValue}>{customTheme.secondary}</span>
                   </div>
                 </div>
               )}
@@ -621,40 +623,38 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
           </div>
         </div>
         
-        {showPreview && (
-          <div className={styles.themePreviewContainer} style={getPreviewStyle()}>
-            <h3 className={styles.previewTitle}>预览效果</h3>
-            <div className={styles.previewContent}>
-              <div className={styles.previewHeader}>
-                <div className={styles.previewLogo}>
-                  <Palette size={24} />
-                  <span>{customThemeName}</span>
-                </div>
-                <div className={styles.previewButtons}>
-                  <div className={styles.previewButton}></div>
-                  <div className={styles.previewButton}></div>
-                </div>
+        <div className={styles.themePreviewContainer} style={getPreviewStyle()}>
+          <h3 className={styles.previewTitle}>预览效果</h3>
+          <div className={styles.previewContent}>
+            <div className={styles.previewHeader}>
+              <div className={styles.previewLogo}>
+                <Palette size={24} />
+                <span>{customThemeName}</span>
               </div>
-              <div className={styles.previewBody}>
-                <div className={styles.previewSidebar}>
-                  <div className={styles.previewSidebarItem}></div>
-                  <div className={styles.previewSidebarItem}></div>
-                  <div className={styles.previewSidebarItem}></div>
-                </div>
-                <div className={styles.previewMain}>
-                  <div className={styles.previewCard}>
-                    <h4>标题示例</h4>
-                    <p>这是一段示例文字，展示在该主题下的文字效果。</p>
-                    <div className={styles.previewButtonGroup}>
-                      <button className={styles.previewPrimaryButton}>主按钮</button>
-                      <button className={styles.previewSecondaryButton}>次按钮</button>
-                    </div>
+              <div className={styles.previewButtons}>
+                <div className={styles.previewButton}></div>
+                <div className={styles.previewButton}></div>
+              </div>
+            </div>
+            <div className={styles.previewBody}>
+              <div className={styles.previewSidebar}>
+                <div className={styles.previewSidebarItem}></div>
+                <div className={styles.previewSidebarItem}></div>
+                <div className={styles.previewSidebarItem}></div>
+              </div>
+              <div className={styles.previewMain}>
+                <div className={styles.previewCard}>
+                  <h4>标题示例</h4>
+                  <p>这是一段示例文字，展示在该主题下的文字效果。</p>
+                  <div className={styles.previewButtonGroup}>
+                    <button className={styles.previewPrimaryButton}>主按钮</button>
+                    <button className={styles.previewSecondaryButton}>次按钮</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
       
       <div className={styles.customThemeFooter}>
@@ -666,7 +666,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
         </button>
         <button 
           className={styles.applyButton}
-          onClick={applyCustomTheme}
+          onClick={handleSaveCustomTheme}
         >
           <Save size={16} />
           保存并应用
@@ -851,7 +851,7 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
             {filteredThemes.map(theme => (
               <button
                 key={theme.id}
-                className={`${styles.themeOption} ${selectedTheme === theme.id ? styles.selected : ''}`}
+                className={`${styles.themeOption} ${selectedTheme === theme.id ? styles.selected : ''} ${newCreatedThemeId === theme.id ? styles.newCreated : ''}`}
                 onClick={() => handleThemeSelect(theme.id)}
                 disabled={isChanging}
                 style={{ 
@@ -859,7 +859,12 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
                   '--theme-highlight': theme.primary
                 } as React.CSSProperties}
               >
-                <div className={styles.themePreview} />
+                <div 
+                  className={styles.themePreview} 
+                  style={{
+                    background: theme.preview
+                  } as React.CSSProperties}
+                />
                 <span className={styles.themeName}>{theme.name}</span>
                 {selectedTheme === theme.id && (
                   <span className={styles.checkmark}>
@@ -907,16 +912,28 @@ const ThemePanel: React.FC<ThemePanelProps> = ({
 
   // 在组件挂载时加载当前用户的主题
   useEffect(() => {
+    // 先尝试加载匿名主题
+    reinitCustomThemes();
+    
+    // 然后加载当前用户的主题
     if (userId) {
-      // 重新初始化用户主题
       reinitCustomThemes(userId);
     }
+    
+    // 为了确保现有的所有主题都能被正确加载，我们再次设置renderKey触发主题列表刷新
+    setRenderKey(Date.now());
+    
+    // 清除新创建主题的高亮状态
+    setTimeout(() => {
+      setNewCreatedThemeId(null);
+    }, 5000);
   }, [userId]);
 
   return (
     <div className={styles.themePanel}>
       {isCustomizing ? renderCustomThemeUI() : renderMainUI()}
       {showDeleteConfirm && renderDeleteConfirmDialog()}
+      {showCreationSuccess && renderCreationSuccessMessage()}
       {renderSearchInfo()}
     </div>
   );

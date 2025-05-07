@@ -6,7 +6,8 @@ import {
   getAllThemes as getAllThemesOriginal,
   getThemesByCategory,
   THEME_STORAGE_KEY,
-  getThemeStyle
+  getThemeStyle,
+  reinitCustomThemes
 } from '@/app/theme';
 import { ThemeStyle } from '@/app/theme/theme-definitions';
 import { useSession } from 'next-auth/react';
@@ -65,6 +66,9 @@ export const useThemeManager = ({
   const [isSyncedToServer, setIsSyncedToServer] = useState(false);
   const { data: session, status } = useSession();
   
+  // 获取用户ID
+  const userId = session?.user?.id;
+  
   /**
    * 从API获取用户主题
    * @returns 用户配置的主题或null
@@ -74,17 +78,18 @@ export const useThemeManager = ({
     
     try {
       console.log('从API获取用户主题设置...');
-      const response = await fetch('/api/user/profile');
+      // 使用新的主题API端点
+      const response = await fetch('/api/user/theme');
       
       if (!response.ok) {
-        throw new Error('获取用户资料失败');
+        throw new Error('获取用户主题设置失败');
       }
       
       const data = await response.json();
       
-      if (data.success && data.profile?.theme) {
-        console.log('成功从API获取到用户主题:', data.profile.theme);
-        return data.profile.theme;
+      if (data.success && data.theme) {
+        console.log('成功从API获取到用户主题:', data.theme);
+        return data.theme;
       }
       
       console.log('API中未找到用户主题配置');
@@ -118,13 +123,13 @@ export const useThemeManager = ({
         }
       }
       
-      // 使用API更新用户配置
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
+      // 使用新的API端点保存用户主题
+      const response = await fetch('/api/user/theme', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ theme: themeId }),
+        body: JSON.stringify({ themeId }),
       });
       
       const data = await response.json();
@@ -151,6 +156,11 @@ export const useThemeManager = ({
       
       if (apiTheme) {
         console.log('从API获取到用户主题:', apiTheme);
+        // 如果获取到的是自定义主题，需要确保已加载该用户的自定义主题
+        if (apiTheme.startsWith('custom_') && userId) {
+          console.log('检测到自定义主题，正在重新初始化用户主题...');
+          reinitCustomThemes(userId);
+        }
         return apiTheme;
       } else if (userTheme) {
         // 如果API没有返回主题，使用传入的用户主题
@@ -158,7 +168,7 @@ export const useThemeManager = ({
         return userTheme;
       } else {
         // 尝试从localStorage获取
-        const storedTheme = loadThemeFromStorage();
+        const storedTheme = loadThemeFromStorage(userId);
         if (storedTheme) {
           console.log('使用本地存储的主题:', storedTheme);
           // 可选：将localStorage中的主题同步到服务器
@@ -175,7 +185,7 @@ export const useThemeManager = ({
       }
     }
     return null;
-  }, [session, status, userTheme, fetchUserTheme, saveUserTheme]);
+  }, [session, status, userTheme, fetchUserTheme, saveUserTheme, userId]);
   
   // 初始化主题 - 在组件挂载和session状态变化时执行
   useEffect(() => {
@@ -183,20 +193,28 @@ export const useThemeManager = ({
       setIsLoading(true);
       
       try {
+        // 如果用户已登录，确保加载用户的自定义主题
+        if (userId) {
+          console.log('用户已登录，正在初始化用户自定义主题:', userId);
+          reinitCustomThemes(userId);
+        }
+        
         // 尝试从API或本地存储获取主题
         const themeId = await loadUserThemeFromAPI() || defaultTheme;
         
-        // 应用主题
-        const result = applyTheme(themeId);
+        console.log('初始化主题ID:', themeId);
+        
+        // 应用主题，传入用户ID
+        const result = applyTheme(themeId, true, userId);
         
         if (result) {
           setCurrentTheme(themeId);
           setThemeStyle(result);
-          console.log(`主题 ${themeId} 已成功应用`);
+          console.log(`主题 ${themeId} 已成功应用，用户ID: ${userId || '未登录'}`);
         } else {
           // 如果应用失败，使用默认主题
           console.warn(`应用主题 ${themeId} 失败，使用默认主题`);
-          const defaultResult = applyTheme(defaultTheme);
+          const defaultResult = applyTheme(defaultTheme, true, userId);
           
           if (defaultResult) {
             setCurrentTheme(defaultTheme);
@@ -211,7 +229,7 @@ export const useThemeManager = ({
     };
     
     initTheme();
-  }, [status, defaultTheme, loadUserThemeFromAPI]);
+  }, [status, defaultTheme, loadUserThemeFromAPI, userId]);
   
   // 监听主题变更事件
   useEffect(() => {
@@ -232,8 +250,16 @@ export const useThemeManager = ({
     setIsLoading(true);
     
     try {
-      // 应用主题
-      const result = applyTheme(themeId);
+      console.log(`正在更新主题: ${themeId}, 用户ID: ${userId || '未登录'}`);
+      
+      // 如果是自定义主题，确保已加载用户的自定义主题
+      if (themeId.startsWith('custom_') && userId) {
+        console.log('检测到自定义主题，正在重新初始化用户主题...');
+        reinitCustomThemes(userId);
+      }
+      
+      // 应用主题，传入用户ID确保加载用户特定的自定义主题
+      const result = applyTheme(themeId, true, userId);
       
       if (!result) {
         console.error(`应用主题 ${themeId} 失败`);
@@ -250,11 +276,11 @@ export const useThemeManager = ({
       setThemeStyle(result);
       
       // 如果用户已登录，同步到服务器
-      if (status === 'authenticated') {
+      if (session?.user) {
+        console.log(`正在将主题 ${themeId} 同步到服务器...`);
         const saved = await saveUserTheme(themeId);
-        if (!saved) {
-          console.warn(`主题 ${themeId} 已在本地应用，但未能保存到服务器`);
-        }
+        console.log(`主题 ${themeId} 同步结果:`, saved ? '成功' : '失败');
+        return saved;
       }
       
       return true;
@@ -264,29 +290,35 @@ export const useThemeManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [saveUserTheme, status]);
+  }, [session, saveUserTheme, userId]);
   
   /**
-   * 本地应用主题，不同步到服务器
+   * 仅在本地应用主题
    */
   const applyThemeLocal = useCallback((themeId: string): boolean => {
-    // 应用主题
-    const result = applyTheme(themeId);
-    
-    if (result) {
-      setCurrentTheme(themeId);
-      setThemeStyle(result);
+    try {
+      const result = applyTheme(themeId, true, userId);
       
-      // 保存到localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+      if (result) {
+        setCurrentTheme(themeId);
+        setThemeStyle(result);
+        return true;
       }
       
-      return true;
+      return false;
+    } catch (error) {
+      console.error('应用主题失败:', error);
+      return false;
     }
-    
-    return false;
-  }, []);
+  }, [userId]);
+  
+  /**
+   * 获取所有主题
+   */
+  const getAllThemes = useCallback(() => {
+    // 传入用户ID，确保只返回该用户可见的主题
+    return getAllThemesOriginal(userId);
+  }, [userId]);
   
   return {
     currentTheme,
@@ -294,13 +326,7 @@ export const useThemeManager = ({
     isLoading,
     updateTheme,
     applyTheme: applyThemeLocal,
-    getAllThemes: () => {
-      // 包装原始函数，添加category属性
-      return getAllThemesOriginal().map(theme => ({
-        ...theme,
-        category: 'default' // 添加默认分类，如果原始数据没有
-      }));
-    },
+    getAllThemes,
     getThemesByCategory,
     sessionStatus: status,
     isSyncedToServer

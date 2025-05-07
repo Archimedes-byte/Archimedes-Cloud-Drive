@@ -23,6 +23,8 @@ export {
   deleteCustomTheme,
   clearCustomThemes,
   reinitCustomThemes,
+  syncCustomThemesForUser,
+  getContrastColor,
   THEME_CHANGE_EVENT
 } from './theme-service';
 

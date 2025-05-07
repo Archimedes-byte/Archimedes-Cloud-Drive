@@ -29,6 +29,7 @@ model User {
   sharedFiles       Share[]           @relation("SharedBy")
   receivedFiles     Share[]           @relation("SharedTo")
   profile           UserProfile?
+  customThemes      CustomTheme[]
 }
 
 model Share {
@@ -139,6 +140,20 @@ model UserProfile {
   updatedAt DateTime @updatedAt
   name      String?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 用户自定义主题
+model CustomTheme {
+  id        String   @default(cuid())
+  userId    String
+  name      String
+  styles    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([id, userId])
+  @@index([userId])
 }
 
 model Account {
