@@ -62,7 +62,8 @@
 .message {
   color: #666;
   font-family: 'Imperial Script', 'Imperial Script Fallback', cursive, sans-serif;
-  font-size: 1.8rem;
+  font-size: 3rem;
+  font-weight: 700;
 }
 
 /* 打字文本效果 */
@@ -75,7 +76,7 @@
 .cursor {
   display: inline-block;
   width: 3px;
-  height: 1.8rem;
+  height: 3rem;
   background-color: #666;
   margin-left: 2px;
   animation: blink 0.7s infinite;

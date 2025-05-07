@@ -92,6 +92,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .form {
@@ -99,6 +101,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  align-items: center;
 }
 
 .inputGroup {
@@ -183,54 +186,59 @@
   animation: fadeInUp 0.6s ease 0.6s forwards;
   margin-top: 0.75rem;
   margin-bottom: 0.25rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%; /* 取消最大宽度限制 */
 }
 
-.loginButton {
-  height: 40px;
+.loginButton, .registerButton {
+  height: 45px;
   font-weight: 600;
   font-size: 1rem;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border: none;
-  box-shadow: 
-    0 4px 12px rgba(59, 130, 246, 0.3),
-    0 2px 4px rgba(59, 130, 246, 0.2);
+  background: #1e40af !important; /* 修改为与首页免费注册按钮相同的颜色 */
+  border: none !important;
+  box-shadow: 0 4px 8px rgba(30, 64, 175, 0.25) !important;
   transition: all 0.3s ease;
-  border-radius: 10px;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
-  color: white;
+  color: white !important;
+  width: 100%;
 }
 
-.loginButton::before {
+.loginButton::before, .registerButton::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: all 0.6s ease;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+  pointer-events: none;
 }
 
-.loginButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+.loginButton:hover, .registerButton:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(30, 64, 175, 0.35) !important;
+  background: #1e3a8a !important; /* 按钮悬停时深一点 */
 }
 
-.loginButton:hover::before {
-  left: 100%;
+.loginButton:hover::before, .registerButton:hover::before {
+  display: block;
 }
 
-.loginButton:active {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 10px rgba(37, 99, 235, 0.3);
+.loginButton:active, .registerButton:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 4px 8px rgba(79, 93, 117, 0.2) !important;
 }
 
-.loginButtonContainer {
-  margin-top: 0.5rem;
-  margin-bottom: 0;
+.loginButtonContainer, .registerButtonContainer {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
 }
 
 .registerLink {
@@ -294,8 +302,8 @@
 }
 
 @media (max-width: 480px) {
-  .loginButton {
-    height: 2.75rem;
+  .loginButton, .registerButton {
+    height: 45px;
     font-size: 1rem;
   }
   
@@ -315,7 +323,10 @@
 
 /* 登录表单特有样式 */
 .loginFormContainer {
-  padding-top: 0;
+  padding: 1rem 0;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 /* 注册表单特有样式 */
@@ -323,83 +334,12 @@
   padding: 0.5rem 0;
 }
 
-.registerButtonContainer {
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-@media (max-width: 480px) {
-  .loginButton {
-    height: 2.75rem;
-    font-size: 1rem;
-  }
-  
-  .loginButtonContainer {
-    margin-top: 0.75rem;
-  }
-  
-  .registerButtonContainer {
-    margin-top: 1.25rem;
-  }
-  
-  .inputGroup {
-    animation-delay: 0.2s;
-  }
-  
-  .inputGroup:nth-child(1) { animation-delay: 0.2s; }
-  .inputGroup:nth-child(2) { animation-delay: 0.3s; }
-  .inputGroup:nth-child(3) { animation-delay: 0.4s; }
-  .inputGroup:nth-child(4) { animation-delay: 0.5s; }
-  
-  .buttonContainer {
-    animation-delay: 0.7s;
-  }
-}
-
-/* 注册按钮样式 */
-.registerButton {
-  height: 45px;
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
-  border: none;
-  box-shadow: 
-    0 4px 12px rgba(59, 130, 246, 0.3),
-    0 2px 4px rgba(59, 130, 246, 0.2);
-  transition: all 0.3s ease;
-  border-radius: 10px;
-  position: relative;
-  overflow: hidden;
-  color: white;
-}
-
-.registerButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
+/* 额外按钮容器 */
+.extraButtons {
   width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: all 0.6s ease;
-}
-
-.registerButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 6px 16px rgba(59, 130, 246, 0.35),
-    0 3px 6px rgba(59, 130, 246, 0.25);
-  background: linear-gradient(135deg, #2563eb 0%, #4338ca 100%);
-}
-
-.registerButton:hover::before {
-  left: 100%;
-}
-
-.registerButton:active {
-  transform: translateY(-1px);
-  box-shadow: 
-    0 4px 10px rgba(59, 130, 246, 0.3),
-    0 2px 4px rgba(59, 130, 246, 0.2);
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%; /* 取消最大宽度限制，与上面的buttonContainer一致 */
 } 

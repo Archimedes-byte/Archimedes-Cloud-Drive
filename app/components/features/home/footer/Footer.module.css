@@ -32,7 +32,7 @@
   left: 0;
   width: 40px;
   height: 3px;
-  background: linear-gradient(to right, var(--theme-primary, #3b82f6), var(--theme-accent, #60a5fa));
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
   border-radius: 2px;
 }
 
@@ -62,12 +62,12 @@
   height: 1px;
   bottom: -2px;
   left: 0;
-  background-color: var(--theme-primary, #3b82f6);
+  background-color: #3b82f6;
   transition: width 0.3s ease;
 }
 
 .footerSection a:hover {
-  color: var(--theme-primary, #3b82f6);
+  color: #3b82f6;
   padding-left: 5px;
 }
 

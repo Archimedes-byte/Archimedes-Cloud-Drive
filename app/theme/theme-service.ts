@@ -234,7 +234,7 @@ function applyThemeStyles(theme: ThemeStyle): ThemeStyle {
   
   // 处理特殊背景情况（渐变等）
   if (theme.background && !theme.background.startsWith('#')) {
-    updateGlobalStylesheet(theme.background);
+  updateGlobalStylesheet(theme.background);
   }
   
   return theme;

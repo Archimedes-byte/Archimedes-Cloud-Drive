@@ -14,11 +14,10 @@ const RegisterPage: React.FC = () => {
   const router = useRouter();
   const { openLoginModal } = useAuth();
   
-  // 定义返回首页按钮作为额外按钮
   const homeButton = (
     <div className={styles.buttonContainer}>
       <Button 
-        type="primary"
+        type="default"
         block
         size="large"
         icon={<HomeOutlined />}

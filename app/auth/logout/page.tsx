@@ -14,7 +14,7 @@ import Head from 'next/head';
  */
 export default function LogoutPage() {
   const [messageText, setMessageText] = useState("");
-  const fullMessage = "正在安全退出您的账户...";
+  const fullMessage = "Archimedes' Cloud Drive";
   
   useEffect(() => {
     // 预加载字体
@@ -90,11 +90,8 @@ export default function LogoutPage() {
         />
       </Head>
       <div className={logoutStyles.logoutContainer}>
-        <div className={logoutStyles.logoContainer}>
-          <h1 className={logoutStyles.logoText}>Archimedes' Cloud Drive</h1>
-        </div>
         <div className={logoutStyles.messageContainer}>
-          <h2 className={logoutStyles.title}>感谢使用Archimedes' Cloud Drive</h2>
+          <h2 className={logoutStyles.title}>感谢您的使用</h2>
           <p className={`${logoutStyles.message} ${logoutStyles.typingText}`}>
             {messageText}
             <span className={logoutStyles.cursor}></span>

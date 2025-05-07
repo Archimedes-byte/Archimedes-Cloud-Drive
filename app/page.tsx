@@ -34,7 +34,7 @@ export default function HomePage() {
         <div ref={featuresRef}>
           <Features id="features" />
         </div>
-        <CTA onLoginClick={openLoginModal} />
+        <CTA />
       </main>
     </AppLayout>
   );

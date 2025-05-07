@@ -337,9 +337,44 @@
     0 10px 20px rgba(59, 130, 246, 0.1),
     0 0 0 1px rgba(59, 130, 246, 0.08);
   overflow: visible;
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-header) {
+  position: relative;
+  text-align: center;
+  padding: 25px 24px 15px;
+  margin: 0 0 5px 0;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(to right, #f8faff, #f1f5ff);
+  width: 100%;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-header)::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  border-radius: 3px;
+}
+
+.customModal:global(.login-modal) :global(.ant-modal-title) {
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .customModal:global(.login-modal) :global(.ant-modal-close) {
@@ -347,13 +382,14 @@
   right: 12px;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
+  border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .customModal:global(.login-modal) :global(.ant-modal-close):hover {
@@ -363,43 +399,15 @@
 }
 
 .customModal:global(.login-modal) :global(.ant-modal-body) {
-  padding: 0;
+  padding: 20px 30px 30px;
   overflow-y: visible;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   margin-top: 0;
-}
-
-.customModal:global(.login-modal) :global(.ant-modal-header) {
-  position: relative;
-  text-align: center;
-  padding: 18px 24px 4px;
-  margin: 0 0 5px 0;
-  border-bottom: none;
-  border-radius: 16px 16px 0 0;
-}
-
-.customModal:global(.login-modal) :global(.ant-modal-title) {
-  font-weight: 600;
-  font-size: 18px;
-  letter-spacing: -0.01em;
-  color: #1e3a8a;
-  background: linear-gradient(to right, #1e3a8a, #3b82f6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.customModal:global(.login-modal) :global(.ant-modal-header)::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
-  border-radius: 16px 16px 0 0;
+  width: 100%;
+  background: linear-gradient(to bottom, #ffffff, #f9faff);
 }
 
 .modalCloseIcon {

@@ -262,7 +262,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
         {/* 提交按钮区域 */}
         <div className={`${styles.buttonContainer} ${formType === 'login' ? styles.loginButtonContainer : styles.registerButtonContainer}`}>
           <Button 
-            type="primary"
+            type="default"
             block
             size="large"
             htmlType="submit"

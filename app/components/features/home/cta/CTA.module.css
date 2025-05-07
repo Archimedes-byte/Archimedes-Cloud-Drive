@@ -21,7 +21,7 @@
   font-weight: 700;
   color: #1a202c;
   margin-bottom: 1.25rem;
-  background: linear-gradient(to right, #1a202c, var(--theme-primary, #3b82f6));
+  background: linear-gradient(to right, #1a202c, #3b82f6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

@@ -2,39 +2,102 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  justify-content: center;
+  padding: 5px 30px 30px;
   min-width: 350px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .loginForm {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 模态框内的自定义样式 */
 /* 为解决 CSS Modules 纯全局选择器问题，添加一个本地类与全局选择器配合使用 */
 .modalWrapper :global(.ant-modal-content) {
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 15px 35px rgba(30, 64, 175, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .modalWrapper :global(.ant-modal-header) {
-  background-color: #f8f8f8;
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(to right, #f7f9ff, #eef4ff);
+  padding: 25px 24px 15px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+
+.modalWrapper :global(.ant-modal-header)::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  border-radius: 3px;
 }
 
 .modalWrapper :global(.ant-modal-title) {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  color: #333;
+  color: #1e40af;
   text-align: center;
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.5px;
 }
 
 .modalWrapper :global(.ant-modal-body) {
-  padding: 32px 24px;
+  padding: 25px 30px 30px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, #ffffff, #f9faff);
 }
 
 .modalWrapper :global(.ant-modal-footer) {
   border-top: none;
   padding: 10px 24px 24px;
+  width: 100%;
+  text-align: center;
+  background: linear-gradient(to bottom, #f9faff, #f5f7ff);
+}
+
+.modalWrapper :global(.ant-modal-close) {
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.modalWrapper :global(.ant-modal-close):hover {
+  transform: rotate(90deg);
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.2);
 } 
