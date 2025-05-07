@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { FileInfo } from '@/app/types';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { fileApi } from '@/app/lib/api/file-api';
-import { createTrackableDebounce, TrackableDebounce } from '@/app/utils/function/debounce';
+import { createTrackableDebounce, TrackableDebounce } from '@/app/utils/function';
 
 /**
  * 搜索类型

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join, extname } from 'path';
 import { existsSync } from 'fs';
-import { getFileCategory, generateUniqueFilename, sanitizeFilename } from '@/app/utils/file/type';
+import { getFileCategory, generateUniqueFilename, sanitizeFilename } from '@/app/utils/file';
 import { FileInfo, FileEntity } from '@/app/types';
 import { createFileError, handleError, withRetry } from '@/app/utils/error';
 

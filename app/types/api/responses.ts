@@ -5,8 +5,12 @@ import {
   AuthResponse as SharedAuthResponse,
   PaginatedResponse as SharedPaginatedResponse,
   UserBasic
-} from '../shared/api-types';
+} from '@/app/types';
 
+/**
+ * 文件列表响应接口
+ * 扩展基础API响应类型
+ */
 export interface FileListResponse extends ApiResponse {
   data: FileWithUIState[];
   total?: number;
@@ -14,11 +18,18 @@ export interface FileListResponse extends ApiResponse {
   limit?: number;
 }
 
+/**
+ * 文件详情响应接口
+ * 扩展基础API响应类型
+ */
 export interface FileDetailResponse extends ApiResponse {
   data: FileWithUIState;
 }
 
-// 使用共享类型并扩展
+/**
+ * 自定义文件操作响应
+ * 扩展共享文件操作响应类型
+ */
 export interface CustomFileOperationResponse extends SharedFileOperationResponse {
   data?: {
     affected: number;
@@ -26,6 +37,9 @@ export interface CustomFileOperationResponse extends SharedFileOperationResponse
   };
 }
 
+/**
+ * 文件类型统计信息
+ */
 export interface FileTypeStats {
   type: FileTypeEnum | string;
   size: number;
@@ -45,7 +59,9 @@ export interface FileTypeStats {
 //   };
 // }
 
-// 导出共享AuthResponse类型
+/**
+ * 导出共享AuthResponse类型
+ */
 export type { SharedAuthResponse as AuthResponse };
 
 /**
@@ -66,7 +82,7 @@ export interface SearchResponse<T = FileWithUIState> extends ApiResponse {
 
 /**
  * 通用分页响应类型
- * 封装分页数据响应
+ * 使用共享分页响应类型
  * @template T 分页数据项的类型
  */
 export type PaginatedApiResponse<T> = SharedPaginatedResponse<T>; 

@@ -10,8 +10,8 @@
 
 import React, { useState } from 'react';
 import { Input, Button, Spin, Result, List, Avatar, Breadcrumb, message } from 'antd';
-import { FileIcon, folderIcon } from '@/app/utils/file/icon-map';
-import { formatFileSize } from '@/app/utils/file/formatter';
+import { FileIcon, folderIcon } from '@/app/utils/file';
+import { formatFileSize } from '@/app/utils/file';
 import { Lock, Download, File, Folder, ChevronLeft, Home, Eye, Save } from 'lucide-react';
 import { useShareView } from '@/app/hooks/file/useShareView';
 import { FilePreview } from '@/app/components/features/file-management/file-preview/FilePreview';

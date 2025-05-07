@@ -12,7 +12,7 @@ import { FileManagementService } from '@/app/services/storage';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import path from 'path';
-import { FILE_CATEGORIES } from '@/app/utils/file/type';
+import { FILE_CATEGORIES } from '@/app/utils/file';
 import { existsSync } from 'fs';
 import { PrismaClient } from '@prisma/client';
 

@@ -4,9 +4,6 @@
  * 导出所有API相关功能
  */
 
-export * from './auth';
-export * from './response';
-
 /**
  * API模块 (API Module)
  * 
@@ -29,13 +26,13 @@ export * from './response';
 // 导出文件API客户端实例
 export { fileApi } from './file-api';
 
-// 导出类型定义
+// 从统一类型定义导入
 export type { 
   ApiResponse, 
   FileListRequest, 
   FileSearchRequest, 
   PaginatedResponse 
-} from './file-api';
+} from '@/app/types';
 
 // 导出API路径配置
 export { API_PATHS } from './paths'; 

@@ -3,7 +3,7 @@
  * 
  * 统一处理所有API请求，包含重试、超时和错误处理逻辑
  */
-import { UserProfile, UserProfileInput, ApiResponse } from '@/app/types/shared/api-types';
+import { UserProfile, UserProfileInput, ApiResponse } from '@/app/types';
 
 // 重试配置接口
 interface RetryConfig {

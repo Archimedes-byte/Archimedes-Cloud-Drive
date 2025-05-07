@@ -9,17 +9,15 @@ import {
   ResponseStatus,
   ErrorResponse as SharedErrorResponse,
   ApiError as SharedApiError
-} from '@/app/types/shared/api-types';
+} from '../shared/api-types';
 
 // 导出共享类型
 export type { 
   ResponseStatus,
   SharedErrorResponse as ErrorResponse,
-  SharedApiError as ApiError
+  SharedApiError as ApiError,
+  SharedApiResponse as ApiResponse
 };
-
-// 为了向后兼容，保持ApiResponse的导出
-export type ApiResponse<T = any> = SharedApiResponse<T>;
 
 // 配置接口
 export interface AppConfig {

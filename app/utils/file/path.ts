@@ -6,22 +6,6 @@
 import path from 'path';
 
 /**
- * 获取文件名和后缀
- * @param filename 文件名
- * @returns 包含名称和扩展名的对象
- */
-export const getFileNameAndExtension = (filename: string) => {
-  const lastDotIndex = filename.lastIndexOf('.');
-  if (lastDotIndex === -1) {
-    return { name: filename, extension: '' };
-  }
-  return {
-    name: filename.substring(0, lastDotIndex),
-    extension: filename.substring(lastDotIndex + 1).toLowerCase()
-  };
-};
-
-/**
  * 获取文件所在目录路径
  * @param path 文件完整路径
  * @returns 文件所在目录路径
@@ -47,8 +31,13 @@ export const getExtension = (filename: string): string => {
  * @returns 不带扩展名的文件名
  */
 export const getBaseName = (filename: string): string => {
-  const { name } = getFileNameAndExtension(filename);
-  return name;
+  // 使用type.ts中定义的函数
+  // 这里需要直接获取文件名部分
+  const lastDotIndex = filename.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    return filename;
+  }
+  return filename.substring(0, lastDotIndex);
 };
 
 /**

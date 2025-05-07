@@ -1,31 +1,28 @@
+/**
+ * API类型统一导出
+ * 
+ * 此文件导出所有API相关类型，主要是re-export共享API类型
+ * 并添加特定领域的扩展类型
+ */
+
+// 从统一入口导入通用API类型
 import { 
-  ApiResponse as SharedApiResponse,
-  PaginatedResponse as SharedPaginatedResponse,
-  FileUploadResponse as SharedFileUploadResponse,
-  FileOperationResponse as SharedFileOperationResponse
-} from '@/app/types/shared/api-types';
+  ApiResponse,
+  PaginatedResponse
+} from '@/app/types';
 
-// 为了向后兼容，保持ApiResponse的导出
-export type ApiResponse = SharedApiResponse;
-
+// 导出请求类型
 export * from './requests';
 
+// 导出响应类型
 export * from './responses';
 
+// 导出核心API类型
 export * from '../core/api';
 
 /**
- * API响应接口定义
- * 提供统一的API响应类型
+ * 特定领域的API响应接口
  */
-
-/**
- * 基础API响应接口
- * 所有API响应都应符合此接口
- */
-export interface ApiDataResponse<T> extends ApiResponse {
-  data: T;
-}
 
 /**
  * 文件系统路径项接口
@@ -45,19 +42,3 @@ export interface FolderPathResponse extends ApiResponse {
     path: FolderPathItem[];
   };
 }
-
-/**
- * 带分页的API响应接口
- * 用于返回分页数据的API响应
- */
-export type ApiPaginatedResponse<T> = SharedPaginatedResponse<T>;
-
-/**
- * 文件上传响应接口
- */
-export type FileUploadResponse = SharedFileUploadResponse;
-
-/**
- * 文件操作响应接口
- */
-export type FileOperationResponse = SharedFileOperationResponse;

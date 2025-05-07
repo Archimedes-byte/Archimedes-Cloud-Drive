@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { ExtendedFile } from '@/app/types';
-import { getFileIcon } from '@/app/utils/file/type';
+import { 
+  getFileIcon, 
+  formatFileSize,
+  FileIcon 
+} from '@/app/utils/file';
 import { 
   Home, Folder, Image as ImageIcon, FileText, Video, Music, 
   File, Search, AlertCircle, Calendar, Tag, Database, Settings, 
@@ -8,11 +12,8 @@ import {
   ArrowUpDown, SortAsc, SortDesc, ArrowDown, ArrowUp
 } from 'lucide-react';
 import styles from './SearchView.module.css';
-import { createCancelableDebounce } from '@/app/utils/function/debounce';
-import { FileIcon } from '@/app/utils/file/icon-map';
-import { file } from '@/app/utils';
+import { createCancelableDebounce } from '@/app/utils/function';
 import { formatToLocalDateTime } from '@/app/utils/date';
-import { formatFileSize } from '@/app/utils/file/formatter';
 
 export interface SearchViewProps {
   searchType: 'name' | 'tag';

@@ -10,7 +10,7 @@ import { AUTH_ERROR_CODE } from '@/app/constants/auth';
 import { 
   UserBasic,
   AuthJWT
-} from '@/app/types/shared/api-types';
+} from '@/app/types';
 
 /**
  * 完整用户信息(包含敏感字段)

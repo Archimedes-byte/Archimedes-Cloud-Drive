@@ -12,13 +12,13 @@
  * 而不是直接从子模块或其他位置导入。
  */
 
-// 显式导出文件类型相关函数，避免命名冲突
+// 导出文件类型相关函数
 import {
   FILE_CATEGORIES,
   FILE_TYPE_MAPS,
   getFileIcon,
   getFileTypeByExtension,
-  getFileType as getFileTypeFromType,
+  getFileType,
   getFileCategory,
   filterFilesByType,
   buildFileTypeFilter,
@@ -27,7 +27,7 @@ import {
   filterFiles,
   FILE_TYPE_EXTENSIONS,
   getFileExtension,
-  getFileNameAndExtension as getFileNameAndExtensionFromType,
+  getFileNameAndExtension,
   matchesFileType,
   isImageFile,
   isDocumentFile,
@@ -36,13 +36,13 @@ import {
   getFileTypeByName
 } from './type';
 
-// 重命名后显式导出，以解决命名冲突
+// 直接导出，不进行重命名
 export {
   FILE_CATEGORIES,
   FILE_TYPE_MAPS,
   getFileIcon,
   getFileTypeByExtension,
-  getFileTypeFromType as getFileType, // 使用重命名导出
+  getFileType,
   getFileCategory,
   filterFilesByType,
   buildFileTypeFilter,
@@ -51,7 +51,7 @@ export {
   filterFiles,
   FILE_TYPE_EXTENSIONS,
   getFileExtension,
-  getFileNameAndExtensionFromType as getFileNameAndExtension, // 使用重命名导出
+  getFileNameAndExtension,
   matchesFileType,
   isImageFile,
   isDocumentFile,

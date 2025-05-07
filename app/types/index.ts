@@ -69,6 +69,34 @@ export * from './ui';
 // 导出API相关类型
 export * from './api';
 
+// 导出文件API的请求类型
+export type { 
+  SearchFilesRequest as FileSearchRequest, 
+  UploadFileRequest, 
+  RenameFileRequest,
+  MoveFileRequest,
+  BulkMoveRequest,
+  DeleteFileRequest,
+  BulkDeleteRequest,
+  RestoreFileRequest,
+  BulkRestoreRequest,
+  UpdateTagsRequest,
+  BulkUpdateTagsRequest
+} from './api/requests';
+
+// 文件列表请求参数（从file-api中迁移）
+export interface FileListRequest {
+  folderId?: string | null;
+  type?: string | null;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: string;
+  recursive?: boolean;
+  signal?: AbortSignal;
+  _t?: number;
+}
+
 // 导出进行重命名以避免冲突的类型
 export type { 
   FileListProps as DomainFileListProps,

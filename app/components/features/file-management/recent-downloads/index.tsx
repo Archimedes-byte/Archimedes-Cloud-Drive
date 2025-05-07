@@ -6,8 +6,7 @@ import { DownloadCloud } from 'lucide-react';
 import { AntFileList } from '../../file-management/file-list/AntFileList';
 import { FileInfo } from '@/app/types';
 import styles from './RecentDownloads.module.css';
-import { formatFileSize } from '@/app/utils/file/formatter';
-import { FileIcon } from '@/app/utils/file/icon-map';
+import { formatFileSize, FileIcon } from '@/app/utils/file';
 import type { TableProps } from 'antd';
 
 const { Title, Text } = Typography;

@@ -6,7 +6,7 @@ import { InboxOutlined, TagOutlined, EditOutlined, DeleteOutlined } from '@ant-d
 import { UploadModalProps } from '@/app/types/domains/file-management';
 import { API_PATHS } from '@/app/lib/api/paths';
 import styles from './uploadModal.module.css';
-import { formatFileSize } from '@/app/utils/file/formatter';
+import { formatFileSize } from '@/app/utils/file';
 
 // 定义扩展的文件类型
 interface ExtendedUploadFile {

@@ -34,10 +34,10 @@ import {
   FilePdfOutlined,
   SoundOutlined
 } from '@ant-design/icons';
-import { getFileNameAndExtension } from '@/app/utils/file/path';
+import { getFileNameAndExtension } from '@/app/utils/file';
 import { FileInfo } from '@/app/types';
-import { formatFileSize } from '@/app/utils/file/formatter';
-import { createCancelableDebounce } from '@/app/utils/function/debounce';
+import { formatFileSize } from '@/app/utils/file';
+import { createCancelableDebounce } from '@/app/utils/function';
 import './antFileList.css'; // 将创建一个包含少量覆盖样式的CSS文件
 import { FileIcon } from '@/app/utils/file/icon-map';
 

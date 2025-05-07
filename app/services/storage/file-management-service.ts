@@ -8,7 +8,7 @@ import { join } from 'path';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import { FileInfo } from '@/app/types';
-import { buildFileTypeFilter } from '@/app/utils/file/type';
+import { buildFileTypeFilter } from '@/app/utils/file';
 import { createFileError, safeAsync } from '@/app/utils/error';
 import { mapFileEntityToFileInfo } from './file-upload-service';
 

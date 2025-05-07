@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getFileTypeByExtension } from '@/app/utils/file/type';
+import { getFileTypeByExtension, formatFileSize, FileIcon } from '@/app/utils/file';
 import { 
   File, X, Download, FileText, Folder,
   Image as ImageIcon, Video, Music, Archive, Code,
@@ -8,10 +8,7 @@ import {
 import { ExtendedFile, FileInfo } from '@/app/types';
 import styles from './FilePreview.module.css';
 import { API_PATHS } from '@/app/lib/api/paths';
-import { FileIcon } from '@/app/utils/file/icon-map';
 import { useSearchParams } from 'next/navigation';
-import { file } from '@/app/utils';
-import { formatFileSize } from '@/app/utils/file/formatter';
 
 interface FilePreviewProps {
   file: ExtendedFile | FileInfo | null;

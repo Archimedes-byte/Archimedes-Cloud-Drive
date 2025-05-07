@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth';
 import { type Session } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
-import { ApiResponse as SharedApiResponse } from '@/app/types/shared/api-types';
+import { ApiResponse as SharedApiResponse } from '@/app/types';
 
 /**
  * 扩展的请求对象，包含用户信息
@@ -22,7 +22,7 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 // API响应类型定义，使用统一的API类型
-export type ApiSuccessResponse<T> = Omit<SharedApiResponse<T>, 'data'> & {
+export type ApiSuccessResponse<T> = {
   success: true;
   data: T;
 };
@@ -32,8 +32,6 @@ export type ApiErrorResponse = {
   error: string;
   code?: string;
 };
-
-export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 /**
  * 处理API响应的通用格式
@@ -65,8 +63,8 @@ export function createApiErrorResponse(error: string, status = 400, code?: strin
  * 验证用户身份并将用户信息附加到请求对象
  */
 export function withAuth<T>(
-  handler: (req: AuthenticatedRequest) => Promise<NextResponse<ApiResponse<T>>>
-): (req: NextRequest) => Promise<NextResponse<ApiResponse<T> | ApiErrorResponse>> {
+  handler: (req: AuthenticatedRequest) => Promise<NextResponse<SharedApiResponse<T>>>
+): (req: NextRequest) => Promise<NextResponse<SharedApiResponse<T> | ApiErrorResponse>> {
   return async (req: NextRequest) => {
     try {
       // 获取用户会话

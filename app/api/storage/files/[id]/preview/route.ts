@@ -12,7 +12,7 @@ import { FileManagementService } from '@/app/services/storage';
 import { NextResponse } from 'next/server';
 import { existsSync, readFileSync } from 'fs';
 import { join, extname, basename } from 'path';
-import { FILE_CATEGORIES } from '@/app/utils/file/type';
+import { FILE_CATEGORIES } from '@/app/utils/file';
 import { getSignedUrl } from '@/app/lib/storage/file-handling/getSignedUrl';
 import { PrismaClient } from '@prisma/client';
 

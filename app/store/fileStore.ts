@@ -12,8 +12,7 @@ import {
 } from '@/app/types';
 import { fileApi } from '@/app/lib/api/file-api';
 import { safeAsync } from '@/app/utils/error';
-import { sortFiles } from '@/app/utils/file/sort';
-import { filterFilesByType } from '@/app/utils/file/type';
+import { sortFiles, filterFilesByType } from '@/app/utils/file';
 
 /**
  * 文件状态接口

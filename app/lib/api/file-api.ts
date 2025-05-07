@@ -11,8 +11,11 @@ import {
   isNetworkError, 
   handleApiResponse 
 } from '@/app/utils/error';
-import { ApiResponse } from '@/app/types/shared/api-types';
-import { PaginatedResponse as SharedPaginatedResponse } from '@/app/types/shared/api-types';
+import { 
+  FileListRequest, 
+  FileSearchRequest, 
+  PaginatedResponse 
+} from '@/app/types';
 
 /**
  * 定义收藏夹类型
@@ -27,42 +30,6 @@ export interface FavoriteFolderInfo {
   updatedAt: Date;
   userId: string;
 }
-
-/**
- * 文件列表请求参数
- */
-export interface FileListRequest {
-  folderId?: string | null;
-  type?: string | null;
-  page?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortOrder?: string;
-  recursive?: boolean;
-  signal?: AbortSignal;
-  _t?: number;
-}
-
-/**
- * 文件搜索请求参数
- */
-export interface FileSearchRequest {
-  /** 搜索关键词 */
-  query: string;
-  /** 文件类型过滤 */
-  type?: string;
-  /** 标签过滤 */
-  tags?: string[];
-  /** 是否包含文件夹 */
-  includeFolder?: boolean;
-  /** 搜索模式: name=按名称搜索, tag=按标签搜索 */
-  searchMode?: 'name' | 'tag';
-}
-
-/**
- * 分页响应 - 使用共享类型别名
- */
-export type PaginatedResponse<T> = SharedPaginatedResponse<T>;
 
 /**
  * 统一的文件管理API客户端

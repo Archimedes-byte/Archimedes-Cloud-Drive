@@ -8,7 +8,7 @@ import { createSuccessResponse } from '@/app/utils/api/response-builder';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth';
 import { prisma } from '@/app/lib/database';
-import { ApiResponse } from '@/app/types/shared/api-types';
+import { ApiResponse } from '@/app/types';
 import { formatFile } from '@/app/utils/file';
 
 /**

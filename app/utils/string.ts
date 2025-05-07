@@ -21,27 +21,6 @@ export function randomString(length: number, charset = 'ABCDEFGHIJKLMNOPQRSTUVWX
 }
 
 /**
- * 截断字符串到指定长度，添加省略号
- * @param str 原始字符串
- * @param maxLength 最大长度
- * @returns 截断后的字符串
- */
-export function truncateString(str: string, maxLength: number): string {
-  if (!str || str.length <= maxLength) return str;
-  return str.slice(0, maxLength) + '...';
-}
-
-/**
- * 将字符串首字母大写
- * @param str 原始字符串
- * @returns 首字母大写的字符串
- */
-export function capitalizeFirstLetter(str: string): string {
-  if (!str || str.length === 0) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-/**
  * 将字符串转换为驼峰命名法
  * @param str 原始字符串
  * @returns 驼峰命名的字符串

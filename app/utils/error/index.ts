@@ -18,7 +18,7 @@
  */
 
 import { message } from 'antd';
-import { ApiResponse } from '@/app/types/shared/api-types';
+import { ApiResponse } from '@/app/types';
 
 /**
  * 错误类型枚举
@@ -530,8 +530,9 @@ export async function fetchWithTimeout(
 
 /**
  * API响应数据接口 - 使用共享类型避免重复定义
+ * 已导入自 @/app/types
  */
-// 删除冗余定义，直接使用共享类型
+// ApiResponse 类型已从 @/app/types 导入
 
 /**
  * 通用错误处理的异步API调用包装器
