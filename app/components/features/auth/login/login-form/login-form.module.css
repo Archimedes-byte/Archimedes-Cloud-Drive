@@ -1,6 +1,6 @@
 .githubButton {
   margin-top: 16px;
-  background: #24292e;
+  background: #000;
   color: white;
   border: none;
   display: flex;
@@ -8,10 +8,12 @@
   justify-content: center;
   transition: all 0.3s ease;
   font-weight: 500;
+  border-radius: 4px;
+  height: 42px;
 }
 
 .githubButton:hover {
-  background: #2c3238;
+  background: #333;
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

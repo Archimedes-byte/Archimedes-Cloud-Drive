@@ -8,6 +8,7 @@ import { signIn } from 'next-auth/react';
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 import AuthForm from '../../shared/AuthForm';
 import styles from './login-form.module.css';
+import modalStyles from '../modal/modal.module.css';
 
 /**
  * 登录表单组件
@@ -24,18 +25,27 @@ const LoginForm: React.FC = () => {
     });
   };
   
+  // 分隔线元素 - 改为虚线
+  const divider = (
+    <div className={modalStyles.dividerLine}></div>
+  );
+  
   // GitHub登录按钮
   const githubLoginButton = (
-    <Button 
-      icon={<GithubOutlined />}
-      type="default"
-      size="large"
-      block
-      onClick={handleGithubLogin}
-      className={styles.githubButton}
-    >
-      通过GitHub登录
-    </Button>
+    <>
+      {divider}
+      <Button 
+        icon={<GithubOutlined />}
+        type="primary"
+        size="large"
+        block
+        onClick={handleGithubLogin}
+        className={styles.githubButton}
+        style={{ background: '#000', borderColor: '#000' }}
+      >
+        通过GitHub登录
+      </Button>
+    </>
   );
   
   // 使用统一的AuthForm组件，指定类型为login

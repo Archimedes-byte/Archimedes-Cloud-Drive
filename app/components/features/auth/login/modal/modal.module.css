@@ -1,103 +1,111 @@
+/* 登录模态框主容器 */
+.modalWrapper :global(.ant-modal-content) {
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: none;
+  overflow: hidden;
+  background-color: #fff;
+  padding: 0;
+}
+
+/* 模态框头部 */
+.modalWrapper :global(.ant-modal-header) {
+  background-color: #fff;
+  padding: 24px 24px 16px;
+  border-bottom: none;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* 模态框标题 */
+.modalWrapper :global(.ant-modal-title) {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* 模态框内容区域 */
+.modalWrapper :global(.ant-modal-body) {
+  padding: 16px 24px 24px;
+  background-color: #fff;
+}
+
+/* 模态框关闭按钮 */
+.modalWrapper :global(.ant-modal-close) {
+  top: 16px;
+  right: 16px;
+  color: #999;
+  transition: all 0.2s ease;
+}
+
+.modalWrapper :global(.ant-modal-close):hover {
+  color: #333;
+  transform: rotate(90deg);
+}
+
+/* 移除所有标题装饰 */
+.modalWrapper :global(.login-modal-no-decoration .ant-modal-header::after),
+.modalWrapper :global(.login-modal-no-decoration .ant-modal-header::before) {
+  display: none !important;
+}
+
+/* 登录模态框内容布局 */
 .loginModalContent {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 30px 30px;
-  min-width: 350px;
   width: 100%;
-  max-width: 400px;
+  max-width: 360px;
   margin: 0 auto;
 }
 
+/* 登录表单容器 */
 .loginForm {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 
-/* 模态框内的自定义样式 */
-/* 为解决 CSS Modules 纯全局选择器问题，添加一个本地类与全局选择器配合使用 */
-.modalWrapper :global(.ant-modal-content) {
-  border-radius: 20px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 15px 35px rgba(30, 64, 175, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.1);
-}
-
-.modalWrapper :global(.ant-modal-header) {
-  background: linear-gradient(to right, #f7f9ff, #eef4ff);
-  padding: 25px 24px 15px;
-  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+/* 虚线分隔线 - 新样式 */
+.dividerLine {
   width: 100%;
-  text-align: center;
+  height: 1px;
+  margin: 20px 0;
+  background-image: linear-gradient(to right, transparent, #ccc 50%, transparent 100%);
+  background-size: 15px 1px;
+  background-repeat: repeat-x;
   position: relative;
 }
 
-.modalWrapper :global(.ant-modal-header)::after {
+/* 原有的分隔线样式 - 保留但不再使用 */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  color: #999;
+}
+
+.divider::before,
+.divider::after {
   content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 3px;
-  background: linear-gradient(to right, #3b82f6, #60a5fa);
-  border-radius: 3px;
+  flex: 1;
+  height: 1px;
+  background-color: #eee;
 }
 
-.modalWrapper :global(.ant-modal-title) {
-  font-size: 22px;
-  font-weight: 600;
-  color: #1e40af;
-  text-align: center;
-  background: linear-gradient(to right, #1e40af, #3b82f6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  letter-spacing: 0.5px;
+.divider span {
+  padding: 0 16px;
+  font-size: 14px;
 }
 
-.modalWrapper :global(.ant-modal-body) {
-  padding: 25px 30px 30px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to bottom, #ffffff, #f9faff);
-}
-
-.modalWrapper :global(.ant-modal-footer) {
-  border-top: none;
-  padding: 10px 24px 24px;
-  width: 100%;
-  text-align: center;
-  background: linear-gradient(to bottom, #f9faff, #f5f7ff);
-}
-
-.modalWrapper :global(.ant-modal-close) {
-  top: 12px;
-  right: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  border: 1px solid rgba(59, 130, 246, 0.1);
-}
-
-.modalWrapper :global(.ant-modal-close):hover {
-  transform: rotate(90deg);
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.2);
+/* 响应式调整 */
+@media (max-width: 576px) {
+  .loginModalContent {
+    padding: 0;
+  }
+  
+  .modalWrapper :global(.ant-modal-content) {
+    border-radius: 0;
+  }
 } 

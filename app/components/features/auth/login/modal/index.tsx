@@ -13,7 +13,7 @@ interface LoginModalProps {
 /**
  * 登录模态框组件
  * 
- * 使用统一的登录表单，已内置谷歌登录和跳转逻辑
+ * 使用统一的登录表单，已内置Github登录和跳转逻辑
  */
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   return (
@@ -22,7 +22,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         isOpen={isOpen}
         onClose={onClose}
         title="欢迎登录CloudDrive"
-        className="login-modal"
+        className="login-modal-no-decoration"
         footer={null}
       >
         <div className={styles.loginModalContent}>

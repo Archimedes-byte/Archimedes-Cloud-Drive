@@ -337,33 +337,9 @@
 /* 额外按钮容器 */
 .extraButtons {
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 16px;
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-.extraButtons::before {
-  content: '或';
-  position: absolute;
-  top: -0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: white;
-  padding: 0 10px;
-  color: #64748b;
-  font-size: 0.85rem;
-  z-index: 1;
-}
-
-.extraButtons::after {
-  content: '';
-  position: absolute;
-  top: -0.25rem;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background-color: rgba(100, 116, 139, 0.2);
-  z-index: 0;
+  align-items: center;
 } 

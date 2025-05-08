@@ -464,4 +464,31 @@
 
 .modalBody {
   position: relative;
+}
+
+/* 自定义样式：移除login-modal-no-decoration的标题装饰 */
+.customModal:global(.login-modal-no-decoration) .modalTitle::after {
+  display: none !important;
+}
+
+.customModal:global(.login-modal-no-decoration) :global(.ant-modal-title)::after {
+  display: none !important;
+}
+
+.customModal:global(.login-modal-no-decoration) :global(.ant-modal-header)::after {
+  display: none !important;
+}
+
+.customModal:global(.login-modal-no-decoration) .modalTitle {
+  background: none;
+  color: #333;
+  text-align: center;
+}
+
+.customModal:global(.login-modal-no-decoration) :global(.ant-modal-title) {
+  background: none;
+  color: #333;
+  text-align: center;
+  background-clip: unset;
+  -webkit-background-clip: unset;
 } 
