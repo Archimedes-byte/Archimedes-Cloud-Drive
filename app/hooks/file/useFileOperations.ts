@@ -38,23 +38,6 @@ export interface FileOperations {
 }
 
 /**
- * 记录文件下载历史
- * @param fileId 文件ID
- */
-const recordFileDownload = async (fileId: string): Promise<void> => {
-  try {
-    await fetch(API_PATHS.STORAGE.DOWNLOADS.RECORD, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId }),
-    });
-  } catch (error) {
-    console.warn('记录下载历史失败:', error);
-    // 忽略错误，不影响用户体验
-  }
-};
-
-/**
  * 文件操作钩子
  * 提供文件操作相关的方法
  * 
@@ -175,11 +158,8 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
             }
           }
           
-          // 记录下载历史并返回结果
-          if (success) {
-            await recordFileDownload(fileIds[0]);
-            return true;
-          }
+          // 返回结果，服务端API已经记录了下载历史，这里不需要重复记录
+          return success;
         } catch (error) {
           console.error('单文件下载处理失败:', error);
           // 出错时继续执行到多文件下载逻辑
@@ -191,14 +171,7 @@ export const useFileOperations = (initialSelectedIds: string[] = []): FileOperat
         // 使用专门的多文件下载函数处理，传递自定义文件名
         const success = await downloadMultipleFiles(fileIds, customFileName);
         
-        // 下载成功后，记录所有文件的下载历史
-        if (success) {
-          // 为每个文件记录下载历史
-          for (const fileId of fileIds) {
-            await recordFileDownload(fileId);
-          }
-        }
-        
+        // 服务端API已经记录了下载历史，这里不需要重复记录
         return success;
       } catch (error) {
         console.error('多文件下载失败:', error);
