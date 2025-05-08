@@ -242,6 +242,7 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
     }
     
     const filePath = join(UPLOAD_DIR, filename);
+    console.log('文件路径:', filePath);
     
     // 检查文件是否存在
     if (!existsSync(filePath)) {
@@ -261,15 +262,18 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
         const expiresIn = contentType.startsWith('image/') ? 60 * 10 : 60 * 30; // 10分钟或30分钟
         
         console.log(`生成签名URL: ${filePath}, 过期时间: ${expiresIn}秒, 类型: ${contentType}`);
+        // 使用绝对文件路径
         const signedUrl = await getSignedUrl(filePath, expiresIn);
         
-        console.log('签名URL生成成功');
-        return createApiResponse({
+        console.log('签名URL生成成功:', signedUrl);
+        const response = createApiResponse({
           success: true,
           url: signedUrl,
           fileType: contentType,
           fileName: fileInfo.name
         });
+        console.log('返回JSON响应:', { status: response.status });
+        return response;
       } catch (error: any) {
         console.error('生成签名URL失败:', error);
         return createApiErrorResponse(error.message || '生成预览URL失败', 500);
@@ -277,39 +281,50 @@ export const GET = withAuth<any>(async (req: AuthenticatedRequest) => {
     }
     
     // 默认行为：直接返回文件内容
-    const fileContent = readFileSync(filePath);
-    const contentType = getMimeType(fileInfo.type || undefined, fileExtension);
-    
-    // 判断是下载还是预览
-    const download = url.searchParams.get('download') === 'true';
-    
-    const headers: Record<string, string> = {
-      'Content-Type': contentType,
-    };
-    
-    // 如果是下载，设置下载头
-    if (download) {
-      headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileInfo.name)}"`;
-    } 
-    // 对于图片、PDF等，可以直接在浏览器中预览
-    else if (
-      contentType.startsWith('image/') || 
-      contentType === 'application/pdf' ||
-      contentType.startsWith('text/')
-    ) {
-      headers['Content-Disposition'] = `inline; filename="${encodeURIComponent(fileInfo.name)}"`;
-    } 
-    // 其他类型默认下载
-    else {
-      headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileInfo.name)}"`;
+    try {
+      const fileContent = readFileSync(filePath);
+      const contentType = getMimeType(fileInfo.type || undefined, fileExtension);
+      
+      // 判断是下载还是预览
+      const download = url.searchParams.get('download') === 'true';
+      
+      const headers: Record<string, string> = {
+        'Content-Type': contentType,
+      };
+      
+      // 如果是下载，设置下载头
+      if (download) {
+        headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileInfo.name)}"`;
+      } 
+      // 对于图片、PDF等，可以直接在浏览器中预览
+      else if (
+        contentType.startsWith('image/') || 
+        contentType === 'application/pdf' ||
+        contentType.startsWith('text/')
+      ) {
+        headers['Content-Disposition'] = `inline; filename="${encodeURIComponent(fileInfo.name)}"`;
+      } 
+      // 其他类型默认下载
+      else {
+        headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileInfo.name)}"`;
+      }
+      
+      console.log('返回文件内容:', {
+        contentType,
+        contentLength: fileContent.length,
+        disposition: headers['Content-Disposition']
+      });
+      
+      return new NextResponse(fileContent, {
+        status: 200,
+        headers
+      });
+    } catch (error: any) {
+      console.error('读取文件内容失败:', error);
+      return createApiErrorResponse('读取文件内容失败: ' + error.message, 500);
     }
-    
-    return new NextResponse(fileContent, {
-      status: 200,
-      headers
-    });
   } catch (error: any) {
-    console.error('文件预览失败:', error);
+    console.error('文件预览处理异常:', error);
     return createApiErrorResponse(error.message || '文件预览失败', 500);
   }
 }); 

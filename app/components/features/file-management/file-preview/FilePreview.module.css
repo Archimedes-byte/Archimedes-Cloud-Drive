@@ -169,6 +169,28 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.errorIcon {
+  margin-bottom: 16px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #ffebe9;
+  color: #cf222e;
+}
+
+.errorTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #24292f;
+  margin: 0 0 8px 0;
 }
 
 .errorMessage {
@@ -179,6 +201,51 @@
   border-radius: 4px;
   font-size: 14px;
   border: 1px solid #ffc1ba;
+  width: 100%;
+}
+
+.errorActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.retryButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  background-color: var(--theme-primary, #3b82f6);
+  color: white;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.9);
+}
+
+.retryButton:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.directButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--theme-primary, #3b82f6);
+  font-weight: 500;
+  border: 1px solid var(--theme-primary, #3b82f6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.directButton:hover {
+  background-color: rgba(var(--theme-primary-rgb, 59, 130, 246), 0.05);
 }
 
 .fileIcon {
@@ -187,26 +254,29 @@
 }
 
 .debugInfo {
-  margin-top: 16px;
+  margin-top: 24px;
   text-align: left;
   width: 100%;
   font-size: 12px;
   border: 1px solid #e1e4e8;
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: #f6f8fa;
+  padding: 12px;
 }
 
-.debugInfo summary {
-  padding: 8px;
-  cursor: pointer;
-  font-weight: 500;
+.debugInfo h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #57606a;
 }
 
 .debugInfo pre {
-  padding: 8px;
   overflow: auto;
   max-height: 200px;
   margin: 0;
+  padding: 8px;
+  background-color: #f0f2f5;
+  border-radius: 4px;
 }
 
 /* 图片预览 */

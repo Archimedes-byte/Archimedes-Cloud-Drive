@@ -26,6 +26,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
   // 保存fetchPreviewUrl的引用以便在重试按钮中使用
   const fetchPreviewUrlRef = useRef<(() => Promise<void>) | null>(null);
 
+  // 添加重试次数跟踪
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetryCount = 3;
+  
   // 判断文件类型的辅助函数
   const isImageType = (type?: string, extension?: string): boolean => {
     if (!type && !extension) return false;
@@ -127,6 +131,11 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     return isDocType || isOfficeType || hasOfficeExt;
   };
 
+  // 清除URL缓存的函数
+  const clearUrlCache = () => {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  };
+
   useEffect(() => {
     if (!file) return;
 
@@ -135,6 +144,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     setError(null);
     setPreviewUrl(null);
     setDebugInfo(null);
+    
+    // 重置重试次数
+    setRetryCount(0);
 
     const fetchPreviewUrl = async () => {
       try {
@@ -167,6 +179,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
             console.log('分享环境预览，添加分享参数:', { shareCode: shareCodeFromPath, extractCode: extractCodeFromParams });
           }
           
+          // 添加缓存破坏参数
+          requestUrl += `&_cache=${clearUrlCache()}`;
+          
           console.log('预览请求URL:', requestUrl);
           
           // 使用新API并添加format=json参数获取JSON格式的预览URL
@@ -185,7 +200,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
             const statusInfo = {
               status: response.status,
               statusText: response.statusText,
-              url: response.url
+              url: response.url,
+              retryCount
             };
             
             setDebugInfo(statusInfo);
@@ -247,7 +263,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     
     // 执行获取预览URL
     fetchPreviewUrl();
-  }, [file]);
+  }, [file, retryCount]);
 
   // 文件图标渲染
   const getFileIconComponent = () => {
@@ -262,29 +278,44 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     />;
   };
 
-  // 处理直接预览
+  // 重新加载预览
+  const handleRetry = () => {
+    if (retryCount < maxRetryCount) {
+      setLoading(true);
+      setError(null);
+      setPreviewUrl(null);
+      setRetryCount(prev => prev + 1);
+    }
+  };
+
+  // 尝试直接预览
   const tryDirectPreview = () => {
     if (!file) return;
     
-    try {
-      // 获取文件扩展名
-      const extension = file.name.split('.').pop()?.toLowerCase() || '';
-      
-      console.log('尝试直接预览文件:', {
-        id: file.id,
-        name: file.name,
-        extension
-      });
-      
-      // 构建预览URL
-      const previewUrl = API_PATHS.STORAGE.FILES.PREVIEW(file.id);
-      
-      // 在新窗口中打开预览
-      window.open(previewUrl, '_blank');
-    } catch (error) {
-      console.error('直接预览文件出错:', error);
-      alert('打开文件预览失败');
+    // 获取文件扩展名
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // 构建直接预览URL (不使用签名URL)
+    let directUrl = API_PATHS.STORAGE.FILES.PREVIEW(file.id);
+    
+    // 检查当前是否在分享页面，读取URL参数中的分享码和提取码
+    const isSharePage = window.location.pathname.startsWith('/share/');
+    const shareCodeFromPath = isSharePage ? window.location.pathname.split('/')[2] : '';
+    const extractCodeFromParams = searchParams.get('code') || '';
+    
+    // 如果是分享页面且有分享码和提取码，则添加到URL
+    if (isSharePage && shareCodeFromPath && extractCodeFromParams) {
+      directUrl += `?shareCode=${encodeURIComponent(shareCodeFromPath)}&extractCode=${encodeURIComponent(extractCodeFromParams)}`;
     }
+    
+    // 添加缓存破坏参数
+    directUrl += directUrl.includes('?') ? '&' : '?';
+    directUrl += `_cache=${clearUrlCache()}`;
+    
+    console.log('尝试直接预览URL:', directUrl);
+    
+    // 在新窗口中打开
+    window.open(directUrl, '_blank');
   };
 
   // 渲染预览内容
@@ -304,37 +335,34 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose, onDownl
     if (error) {
       return (
         <div className={styles.errorContainer}>
-          {getFileIconComponent()}
-          <h3>无法预览此文件</h3>
-          <div className={styles.errorMessage}>{error}</div>
+          <div className={styles.errorIcon}>
+            <X size={32} strokeWidth={2} />
+          </div>
+          <h3 className={styles.errorTitle}>预览失败</h3>
+          <p className={styles.errorMessage}>{error}</p>
           
-          <button 
-            className={styles.actionButton} 
-            onClick={() => {
-              if (fetchPreviewUrlRef.current) {
-                setLoading(true);
-                setError(null);
-                fetchPreviewUrlRef.current();
-              }
-            }}
-            style={{ marginTop: '16px' }}
-          >
-            重试加载
-          </button>
-          
-          <button 
-            className={styles.actionButton} 
-            onClick={tryDirectPreview}
-            style={{ marginTop: '8px' }}
-          >
-            尝试直接预览
-          </button>
+          <div className={styles.errorActions}>
+            <button 
+              className={styles.retryButton} 
+              onClick={handleRetry}
+              disabled={retryCount >= maxRetryCount}
+            >
+              重试加载{retryCount > 0 ? ` (${retryCount}/${maxRetryCount})` : ''}
+            </button>
+            
+            <button 
+              className={styles.directButton} 
+              onClick={tryDirectPreview}
+            >
+              尝试直接预览
+            </button>
+          </div>
           
           {debugInfo && (
-            <details className={styles.debugInfo}>
-              <summary>调试信息</summary>
+            <div className={styles.debugInfo}>
+              <h4>调试信息</h4>
               <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-            </details>
+            </div>
           )}
         </div>
       );
