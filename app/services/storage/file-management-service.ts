@@ -520,6 +520,9 @@ export class FileManagementService {
         throw createFileError('access', `目标文件夹中已存在同名文件: ${existingNames}`);
       }
       
+      // 更新要移动的所有文件路径
+      console.log(`[文件管理] 更新文件路径为: ${targetPath}`);
+      
       // 执行移动操作
       const updateResult = await prisma.file.updateMany({
         where: {
@@ -529,9 +532,114 @@ export class FileManagementService {
         },
         data: {
           parentId: targetFolderId,
+          path: targetPath,  // 更新文件路径
           updatedAt: new Date(),
         },
       });
+      
+      // 处理子文件和子文件夹的路径更新
+      const foldersInMoved = filesToMove.filter(f => f.isFolder).map(f => f.id);
+      if (foldersInMoved.length > 0) {
+        console.log(`[文件管理] 需要更新子文件/文件夹路径的文件夹数量: ${foldersInMoved.length}`);
+        
+        // 递归获取所有子文件夹ID
+        const getAllChildFolderIds = async (folderIds: string[]): Promise<string[]> => {
+          if (!folderIds.length) return [];
+          
+          const childFolders = await prisma.file.findMany({
+            where: {
+              parentId: { in: folderIds },
+              isFolder: true,
+              uploaderId: userId,
+              isDeleted: false
+            },
+            select: { id: true }
+          });
+          
+          const childIds = childFolders.map(f => f.id);
+          const nextLevelIds = await getAllChildFolderIds(childIds);
+          
+          return [...childIds, ...nextLevelIds];
+        };
+        
+        // 获取所有需要更新的子文件夹ID
+        const allChildFolderIds = await getAllChildFolderIds(foldersInMoved);
+        
+        // 对每个被移动的文件夹，更新其子文件和子文件夹的路径
+        for (const folderId of foldersInMoved) {
+          const folder = filesToMove.find(f => f.id === folderId);
+          if (!folder) continue;
+          
+          // 获取该文件夹的新路径
+          const folderNewPath = targetPath === '/' 
+            ? `/${folder.name}` 
+            : `${targetPath}/${folder.name}`;
+          
+          console.log(`[文件管理] 更新文件夹 "${folder.name}" 的子文件路径，新路径: ${folderNewPath}`);
+          
+          // 更新直接子文件
+          await prisma.file.updateMany({
+            where: {
+              parentId: folderId,
+              uploaderId: userId,
+              isDeleted: false
+            },
+            data: {
+              path: folderNewPath,
+              updatedAt: new Date()
+            }
+          });
+          
+          // 递归更新所有嵌套的子文件夹中的文件路径
+          const updateNestedFolderPaths = async (
+            parentFolderId: string,
+            parentNewPath: string
+          ) => {
+            // 获取直接子文件夹
+            const childFolders = await prisma.file.findMany({
+              where: {
+                parentId: parentFolderId,
+                isFolder: true,
+                uploaderId: userId,
+                isDeleted: false
+              }
+            });
+            
+            for (const childFolder of childFolders) {
+              // 子文件夹的新路径
+              const childNewPath = `${parentNewPath}/${childFolder.name}`;
+              
+              // 更新子文件夹自身的路径
+              await prisma.file.update({
+                where: { id: childFolder.id },
+                data: {
+                  path: parentNewPath,  // 子文件夹path应该是其父文件夹的路径
+                  updatedAt: new Date()
+                }
+              });
+              
+              // 更新子文件夹中的文件路径
+              await prisma.file.updateMany({
+                where: {
+                  parentId: childFolder.id,
+                  uploaderId: userId,
+                  isDeleted: false
+                },
+                data: {
+                  path: childNewPath,
+                  updatedAt: new Date()
+                }
+              });
+              
+              // 递归更新更深层次的子文件夹
+              await updateNestedFolderPaths(childFolder.id, childNewPath);
+            }
+          };
+          
+          // 开始递归更新
+          await updateNestedFolderPaths(folderId, folderNewPath);
+        }
+      }
       
       console.log(`[文件管理] 移动完成, 共移动: ${updateResult.count} 个文件或文件夹`);
       return updateResult.count;

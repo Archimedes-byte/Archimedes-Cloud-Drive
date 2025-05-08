@@ -259,6 +259,14 @@ const FolderSelectModal: React.FC<FolderSelectModalProps> = ({
         <Button key="cancel" onClick={onClose} disabled={isLoading}>
           取消
         </Button>,
+        <Button
+          key="moveToRoot"
+          onClick={() => onConfirm('root')}
+          disabled={isLoading || currentFolderId === null}
+          style={{ marginRight: 8 }}
+        >
+          移动到根目录
+        </Button>,
         <Button 
           key="confirm" 
           type="primary" 

@@ -625,7 +625,10 @@ const UploadModal: React.FC<UploadModalProps> = ({
             </p>
             <Button 
               type="primary"
-              onClick={triggerFileInput}
+              onClick={(e) => {
+                e.stopPropagation(); // 阻止事件冒泡，避免触发父元素的onClick
+                triggerFileInput();
+              }}
               style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: 'white' }}
             >
               选择{isFolderUpload ? '文件夹' : '文件'}

@@ -40,6 +40,7 @@ import { formatFileSize } from '@/app/utils/file';
 import { createCancelableDebounce } from '@/app/utils/function';
 import './antFileList.css'; // 将创建一个包含少量覆盖样式的CSS文件
 import { FileIcon } from '@/app/utils/file/icon-map';
+import { fileApi } from '@/app/lib/api/file-api';
 
 const { Text, Title } = Typography;
 
@@ -128,12 +129,56 @@ export function AntFileList({
   // React要求无论组件状态如何，钩子调用顺序必须一致
   const [mounted, setMounted] = useState(true);
   
+  // 添加父文件夹名称缓存
+  const [parentFolderNames, setParentFolderNames] = useState<Record<string, string>>({});
+  const [loadingParentFolders, setLoadingParentFolders] = useState<Record<string, boolean>>({});
+  
   // 组件卸载时标记，避免卸载后的状态更新
   useEffect(() => {
     return () => {
       setMounted(false);
     };
   }, []);
+  
+  // 加载父文件夹信息的函数
+  const loadParentFolderName = async (parentId: string) => {
+    if (!parentId || parentFolderNames[parentId] || loadingParentFolders[parentId]) {
+      return;
+    }
+    
+    try {
+      setLoadingParentFolders(prev => ({ ...prev, [parentId]: true }));
+      const parentFolder = await fileApi.getFile(parentId);
+      
+      if (parentFolder && mounted) {
+        setParentFolderNames(prev => ({
+          ...prev,
+          [parentId]: parentFolder.name || parentId
+        }));
+      }
+    } catch (error) {
+      console.error('加载父文件夹信息失败:', error);
+    } finally {
+      if (mounted) {
+        setLoadingParentFolders(prev => ({ ...prev, [parentId]: false }));
+      }
+    }
+  };
+  
+  // 在文件列表更新时加载父文件夹信息
+  useEffect(() => {
+    const parentIds = safeFiles
+      .filter(file => file.parentId && !parentFolderNames[file.parentId])
+      .map(file => file.parentId as string);
+    
+    // 去重
+    const uniqueParentIds = [...new Set(parentIds)];
+    
+    // 对每个父文件夹ID加载名称
+    uniqueParentIds.forEach(parentId => {
+      loadParentFolderName(parentId);
+    });
+  }, [safeFiles, fileUpdateTrigger]);
   
   const actualEditingFileId = editingFileId || editingFile;
 
@@ -401,20 +446,47 @@ export function AntFileList({
       ...(showPath ? [
         {
           title: '所在位置',
-          dataIndex: 'path',
-          key: 'path',
+          dataIndex: 'parentId',
+          key: 'parentId',
           width: 220,
           render: (_: any, record: FileInfo) => {
-            const path = record.path || '-';
-            if (!path || path === '-') return <Text type="secondary">-</Text>;
+            // 如果文件在根目录中
+            if (!record.parentId) return <Text type="secondary">根目录</Text>;
             
+            // 检查是否已加载父文件夹名称
+            const parentName = parentFolderNames[record.parentId] || '';
+            
+            // 如果正在加载，显示加载状态
+            if (!parentName && loadingParentFolders[record.parentId]) {
+              return <Text type="secondary"><Spin size="small" style={{ marginRight: 8 }} />正在加载...</Text>;
+            }
+            
+            // 如果已加载父文件夹名称，显示名称
+            if (parentName) {
+              return (
+                <Text 
+                  ellipsis={true} 
+                  title={parentName}
+                  style={{ color: '#718096', fontSize: '13px' }}
+                >
+                  {parentName}
+                </Text>
+              );
+            }
+            
+            // 如果尚未加载且不在加载中，尝试加载
+            if (record.parentId && !loadingParentFolders[record.parentId]) {
+              loadParentFolderName(record.parentId);
+            }
+            
+            // 在加载前显示父文件夹ID
             return (
               <Text 
                 ellipsis={true} 
-                title={path}
+                title={`父文件夹ID: ${record.parentId}`}
                 style={{ color: '#718096', fontSize: '13px' }}
               >
-                {path}
+                加载中...
               </Text>
             );
           },
@@ -547,7 +619,10 @@ export function AntFileList({
     editTags, 
     newTagValue,
     showPath,
-    customColumns // 添加自定义列处理函数作为依赖
+    customColumns, // 添加自定义列处理函数作为依赖
+    parentFolderNames, // 添加父文件夹名称缓存作为依赖
+    loadingParentFolders, // 添加加载状态缓存作为依赖
+    loadParentFolderName // 添加加载函数作为依赖
   ]);
 
   // 表格行属性
@@ -557,12 +632,8 @@ export function AntFileList({
         // 如果正在编辑，不处理点击事件
         if (actualEditingFileId === record.id) return;
         
-        // 点击行选择文件
-        if (onFileSelect) {
-          // 添加防护措施，确保selectedFiles是数组
-          const safeSelectedFiles = Array.isArray(selectedFiles) ? selectedFiles : [];
-          onFileSelect(record, !safeSelectedFiles.includes(record.id));
-        }
+        // 移除自动选择文件的功能
+        // 只保留双击和右键菜单功能
       },
       onDoubleClick: () => {
         // 如果正在编辑，不处理双击事件

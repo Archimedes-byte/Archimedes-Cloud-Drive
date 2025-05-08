@@ -30,8 +30,11 @@ export const POST = withAuth<{ movedCount: number }>(async (req: AuthenticatedRe
       return createApiErrorResponse('目标文件夹ID无效', 400);
     }
     
+    // 处理特殊值"root"，将其转换为null表示根目录
+    const finalTargetFolderId = targetFolderId === 'root' ? null : targetFolderId;
+    
     // 执行文件移动
-    const movedCount = await managementService.moveFiles(req.user.id, fileIds, targetFolderId);
+    const movedCount = await managementService.moveFiles(req.user.id, fileIds, finalTargetFolderId);
     
     return createApiResponse({ movedCount });
   } catch (error: any) {
