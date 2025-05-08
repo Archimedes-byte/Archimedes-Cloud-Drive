@@ -22,6 +22,7 @@ export const AUTH_CONSTANTS = {
   PROVIDERS: {
     CREDENTIALS: 'credentials',
     GOOGLE: 'google',
+    GITHUB: 'github',
   },
   
   // 密码规则配置

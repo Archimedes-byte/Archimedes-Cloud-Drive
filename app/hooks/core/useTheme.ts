@@ -1,10 +1,18 @@
 /**
- * 主题Hook
+ * 主题Hook - 重定向模块
  * 
- * 注意: 此文件是为了向后兼容而保留的，实际实现已移动到 app/theme/useTheme.ts
+ * 此模块将所有导入重定向到 app/theme/useTheme.ts
  */
 
-import { useTheme as useThemeImpl } from '@/app/theme/useTheme';
+export { 
+  useTheme, 
+  type ThemeHook, 
+  type UseThemeProps 
+} from '@/app/theme/useTheme';
 
-export { useTheme } from '@/app/theme/useTheme';
-export default useThemeImpl; 
+// 重导出theme-service中的常用函数
+export { 
+  getAllThemes,
+  getThemesByCategory,
+  getThemeStyle
+} from '@/app/theme/theme-service'; 

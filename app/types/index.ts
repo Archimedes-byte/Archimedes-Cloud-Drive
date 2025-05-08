@@ -50,14 +50,12 @@ export {
   convertSortOrderToInterface,
   SortDirectionEnum,
   FileTypeEnum,
-  FileType,
   FILE_TYPE_MAP,
   mapFileEntityToFileInfo
 } from './domains/fileTypes';
 
-// 导出File类型别名以保持兼容性
+// 导出文件实体和请求相关类型
 export type { 
-  FileInfo as File, 
   FileEntity,
   FileResponse,
   CreateFolderRequest
@@ -97,15 +95,8 @@ export interface FileListRequest {
   _t?: number;
 }
 
-// 导出进行重命名以避免冲突的类型
-export type { 
-  FileListProps as DomainFileListProps,
-  RenameModalProps as DomainRenameModalProps,
-  SearchViewProps as DomainSearchViewProps,
-  UploadModalProps as DomainUploadModalProps,
-  FileState,
-  ExtendedFile
-} from './domains/file-management';
+// 导出文件管理相关类型
+export type { FileState, ExtendedFile } from './domains/file-management';
 
 // 导出Hook相关类型
 export * from './hooks';
@@ -115,13 +106,6 @@ export * from './utils';
 
 // 导出Hook相关类型
 export type { FileUploadHook, FileSearchHook, FileOperationsHook } from './hooks/hooks';
-
-// 为了向后兼容，保持旧版导出路径的类型别名
-export type { 
-  UserBasic as DomainUserBasic,
-  UserProfile as DomainUserProfile,
-  UserProfileInput as DomainUserProfileInput
-} from './domains/user-profile';
 
 // 认证相关类型 - 不再从domains/auth导入，改为导出需要的接口定义
 export interface UserFull extends UserBasic {

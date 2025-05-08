@@ -19,11 +19,8 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     const body = await req.json();
     const { fileId } = body;
     
-    console.log(`[API:downloads/record] 记录文件下载, 用户ID: ${req.user.id}, 文件ID: ${fileId}`);
-    
     // 验证文件ID
     if (!fileId) {
-      console.warn('[API:downloads/record] 文件ID不能为空');
       return createApiErrorResponse('文件ID不能为空', 400);
     }
     
@@ -36,11 +33,10 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     });
     
     if (!file) {
-      console.warn(`[API:downloads/record] 文件不存在或已被删除: ${fileId}`);
       return createApiErrorResponse('文件不存在或已被删除', 404);
     }
     
-    // 创建新的下载记录，每次都添加新记录
+    // 创建新的下载记录
     await prisma.downloadHistory.create({
       data: {
         userId: req.user.id,
@@ -49,10 +45,8 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       }
     });
     
-    console.log(`[API:downloads/record] 成功记录文件下载: ${fileId}`);
     return createApiResponse({ success: true });
   } catch (error: any) {
-    console.error('[API:downloads/record] 记录文件下载历史失败:', error);
     return createApiErrorResponse(error.message || '记录文件下载失败', 500);
   }
 }); 

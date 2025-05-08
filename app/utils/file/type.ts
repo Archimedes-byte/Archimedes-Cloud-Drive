@@ -3,43 +3,43 @@
  * 处理文件类型判断、图标获取等
  */
 
-import { FileType } from '@/app/types';
+import { FileTypeEnum } from '@/app/types';
 
 /**
- * 文件分类常量
+ * 文件分类常量 - 直接使用枚举值
+ * 用于保持现有代码的兼容性
  */
-export const FILE_CATEGORIES = {
-  IMAGE: FileType.IMAGE,
-  VIDEO: FileType.VIDEO,
-  AUDIO: FileType.AUDIO,
-  DOCUMENT: FileType.DOCUMENT,
-  ARCHIVE: FileType.ARCHIVE,
-  CODE: FileType.CODE,
-  FOLDER: FileType.FOLDER,
-  UNKNOWN: FileType.UNKNOWN,
-};
+export const FILE_CATEGORIES = FileTypeEnum;
 
 /**
- * 文件类型映射表
+ * 文件类型映射表接口 - 定义类型映射的数据结构
  */
-export const FILE_TYPE_MAPS = {
+interface FileTypeMapping {
+  mimeTypes: string[];
+  extensions: string[];
+}
+
+/**
+ * 文件类型映射表 - 统一的文件类型映射定义
+ */
+export const FILE_TYPE_MAPS: Record<FileTypeEnum, FileTypeMapping> = {
   // 图片文件类型
-  [FileType.IMAGE]: {
+  [FileTypeEnum.IMAGE]: {
     mimeTypes: ['image/'],
-    extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'],
+    extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico'],
   },
   // 视频文件类型
-  [FileType.VIDEO]: {
+  [FileTypeEnum.VIDEO]: {
     mimeTypes: ['video/'],
-    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'],
+    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'mpeg', '3gp'],
   },
   // 音频文件类型
-  [FileType.AUDIO]: {
+  [FileTypeEnum.AUDIO]: {
     mimeTypes: ['audio/'],
-    extensions: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'],
+    extensions: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'],
   },
   // 文档文件类型
-  [FileType.DOCUMENT]: {
+  [FileTypeEnum.DOCUMENT]: {
     mimeTypes: [
       'application/pdf',
       'application/msword',
@@ -51,13 +51,15 @@ export const FILE_TYPE_MAPS = {
       'text/',
       'application/rtf',
     ],
-    extensions: [
-      'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 
-      'txt', 'rtf', 'odt', 'ods', 'odp', 'csv', 'md',
-    ],
+    extensions: ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'],
+  },
+  // PDF文件类型
+  [FileTypeEnum.PDF]: {
+    mimeTypes: ['application/pdf'],
+    extensions: ['pdf'],
   },
   // 压缩文件类型
-  [FileType.ARCHIVE]: {
+  [FileTypeEnum.ARCHIVE]: {
     mimeTypes: [
       'application/zip',
       'application/x-rar-compressed',
@@ -65,10 +67,10 @@ export const FILE_TYPE_MAPS = {
       'application/x-tar',
       'application/gzip',
     ],
-    extensions: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'],
+    extensions: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'iso'],
   },
   // 代码文件类型
-  [FileType.CODE]: {
+  [FileTypeEnum.CODE]: {
     mimeTypes: [
       'text/javascript',
       'application/json',
@@ -79,10 +81,25 @@ export const FILE_TYPE_MAPS = {
     extensions: [
       'js', 'ts', 'jsx', 'tsx', 'json', 'html', 'css', 'scss', 'less',
       'xml', 'c', 'cpp', 'h', 'py', 'java', 'rb', 'php', 'go', 'rust',
-      'sql', 'sh', 'bat', 'ps1', 'yaml', 'toml',
+      'sql', 'sh', 'bat', 'ps1', 'yaml', 'toml', 'swift',
     ],
   },
+  // 文件夹类型
+  [FileTypeEnum.FOLDER]: {
+    mimeTypes: ['folder'],
+    extensions: [],
+  },
+  // 未知类型
+  [FileTypeEnum.UNKNOWN]: {
+    mimeTypes: [],
+    extensions: [],
+  },
 };
+
+// 从映射表中提取文件类型扩展名列表供其他函数使用
+export const FILE_TYPE_EXTENSIONS = Object.fromEntries(
+  Object.entries(FILE_TYPE_MAPS).map(([type, data]) => [type, data.extensions])
+) as Record<FileTypeEnum, string[]>;
 
 // 扩展名到用户友好文件类型描述的映射
 const EXTENSION_TO_TYPE: Record<string, string> = {
@@ -161,12 +178,12 @@ export const getFileIcon = (type: string | undefined, extension: string | undefi
   const fileCategory = getFileCategory(type || '', extension || '');
   
   switch (fileCategory) {
-    case FileType.IMAGE: return 'image';
-    case FileType.DOCUMENT: return 'file-text';
-    case FileType.VIDEO: return 'video';
-    case FileType.AUDIO: return 'music';
-    case FileType.ARCHIVE: return 'archive';
-    case FileType.CODE: return 'code';
+    case FileTypeEnum.IMAGE: return 'image';
+    case FileTypeEnum.DOCUMENT: return 'file-text';
+    case FileTypeEnum.VIDEO: return 'video';
+    case FileTypeEnum.AUDIO: return 'music';
+    case FileTypeEnum.ARCHIVE: return 'archive';
+    case FileTypeEnum.CODE: return 'code';
     default: return 'file';
   }
 };
@@ -219,10 +236,10 @@ export const getFileType = (type: string | null, extension?: string): string => 
  * @param extension 文件扩展名
  * @returns 文件分类
  */
-export function getFileCategory(mimeType: string, extension: string): FileType {
+export function getFileCategory(mimeType: string, extension: string): FileTypeEnum {
   // 如果没有提供任何参数，返回未知类型
   if (!mimeType && !extension) {
-    return FileType.UNKNOWN;
+    return FileTypeEnum.UNKNOWN;
   }
   
   // 尝试根据MIME类型和扩展名判断
@@ -236,12 +253,12 @@ export function getFileCategory(mimeType: string, extension: string): FileType {
     const matchesExtension = extension && extensions.includes(extension.toLowerCase());
     
     if (matchesMimeType || matchesExtension) {
-      return category as FileType;
+      return category as FileTypeEnum;
     }
   }
   
   // 默认返回未知类型
-  return FileType.UNKNOWN;
+  return FileTypeEnum.UNKNOWN;
 }
 
 /**
@@ -254,14 +271,14 @@ export function getFileCategory(mimeType: string, extension: string): FileType {
  */
 export function filterFilesByType<T extends { isFolder: boolean; name: string; type?: string }>(
   files: T[], 
-  fileType: FileType | string | null
+  fileType: FileTypeEnum | string | null
 ): T[] {
   if (!files || !Array.isArray(files) || !fileType) {
     return files;
   }
   
   // 文件夹处理
-  if (fileType === FileType.FOLDER) {
+  if (fileType === FileTypeEnum.FOLDER) {
     return files.filter(file => file.isFolder);
   }
   
@@ -285,17 +302,17 @@ export function filterFilesByType<T extends { isFolder: boolean; name: string; t
     
     // 根据文件类型和扩展名进行过滤
     switch (fileType) {
-      case FileType.DOCUMENT:
+      case FileTypeEnum.DOCUMENT:
         return ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
-      case FileType.IMAGE:
+      case FileTypeEnum.IMAGE:
         return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext);
-      case FileType.AUDIO:
+      case FileTypeEnum.AUDIO:
         return ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext);
-      case FileType.VIDEO:
+      case FileTypeEnum.VIDEO:
         return ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm'].includes(ext);
-      case FileType.CODE:
+      case FileTypeEnum.CODE:
         return ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb'].includes(ext);
-      case FileType.ARCHIVE:
+      case FileTypeEnum.ARCHIVE:
         return ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext);
       default:
         return false;
@@ -313,7 +330,7 @@ export function buildFileTypeFilter(type: string, includeFolder: boolean = false
   const where: any = { isDeleted: false };
   
   // 文件夹类型特殊处理
-  if (type === FileType.FOLDER) {
+  if (type === FileTypeEnum.FOLDER) {
     where.isFolder = true;
     return where;
   }
@@ -324,18 +341,18 @@ export function buildFileTypeFilter(type: string, includeFolder: boolean = false
   }
   
   // 根据不同类型构建查询条件
-  if (type === FileType.IMAGE) {
+  if (type === FileTypeEnum.IMAGE) {
     where.type = { startsWith: 'image' };
-  } else if (type === FileType.VIDEO) {
+  } else if (type === FileTypeEnum.VIDEO) {
     where.type = { startsWith: 'video' };
-  } else if (type === FileType.AUDIO) {
+  } else if (type === FileTypeEnum.AUDIO) {
     where.OR = [
-      { type: FileType.AUDIO },
+      { type: FileTypeEnum.AUDIO },
       { type: { startsWith: 'audio/' } }
     ];
-  } else if (type === FileType.DOCUMENT) {
+  } else if (type === FileTypeEnum.DOCUMENT) {
     where.OR = [
-      { type: FileType.DOCUMENT },
+      { type: FileTypeEnum.DOCUMENT },
       { type: { startsWith: 'application/pdf' } },
       { type: { startsWith: 'application/msword' } },
       { type: { startsWith: 'application/vnd.openxmlformats-officedocument.wordprocessingml' } },
@@ -345,9 +362,9 @@ export function buildFileTypeFilter(type: string, includeFolder: boolean = false
       { type: { startsWith: 'application/vnd.openxmlformats-officedocument.presentationml' } },
       { type: { startsWith: 'text' } }
     ];
-  } else if (type === FileType.ARCHIVE) {
+  } else if (type === FileTypeEnum.ARCHIVE) {
     where.OR = [
-      { type: FileType.ARCHIVE },
+      { type: FileTypeEnum.ARCHIVE },
       {
         type: {
           in: [
@@ -361,16 +378,16 @@ export function buildFileTypeFilter(type: string, includeFolder: boolean = false
         }
       }
     ];
-  } else if (type === FileType.CODE) {
+  } else if (type === FileTypeEnum.CODE) {
     where.OR = [
-      { type: FileType.CODE },
+      { type: FileTypeEnum.CODE },
       { type: { startsWith: 'text/javascript' } },
       { type: { startsWith: 'application/json' } },
       { type: { startsWith: 'text/html' } },
       { type: { startsWith: 'text/css' } },
       { type: { startsWith: 'text/xml' } },
     ];
-  } else if (type === FileType.UNKNOWN) {
+  } else if (type === FileTypeEnum.UNKNOWN) {
     // 排除所有已知类型
     where.AND = [
       { type: { not: { startsWith: 'image' } } },
@@ -382,10 +399,10 @@ export function buildFileTypeFilter(type: string, includeFolder: boolean = false
       { type: { not: { startsWith: 'application/vnd.ms-' } } },
       { type: { not: { startsWith: 'text' } } },
       { type: { not: { in: [
-        FileType.DOCUMENT,
-        FileType.AUDIO,
-        FileType.ARCHIVE,
-        FileType.CODE
+        FileTypeEnum.DOCUMENT,
+        FileTypeEnum.AUDIO,
+        FileTypeEnum.ARCHIVE,
+        FileTypeEnum.CODE
       ] } } }
     ];
   }
@@ -421,26 +438,6 @@ export function sanitizeFilename(filename: string): string {
     .trim();
 }
 
-// 保留兼容性的别名函数
-export const filterFiles = filterFilesByType;
-
-/**
- * 文件类型工具
- * 提供文件类型检测和筛选相关功能
- */
-
-// 文件类型扩展名映射
-export const FILE_TYPE_EXTENSIONS: Record<FileType, string[]> = {
-  [FileType.FOLDER]: [],
-  [FileType.DOCUMENT]: ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'],
-  [FileType.IMAGE]: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico'],
-  [FileType.AUDIO]: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'],
-  [FileType.VIDEO]: ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'webm', 'flv', 'mpeg', '3gp'],
-  [FileType.CODE]: ['html', 'css', 'js', 'ts', 'jsx', 'tsx', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb', 'swift'],
-  [FileType.ARCHIVE]: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'iso'],
-  [FileType.UNKNOWN]: []
-};
-
 /**
  * 获取文件扩展名
  * @param filename 文件名
@@ -473,97 +470,101 @@ export function getFileNameAndExtension(filename: string): { name: string; exten
 }
 
 /**
- * 根据文件名和类型判断文件是否符合特定类型
+ * 匹配文件是否属于指定类型
  * @param filename 文件名
- * @param isFolder 是否为文件夹
- * @param fileType 要检查的文件类型
+ * @param isFolder 是否是文件夹
+ * @param fileType 文件类型
  * @returns 是否符合类型
  */
-export function matchesFileType(filename: string, isFolder: boolean, fileType: FileType): boolean {
+export function matchesFileType(filename: string, isFolder: boolean, fileType: FileTypeEnum): boolean {
   // 对所有文件或为空类型，直接返回true
-  if (!fileType || fileType === FileType.UNKNOWN) {
+  if (!fileType || fileType === FileTypeEnum.UNKNOWN) {
     return true;
   }
   
   // 文件夹类型判断
-  if (fileType === FileType.FOLDER) {
+  if (fileType === FileTypeEnum.FOLDER) {
     return isFolder;
   }
   
-  // 非文件夹但要求文件夹类型
+  // 如果是文件夹但类型不是文件夹，不匹配
   if (isFolder) {
     return false;
   }
   
-  // 获取文件扩展名
-  const extension = getFileExtension(filename).toLowerCase();
+  // 获取扩展名
+  const ext = getFileExtension(filename).toLowerCase();
   
-  // 检查是否匹配指定类型的扩展名
-  return FILE_TYPE_EXTENSIONS[fileType].includes(extension);
+  // 检查扩展名是否在对应类型的允许列表中
+  const extensions = FILE_TYPE_EXTENSIONS[fileType];
+  return extensions.includes(ext);
 }
 
 /**
- * 判断文件是否是图片
+ * 检查文件是否为图片
  * @param filename 文件名
  * @returns 是否为图片
  */
 export function isImageFile(filename: string): boolean {
-  return matchesFileType(filename, false, FileType.IMAGE);
+  return matchesFileType(filename, false, FileTypeEnum.IMAGE);
 }
 
 /**
- * 判断文件是否是文档
+ * 检查文件是否为文档
  * @param filename 文件名
  * @returns 是否为文档
  */
 export function isDocumentFile(filename: string): boolean {
-  return matchesFileType(filename, false, FileType.DOCUMENT);
+  return matchesFileType(filename, false, FileTypeEnum.DOCUMENT);
 }
 
 /**
- * 判断文件是否是视频
+ * 检查文件是否为视频
  * @param filename 文件名
  * @returns 是否为视频
  */
 export function isVideoFile(filename: string): boolean {
-  return matchesFileType(filename, false, FileType.VIDEO);
+  return matchesFileType(filename, false, FileTypeEnum.VIDEO);
 }
 
 /**
- * 判断文件是否是音频
+ * 检查文件是否为音频
  * @param filename 文件名
  * @returns 是否为音频
  */
 export function isAudioFile(filename: string): boolean {
-  return matchesFileType(filename, false, FileType.AUDIO);
+  return matchesFileType(filename, false, FileTypeEnum.AUDIO);
 }
 
 /**
- * 根据文件名获取可能的文件类型
+ * 根据文件名和文件夹标志获取文件类型
  * @param filename 文件名
  * @param isFolder 是否为文件夹
- * @returns 文件类型枚举
+ * @returns 文件类型
  */
-export function getFileTypeByName(filename: string, isFolder: boolean): FileType {
+export function getFileTypeByName(filename: string, isFolder: boolean): FileTypeEnum {
   if (isFolder) {
-    return FileType.FOLDER;
+    return FileTypeEnum.FOLDER;
   }
   
-  // 获取文件扩展名
   const ext = getFileExtension(filename).toLowerCase();
   
-  // 没有扩展名，返回未知类型
-  if (!ext) {
-    return FileType.UNKNOWN;
+  // 判断文件类型
+  if (isImageFile(filename)) {
+    return FileTypeEnum.IMAGE;
+  } else if (isVideoFile(filename)) {
+    return FileTypeEnum.VIDEO;
+  } else if (isAudioFile(filename)) {
+    return FileTypeEnum.AUDIO;
+  } else if (ext === 'pdf') {
+    return FileTypeEnum.PDF;
+  } else if (isDocumentFile(filename)) {
+    return FileTypeEnum.DOCUMENT;
+  } else if (FILE_TYPE_EXTENSIONS[FileTypeEnum.CODE].includes(ext)) {
+    return FileTypeEnum.CODE;
+  } else if (FILE_TYPE_EXTENSIONS[FileTypeEnum.ARCHIVE].includes(ext)) {
+    return FileTypeEnum.ARCHIVE;
   }
   
-  // 检查所有文件类型
-  for (const [type, extensions] of Object.entries(FILE_TYPE_EXTENSIONS)) {
-    if (type !== FileType.FOLDER && type !== FileType.UNKNOWN && extensions.includes(ext)) {
-      return type as FileType;
-    }
-  }
-  
-  // 默认返回未知类型
-  return FileType.UNKNOWN;
+  return FileTypeEnum.UNKNOWN;
 }

@@ -7,9 +7,6 @@
 // 导入统一的ThemeStyle类型
 import { ThemeStyle } from '@/app/types/theme';
 
-// 导出ThemeStyle类型以保持向后兼容
-export type { ThemeStyle };
-
 /**
  * 基础主题模板
  * 包含所有主题通用的默认值

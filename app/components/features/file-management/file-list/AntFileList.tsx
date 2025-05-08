@@ -47,7 +47,7 @@ const { Text, Title } = Typography;
 /**
  * 基于Ant Design的文件列表组件 - 替代原来的FileList组件
  */
-interface AntFileListProps {
+export interface AntFileListProps {
   files: FileInfo[];
   selectedFiles: string[];
   onFileClick: (file: FileInfo) => void;

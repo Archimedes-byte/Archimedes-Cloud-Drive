@@ -23,15 +23,7 @@ export {
 // 导出认证选项
 export { authOptions } from './auth';
 
-// 注意: 不再导出prisma - 请从 @/app/lib/database 导入
-
-// 废弃的常量和工具函数移除 
-// 现在请使用:
-// - 常量: @/app/constants/auth
-// - 错误处理: @/app/utils/error
-// - 验证工具: @/app/utils/validation
-
-// 导出类型定义 - 使用export type确保与isolatedModules兼容
+// 导出类型定义
 export type { 
   LoginCredentials,
   RegisterData,

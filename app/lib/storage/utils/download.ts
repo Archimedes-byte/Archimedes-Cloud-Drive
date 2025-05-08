@@ -66,69 +66,71 @@ export async function downloadBlob(
 }
 
 /**
- * 文件夹下载函数
- * 处理文件夹ZIP下载
+ * 下载文件夹
+ * 处理文件夹的ZIP打包下载
  * 
  * @param folderId 文件夹ID
- * @param fileName 可选的文件名
- * @returns 是否成功触发下载
+ * @param fileName 可选的自定义文件名
+ * @returns 是否下载成功
  */
 export async function downloadFolder(folderId: string, fileName?: string): Promise<boolean> {
-  console.log(`开始下载文件夹: ${folderId}`);
-  
   try {
-    // 构建请求
-    const request: RequestInit = {
+    // 获取下载URL
+    const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD}?t=${Date.now()}`;
+    
+    // 发送POST请求
+    const response = await fetch(downloadUrl, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache' 
+        'Pragma': 'no-cache'
       },
       body: JSON.stringify({ 
         fileIds: [folderId],
-        isFolder: true
+        isFolder: true 
       }),
-      signal: AbortSignal.timeout(120000), // 2分钟超时
       credentials: 'include'
-    };
-    
-    // 发起请求
-    console.log(`发送文件夹下载请求...`);
-    const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, request);
-    
+    });
+
     if (!response || !response.ok) {
-      // 尝试解析错误信息
-      let errorMessage = `服务器响应错误: ${response?.status} ${response?.statusText}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error || errorData.message) {
-          errorMessage = errorData.error || errorData.message;
-        }
-      } catch (e) {
-        // 无法解析JSON，使用默认错误信息
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(`文件夹下载请求失败: ${response?.status || 'Failed to fetch'}`);
     }
     
-    // 获取文件Blob
+    // 获取文件名
+    let downloadFileName = fileName;
+    if (!downloadFileName) {
+      // 尝试从Content-Disposition头获取文件名
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const matches = /filename="?([^"]*)"?/i.exec(contentDisposition);
+        if (matches && matches[1]) {
+          downloadFileName = decodeURIComponent(matches[1]);
+        }
+      }
+      
+      // 如果还是没有文件名，使用默认名称
+      if (!downloadFileName) {
+        downloadFileName = '下载文件夹';
+      }
+    }
+    
+    // 确保文件名有zip扩展名
+    if (!downloadFileName.toLowerCase().endsWith('.zip')) {
+      downloadFileName += '.zip';
+    }
+    
+    // 获取文件blob
     const blob = await response.blob();
     if (blob.size === 0) {
       throw new Error('下载的文件为空');
     }
     
-    // 设置文件名
-    let downloadFileName = fileName || '下载文件.zip';
-    if (!downloadFileName.toLowerCase().endsWith('.zip')) {
-      downloadFileName += '.zip';
-    }
-    
-    // 创建并触发下载
-    return await downloadBlob(blob, downloadFileName);
+    // 使用通用blob下载函数
+    return await downloadBlob(blob, downloadFileName, 'application/zip');
   } catch (error) {
-    console.error('文件夹下载失败:', error);
-    message.error(`下载失败: ${error instanceof Error ? error.message : '网络错误'}`);
+    console.error(`文件夹下载失败:`, error);
+    message.error(`下载失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
 }
@@ -145,8 +147,6 @@ export async function downloadFile(fileId: string, fileName?: string): Promise<b
   try {
     // 使用ZIP下载API路径
     const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD}?t=${Date.now()}`;
-    
-    console.log(`[downloadFile] 开始ZIP下载文件, ID: ${fileId}, URL: ${downloadUrl}`);
     
     // 发送POST请求
     const response = await fetch(downloadUrl, {
@@ -210,8 +210,6 @@ export async function downloadFileDirect(fileId: string, fileName?: string): Pro
     // 使用直接下载API路径
     const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD_DIRECT}?fileId=${fileId}&t=${Date.now()}`;
     
-    console.log(`[downloadFileDirect] 开始直接下载文件, ID: ${fileId}, URL: ${downloadUrl}`);
-    
     // 发送GET请求
     const response = await fetch(downloadUrl, {
       method: 'GET',
@@ -266,27 +264,27 @@ export async function downloadFileDirect(fileId: string, fileName?: string): Pro
 }
 
 /**
- * 多文件下载
- * 处理多个文件或文件夹的ZIP下载
+ * 下载多个文件
+ * 处理多个文件的ZIP打包下载
  * 
- * @param fileIds 文件/文件夹ID列表
- * @param fileName 可选的ZIP文件名
+ * @param fileIds 多个文件ID数组
+ * @param customFileName 可选的自定义文件名
  * @returns 是否下载成功
  */
-export async function downloadMultipleFiles(fileIds: string[], fileName?: string): Promise<boolean> {
+export async function downloadMultipleFiles(fileIds: string[], customFileName?: string): Promise<boolean> {
   try {
     if (!fileIds.length) {
       message.warning('没有选择要下载的文件');
       return false;
     }
     
-    console.log(`开始下载多个文件/文件夹，共 ${fileIds.length} 个项目`);
-    message.loading({ content: '准备下载文件中...', key: 'fileMultiDownload' });
+    // 使用ZIP下载API路径
+    const downloadUrl = `${API_PATHS.STORAGE.FILES.DOWNLOAD}?t=${Date.now()}`;
     
-    // 构造POST请求
-    const response = await fetch(API_PATHS.STORAGE.FILES.DOWNLOAD, {
+    // 发送POST请求
+    const response = await fetch(downloadUrl, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache'
@@ -294,47 +292,39 @@ export async function downloadMultipleFiles(fileIds: string[], fileName?: string
       body: JSON.stringify({ fileIds }),
       credentials: 'include'
     });
+
+    if (!response || !response.ok) {
+      throw new Error(`多文件下载请求失败: ${response?.status || 'Failed to fetch'}`);
+    }
     
-    if (!response.ok) {
-      // 尝试解析错误信息
-      let errorMessage = `下载请求失败: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (e) {
-        // 解析错误时使用默认消息
+    // 获取文件名
+    let downloadFileName = customFileName || '多文件下载';
+    
+    // 尝试从Content-Disposition头获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition');
+    if (contentDisposition) {
+      const matches = /filename="?([^"]*)"?/i.exec(contentDisposition);
+      if (matches && matches[1]) {
+        downloadFileName = decodeURIComponent(matches[1]);
       }
-      
-      message.error({ content: errorMessage, key: 'fileMultiDownload' });
-      throw new Error(errorMessage);
     }
     
-    // 获取Blob
+    // 确保文件名有zip扩展名
+    if (!downloadFileName.toLowerCase().endsWith('.zip')) {
+      downloadFileName += '.zip';
+    }
+    
+    // 获取文件blob
     const blob = await response.blob();
-    if (!blob || blob.size === 0) {
-      message.error({ content: '获取到的文件内容为空', key: 'fileMultiDownload' });
-      throw new Error('下载内容为空');
+    if (blob.size === 0) {
+      throw new Error('下载的文件为空');
     }
     
-    // 设置文件名
-    const defaultName = fileIds.length > 1 ? '多文件下载.zip' : '下载文件.zip';
-    const downloadName = fileName || defaultName;
-    
-    // 下载文件
-    const success = await downloadBlob(blob, downloadName);
-    
-    if (success) {
-      message.success({ content: '下载成功', key: 'fileMultiDownload' });
-    } else {
-      message.error({ content: '下载文件处理失败', key: 'fileMultiDownload' });
-    }
-    
-    return success;
+    // 使用通用blob下载函数
+    return await downloadBlob(blob, downloadFileName, 'application/zip');
   } catch (error) {
-    console.error('多文件下载失败:', error);
-    message.error({ content: `下载失败: ${error instanceof Error ? error.message : '未知错误'}`, key: 'fileMultiDownload' });
+    console.error(`多文件下载失败:`, error);
+    message.error(`下载失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
 } 

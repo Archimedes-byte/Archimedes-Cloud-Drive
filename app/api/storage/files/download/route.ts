@@ -39,7 +39,7 @@ async function recordDownloadHistory(userId: string, fileId: string) {
       }
     });
   } catch (error) {
-    console.error('记录下载历史失败:', error);
+    // 静默失败，不影响下载体验
   }
 }
 

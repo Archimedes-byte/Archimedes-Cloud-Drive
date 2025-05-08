@@ -1,6 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import GithubProvider from "next-auth/providers/github"
 import { prisma } from "@/app/lib/database"
 import { AUTH_CONSTANTS, AUTH_ERROR_CODE } from "@/app/constants/auth"
 import { verifyCredentials } from "./credentials-service"
@@ -41,6 +42,19 @@ export const authOptions: NextAuthOptions = {
           // 使用统一错误处理
           logAuthError(error, 'credentials-authorize');
           throw error;
+        }
+      }
+    }),
+    GithubProvider({
+      clientId: "Ov23liATEi8Idcm8WtWU",
+      clientSecret: "487bbc9fffd1cd2b33a71adaa52749064515de7c",
+      allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url
         }
       }
     })

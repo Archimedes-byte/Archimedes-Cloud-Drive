@@ -1,5 +1,5 @@
 /**
- * 导出文件列表组件
- * 2024-06-29: 已移除旧的FileList组件，统一使用AntFileList
+ * 文件列表组件导出
  */
 export { AntFileList } from './AntFileList';
+export type { AntFileListProps } from './AntFileList';

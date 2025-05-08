@@ -31,19 +31,6 @@ export interface PaginationMeta {
 }
 
 /**
- * 核心分页响应接口
- * API返回的分页数据格式
- * @template T 分页数据项的类型
- * @deprecated 请使用 PaginatedResponse 代替，在 @/app/types/shared/api-types.ts 中定义
- */
-export interface CorePaginatedResponse<T> {
-  /** 数据项数组 */
-  data: T[];
-  /** 分页元数据 */
-  meta: PaginationMeta;
-}
-
-/**
  * 排序方向枚举
  * 替代字符串联合类型，提高类型安全性
  */

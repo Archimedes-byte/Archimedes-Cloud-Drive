@@ -12,14 +12,13 @@ import { useTheme } from '@/app/hooks';
  */
 export interface AntButtonProps {
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'link' | 'ghost' | 'text' | 
-            'default' | 'destructive' | 'outline'; // 兼容原Button组件的variant
+            'default' | 'destructive' | 'outline';
   fullWidth?: boolean;
-  asChild?: boolean; // 兼容原Button组件的API
   className?: string;
   disabled?: boolean;
   loading?: boolean;
   onClick?: React.MouseEventHandler<HTMLElement>;
-  size?: 'large' | 'middle' | 'small' | 'lg' | 'sm'; // 兼容原Button的size
+  size?: 'large' | 'middle' | 'small' | 'lg' | 'sm';
   icon?: React.ReactNode;
   children?: React.ReactNode;
   htmlType?: 'button' | 'submit' | 'reset';
@@ -28,7 +27,6 @@ export interface AntButtonProps {
 
 /**
  * 基于Ant Design的按钮组件，支持系统主题样式
- * 兼容原Button组件的API以及Ant Design的API
  */
 export const AntButton: React.FC<AntButtonProps> = ({
   variant = 'primary',
@@ -36,7 +34,6 @@ export const AntButton: React.FC<AntButtonProps> = ({
   className,
   children,
   size,
-  asChild, // 忽略这个参数，仅为兼容性保留
   ...props
 }) => {
   // 获取当前主题信息
@@ -100,8 +97,5 @@ export const AntButton: React.FC<AntButtonProps> = ({
     </AntdButton>
   );
 };
-
-// 为了兼容之前的代码，我们需要导出buttonVariants
-export const buttonVariants = () => ''; // 仅为兼容性保留，实际不会使用
 
 export default AntButton; 

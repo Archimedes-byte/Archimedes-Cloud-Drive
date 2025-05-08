@@ -28,7 +28,7 @@ async function recordDownloadHistory(userId: string, fileId: string) {
       }
     });
   } catch (error) {
-    console.error('记录下载历史失败:', error);
+    // 静默失败，不影响下载体验
   }
 }
 
@@ -71,7 +71,6 @@ export const GET = withDownloadAuth(async (req: AuthenticatedRequest) => {
     
     // 构建文件路径
     const filePath = join(UPLOAD_DIR, file.filename);
-    console.log(`直接下载API - 读取文件: ${filePath}`);
     
     if (!existsSync(filePath)) {
       return new Response(JSON.stringify({ success: false, error: '文件不存在于磁盘' }), {
@@ -97,8 +96,6 @@ export const GET = withDownloadAuth(async (req: AuthenticatedRequest) => {
     
     // 读取文件
     const fileBuffer = await fs.readFile(filePath);
-    const fileSizeKB = (fileBuffer.length / 1024).toFixed(2);
-    console.log(`文件已读取，准备返回下载，名称: ${file.name}, 大小: ${fileSizeKB} KB, 类型: ${contentType}`);
     
     // 返回文件响应
     return new Response(fileBuffer, {
@@ -112,7 +109,6 @@ export const GET = withDownloadAuth(async (req: AuthenticatedRequest) => {
       }
     });
   } catch (error) {
-    console.error('直接下载API出错:', error);
     return new Response(JSON.stringify({ success: false, error: '下载失败' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

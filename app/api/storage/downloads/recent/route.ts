@@ -38,14 +38,10 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`找到 ${recentDownloads.length} 条下载记录`);
-    
     // 过滤有效记录（文件仍然存在且未删除）
     const validDownloads = recentDownloads.filter(
       download => download.file && !download.file.isDeleted
     );
-    
-    console.log(`有效下载记录: ${validDownloads.length} 条`);
     
     // 转换为前端需要的格式
     const formattedDownloads = validDownloads.map(download => {

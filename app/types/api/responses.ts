@@ -48,18 +48,6 @@ export interface FileTypeStats {
 }
 
 /**
- * @deprecated 此接口已移除，相关组件StorageUsage已不再使用
- */
-// export interface StorageUsageResponse extends ApiResponse {
-//   data: {
-//     used: number;
-//     total: number;
-//     percentage: number;
-//     typeStats?: FileTypeStats[];
-//   };
-// }
-
-/**
  * 导出共享AuthResponse类型
  */
 export type { SharedAuthResponse as AuthResponse };

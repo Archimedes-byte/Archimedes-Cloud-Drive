@@ -450,7 +450,4 @@ export function RecentFilesContent({
       )}
     </div>
   );
-}
-
-// 保持向后兼容性，同时导出RecentFiles
-export { RecentFilesContent as RecentFiles }; 
+} 

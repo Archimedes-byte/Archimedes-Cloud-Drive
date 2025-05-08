@@ -1,8 +1,5 @@
 import AntMiniSidebar from './AntMiniSidebar';
-import MiniSidebar from './MiniSidebar';
 
-// 默认导出Ant Design版本
+// 导出Ant Design版本作为默认组件
 export default AntMiniSidebar;
-
-// 同时提供原始版本用于向后兼容
-export { MiniSidebar as ClassicMiniSidebar }; 
+export { AntMiniSidebar }; 

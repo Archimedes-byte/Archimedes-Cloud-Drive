@@ -11,9 +11,6 @@
 // 导出Prisma客户端
 export { prisma } from './prisma';
 
-// 为保持向后兼容性，也导出为db
-export { prisma as db } from './prisma';
-
 // 导出常用数据库操作工具
 export { 
   // 在这里可以添加其他数据库相关的导出
