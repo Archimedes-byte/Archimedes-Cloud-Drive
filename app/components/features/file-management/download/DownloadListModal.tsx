@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Typography, Button, List, Space, Spin, Alert, Flex, Checkbox, Input } from 'antd';
-import { DownloadOutlined, FileOutlined, FolderOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Modal, Typography, Button, List, Space, Spin, Alert, Flex, Checkbox, Input, Badge, Tooltip } from 'antd';
+import { DownloadOutlined, FileOutlined, FolderOutlined, DeleteOutlined, InfoCircleOutlined, CloudDownloadOutlined } from '@ant-design/icons';
 import { FileInfo } from '@/app/types';
 import styles from './DownloadListModal.module.css';
 
@@ -109,6 +109,7 @@ export const DownloadListModal: React.FC<DownloadListModalProps> = ({
           type="warning"
           message="没有选择任何文件或文件夹"
           description="请先选择需要下载的文件或文件夹"
+          showIcon
         />
       );
     }
@@ -128,13 +129,15 @@ export const DownloadListModal: React.FC<DownloadListModalProps> = ({
               />
               <Space className={styles.fileInfo}>
                 {renderFileIcon(file.isFolder === true)}
-                <Typography.Text ellipsis className={styles.fileName}>
+                <Typography.Text ellipsis className={styles.fileName} title={file.name}>
                   {file.name}
                 </Typography.Text>
                 {file.isFolder && (
-                  <Typography.Text type="secondary" className={styles.folderLabel}>
-                    文件夹
-                  </Typography.Text>
+                  <Badge 
+                    className={styles.folderBadge}
+                    count="文件夹" 
+                    style={{ backgroundColor: '#faad14', fontSize: '12px' }}
+                  />
                 )}
               </Space>
             </Flex>
@@ -169,9 +172,21 @@ export const DownloadListModal: React.FC<DownloadListModalProps> = ({
   return (
     <Modal
       title={
-        <Flex align="center">
-          <DownloadOutlined className={styles.titleIcon} />
+        <Flex align="center" gap={8} className={styles.modalTitle}>
+          <CloudDownloadOutlined className={styles.titleIcon} />
           <span>文件下载</span>
+          {fileList.length > 0 && (
+            <Badge 
+              count={fileList.length} 
+              style={{ 
+                backgroundColor: '#4096ff',
+                marginLeft: '8px',
+                fontWeight: 'normal',
+                fontSize: '12px'
+              }} 
+              overflowCount={999}
+            />
+          )}
         </Flex>
       }
       open={visible}
@@ -183,6 +198,7 @@ export const DownloadListModal: React.FC<DownloadListModalProps> = ({
           icon={<DeleteOutlined />}
           onClick={handleDeleteSelected}
           disabled={!hasSelectedFiles || isLoading}
+          className={styles.deleteButton}
         >
           删除选中
         </Button>,
@@ -195,37 +211,42 @@ export const DownloadListModal: React.FC<DownloadListModalProps> = ({
           onClick={handleDownloadClick} 
           loading={isLoading}
           icon={<DownloadOutlined />}
-          style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6' }}
+          className={styles.downloadButton}
         >
           开始下载
         </Button>
       ]}
-      width={520}
+      width={550}
+      className={styles.downloadModal}
+      maskClosable={false}
     >
       <div className={styles.modalContent}>
         {isLoading ? (
           <Flex vertical align="center" className={styles.loadingContainer}>
-            <Spin />
+            <Spin size="large" />
             <Typography.Paragraph className={styles.loadingText}>
               正在准备下载，请稍候...
             </Typography.Paragraph>
           </Flex>
         ) : (
           <>
-            <Typography.Paragraph className={styles.summaryText}>
-              您选择了 {fileList.length} 个项目下载
-              {folderCount > 0 && fileCount > 0 && (
-                <span>（{folderCount} 个文件夹和 {fileCount} 个文件）</span>
-              )}
-            </Typography.Paragraph>
-            
-            <Typography.Paragraph>
-              {folderCount > 0 || fileList.length > 1 ? "文件将被压缩为ZIP格式下载" : ""}
-            </Typography.Paragraph>
+            <div className={styles.infoCard}>
+              <Typography.Paragraph className={styles.summaryText}>
+                <InfoCircleOutlined className={styles.infoIcon} />
+                您选择了 <strong>{fileList.length}</strong> 个项目下载
+                {folderCount > 0 && fileCount > 0 && (
+                  <span>（{folderCount} 个文件夹和 {fileCount} 个文件）</span>
+                )}
+              </Typography.Paragraph>
+              
+              <Typography.Paragraph className={styles.zipNote}>
+                {folderCount > 0 || fileList.length > 1 ? "文件将被压缩为ZIP格式下载" : ""}
+              </Typography.Paragraph>
+            </div>
             
             {/* 添加下载文件名设置 */}
-            <Flex vertical className={styles.fileNameInputContainer} style={{ marginBottom: '16px' }}>
-              <Typography.Text strong style={{ marginBottom: '8px' }}>
+            <Flex vertical className={styles.fileNameInputContainer}>
+              <Typography.Text strong className={styles.inputLabel}>
                 下载文件名称:
               </Typography.Text>
               <Input 
@@ -233,25 +254,26 @@ export const DownloadListModal: React.FC<DownloadListModalProps> = ({
                 value={customFileName}
                 onChange={handleFileNameChange}
                 maxLength={100}
-                suffix={folderCount > 0 || fileList.length > 1 ? ".zip" : ""}
+                className={styles.fileNameInput}
+                suffix={
+                  <Tooltip title={folderCount > 0 || fileList.length > 1 
+                    ? "多个文件或文件夹将被压缩为ZIP文件" 
+                    : "单个文件将保持原始格式"}>
+                    <span>{folderCount > 0 || fileList.length > 1 ? ".zip" : ""}</span>
+                    <InfoCircleOutlined style={{ color: 'rgba(0,0,0,.45)', marginLeft: 4 }} />
+                  </Tooltip>
+                }
               />
-              <Typography.Text type="secondary" style={{ marginTop: '4px', fontSize: '12px' }}>
-                {folderCount > 0 || fileList.length > 1 
-                  ? "多个文件或文件夹将被压缩为ZIP文件" 
-                  : "单个文件将保持原始格式"}
-              </Typography.Text>
             </Flex>
             
             <div className={styles.listContainer}>
-              <Flex justify="space-between" align="center">
+              <Flex justify="space-between" align="center" className={styles.listHeader}>
                 <Typography.Title level={5} className={styles.listTitle}>
                   下载列表
                 </Typography.Title>
-                {fileList.length > 0 && (
-                  <Typography.Text type="secondary" className={styles.selectTip}>
-                    勾选可删除
-                  </Typography.Text>
-                )}
+                <Typography.Text type="secondary" className={styles.selectTip}>
+                  {hasSelectedFiles ? `已选择 ${Object.values(selectedFiles).filter(Boolean).length} 项` : ''}
+                </Typography.Text>
               </Flex>
               {renderFileList()}
             </div>

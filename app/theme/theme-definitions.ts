@@ -74,6 +74,24 @@ export const themeDefinitions: Record<string, ThemeStyle> = {
     '基础色彩'
   ),
   
+  // 添加light主题
+  light: createTheme(
+    '亮色主题', 
+    {
+      primary: '#3b82f6',
+      secondary: '#2c5282',
+      accent: '#60a5fa',
+      background: '#ffffff',
+    },
+    '基础色彩',
+    {
+      text: '#1a202c',
+      textSecondary: '#4a5568',
+      textDisabled: '#a0aec0',
+      border: '#e2e8f0',
+    }
+  ),
+  
   // 添加一个纯色系统主题
   pure_blue: createTheme(
     '纯蓝', 

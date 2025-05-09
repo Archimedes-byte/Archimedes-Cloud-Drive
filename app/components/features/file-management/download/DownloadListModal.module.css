@@ -1,14 +1,39 @@
 .titleIcon {
   margin-right: 8px;
-  font-size: 18px;
+  font-size: 20px;
+  color: #1890ff;
+}
+
+.modalTitle {
+  color: #262626;
+  font-weight: 600;
+}
+
+.downloadModal :global(.ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  background-color: #ffffff;
+}
+
+.downloadModal :global(.ant-modal-header) {
+  background-color: #ffffff;
+}
+
+.downloadModal :global(.ant-modal-body) {
+  background-color: #ffffff;
+}
+
+.downloadModal :global(.ant-modal-footer) {
+  background-color: #ffffff;
 }
 
 .modalContent {
-  padding: 8px 0;
+  padding: 8px 0 8px;
 }
 
 .loadingContainer {
-  padding: 24px 0;
+  padding: 40px 0;
 }
 
 .loadingText {
@@ -16,34 +41,98 @@
   color: #666;
 }
 
+.infoCard {
+  background-color: #f5f7ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-left: 4px solid #4096ff;
+}
+
+.infoIcon {
+  color: #4096ff;
+  margin-right: 8px;
+  font-size: 16px;
+}
+
 .summaryText {
-  font-size: 15px;
-  margin-bottom: 12px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #262626;
+}
+
+.zipNote {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.fileNameInputContainer {
+  margin-bottom: 16px;
+}
+
+.inputLabel {
+  margin-bottom: 8px;
+  color: #262626;
+}
+
+.fileNameInput {
+  border-radius: 6px;
+}
+
+.fileNameInput:hover {
+  border-color: #4096ff;
+}
+
+.fileNameInput:focus {
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
 .listContainer {
-  margin-top: 16px;
+  margin-top: 8px;
   border: 1px solid #f0f0f0;
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.listHeader {
+  padding: 12px 16px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .listTitle {
-  padding: 12px 16px;
+  padding: 0;
   margin: 0 !important;
-  background-color: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  font-size: 15px;
+  color: #262626;
 }
 
 .fileList {
   max-height: 240px;
   overflow-y: auto;
   padding: 8px 0;
+  scrollbar-width: thin;
+}
+
+.fileList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fileList::-webkit-scrollbar-thumb {
+  background-color: #d9d9d9;
+  border-radius: 3px;
+}
+
+.fileList::-webkit-scrollbar-track {
+  background-color: #f5f5f5;
 }
 
 .fileItem {
   padding: 8px 16px !important;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .fileItem:hover {
@@ -52,21 +141,19 @@
 
 .fileIcon {
   color: #1e88e5;
+  font-size: 16px;
 }
 
 .folderIcon {
   color: #ffb74d;
+  font-size: 16px;
 }
 
 .fileName {
   max-width: 340px;
 }
 
-.folderLabel {
-  font-size: 12px;
-  padding: 1px 6px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
+.folderBadge {
   margin-left: 8px;
 }
 
@@ -80,5 +167,21 @@
 
 .selectTip {
   font-size: 12px;
-  padding-right: 16px;
+  padding-right: 4px;
+}
+
+.downloadButton {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 0 rgba(5, 65, 180, 0.08);
+  transition: all 0.3s;
+}
+
+.downloadButton:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.deleteButton:hover {
+  box-shadow: 0 2px 0 rgba(220, 38, 38, 0.08);
 } 
