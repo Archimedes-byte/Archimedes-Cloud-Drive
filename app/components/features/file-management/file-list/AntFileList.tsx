@@ -575,6 +575,15 @@ export function AntFileList({
         dataIndex: 'size',
         key: 'size',
         width: 120,
+        sorter: (a: FileInfo, b: FileInfo) => {
+          // 文件夹总是排在文件前面
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          // 比较文件大小
+          const sizeA = typeof a.size === 'number' ? a.size : 0;
+          const sizeB = typeof b.size === 'number' ? b.size : 0;
+          return sizeA - sizeB;
+        },
         render: (_: any, record: FileInfo) => {
           if (record.isFolder) return <span>-</span>;
           const size = typeof record.size === 'number' ? record.size : 0;
@@ -588,6 +597,15 @@ export function AntFileList({
         dataIndex: 'updatedAt',
         key: 'updatedAt',
         width: 180,
+        sorter: (a: FileInfo, b: FileInfo) => {
+          // 文件夹总是排在文件前面
+          if (a.isFolder && !b.isFolder) return -1;
+          if (!a.isFolder && b.isFolder) return 1;
+          // 比较更新日期
+          const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          return dateA - dateB;
+        },
         render: (_: any, record: FileInfo) => {
           const updatedAt = record.updatedAt || '';
           if (!updatedAt) return '-';

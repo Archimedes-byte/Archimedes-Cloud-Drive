@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { AppLayout } from '@/app/components/shared/layouts';
+import { AppLayout } from '@/app/components/common/layouts';
 import Hero from '@/app/components/features/home/hero';
 import Features from '@/app/components/features/home/features';
 import CTA from '@/app/components/features/home/cta';
+import Header from '@/app/components/features/home/header';
+import Footer from '@/app/components/features/home/footer';
 import { useAuth } from '@/app/contexts/auth';
 
 export default function HomePage() {
@@ -28,7 +30,10 @@ export default function HomePage() {
   }, []);
 
   return (
-    <AppLayout onLoginClick={openLoginModal}>
+    <AppLayout 
+      header={<Header onLoginClick={openLoginModal} />}
+      footer={<Footer />}
+    >
       <main className="main-content home-page">
         <Hero onExploreClick={scrollToFeatures} onLoginClick={openLoginModal} />
         <div ref={featuresRef}>

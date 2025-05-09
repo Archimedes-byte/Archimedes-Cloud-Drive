@@ -5,17 +5,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   Button, message, Typography, Space, 
-  Tag, Tooltip, Popconfirm, Spin, Empty, Tabs, Select
+  Spin, Empty, Select
 } from 'antd';
 import { 
-  Star, ExternalLink, Trash2, 
-  File, Folder, FileText, Image as ImageIcon, 
-  Video, Music, AlertCircle, ArrowLeft, StarIcon, SearchIcon, PlusIcon
+  Star, Trash2, 
+  ArrowLeft
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import styles from './favorites.module.css';
-import type { SortOrder } from 'antd/es/table/interface';
 import { fileApi, FavoriteFolderInfo } from '@/app/lib/api/file-api';
 import { FileInfo } from '@/app/types';
 import { AntFileList } from '../file-list';
@@ -122,7 +119,8 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
       const getAllFavoriteIds = async () => {
         try {
           const response = await fileApi.getAllFavoriteFiles();
-          if (response?.items?.length > 0) {
+          // 添加空值检查
+          if (response && response.items && response.items.length > 0) {
             const ids = response.items.map(item => item.id);
             setFavoritedFileIds(ids);
           }
@@ -383,9 +381,8 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
 
   // 文件打开处理函数
   const handleOpenFile = (file: FileInfo) => {
-    const favoriteFile = file as FavoriteFile;
     if (onOpenFile) {
-      onOpenFile(favoriteFile);
+      onOpenFile(file as FavoriteFile);
     }
   };
 
@@ -402,16 +399,19 @@ export default function FavoritesContent({ onNavigateBack, onOpenFile, selectedF
 
   // 处理切换收藏状态
   const handleToggleFavorite = async (file: FileInfo, isFavorite: boolean) => {
+    // 收藏内容中的文件始终已被收藏，所以这个函数主要用于取消收藏
     if (!isFavorite) {
-      // 从收藏中移除
-      try {
-        await removeFavorite([file.id]);
-      } catch (error) {
-        console.error('取消收藏失败:', error);
-        message.error('取消收藏失败');
+      const favoriteItem = favorites.find(f => f.id === file.id);
+      if (favoriteItem && favoriteItem.favoriteId) {
+        await removeFavorite([favoriteItem.favoriteId]);
+        
+        // 从当前列表中移除
+        setFavorites(prev => prev.filter(item => item.id !== file.id));
+        setFavoritedFileIds(prev => prev.filter(id => id !== file.id));
+        
+        message.success('已从收藏中移除');
       }
     }
-    // 注意：添加收藏功能通常需要选择收藏夹，这里不处理
   };
 
   // 加载初始收藏文件数据

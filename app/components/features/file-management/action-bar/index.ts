@@ -1,5 +1,5 @@
-// 导出action-bar目录下的所有组件
-export * from './sort-dropdown';
+/**
+ * 文件管理操作栏组件导出
+ */
 export * from './menu-bar';
 export * from './upload-dropdown'; 
-export * from './shared'; 

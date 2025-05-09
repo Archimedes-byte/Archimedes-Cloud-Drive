@@ -33,7 +33,7 @@ export * from './file/usePageInitialization';
 export * from './file/useShareManagement';
 
 // 导出Zustand状态管理
-export { default as useFileStore } from '@/app/store/fileStore';
+export { default as useFileStore } from '@/app/store/fileStore/index';
 
 // 认证相关hooks - 仅导出新的统一Hook
 export * from './auth';

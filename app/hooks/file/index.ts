@@ -15,4 +15,4 @@ export * from './useRecentContent';
 export * from './useShareView';
 
 // 导出Zustand状态管理
-export { default as useFileStore } from '@/app/store/fileStore'; 
+export { default as useFileStore } from '@/app/store/fileStore/index'; 

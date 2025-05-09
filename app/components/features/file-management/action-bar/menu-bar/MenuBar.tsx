@@ -2,19 +2,18 @@ import React from 'react';
 import { 
   CloseOutlined, DownloadOutlined, EditOutlined, 
   SwapOutlined, DeleteOutlined, ShareAltOutlined,
-  FolderOutlined 
+  FolderOutlined, UploadOutlined
 } from '@ant-design/icons';
 import { Button, Tag } from '@/app/components/ui/ant';
 import { 
   Image as ImageIcon, FileText, Video, Music, 
-  File, Upload, FolderUp 
+  File
 } from 'lucide-react';
 import { FileInfo, FileSortInterface, FileTypeEnum, SortDirectionEnum } from '@/app/types';
-import SortDropdown from '@/app/components/features/file-management/action-bar/sort-dropdown';
-import UploadDropdown from '@/app/components/features/file-management/action-bar/upload-dropdown';
+import { UploadDropdown } from '@/app/components/features/file-management/action-bar/upload-dropdown';
 import { FolderDownloadButton } from '@/app/components/features/file-management/download/FolderDownloadButton';
 import layoutStyles from '@/app/components/features/file-management/styles/layout/layout.module.css';
-import sharedStyles from '../shared/shared-dropdown.module.css';
+import styles from './MenuBar.module.css';
 
 export interface MenuBarProps {
   // 选中文件相关
@@ -88,7 +87,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   const selectedFolder = selectedFiles.length === 1 && selectedFiles[0].isFolder ? selectedFiles[0] : null;
   
   // 自定义按钮样式类
-  const buttonClassName = `${sharedStyles.triggerButton} text-white`;
+  const buttonClassName = styles.triggerButton;
   
   return (
     <div className={layoutStyles.topBar}>
@@ -101,8 +100,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
               className={buttonClassName}
               onClick={onClearSelection}
             >
-              <CloseOutlined className="text-white" />
-              取消选择
+              <CloseOutlined style={{ color: 'white' }} />
+              <span style={{ color: 'white' }}>取消选择</span>
             </button>
           ) : (
             // 未选中状态的左侧按钮
@@ -121,36 +120,32 @@ export const MenuBar: React.FC<MenuBarProps> = ({
                 style={isInRootFolder ? { opacity: 0.7 } : {}}
                 disabled={isInRootFolder && !selectedFileType && !showSearchView}
               >
-                <FolderOutlined className="text-white" />
-                {showSearchView ? '返回文件列表' : (selectedFileType ? '清除过滤' : '根目录')}
+                <FolderOutlined style={{ color: 'white' }} />
+                <span style={{ color: 'white' }}>{showSearchView ? '返回文件列表' : (selectedFileType ? '清除过滤' : '根目录')}</span>
               </button>
 
-              {/* 当前过滤状态指示器 */}
+              {/* 当前过滤状态指示器，美化成与按钮一致的样式 */}
               {selectedFileType && (
-                <Tag color="blue" style={{ padding: '4px 8px', height: 'auto', display: 'flex', alignItems: 'center' }}>
+                <div className={buttonClassName} style={{ padding: '8px 12px' }}>
                   {(() => {
                     switch(selectedFileType) {
-                      case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" />;
-                      case FileTypeEnum.DOCUMENT: return <FileText className="w-4 h-4 mr-2" />;
-                      case FileTypeEnum.VIDEO: return <Video className="w-4 h-4 mr-2" />;
-                      case FileTypeEnum.AUDIO: return <Music className="w-4 h-4 mr-2" />;
-                      default: return <File className="w-4 h-4 mr-2" />;
+                      case FileTypeEnum.IMAGE: return <ImageIcon className="w-4 h-4 mr-2" style={{ color: 'white' }} />;
+                      case FileTypeEnum.DOCUMENT: return <FileText className="w-4 h-4 mr-2" style={{ color: 'white' }} />;
+                      case FileTypeEnum.VIDEO: return <Video className="w-4 h-4 mr-2" style={{ color: 'white' }} />;
+                      case FileTypeEnum.AUDIO: return <Music className="w-4 h-4 mr-2" style={{ color: 'white' }} />;
+                      default: return <File className="w-4 h-4 mr-2" style={{ color: 'white' }} />;
                     }
                   })()}
-                  当前浏览：
-                  {selectedFileType === FileTypeEnum.IMAGE && '仅图片'}
-                  {selectedFileType === FileTypeEnum.DOCUMENT && '仅文档'}
-                  {selectedFileType === FileTypeEnum.VIDEO && '仅视频'}
-                  {selectedFileType === FileTypeEnum.AUDIO && '仅音频'}
-                  {selectedFileType === FileTypeEnum.UNKNOWN && '其他文件'}
-                </Tag>
+                  <span style={{ color: 'white' }}>
+                    当前浏览：
+                    {selectedFileType === FileTypeEnum.IMAGE && '仅图片'}
+                    {selectedFileType === FileTypeEnum.DOCUMENT && '仅文档'}
+                    {selectedFileType === FileTypeEnum.VIDEO && '仅视频'}
+                    {selectedFileType === FileTypeEnum.AUDIO && '仅音频'}
+                    {selectedFileType === FileTypeEnum.UNKNOWN && '其他文件'}
+                  </span>
+                </div>
               )}
-
-              {/* 排序下拉菜单 */}
-              <SortDropdown 
-                sortOrder={sortOrder}
-                onSortChange={onSortChange}
-              />
             </>
           )}
         </div>
@@ -161,7 +156,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
             // 选中文件状态下的右侧操作按钮
             <>
               {selectedFolder ? (
-                // 如果选择的是单个文件夹，使用增强下载组件
+                // 如果选择的是单个文件夹，使用增强下载组件，修改为自定义样式
                 <FolderDownloadButton
                   folderId={selectedFolder.id}
                   folderName={selectedFolder.name}
@@ -176,8 +171,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
                   className={buttonClassName}
                   onClick={onDownload}
                 >
-                  <DownloadOutlined className="text-white" />
-                  下载
+                  <DownloadOutlined style={{ color: 'white' }} />
+                  <span style={{ color: 'white' }}>下载</span>
                 </button>
               )}
               
@@ -185,38 +180,38 @@ export const MenuBar: React.FC<MenuBarProps> = ({
                 className={buttonClassName}
                 onClick={onShare}
               >
-                <ShareAltOutlined className="text-white" />
-                分享
+                <ShareAltOutlined style={{ color: 'white' }} />
+                <span style={{ color: 'white' }}>分享</span>
               </button>
               
               <button 
                 className={buttonClassName}
                 onClick={onRename}
               >
-                <EditOutlined className="text-white" />
-                重命名
+                <EditOutlined style={{ color: 'white' }} />
+                <span style={{ color: 'white' }}>重命名</span>
               </button>
               
               <button 
                 className={buttonClassName}
                 onClick={onMove}
               >
-                <SwapOutlined className="text-white" />
-                移动
+                <SwapOutlined style={{ color: 'white' }} />
+                <span style={{ color: 'white' }}>移动</span>
               </button>
               
               <button 
                 className={buttonClassName}
                 onClick={onDelete}
               >
-                <DeleteOutlined className="text-white" />
-                删除
+                <DeleteOutlined style={{ color: 'white' }} />
+                <span style={{ color: 'white' }}>删除</span>
               </button>
             </>
           ) : (
             // 未选中文件状态下的右侧操作按钮
             <>
-              {/* 上传下拉菜单按钮 */}
+              {/* 恢复上传下拉菜单按钮 */}
               <UploadDropdown
                 setIsUploadModalOpen={setIsUploadModalOpen}
                 setIsFolderUploadModalOpen={setIsFolderUploadModalOpen}
@@ -229,8 +224,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
                 className={buttonClassName}
                 onClick={onCreateFolder}
               >
-                <FolderOutlined className="text-white" />
-                新建文件夹
+                <FolderOutlined style={{ color: 'white' }} />
+                <span style={{ color: 'white' }}>新建文件夹</span>
               </button>
             </>
           )}

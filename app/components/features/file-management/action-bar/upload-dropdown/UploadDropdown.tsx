@@ -1,8 +1,9 @@
 import React from 'react';
 import { UploadOutlined } from '@ant-design/icons';
 import { Upload, FolderUp, ChevronDown } from 'lucide-react';
-import { BaseDropdown } from '../shared/BaseDropdown';
-import sharedStyles from '../shared/shared-dropdown.module.css';
+import { BaseDropdown } from '@/app/components/common/dropdown';
+import commonStyles from '@/app/components/common/dropdown/dropdown.module.css';
+import menuBarStyles from '@/app/components/features/file-management/action-bar/menu-bar/MenuBar.module.css';
 
 export interface UploadDropdownProps {
   setIsUploadModalOpen?: (open: boolean) => void;
@@ -39,11 +40,12 @@ export const UploadDropdown: React.FC<UploadDropdownProps> = ({
     }
   };
 
-  // 自定义触发按钮
+  // 自定义触发按钮，使用菜单栏通用样式
   const trigger = (
-    <button className={`${sharedStyles.triggerButton} text-white`}>
-      <UploadOutlined className="text-white" />
-      上传 <ChevronDown size={14} className="text-white" />
+    <button className={menuBarStyles.triggerButton}>
+      <UploadOutlined style={{ color: 'white' }} />
+      <span style={{ color: 'white' }}>上传</span> 
+      <ChevronDown size={14} style={{ color: 'white' }} />
     </button>
   );
 
@@ -51,18 +53,18 @@ export const UploadDropdown: React.FC<UploadDropdownProps> = ({
   const dropdownContent = (
     <>
       <div 
-        className={sharedStyles.dropdownItem}
+        className={commonStyles.dropdownItem}
         onClick={handleUploadClick}
       >
-        <Upload size={16} />
-        上传文件
+        <Upload size={16} style={{ color: 'white' }} />
+        <span style={{ color: 'white' }}>上传文件</span>
       </div>
       <div 
-        className={sharedStyles.dropdownItem}
+        className={commonStyles.dropdownItem}
         onClick={handleFolderUploadClick}
       >
-        <FolderUp size={16} />
-        上传文件夹
+        <FolderUp size={16} style={{ color: 'white' }} />
+        <span style={{ color: 'white' }}>上传文件夹</span>
       </div>
     </>
   );

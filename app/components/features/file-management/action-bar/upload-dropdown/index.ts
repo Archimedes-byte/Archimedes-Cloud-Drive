@@ -1,3 +1,1 @@
-import { UploadDropdown } from './UploadDropdown';
-
-export default UploadDropdown; 
+export { default as UploadDropdown } from './UploadDropdown'; 

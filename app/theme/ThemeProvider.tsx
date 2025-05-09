@@ -4,6 +4,7 @@
  */
 import React, { ReactNode, createContext, useEffect, useMemo } from 'react';
 import { ConfigProvider, theme as antTheme } from 'antd';
+import zhCN from 'antd/lib/locale/zh_CN'; // 导入中文语言包
 import { useTheme, ThemeHook } from './useTheme';
 import { ThemeStyle } from '@/app/types/theme';
 
@@ -89,7 +90,7 @@ export function ThemeProvider({
 
   return (
     <ThemeContext.Provider value={themeManager}>
-      <ConfigProvider theme={antDesignTheme}>
+      <ConfigProvider theme={antDesignTheme} locale={zhCN}>
         {children}
       </ConfigProvider>
     </ThemeContext.Provider>

@@ -75,7 +75,6 @@ export const { Title, Text, Paragraph, Link } = Typography;
 
 // 导出自定义组件
 export { default as Button } from '../atoms/button/AntButton'; // 统一导出按钮
-export { default as AntLayout } from '../../features/file-management/layout/AntLayout';
 export { AntFileList } from '../../features/file-management/file-list/AntFileList';
 
 // 导出图标

@@ -1,16 +1,65 @@
-# UI组件使用指南
+# UI组件库
+
+## 组件结构
+
+UI组件库采用分层架构，包括：
+
+- `ant/`: 对Ant Design组件的封装和扩展
+- `atoms/`: 原子级UI组件
+  - `button/`: 自定义按钮组件
+  - `progress/`: 自定义进度条组件
+
+## 使用规范
+
+### Ant Design组件
+
+从统一入口导入Ant Design组件以确保主题和样式一致：
+
+```tsx
+import { Button, Table, Form, Input, Modal, ... } from '@/app/components/ui/ant';
+```
+
+> 注意：不要直接从`antd`导入组件，以确保样式和主题的一致性。
+
+### 原子组件
+
+原子组件是最基本的UI构建块：
+
+```tsx
+import { Progress } from '@/app/components/ui/atoms/progress';
+```
+
+## 自定义组件规范
+
+1. **命名规范**：使用PascalCase命名组件
+2. **目录结构**：每个组件应包含：
+   - 组件代码（`.tsx`）
+   - 样式文件（`.module.css`）
+   - 单元测试（`.test.tsx`）
+   - 类型定义（可内联或单独文件）
+3. **导出方式**：
+   - 使用默认导出组件本身
+   - 使用命名导出类型
+   - 在目录的index.ts中重新导出
+
+## 组件设计原则
+
+1. **单一职责**：每个组件只负责一个功能
+2. **可组合性**：组件应易于组合以创建复杂UI
+3. **可重用性**：避免业务逻辑耦合
+4. **可测试性**：组件应易于单元测试
+5. **可访问性**：遵循Web可访问性标准
+
+## 最佳实践
+
+- 使用TypeScript类型定义组件接口
+- 使用CSS Modules进行样式隔离
+- 遵循项目设计系统和样式指南
+- 编写组件文档说明用法和属性
 
 ## 重要提示
 
 ⚠️ **注意:** 项目中已移除所有UI组件的向后兼容导入。现在必须直接从Ant Design封装模块导入所有UI组件。
-
-## 正确的导入方式
-
-所有UI组件必须从以下路径导入:
-
-```typescript
-import { Button, Table, Form, Input, Modal, ... } from '@/app/components/ui/ant';
-```
 
 ## 错误的导入方式（将导致运行时错误）
 

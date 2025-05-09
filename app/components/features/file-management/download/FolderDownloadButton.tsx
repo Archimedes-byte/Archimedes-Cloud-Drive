@@ -83,12 +83,14 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
     if (isCustomStyle) {
       return (
         <button
-          className={`${className} text-white`}
+          className={`${className}`}
           onClick={handleClick}
           disabled={checkingFolder}
         >
-          {showIcon && <DownloadOutlined className="text-white" />}
-          {checkingFolder ? '检查文件夹...' : buttonText}
+          {showIcon && <DownloadOutlined style={{ color: 'white' }} />}
+          <span style={{ color: 'white' }}>
+            {checkingFolder ? '检查文件夹...' : buttonText}
+          </span>
         </button>
       );
     } else {
@@ -98,7 +100,7 @@ export const FolderDownloadButton: React.FC<FolderDownloadButtonProps> = ({
           onClick={handleClick}
           icon={showIcon ? <DownloadOutlined /> : undefined}
           disabled={checkingFolder}
-          style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6' }}
+          style={{ backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: 'white' }}
         >
           {checkingFolder ? '检查文件夹...' : buttonText}
         </Button>

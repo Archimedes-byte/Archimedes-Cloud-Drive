@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
-import styles from './shared-dropdown.module.css';
+import styles from './dropdown.module.css';
 
 export interface BaseDropdownProps {
   /**

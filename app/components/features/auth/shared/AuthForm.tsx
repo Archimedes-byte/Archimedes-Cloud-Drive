@@ -7,7 +7,7 @@ import { Button } from '@/app/components/ui/ant';
 import { useAuth } from '@/app/contexts/auth';
 import { useAuthForm } from '@/app/hooks/auth/useAuthForm';
 import { FormStatus } from '@/app/lib/forms/types';
-import ErrorMessage from '@/app/components/shared/ErrorMessage';
+import { ErrorMessage } from '@/app/components/common/feedback';
 import AuthFormFields from './AuthFormFields';
 import { LoginCredentials, RegisterData } from '@/app/types';
 import { validateLoginForm, validateRegisterForm, validatePasswordStrength } from '@/app/utils/validation/auth-validation';

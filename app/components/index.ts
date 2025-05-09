@@ -3,7 +3,7 @@
  * 
  * 组件架构：
  * - ui/ant/: 基础UI组件 (Ant Design)
- * - common/: 通用功能组件
+ * - common/: 通用功能组件 (包含原shared目录)
  * - features/: 业务功能组件
  * 
  * 导入规范：
@@ -11,11 +11,11 @@
  * 2. 业务组件: import { UploadModal, FileList } from '@/app/components'
  */
 
+// 导出所有通用组件
+export * from './common';
+
 // 导出业务功能组件
 export * from './features';
-
-// 导出通用组件 
-export * from './common/form';
 
 // 文件管理组件 
 export { default as UploadModal } from './features/file-management/upload/upload-modal';

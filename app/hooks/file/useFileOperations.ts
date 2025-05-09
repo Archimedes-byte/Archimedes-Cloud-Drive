@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { FileInfo } from '@/app/types';
 import { downloadFile, downloadFolder, downloadBlob, downloadFileDirect, downloadMultipleFiles } from '@/app/lib/storage/utils/download';
 import { handleError } from '@/app/utils/error';
-import useFileStore from '@/app/store/fileStore';
+import useFileStore from '@/app/store/fileStore/index';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { fileApi } from '@/app/lib/api/file-api';
 

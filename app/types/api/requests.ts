@@ -5,6 +5,8 @@ export interface SearchFilesRequest extends Partial<PaginationParams> {
   query: string;
   type?: FileTypeEnum | string;
   tags?: string[];
+  includeFolder?: boolean;
+  searchMode?: 'name' | 'tag';
 }
 
 export interface UploadFileRequest {
