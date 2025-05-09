@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui/ant';
@@ -13,6 +13,16 @@ import { useAuth } from '@/app/contexts/auth';
 const RegisterPage: React.FC = () => {
   const router = useRouter();
   const { openLoginModal } = useAuth();
+  
+  useEffect(() => {
+    // 为body添加注册页面类名，防止主题背景色应用
+    document.body.classList.add('auth-register-page');
+    
+    return () => {
+      // 清理函数，移除离开页面时的类名
+      document.body.classList.remove('auth-register-page');
+    };
+  }, []);
   
   const homeButton = (
     <div className={styles.buttonContainer}>

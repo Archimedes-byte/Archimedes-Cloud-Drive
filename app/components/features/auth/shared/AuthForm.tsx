@@ -238,7 +238,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
   };
   
   return (
-    <div className={`${styles.formContainer} ${formType === 'login' ? styles.loginFormContainer : styles.registerFormContainer}`}>
+    <div className={`${styles.formContainer} ${formType === 'login' ? styles.loginFormContainer : styles.registerFormContainer} ${formType === 'login' ? 'auth-login-container' : 'auth-register-container'}`}>
       {/* 错误信息显示 */}
       {error && (
         <ErrorMessage 

@@ -21,6 +21,24 @@
     height: 100vh;
   }
 
+  /* 
+   * 首页、登录页和注册页不应用主题背景色
+   * 1. home-page类应用于首页组件
+   * 2. auth-login-container类应用于登录表单组件
+   * 3. auth-register-container类应用于注册表单组件
+   * 4. auth-register-page类应用于独立注册页面
+   * 
+   * 这些页面使用固定背景色#f0f7ff，确保它们不受主题系统影响
+   */
+  body.home-page,
+  html.home-page,
+  body:has(.auth-login-container),
+  body:has(.auth-register-container),
+  body.auth-register-page {
+    background: #f0f7ff;
+    background-image: none;
+  }
+
   html {
     height: 100%;
     overflow-y: auto;

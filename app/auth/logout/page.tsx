@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { message } from 'antd';
-import logoutStyles from '@/app/styles/logout.module.css';
+import logoutStyles from './logout.module.css';
 import Head from 'next/head';
 
 /**
