@@ -14,6 +14,8 @@ import authService from '@/app/services/auth-service';
 import { LoginCredentials, RegisterData } from '@/app/types';
 // 导入登录模态框组件
 import { LoginModal } from '@/app/components/features/auth';
+// 导入多用户服务
+import multiUserService from '@/app/services/multi-user-service';
 
 // 错误等级
 export enum ErrorSeverity {
@@ -54,6 +56,10 @@ interface AuthContextType {
   openLoginModal: () => void;
   closeLoginModal: () => void;
   isLoginModalOpen: boolean;
+  
+  // 多用户支持
+  loadLoggedUsers: () => void;
+  switchToUser: (email: string) => Promise<boolean>;
 }
 
 // 创建上下文
@@ -93,16 +99,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } else if (nextAuthStatus === 'authenticated') {
       setAuthStatus(AuthStatus.IDLE);
       setErrorState(null);
+      
+      // 将当前登录用户添加到多用户服务
+      if (session?.user) {
+        multiUserService.addUser(session.user);
+      }
     }
-  }, [nextAuthStatus]);
+  }, [nextAuthStatus, session]);
   
   // 设置错误
   const setError = (errorMessage: string | null, severity = ErrorSeverity.ERROR) => {
     setErrorState(errorMessage);
     setErrorSeverity(severity);
-    
-    // 移除这里的消息显示，避免与ErrorMessage组件重复显示
-    // 错误消息将由ErrorMessage组件统一显示
   };
   
   // 清除错误
@@ -274,23 +282,69 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async (callbackUrl?: string): Promise<void> => {
     try {
       setAuthStatus(AuthStatus.LOADING);
-      // 使用authService的logout方法，传递回调URL
-      await authService.logout({ 
-        redirect: true,
-        callbackUrl: callbackUrl || AUTH_CONSTANTS.ROUTES.LOGOUT // 使用登出页面而非直接跳转到登录页
-      });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '登出失败';
-      setError(errorMsg);
-      setAuthStatus(AuthStatus.ERROR);
-      // 发生错误时仍然尝试重定向到登出页面
-      if (typeof window !== 'undefined') {
-        window.location.href = AUTH_CONSTANTS.ROUTES.LOGOUT;
+      // 在登出前从多用户服务中移除当前用户
+      if (user?.email) {
+        multiUserService.removeUser(user.email);
       }
+      
+      // 调用NextAuth登出
+      await signOut({
+        redirect: Boolean(callbackUrl),
+        callbackUrl: callbackUrl
+      });
+      
+      setAuthStatus(AuthStatus.IDLE);
+    } catch (error) {
+      console.error('登出错误:', error);
+      setAuthStatus(AuthStatus.ERROR);
+      setError('登出失败，请重试');
     }
   };
   
-  // 上下文值
+  // 获取所有已登录用户
+  const loadLoggedUsers = () => {
+    return multiUserService.getUsers();
+  };
+  
+  // 切换到指定用户
+  const switchToUser = async (email: string): Promise<boolean> => {
+    try {
+      setAuthStatus(AuthStatus.LOADING);
+      
+      const users = multiUserService.getUsers();
+      const targetUser = users.find(u => u.email === email);
+      
+      if (!targetUser) {
+        setError('找不到指定的用户，请重新登录');
+        setAuthStatus(AuthStatus.ERROR);
+        return false;
+      }
+      
+      // 使用credentials验证方式登录已存储的会话
+      const result = await authService.switchUser(email);
+      
+      if (result.success) {
+        // 更新用户活跃时间
+        multiUserService.updateUserActivity(email);
+        
+        // 通知切换成功
+        multiUserService.triggerUserSwitch(targetUser);
+        
+        setAuthStatus(AuthStatus.SUCCESS);
+        return true;
+      } else {
+        setError(result.error || '切换用户失败');
+        setAuthStatus(AuthStatus.ERROR);
+        return false;
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '切换用户失败';
+      setError(errorMsg);
+      setAuthStatus(AuthStatus.ERROR);
+      return false;
+    }
+  };
+  
   const contextValue: AuthContextType = {
     // 用户状态
     user,
@@ -313,24 +367,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // UI状态
     openLoginModal,
     closeLoginModal,
-    isLoginModalOpen
+    isLoginModalOpen,
+    
+    // 多用户支持
+    loadLoggedUsers,
+    switchToUser,
   };
-  
+
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
-      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
+      {/* 登录模态框，在应用任何地方都可触发 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={closeLoginModal}
+      />
     </AuthContext.Provider>
   );
 }
 
 /**
- * 使用认证上下文的Hook
+ * 认证Hook - 在组件中使用认证上下文
  */
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth必须在AuthProvider内部使用');
   }
   

@@ -188,6 +188,40 @@ class AuthService {
   }
 
   /**
+   * 切换登录用户
+   * 用于多用户登录情况下切换当前活跃用户
+   * 
+   * @param email 目标用户的电子邮箱
+   */
+  async switchUser(email: string): Promise<ApiResponse> {
+    try {
+      // 使用credentials验证方式登录，但指定useStoredSession标志
+      // 该标志指示后端使用已存储的会话信息而非重新验证
+      const result = await signIn('credentials', {
+        email,
+        useStoredSession: true, // 特殊标志，指示后端使用存储的会话
+        redirect: false
+      });
+      
+      if (result?.error) {
+        return {
+          success: false,
+          error: result.error,
+          statusCode: 401
+        };
+      }
+      
+      return {
+        success: true,
+        statusCode: 200
+      };
+    } catch (error) {
+      logAuthError(error, 'switch-user-service');
+      return adaptErrorToResponse(error);
+    }
+  }
+
+  /**
    * 一站式注册并登录
    * 简化客户端使用流程
    */

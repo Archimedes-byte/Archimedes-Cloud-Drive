@@ -18,6 +18,10 @@ export const CUSTOM_THEMES_STORAGE_KEY = 'custom-themes';
 export const getUserThemeKey = (userId?: string) => 
   userId ? `${CUSTOM_THEMES_STORAGE_KEY}-${userId}` : CUSTOM_THEMES_STORAGE_KEY;
 
+// 获取用户特定的主题偏好存储键
+export const getUserThemePreferenceKey = (userEmail?: string) => 
+  userEmail ? `${THEME_STORAGE_KEY}-${userEmail}` : THEME_STORAGE_KEY;
+
 // 自定义主题存储
 let customThemes: Record<string, ThemeStyle> = {};
 
@@ -82,12 +86,14 @@ export function syncCustomThemesForUser(userId: string, themeId?: string | null)
  * @param themeId 主题ID
  * @param saveToStorage 是否保存到本地存储
  * @param userId 用户ID
+ * @param userEmail 用户邮箱，用于区分不同用户的主题设置
  * @returns 应用的主题样式或null
  */
 export function applyTheme(
   themeId: string, 
   saveToStorage: boolean = true,
-  userId?: string
+  userId?: string,
+  userEmail?: string
 ): ThemeStyle | null {
   // 防止重复应用相同主题
   if (lastAppliedThemeId === themeId) {
@@ -127,9 +133,18 @@ export function applyTheme(
       // 更新最后应用的主题
       lastAppliedThemeId = themeId;
       
-      // 保存到localStorage
+      // 保存到localStorage，使用用户特定的键
       if (saveToStorage && typeof window !== 'undefined') {
+        const storageKey = getUserThemePreferenceKey(userEmail);
+        localStorage.setItem(storageKey, themeId);
+        
+        // 同时记录到通用存储键，用于未登录状态
         localStorage.setItem(THEME_STORAGE_KEY, themeId);
+        
+        // 在user-theme中记录当前用户的主题（用于用户切换时）
+        localStorage.setItem('user-theme', themeId);
+        
+        console.log(`保存用户主题 ${themeId} 到键 ${storageKey}`);
       }
       
       // 设置document.body的data-theme属性
@@ -345,13 +360,27 @@ export function deleteCustomTheme(id: string, userId?: string): boolean {
 
 /**
  * 从本地存储加载主题
+ * @param userEmail 可选的用户邮箱，用于加载特定用户的主题
  * @returns 保存的主题ID或null
  */
-export function loadThemeFromStorage(): string | null {
+export function loadThemeFromStorage(userEmail?: string): string | null {
   if (typeof window === 'undefined') return null;
   
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY);
+    // 尝试使用用户特定的键
+    if (userEmail) {
+      const userKey = getUserThemePreferenceKey(userEmail);
+      const userTheme = localStorage.getItem(userKey);
+      if (userTheme) {
+        console.log(`从用户特定键 ${userKey} 加载主题: ${userTheme}`);
+        return userTheme;
+      }
+    }
+    
+    // 回退到通用键
+    const theme = localStorage.getItem(THEME_STORAGE_KEY);
+    console.log(`从通用键加载主题: ${theme}`);
+    return theme;
   } catch (error) {
     console.error('从本地存储加载主题失败:', error);
     return null;

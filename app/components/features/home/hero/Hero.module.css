@@ -9,6 +9,7 @@
   max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
+  overflow: hidden;
 }
 
 .heroContent {
@@ -16,6 +17,8 @@
   animation: fadeIn 0.8s ease-out;
   margin-left: 5rem;
   margin-top: -3.5rem;
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes fadeIn {
@@ -32,13 +35,59 @@
 .heroTitle {
   font-size: 3rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.3;
   margin-bottom: 1.5rem;
-  background: linear-gradient(to right, #1e40af, #3b82f6);
-  -webkit-background-clip: text;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.textLine {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  background: linear-gradient(120deg, #1e3a8a, #3b82f6, #60a5fa);
+  background-size: 200% auto;
   background-clip: text;
+  -webkit-background-clip: text;
   color: transparent;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  opacity: 0;
+  transform: translateY(30px);
+  text-shadow: 0 1px 3px rgba(30, 64, 175, 0.1);
+  letter-spacing: -0.5px;
+}
+
+.heroTitle.animated .textLine {
+  animation: revealText 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+             shimmerText 5s ease-in-out infinite alternate;
+}
+
+.heroTitle.animated .textLine:nth-child(2) {
+  animation-delay: 0.3s, 0.3s;
+  background: linear-gradient(120deg, #1e40af, #60a5fa, #3b82f6);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+@keyframes revealText {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmerText {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 
 .heroDescription {
@@ -46,12 +95,50 @@
   color: #4a5568;
   margin-bottom: 2rem;
   line-height: 1.6;
+  opacity: 0;
+  animation: fadeInUp 0.8s 0.6s ease-out forwards;
+  position: relative;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heroDescription::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: drawSmallLine 0.6s 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes drawSmallLine {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .heroActions {
   display: flex;
   gap: 1.25rem;
   margin-top: 2rem;
+  opacity: 0;
+  animation: fadeInUp 0.8s 0.9s ease-out forwards;
 }
 
 .heroButton {
@@ -63,6 +150,26 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroButton::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300%;
+  height: 300%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s;
+}
+
+.heroButton:hover::before {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
 }
 
 .primaryButton {
@@ -100,6 +207,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1;
 }
 
 .floatingElements {
@@ -123,7 +231,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   z-index: 2;
   opacity: 1;
-  transition: all 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .fileIcon:hover {
@@ -153,18 +261,19 @@
 @keyframes gentlePulse {
   0%, 100% {
     transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
   }
   50% {
     transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   }
 }
 
-/* 只保留几个关键位置的图标 - 简洁布局 */
 /* 蓝色图标组 */
 .circleOne {
   background-color: white;
   border: 1px solid rgba(59, 130, 246, 0.15);
-  animation: simpleFloat 5s ease-in-out infinite;
+  animation: floatUpDown 5s ease-in-out infinite;
 }
 
 .circleOne.item1 { top: 27%; left: 50%; animation-delay: 0s; }
@@ -175,7 +284,7 @@
 .circleTwo {
   background-color: white;
   border: 1px solid rgba(16, 185, 129, 0.15);
-  animation: simpleFloat 5s ease-in-out infinite;
+  animation: floatUpDown 5s ease-in-out infinite;
 }
 
 .circleTwo.item1 { top: 40%; left: 26%; animation-delay: 0.3s; }
@@ -185,7 +294,7 @@
 .circleThree {
   background-color: white;
   border: 1px solid rgba(245, 158, 11, 0.15);
-  animation: simpleFloat 5s ease-in-out infinite;
+  animation: floatUpDown 5s ease-in-out infinite;
 }
 
 .circleThree.item1 { top: 70%; left: 48%; animation-delay: 0.9s; }
@@ -195,19 +304,25 @@
 .circleFour {
   background-color: white;
   border: 1px solid rgba(139, 92, 246, 0.15);
-  animation: simpleFloat 5s ease-in-out infinite;
+  animation: floatUpDown 5s ease-in-out infinite;
 }
 
 .circleFour.item1 { top: 50%; left: 78%; animation-delay: 0.5s; }
 .circleFour.item2 { top: 60%; left: 32%; animation-delay: 1.2s; }
 
-/* 简化的漂浮动画 */
-@keyframes simpleFloat {
+/* 改进的漂浮动画 */
+@keyframes floatUpDown {
   0%, 100% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-10px) rotate(2deg);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(10px) rotate(-2deg);
   }
 }
 
@@ -230,6 +345,73 @@
   filter: blur(15px);
   opacity: 0.7;
   pointer-events: none;
+  animation: glow 8s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  0% {
+    opacity: 0.7;
+    filter: blur(15px);
+  }
+  100% {
+    opacity: 0.9;
+    filter: blur(20px);
+  }
+}
+
+/* 装饰元素 */
+.decorElement1, .decorElement2, .decorElement3 {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+  opacity: 0.5;
+  filter: blur(30px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.decorElement1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  right: 10%;
+  animation: moveAround 30s linear infinite;
+}
+
+.decorElement2 {
+  width: 180px;
+  height: 180px;
+  bottom: 20%;
+  left: 5%;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(16, 185, 129, 0.2));
+  animation: moveAround 35s linear infinite reverse;
+}
+
+.decorElement3 {
+  width: 120px;
+  height: 120px;
+  bottom: 30%;
+  right: 15%;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));
+  animation: moveAround 25s linear infinite;
+}
+
+@keyframes moveAround {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(5%, 5%) rotate(90deg);
+  }
+  50% {
+    transform: translate(0, 10%) rotate(180deg);
+  }
+  75% {
+    transform: translate(-5%, 5%) rotate(270deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
+  }
 }
 
 .scrollIndicator {
@@ -238,6 +420,7 @@
   left: 50%;
   transform: translateX(-50%);
   cursor: pointer;
+  z-index: 3;
 }
 
 .bounce {
@@ -251,29 +434,31 @@
     transform: translateY(0);
   }
   40% {
-    transform: translateY(-20px);
+    transform: translateY(-12px);
   }
   60% {
-    transform: translateY(-10px);
+    transform: translateY(-5px);
   }
 }
 
+/* 响应式调整 */
 @media (max-width: 992px) {
   .heroSection {
     flex-direction: column;
-    text-align: center;
-    padding: 0 1.5rem;
-    margin-top: -1rem;
+    padding: 2rem 1.5rem;
+    gap: 3rem;
   }
   
   .heroContent {
     max-width: 100%;
     margin-left: 0;
-    margin-top: -2rem;
+    margin-top: 0;
+    text-align: center;
   }
   
   .heroTitle {
     font-size: 2.5rem;
+    align-items: center;
   }
   
   .heroActions {
@@ -282,15 +467,14 @@
   
   .heroImage {
     margin-top: 0;
-    min-height: 320px;
   }
-
+  
   .floatingElements {
     width: 100%;
-    height: 450px;
+    height: 400px;
   }
-
+  
   .scrollIndicator {
-    bottom: -1.5rem;
+    bottom: -3rem;
   }
 } 

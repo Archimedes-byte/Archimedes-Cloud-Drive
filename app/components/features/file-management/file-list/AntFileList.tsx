@@ -41,6 +41,8 @@ import { createCancelableDebounce } from '@/app/utils/function';
 import './antFileList.css'; // 将创建一个包含少量覆盖样式的CSS文件
 import { FileIcon } from '@/app/utils/file/icon-map';
 import { fileApi } from '@/app/lib/api/file-api';
+import { subscribeToFileRefresh } from '@/app/utils/events/refresh-events';
+import { subscribeToUserSwitch } from '@/app/utils/events/user-events';
 
 const { Text, Title } = Typography;
 
@@ -82,6 +84,7 @@ export interface AntFileListProps {
   fileUpdateTrigger?: number;
   showPath?: boolean;
   customColumns?: (defaultColumns: any[]) => any[];
+  onRefresh?: () => void; // 添加刷新回调
 }
 
 export function AntFileList({
@@ -118,7 +121,8 @@ export function AntFileList({
   onToggleFavorite,
   fileUpdateTrigger = 0,
   showPath = false,
-  customColumns
+  customColumns,
+  onRefresh
 }: AntFileListProps) {
   // ----- 防御性编程: 确保所有props有默认值 -----
   const safeFiles = Array.isArray(files) ? files : [];
@@ -133,12 +137,53 @@ export function AntFileList({
   const [parentFolderNames, setParentFolderNames] = useState<Record<string, string>>({});
   const [loadingParentFolders, setLoadingParentFolders] = useState<Record<string, boolean>>({});
   
+  // 刷新计数器状态，用来强制组件刷新
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  
   // 组件卸载时标记，避免卸载后的状态更新
   useEffect(() => {
     return () => {
       setMounted(false);
     };
   }, []);
+  
+  // 订阅文件刷新事件和用户切换事件
+  useEffect(() => {
+    const handleRefresh = () => {
+      // 触发刷新计数器增加
+      setRefreshCounter(prev => prev + 1);
+      
+      // 如果提供了刷新回调，则调用
+      if (onRefresh && typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    };
+    
+    // 订阅文件刷新事件
+    const unsubscribeFileRefresh = subscribeToFileRefresh(handleRefresh);
+    
+    // 订阅用户切换事件
+    const unsubscribeUserSwitch = subscribeToUserSwitch(() => {
+      console.log('文件列表检测到用户切换，触发刷新');
+      handleRefresh();
+      
+      // 尝试清空缓存数据
+      setParentFolderNames({});
+      setLoadingParentFolders({});
+    });
+    
+    // 添加data-refresh-on-user-switch属性，使组件可被全局刷新
+    const fileListElement = document.querySelector('.ant-file-list-wrapper');
+    if (fileListElement) {
+      fileListElement.setAttribute('data-refresh-on-user-switch', 'true');
+    }
+    
+    // 清理函数
+    return () => {
+      unsubscribeFileRefresh();
+      unsubscribeUserSwitch();
+    };
+  }, [onRefresh]);
   
   // 加载父文件夹信息的函数
   const loadParentFolderName = async (parentId: string) => {
@@ -178,7 +223,7 @@ export function AntFileList({
     uniqueParentIds.forEach(parentId => {
       loadParentFolderName(parentId);
     });
-  }, [safeFiles, fileUpdateTrigger]);
+  }, [safeFiles, fileUpdateTrigger, refreshCounter]); // 添加refreshCounter作为依赖项
   
   const actualEditingFileId = editingFileId || editingFile;
 
@@ -194,7 +239,8 @@ export function AntFileList({
   const filesMemoized = useMemo(() => safeFiles, [
     safeFiles.map(f => f.id).join(','), 
     safeFiles.map(f => f.name).join(','),
-    fileUpdateTrigger
+    fileUpdateTrigger,
+    refreshCounter // 添加refreshCounter作为依赖项
   ]);
   
   const setEditName = (value: string) => {
@@ -640,7 +686,8 @@ export function AntFileList({
     customColumns, // 添加自定义列处理函数作为依赖
     parentFolderNames, // 添加父文件夹名称缓存作为依赖
     loadingParentFolders, // 添加加载状态缓存作为依赖
-    loadParentFolderName // 添加加载函数作为依赖
+    loadParentFolderName, // 添加加载函数作为依赖
+    refreshCounter // 添加refreshCounter作为依赖项
   ]);
 
   // 表格行属性

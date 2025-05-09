@@ -105,7 +105,7 @@
   color: white !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
-  position: relative !important;
+  position: relative !important; 
   overflow: hidden !important;
   padding: 0 !important;
   background: transparent !important;
@@ -205,27 +205,27 @@
   height: 20px !important;
 }
 
-.accountSwitcherContainer {
+/* 用户切换器样式容器 */
+.userSwitcherContainer {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.accountSwitcherContainer :global(.ant-btn) {
-  background: transparent;
-  border: none;
-  color: white;
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+@media (max-width: 991px) {
+  .miniSidebar {
+    width: 60px;
+  }
+  
+  .miniSidebarButton {
+    width: 45px !important;
+    height: 45px !important;
+  }
 }
 
-.accountSwitcherContainer :global(.ant-btn:hover) {
-  background: rgba(255, 255, 255, 0.1);
+@media (max-width: 576px) {
+  .miniSidebar {
+    display: none;
+  }
 } 

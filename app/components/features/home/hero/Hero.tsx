@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronDown, FileText, FileImage, FileVideo, FileArchive, FolderIcon, ShareIcon, LockIcon, DatabaseIcon, FileIcon as LucideFileIcon, BookmarkIcon, Cloud } from 'lucide-react';
 import styles from './Hero.module.css';
@@ -13,6 +13,32 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ onExploreClick, onLoginClick }) => {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  
+  // 初始化动画
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.animated);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (titleRef.current) {
+      observer.observe(titleRef.current);
+    }
+
+    return () => {
+      if (titleRef.current) {
+        observer.unobserve(titleRef.current);
+      }
+    };
+  }, []);
+
   // 处理登录点击
   const handleLoginClick = () => {
     // 如果传入了onLoginClick回调则使用，否则触发全局登录模态框事件
@@ -26,7 +52,10 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick, onLoginClick }) => {
   return (
     <div className={styles.heroSection}>
       <div className={styles.heroContent}>
-        <h2 className={styles.heroTitle}>记录每一份热爱<br/>让美好永远陪伴</h2>
+        <h2 ref={titleRef} className={styles.heroTitle}>
+          <span className={styles.textLine}>记录每一份热爱</span>
+          <span className={styles.textLine}>让美好永远陪伴</span>
+        </h2>
         <p className={styles.heroDescription}>
           为你电脑/手机中的文件提供云备份、预览、分享等服务，帮你更便捷安全地管理数据。
         </p>
@@ -86,6 +115,11 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick, onLoginClick }) => {
           <div className={`${styles.fileIcon} ${styles.circleFour} ${styles.item2}`}>
             <DatabaseIcon size={32} color="#8b5cf6" />
           </div>
+          
+          {/* 装饰元素 */}
+          <div className={styles.decorElement1}></div>
+          <div className={styles.decorElement2}></div>
+          <div className={styles.decorElement3}></div>
         </div>
       </div>
       <div className={styles.scrollIndicator}>

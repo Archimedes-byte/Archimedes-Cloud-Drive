@@ -6,6 +6,8 @@ import styles from './mini-sidebar.module.css';
 import { useTheme } from '@/app/hooks';
 import { useProfile } from '@/app/hooks/user/useProfile';
 import { applyTheme } from '@/app/theme/theme-service';
+import { UserSwitcher } from '@/app/components/features/auth/user-switcher';
+import { useSession } from 'next-auth/react';
 
 interface MiniSidebarProps {
   avatarUrl: string | null;
@@ -30,6 +32,8 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
 }) => {
   const router = useRouter();
   const [isClicked, setIsClicked] = useState(false);
+  const { data: session } = useSession();
+  
   // 使用主题钩子
   const { themeStyle } = useTheme();
   // 使用profile钩子
@@ -93,45 +97,20 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
     return userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?';
   }, [userName, userEmail]);
   
-  // 统一的按钮样式，确保在不同页面间保持尺寸一致
-  const buttonStyle = {
-    width: '50px',
-    height: '50px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '14px',
-    background: 'transparent',
-    border: 'none',
-    boxShadow: 'none',
-  };
-  
-  const iconStyle = {
-    color: 'white',
-    width: '20px',
-    height: '20px',
-  };
-
   return (
-    <Flex 
-      vertical
-      className={styles.miniSidebar}
-      align="center"
-      justify="flex-start"
-    >
+    <div className={styles.miniSidebar}>
       <div className={styles.patternOverlay}></div>
       <div className={styles.avatarContainer}>
         <Button 
           className={styles.miniSidebarButton}
           onClick={handleAvatarClick}
           type="text"
-          style={buttonStyle}
         >
           {avatarUrl ? (
             <Avatar 
               src={avatarUrl} 
               size={38} 
-              className="ring-1 ring-white/50 transition-all duration-300 hover:ring-2"
+              className={styles.avatar}
             />
           ) : (
             <div className={styles.avatarPlaceholder}>
@@ -141,17 +120,24 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
         </Button>
       </div>
       
-      <div className={styles.miniSidebarDivider}></div>
+      {/* 用户切换按钮 */}
+      <div className={styles.userSwitcherContainer}>
+        <UserSwitcher 
+          currentUser={session?.user || {
+            name: userName,
+            email: userEmail,
+            image: avatarUrl
+          }}
+        />
+      </div>
       
       <Button 
         className={styles.miniSidebarButton}
         onClick={handleHomeClick}
         type="text"
-        style={buttonStyle}
       >
-        <Home style={iconStyle} />
+        <Home className={styles.iconStyle} />
       </Button>
-      
       
       {/* 主题选择按钮 */}
       <Button 
@@ -159,20 +145,18 @@ const MiniSidebar: React.FC<MiniSidebarProps> = ({
         onClick={handleThemeClick}
         title="主题设置"
         type="text"
-        style={buttonStyle}
       >
-        <Palette style={iconStyle} />
+        <Palette className={styles.iconStyle} />
       </Button>
       
       <Button 
         className={styles.miniSidebarButton}
         onClick={handleLogoutClick}
         type="text"
-        style={buttonStyle}
       >
-        <LogOut style={iconStyle} />
+        <LogOut className={styles.iconStyle} />
       </Button>
-    </Flex>
+    </div>
   );
 };
 

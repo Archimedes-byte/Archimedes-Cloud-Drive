@@ -1,4 +1,4 @@
- /**
+/**
  * 主题钩子
  * 提供主题状态管理和UI控制功能
  */
@@ -14,6 +14,8 @@ import {
   reinitCustomThemes,
   syncCustomThemesForUser
 } from '@/app/theme/theme-service';
+// 导入用户事件处理
+import { subscribeToThemeRefresh, subscribeToUserSwitch } from '@/app/utils/events/user-events';
 
 /**
  * 主题Hook接口
@@ -81,6 +83,7 @@ export function useTheme({
   const [isSyncedToServer, setIsSyncedToServer] = useState(false);
   const { data: session, status } = useSession();
   const userId = session?.user?.id;
+  const userEmail = session?.user?.email || '';
   
   // 主题面板UI状态
   const [showThemePanel, setShowThemePanel] = useState(false);
@@ -158,8 +161,8 @@ export function useTheme({
       } else if (userTheme) {
         return userTheme;
       } else {
-        // 尝试从localStorage获取
-        const storedTheme = loadThemeFromStorage();
+        // 尝试从localStorage获取，传入用户邮箱以便区分不同用户
+        const storedTheme = loadThemeFromStorage(userEmail);
         if (storedTheme) {
           if (!disableApiSync) {
             saveUserTheme(storedTheme).catch(console.error);
@@ -175,7 +178,7 @@ export function useTheme({
       }
     }
     return defaultTheme;
-  }, [session, status, userTheme, fetchUserTheme, saveUserTheme, userId, defaultTheme, disableApiSync]);
+  }, [session, status, userTheme, fetchUserTheme, saveUserTheme, userId, userEmail, defaultTheme, disableApiSync]);
   
   // 初始化主题
   useEffect(() => {
@@ -190,14 +193,14 @@ export function useTheme({
         const themeId = await loadUserThemeFromAPI();
         
         if (!themeId) {
-          handleThemeApplication(defaultTheme);
+          applyThemeToUI(defaultTheme);
           return;
         }
         
-        handleThemeApplication(themeId);
+        applyThemeToUI(themeId);
       } catch (error) {
         console.error('useTheme: 初始化主题失败:', error);
-        handleThemeApplication(defaultTheme);
+        applyThemeToUI(defaultTheme);
       } finally {
         setIsLoading(false);
       }
@@ -207,10 +210,10 @@ export function useTheme({
   }, [status, loadUserThemeFromAPI, userId, defaultTheme]);
   
   // 处理主题应用的通用逻辑
-  const handleThemeApplication = useCallback((themeId: string) => {
+  const applyThemeToUI = useCallback((themeId: string) => {
     try {
-      // 应用主题，传入用户ID
-      const result = applyThemeService(themeId, true, userId);
+      // 应用主题，传入用户ID和邮箱
+      const result = applyThemeService(themeId, true, userId, userEmail);
       
       if (result) {
         setCurrentTheme(themeId);
@@ -222,7 +225,7 @@ export function useTheme({
         }
       } else {
         // 如果应用失败，使用默认主题
-        const defaultResult = applyThemeService(defaultTheme, true, userId);
+        const defaultResult = applyThemeService(defaultTheme, true, userId, userEmail);
         
         if (defaultResult) {
           setCurrentTheme(defaultTheme);
@@ -238,7 +241,60 @@ export function useTheme({
       console.error('useTheme: 应用主题失败:', error);
       setCurrentTheme(defaultTheme);
     }
-  }, [userId, defaultTheme]);
+  }, [userId, userEmail, defaultTheme]);
+  
+  // 监听用户切换事件
+  useEffect(() => {
+    // 用户切换时的主题处理函数
+    const handleUserSwitch = async () => {
+      console.log('检测到用户切换事件，重新加载主题...');
+      setIsLoading(true);
+      
+      try {
+        // 重新初始化自定义主题
+        if (userId) {
+          reinitCustomThemes(userId);
+        }
+        
+        // 从API和本地存储重新加载主题
+        const themeId = await loadUserThemeFromAPI();
+        if (themeId) {
+          applyThemeToUI(themeId);
+        } else {
+          applyThemeToUI(defaultTheme);
+        }
+      } catch (error) {
+        console.error('用户切换后重新加载主题失败:', error);
+        applyThemeToUI(defaultTheme);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // 订阅用户切换事件
+    const unsubscribeUserSwitch = subscribeToUserSwitch(() => {
+      setTimeout(handleUserSwitch, 200);
+    });
+    
+    // 订阅主题刷新事件
+    const unsubscribeThemeRefresh = subscribeToThemeRefresh(() => {
+      console.log('检测到主题刷新事件');
+      setTimeout(handleUserSwitch, 200);
+    });
+    
+    // 添加data-theme-controller属性，使组件可被全局刷新
+    if (typeof document !== 'undefined') {
+      const themeControlElements = document.querySelectorAll('.theme-controller');
+      themeControlElements.forEach(element => {
+        element.setAttribute('data-theme-controller', 'true');
+      });
+    }
+    
+    return () => {
+      unsubscribeUserSwitch();
+      unsubscribeThemeRefresh();
+    };
+  }, [userId, loadUserThemeFromAPI, defaultTheme, applyThemeToUI]);
   
   // 监听主题变更事件
   useEffect(() => {
@@ -261,8 +317,8 @@ export function useTheme({
    * 更新主题并同步到用户设置
    */
   const updateTheme = useCallback(async (themeId: string): Promise<boolean> => {
-    // 应用主题
-    const result = applyThemeService(themeId, true, userId);
+    // 应用主题，传入用户ID和邮箱
+    const result = applyThemeService(themeId, true, userId, userEmail);
     
     if (!result) {
       return false;
@@ -274,15 +330,15 @@ export function useTheme({
     }
     
     return true;
-  }, [status, session, saveUserTheme, userId, disableApiSync]);
+  }, [status, session, saveUserTheme, userId, userEmail, disableApiSync]);
   
   /**
    * 仅应用主题（不同步到服务器）
    */
   const applyThemeLocal = useCallback((themeId: string): boolean => {
-    const result = applyThemeService(themeId, true, userId);
+    const result = applyThemeService(themeId, true, userId, userEmail);
     return !!result;
-  }, [userId]);
+  }, [userId, userEmail]);
   
   /**
    * 切换主题面板显示状态

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { message } from 'antd';
 import logoutStyles from './logout.module.css';
@@ -13,7 +13,6 @@ import Head from 'next/head';
  * 导致的Hooks问题
  */
 export default function LogoutPage() {
-  const [messageText, setMessageText] = useState("");
   const fullMessage = "Archimedes' Cloud Drive";
   
   useEffect(() => {
@@ -25,17 +24,6 @@ export default function LogoutPage() {
         console.log('Imperial Script字体已加载');
       });
     }
-    
-    // 打字效果
-    let charIndex = 0;
-    const typingEffect = setInterval(() => {
-      if (charIndex <= fullMessage.length) {
-        setMessageText(fullMessage.substring(0, charIndex));
-        charIndex++;
-      } else {
-        clearInterval(typingEffect);
-      }
-    }, 100);
     
     const performLogout = async () => {
       try {
@@ -69,10 +57,6 @@ export default function LogoutPage() {
     
     // 页面加载后立即执行登出
     performLogout();
-    
-    return () => {
-      clearInterval(typingEffect);
-    };
   }, []);
   
   return (
@@ -92,9 +76,8 @@ export default function LogoutPage() {
       <div className={logoutStyles.logoutContainer}>
         <div className={logoutStyles.messageContainer}>
           <h2 className={logoutStyles.title}>感谢您的使用</h2>
-          <p className={`${logoutStyles.message} ${logoutStyles.typingText}`}>
-            {messageText}
-            <span className={logoutStyles.cursor}></span>
+          <p className={`${logoutStyles.message} ${logoutStyles.writingText}`}>
+            {fullMessage}
           </p>
         </div>
       </div>

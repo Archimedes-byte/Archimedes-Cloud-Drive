@@ -19,6 +19,17 @@
   animation: fadeIn 0.3s ease-in-out;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+.logoutContainer::before {
+  content: '';
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+  animation: rotateGradient 20s linear infinite;
+  pointer-events: none;
 }
 
 .logoContainer {
@@ -41,7 +52,6 @@
   font-weight: bold;
   color: #1a1a1a;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-  animation: handwriting 3s ease-in-out;
   text-rendering: optimizeLegibility;
   transform: translateZ(0);
 }
@@ -50,6 +60,7 @@
   text-align: center;
   opacity: 0;
   animation: fadeInText 0.5s ease-in-out 0.3s forwards;
+  position: relative;
 }
 
 .title {
@@ -60,27 +71,49 @@
 }
 
 .message {
-  color: #666;
+  color: #1a1a1a;
   font-family: 'Imperial Script', 'Imperial Script Fallback', cursive, sans-serif;
-  font-size: 3rem;
+  font-size: 3.5rem;
   font-weight: 700;
-}
-
-/* 打字文本效果 */
-.typingText {
-  display: inline-block;
   position: relative;
+  overflow: hidden;
+  background: linear-gradient(45deg, #333, #000);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 光标样式 */
-.cursor {
+/* 新的书写动画效果 */
+.writingText {
+  position: relative;
   display: inline-block;
-  width: 3px;
-  height: 3rem;
-  background-color: #666;
-  margin-left: 2px;
-  animation: blink 0.7s infinite;
-  vertical-align: middle;
+}
+
+.writingText::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    #f5f7fa 0%, #f5f7fa 50%, 
+    transparent 50.1%, transparent 100%);
+  animation: revealText 2.5s cubic-bezier(.23,.97,.79,1.44) forwards;
+}
+
+.writingText::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #1a1a1a, transparent);
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: drawUnderline 1.5s 1.5s cubic-bezier(.19,1,.22,1) forwards;
 }
 
 /* 动画 */
@@ -119,29 +152,65 @@
   }
 }
 
-/* 光标闪烁动画 */
-@keyframes blink {
-  0%, 100% {
-    opacity: 1;
+/* 文字显现动画 */
+@keyframes revealText {
+  0% {
+    transform: translateX(0);
   }
-  50% {
-    opacity: 0;
+  100% {
+    transform: translateX(100%);
   }
 }
 
-/* 手写效果动画 */
-@keyframes handwriting {
+/* 下划线绘制动画 */
+@keyframes drawUnderline {
   0% {
-    opacity: 0;
-    transform: scale(0.9) translateY(10px);
-    letter-spacing: 5px;
-  }
-  20% {
-    opacity: 0.6;
+    transform: scaleX(0);
+    opacity: 1;
   }
   100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    letter-spacing: normal;
+    transform: scaleX(1);
+    opacity: 0.3;
+  }
+}
+
+/* 背景渐变旋转 */
+@keyframes rotateGradient {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 添加一些装饰元素 */
+.messageContainer::before,
+.messageContainer::after {
+  content: '✦';
+  position: absolute;
+  font-size: 1.5rem;
+  color: rgba(59, 130, 246, 0.5);
+  animation: floatStar 3s ease-in-out infinite alternate;
+}
+
+.messageContainer::before {
+  top: -15px;
+  left: 10%;
+  animation-delay: 0.5s;
+}
+
+.messageContainer::after {
+  bottom: -15px;
+  right: 10%;
+  animation-delay: 1s;
+}
+
+@keyframes floatStar {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-8px) rotate(10deg);
   }
 } 

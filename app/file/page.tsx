@@ -61,6 +61,9 @@ import { FileWithSize } from '@/app/hooks/file/useFiles';
 // 导入API客户端
 import { fileApi } from '@/app/lib/api/file-api';
 
+// 导入用户事件工具
+import { subscribeToUserSwitch } from '@/app/utils/events/user-events';
+
 // 页面组件不再接收props，改为使用searchParams
 export default function FileManagementPage() {
   const router = useRouter();
@@ -598,6 +601,53 @@ export default function FileManagementPage() {
       setIsDownloading(false);
     }
   }, [filesToDownload, downloadFiles, fetchRecentDownloads]);
+
+  // 监听用户切换事件，触发页面刷新
+  useEffect(() => {
+    // 订阅用户切换事件
+    const unsubscribe = subscribeToUserSwitch(async (data) => {
+      // 强制刷新当前文件夹
+      if (typeof refreshCurrentFolder === 'function') {
+        await refreshCurrentFolder();
+      }
+      
+      // 刷新收藏文件列表
+      if (typeof loadFavoritedFileIds === 'function') {
+        await loadFavoritedFileIds();
+      }
+      
+      // 尝试刷新最近文件和下载
+      try {
+        if (typeof fetchRecentFiles === 'function') {
+          await fetchRecentFiles();
+        }
+        if (typeof fetchRecentDownloads === 'function') {
+          await fetchRecentDownloads();
+        }
+      } catch (error) {
+        console.error('刷新最近内容失败:', error);
+      }
+      
+      // 如果当前处于搜索视图，执行搜索刷新
+      if (showSearchView && typeof handleSearch === 'function') {
+        await handleSearch(searchQuery, searchType);
+      }
+      
+      // 不再显示用户切换成功消息，由UserSwitcher组件负责
+    });
+    
+    // 组件卸载时取消订阅
+    return () => unsubscribe();
+  }, [
+    refreshCurrentFolder, 
+    loadFavoritedFileIds, 
+    fetchRecentFiles, 
+    fetchRecentDownloads,
+    showSearchView,
+    handleSearch,
+    searchQuery,
+    searchType
+  ]);
 
   return (
     <>

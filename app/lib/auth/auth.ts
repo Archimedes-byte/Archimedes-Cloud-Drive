@@ -6,6 +6,8 @@ import { prisma } from "@/app/lib/database"
 import { AUTH_CONSTANTS, AUTH_ERROR_CODE } from "@/app/constants/auth"
 import { verifyCredentials } from "./credentials-service"
 import { logAuthError } from "@/app/lib/error/auth-error"
+import { findUserByEmail } from "./user-service"
+import { toUserBasic } from '@/app/utils/user/transform'
 
 // 确保prisma实例是可用的
 if (!prisma) {
@@ -25,12 +27,28 @@ export const authOptions: NextAuthOptions = {
       name: "邮箱密码",
       credentials: {
         email: { label: "邮箱", type: "email" },
-        password: { label: "密码", type: "password" }
+        password: { label: "密码", type: "password" },
+        useStoredSession: { label: "使用存储会话", type: "hidden" } // 新增字段，用于多用户切换
       },
       async authorize(credentials) {
         try {
-          if (!credentials?.email || !credentials?.password) {
-            throw new Error("请提供邮箱和密码");
+          if (!credentials?.email) {
+            throw new Error("请提供邮箱");
+          }
+
+          // 检查是否使用存储会话 - 用于多用户切换
+          if (credentials.useStoredSession === "true") {
+            // 直接查找用户而不验证密码
+            const user = await findUserByEmail(credentials.email);
+            if (!user) {
+              throw new Error("找不到该用户");
+            }
+            return toUserBasic(user);
+          }
+          
+          // 常规登录流程 - 需要邮箱和密码
+          if (!credentials?.password) {
+            throw new Error("请提供密码");
           }
 
           // 使用凭据验证服务
