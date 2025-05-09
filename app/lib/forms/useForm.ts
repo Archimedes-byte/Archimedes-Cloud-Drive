@@ -14,6 +14,7 @@ import {
   createFormState, setFieldValue, setFieldTouched, 
   setFieldError, resetFormState, setFormStatus 
 } from './formState';
+import { handleFocusWithSelect } from '@/app/utils/form/field-handlers';
 
 // 重新导出类型以方便使用
 export type { FormOptions, FormHook };
@@ -253,4 +254,7 @@ export function useForm<T extends Record<string, any>>(
     handleBlur,
     setFormStatus
   };
-} 
+}
+
+// 导出handleFocusWithSelect供组件使用
+export { handleFocusWithSelect }; 

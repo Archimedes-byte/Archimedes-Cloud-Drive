@@ -42,4 +42,4 @@ export * from './auth';
 export * from './common';
 
 // 导出文件工具函数
-export * from '@/app/lib/file'; 
+export * from '@/app/utils/file'; 

@@ -161,21 +161,4 @@ export function createErrorResponse(message: string, status = 400) {
       headers: { 'Content-Type': 'application/json' }
     }
   );
-}
-
-/**
- * 创建API成功响应
- */
-export function createSuccessResponse(data: any, message?: string, status = 200) {
-  return new Response(
-    JSON.stringify({
-      success: true,
-      data,
-      message
-    }),
-    {
-      status,
-      headers: { 'Content-Type': 'application/json' }
-    }
-  );
 } 

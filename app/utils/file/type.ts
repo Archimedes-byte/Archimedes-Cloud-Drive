@@ -7,7 +7,6 @@ import { FileTypeEnum } from '@/app/types';
 
 /**
  * 文件分类常量 - 直接使用枚举值
- * 用于保持现有代码的兼容性
  */
 export const FILE_CATEGORIES = FileTypeEnum;
 

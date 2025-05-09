@@ -4,6 +4,7 @@
  * 提供统一的前后端响应格式处理，确保一致性
  */
 import { ApiResponse } from '@/app/types';
+import { createSuccessResponse as utilsCreateSuccessResponse } from '@/app/utils/api/response-builder';
 
 /**
  * 将API响应转换为统一格式
@@ -62,9 +63,16 @@ export function adaptErrorToResponse(error: unknown): ApiResponse {
 }
 
 /**
- * 创建成功响应
+ * 创建成功响应 - 内部调用utils中的实现
+ * 为了保持兼容性，此方法被保留，但内部实现使用utils中的函数
+ * 新代码应直接使用utils/api中的方法
  */
 export function createClientSuccessResponse<T>(data: T, message?: string): ApiResponse<T> {
+  // 使用utils中的实现，但需要手动处理message，因为两者接口不完全一样
+  const response = utilsCreateSuccessResponse(data) as any;
+  if (message) {
+    response.data.message = message;
+  }
   return {
     success: true,
     data,

@@ -41,7 +41,6 @@ export enum FileSortEnum {
   SIZE_DESC = 'size_desc'
 }
 
-// 兼容旧代码的类型别名
 export type SortOrder = keyof typeof FileSortEnum;
 
 /**
@@ -51,7 +50,6 @@ export type SortField = 'name' | 'date' | 'size' | 'type' | 'createdAt';
 
 /**
  * 文件排序接口 - 用于组件内部排序状态
- * 与hooks/useFiles.ts中的FileSortInterface兼容
  */
 export interface FileSortInterface {
   field: SortField;
@@ -199,7 +197,6 @@ export interface FolderPathItem {
   name: string;
 }
 
-// 导出类型别名以兼容现有代码
 export type FileItem = FileWithUIState;
 export type Folder = FolderWithUIState;
 export type ExtendedFile = FileWithUIState;

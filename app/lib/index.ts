@@ -36,8 +36,4 @@ export { api };
 
 // 导出配置模块
 import * as config from './config';
-export { config };
-
-// 导出工具函数 - 从app/utils直接导入
-import * as utils from '@/app/utils';
-export { utils }; 
+export { config }; 

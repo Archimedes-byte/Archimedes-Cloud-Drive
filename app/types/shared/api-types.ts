@@ -85,11 +85,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     pageSize: number;
     totalPages: number;
   };
-  // 添加兼容现有代码的属性别名，与meta信息同步
-  items?: T[];
-  total?: number;
-  page?: number;
-  pageSize?: number;
 }
 
 /**

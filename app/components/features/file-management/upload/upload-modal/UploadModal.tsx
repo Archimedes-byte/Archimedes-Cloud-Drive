@@ -27,7 +27,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
   onClose,
   onUploadSuccess,
-  onSuccess, // 兼容旧版API
   currentFolderId,
   isFolderUpload = false,
   withTags = true
@@ -56,10 +55,8 @@ const UploadModal: React.FC<UploadModalProps> = ({
   const handleUploadSuccess = useCallback((data?: any) => {
     if (onUploadSuccess) {
       onUploadSuccess(data);
-    } else if (onSuccess) {
-      onSuccess(data);
     }
-  }, [onUploadSuccess, onSuccess]);
+  }, [onUploadSuccess]);
 
   // 重置所有状态
   const resetState = useCallback(() => {

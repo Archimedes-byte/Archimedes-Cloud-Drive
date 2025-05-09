@@ -9,7 +9,7 @@
  */
 
 // 导出枚举（非类型）
-export { FileTypeEnum, SortDirectionEnum, FileSortEnum, FileType } from './fileTypes';
+export { FileTypeEnum, SortDirectionEnum, FileSortEnum } from './fileTypes';
 
 // 导出类型
 export type { SortOrder } from './fileTypes';
@@ -33,7 +33,7 @@ export * from './user-profile';
 // 导出认证相关类型
 export * from './auth';
 
-// 导出原有类型以保持兼容性
+// 导出文件管理类型
 export * from './file-management';
 export * from './permissions';
 export * from './search';

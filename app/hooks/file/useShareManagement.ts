@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { fileApi } from '@/app/lib/api/file-api';
 import { ShareOptions, ShareItem } from '@/app/types/domains/share';
-import { copyToClipboard } from '@/app/lib/file/fileUtils';
+import { copyToClipboard } from '@/app/utils/file';
 import { handleError, safeAsync } from '@/app/utils/error';
 
 /**

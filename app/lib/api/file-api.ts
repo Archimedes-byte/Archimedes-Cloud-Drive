@@ -2,13 +2,10 @@
  * 文件API客户端
  * 提供与文件管理相关的API调用功能
  */
-import { ExtendedFile, FileInfo } from '@/app/types';
+import { FileInfo } from '@/app/types';
 import { API_PATHS } from '@/app/lib/api/paths';
 import { 
   ApiError, 
-  formatError, 
-  handleError, 
-  isNetworkError, 
   handleApiResponse 
 } from '@/app/utils/error';
 import { 
@@ -55,8 +52,8 @@ export const fileApi = {
       url: `${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`
     });
     
-    // 提取signal参数，其他参数保留
-    const { signal, ...otherParams } = params;
+    // 提取signal参数
+    const { signal } = params;
 
     // 使用新的API路径
     const response = await fetch(`${API_PATHS.STORAGE.FILES.LIST}?${queryParams.toString()}`, {
@@ -73,8 +70,8 @@ export const fileApi = {
     
     const result = await handleApiResponse<PaginatedResponse<FileInfo>>(response);
     console.log('获取文件列表响应:', {
-      items: result.items.length,
-      total: result.total,
+      items: result.data?.length || 0,
+      total: result.meta?.total,
       timestamp
     });
     
@@ -603,19 +600,14 @@ export const fileApi = {
     folderId: string,
     page = 1,
     pageSize = 50
-  ): Promise<{ items: FileInfo[]; total: number; page: number; pageSize: number }> {
+  ): Promise<PaginatedResponse<FileInfo>> {
     const response = await fetch(API_PATHS.STORAGE.FAVORITES.FOLDERS.FILES, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folderId, page, pageSize }),
     });
     
-    return handleApiResponse<{
-      items: FileInfo[];
-      total: number;
-      page: number;
-      pageSize: number;
-    }>(response);
+    return handleApiResponse<PaginatedResponse<FileInfo>>(response);
   },
 
   // 分享文件

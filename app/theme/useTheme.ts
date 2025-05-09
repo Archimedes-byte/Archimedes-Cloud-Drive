@@ -11,7 +11,6 @@ import {
   addThemeChangeListener,
   getAllThemes as getAllThemesOriginal,
   getThemesByCategory,
-  getThemeStyle,
   reinitCustomThemes,
   syncCustomThemesForUser
 } from '@/app/theme/theme-service';

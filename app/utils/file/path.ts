@@ -93,5 +93,3 @@ export const buildFileUrl = (baseUrl: string, filename: string): string => {
 export const getFilenameFromPath = (fullPath: string): string => {
   return path.basename(fullPath);
 };
-
-// 废弃的sortPathFiles函数已删除，请使用sort.ts中的sortFiles函数

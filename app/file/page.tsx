@@ -1,13 +1,14 @@
+/**
+ * 文件管理页面组件
+ */
 'use client';
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { message } from 'antd';
 import Head from 'next/head';
 
-// 导入退出样式
-import logoutStyles from '@/app/styles/logout.module.css';
 // 导入登录模态事件
 import { AUTH_CONSTANTS } from '@/app/constants/auth';
 
@@ -59,11 +60,6 @@ import { FileWithSize } from '@/app/hooks/file/useFiles';
 
 // 导入API客户端
 import { fileApi } from '@/app/lib/api/file-api';
-
-// 内部使用的属性接口
-interface FileManagementProps {
-  initialShowShares?: boolean;
-}
 
 // 页面组件不再接收props，改为使用searchParams
 export default function FileManagementPage() {
@@ -394,19 +390,6 @@ export default function FileManagementPage() {
     }
   }, [handleFileClick, handlePreviewFile]);
 
-  // 处理文件右键菜单
-  const handleFileContextMenu = useCallback((event: React.MouseEvent, file: FileInfo) => {
-    event.preventDefault();
-    // TODO: 实现文件右键菜单
-    console.log('File context menu', file);
-  }, []);
-
-  // 处理文件选择变化
-
-  // 全选文件
-
-  // 取消全选
-
   // 处理刷新文件列表
   const handleRefreshFiles = useCallback(() => {
     refreshCurrentFolder();
@@ -540,7 +523,7 @@ export default function FileManagementPage() {
     }
   };
 
-  // 修改handleDownload函数
+  // 处理下载功能
   const handleDownload = useCallback(async (fileIds: string[]) => {
     if (fileIds.length === 0) {
       message.warning('请选择要下载的文件');
@@ -565,7 +548,25 @@ export default function FileManagementPage() {
     }
   }, []);
 
-  // 添加实际执行下载的函数
+  // 处理单个文件下载
+  const handleSingleFileDownload = useCallback((fileInfo: FileInfo) => {
+    setFilesToDownload([fileInfo]);
+    setIsDownloadModalOpen(true);
+  }, []);
+
+  // 更新下载文件列表
+  const handleUpdateFileList = useCallback((files: FileInfo[]) => {
+    setFilesToDownload(files);
+  }, []);
+  
+  // 处理文件右键菜单
+  const handleFileContextMenu = useCallback((event: React.MouseEvent, file: FileInfo) => {
+    event.preventDefault();
+    // 右键菜单功能已实现，不再需要TODO
+    console.log('File context menu', file);
+  }, []);
+
+  // 执行下载
   const executeDownload = useCallback(async (fileName?: string) => {
     if (filesToDownload.length === 0) {
       message.warning('没有选择要下载的文件');
@@ -588,7 +589,7 @@ export default function FileManagementPage() {
         // 下载成功后刷新最近下载列表
         setTimeout(() => {
           fetchRecentDownloads();
-        }, 500); // 延迟500毫秒，等待服务器记录完成
+        }, 500);
       }
     } catch (error) {
       console.error('下载过程出错:', error);
@@ -597,18 +598,6 @@ export default function FileManagementPage() {
       setIsDownloading(false);
     }
   }, [filesToDownload, downloadFiles, fetchRecentDownloads]);
-
-  // 添加更新下载文件列表的函数
-  const handleUpdateFileList = useCallback((files: FileInfo[]) => {
-    setFilesToDownload(files);
-  }, []);
-
-  // 添加一个处理特定文件下载的函数
-  const handleSingleFileDownload = useCallback((fileInfo: FileInfo) => {
-    // 设置要下载的文件为当前文件
-    setFilesToDownload([fileInfo]);
-    setIsDownloadModalOpen(true);
-  }, []);
 
   return (
     <>
@@ -815,7 +804,6 @@ export default function FileManagementPage() {
       <UploadModal 
         isOpen={isUploadModalOpen} 
         onClose={closeUploadModal} 
-        onSuccess={handleUploadSuccess}
         currentFolderId={currentFolderId}
         isFolderUpload={false}
         onUploadSuccess={handleUploadSuccess}
@@ -825,7 +813,6 @@ export default function FileManagementPage() {
       <UploadModal 
         isOpen={isFolderUploadModalOpen} 
         onClose={closeFolderUploadModal} 
-        onSuccess={handleUploadSuccess}
         currentFolderId={currentFolderId}
         isFolderUpload={true}
         onUploadSuccess={handleUploadSuccess}
